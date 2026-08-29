@@ -49,9 +49,7 @@
                     @foreach($scholarships as $scholarship)
                       <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>
-                          <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}">{{ $scholarship->nama }}</a>
-                        </td>
+                        <td>{{ $scholarship->nama }}</td>
                         <td>{{ $scholarship->kampus }}</td>
                         <td>{{ $scholarship->kuota }}</td>
                         <td>{{ $scholarship->tingkat_gelar }}</td>
@@ -72,6 +70,9 @@
                         <td>
                           @if(auth()->user()->hasRole('admin'))
                             <div class="d-flex gap-1">
+                              <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm">
+                                <i class="fas fa-eye"></i> Lihat
+                              </a>
                               <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm">
                                 <i class="fas fa-edit"></i> Ubah
                               </a>

@@ -24,12 +24,16 @@ class Scholarship extends Model
         'deskripsi',
         'persyaratan',
         'status',
+        'tanggal_pengumuman',
+        'tanggal_pembayaran',
     ];
 
     protected function casts(): array
     {
         return [
             'batas_waktu' => 'date',
+            'tanggal_pengumuman' => 'date',
+            'tanggal_pembayaran' => 'date',
         ];
     }
 
@@ -46,5 +50,15 @@ class Scholarship extends Model
     public function isExpired(): bool
     {
         return $this->batas_waktu?->isPast() ?? true;
+    }
+
+    public function isDiumumkan(): bool
+    {
+        return filled($this->tanggal_pengumuman);
+    }
+
+    public function isDibayarkan(): bool
+    {
+        return filled($this->tanggal_pembayaran);
     }
 }

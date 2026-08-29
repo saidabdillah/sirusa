@@ -149,7 +149,7 @@ test('rejected applicant is a dead-end and cannot change status', function () {
     expect($applicant->refresh()->status)->toBe('ditolak');
 });
 
-test('marking selesai generates nomor penetapan', function () {
+test('marking selesai sets final status', function () {
     $applicant = Applicant::factory()->create([
         'status' => 'verifikasi_akhir',
         'dokumen_surat_pernyataan' => 's.pd.f',
@@ -163,8 +163,6 @@ test('marking selesai generates nomor penetapan', function () {
 
     $applicant->refresh();
     expect($applicant->status)->toBe('selesai');
-    expect($applicant->nomor_penetapan)->toMatch('/^SK\/\d{4}\/PEND\/\d{4}$/');
-    expect($applicant->tanggal_penetapan)->not->toBeNull();
 });
 
 test('full flow from submission to finalization', function () {
@@ -198,5 +196,4 @@ test('full flow from submission to finalization', function () {
 
     $applicant->refresh();
     expect($applicant->status)->toBe('selesai');
-    expect($applicant->nomor_penetapan)->toMatch('/^SK\/\d{4}\/PEND\/\d{4}$/');
 });

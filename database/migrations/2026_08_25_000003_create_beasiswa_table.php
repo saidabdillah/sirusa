@@ -20,6 +20,8 @@ return new class extends Migration
             $table->text('persyaratan')->nullable();
             $table->decimal('ipk_minimal', 3, 2)->default(0);
             $table->unsignedInteger('semester_minimal')->default(0);
+            $table->date('tanggal_pengumuman')->nullable();
+            $table->date('tanggal_pembayaran')->nullable();
             $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
             $table->timestamps();
         });

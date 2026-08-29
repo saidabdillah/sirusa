@@ -362,12 +362,18 @@
           <div class="card-body">
             @if(in_array($applicant->status, ['selesai', 'ditolak'], true))
               @if($applicant->status === 'selesai')
-                <div class="alert alert-success mb-3">
-                  <strong><i class="fas fa-award"></i> Nomor Penetapan</strong><br>
-                  {{ $applicant->nomor_penetapan ?: '-' }}
-                  <br>
-                  <small>Tanggal: {{ $applicant->tanggal_penetapan ? \Carbon\Carbon::parse($applicant->tanggal_penetapan)->translatedFormat('d F Y') : '-' }}</small>
-                </div>
+                @if($applicant->isDiumumkan())
+                  <div class="alert alert-info mb-3">
+                    <strong><i class="fas fa-bullhorn"></i> Pengumuman</strong><br>
+                    Diumumkan pada {{ $applicant->beasiswa->tanggal_pengumuman->translatedFormat('d F Y') }}
+                  </div>
+                @endif
+                @if($applicant->isDibayarkan())
+                  <div class="alert alert-success mb-3">
+                    <strong><i class="fas fa-money-bill-wave"></i> Pembayaran</strong><br>
+                    Dibayarkan pada {{ $applicant->beasiswa->tanggal_pembayaran->translatedFormat('d F Y') }}
+                  </div>
+                @endif
               @else
                 <div class="alert alert-danger mb-3"><i class="fas fa-times-circle"></i> Pendaftar ditolak.</div>
               @endif

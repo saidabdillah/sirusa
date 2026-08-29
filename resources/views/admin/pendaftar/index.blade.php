@@ -22,6 +22,38 @@
       <div class="col-12">
           <div class="card">
             <div class="card-body">
+            <form method="GET" action="{{ route('admin.pendaftar.index') }}" class="mb-3">
+              <div class="form-row align-items-end">
+                <div class="col-md-4 mb-2 mb-md-0">
+                  <label for="status">Status</label>
+                  <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- Semua Status --</option>
+                    <option value="verifikasi" {{ request('status') === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
+                    <option value="diterima" {{ request('status') === 'diterima' ? 'selected' : '' }}>Diterima Tahap 1</option>
+                    <option value="verifikasi_akhir" {{ request('status') === 'verifikasi_akhir' ? 'selected' : '' }}>Verifikasi Akhir</option>
+                    <option value="revisi" {{ request('status') === 'revisi' ? 'selected' : '' }}>Perlu Revisi</option>
+                    <option value="ditolak" {{ request('status') === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
+                    <option value="selesai" {{ request('status') === 'selesai' ? 'selected' : '' }}>Selesai</option>
+                  </select>
+                </div>
+                <div class="col-md-4 mb-2 mb-md-0">
+                  <label for="beasiswa_id">Beasiswa</label>
+                  <select name="beasiswa_id" id="beasiswa_id" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- Semua Beasiswa --</option>
+                    @foreach($beasiswas as $b)
+                      <option value="{{ $b->id }}" {{ request('beasiswa_id') == $b->id ? 'selected' : '' }}>{{ $b->nama }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  @if(request()->filled('status') || request()->filled('beasiswa_id'))
+                    <a href="{{ route('admin.pendaftar.index') }}" class="btn btn-secondary btn-block">
+                      <i class="fas fa-redo"></i> Reset
+                    </a>
+                  @endif
+                </div>
+              </div>
+            </form>
             <div class="table-responsive">
               <table class="table table-striped">
                 <thead>

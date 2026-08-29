@@ -69,6 +69,8 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::get('/beasiswa/{scholarship}/ubah', [BeasiswaController::class, 'edit'])->name('beasiswa.ubah');
         Route::put('/beasiswa/{scholarship}', [BeasiswaController::class, 'update'])->name('beasiswa.perbarui');
         Route::delete('/beasiswa/{scholarship}', [BeasiswaController::class, 'destroy'])->name('beasiswa.hapus');
+        Route::post('/beasiswa/{scholarship}/umumkan', [BeasiswaController::class, 'umumkan'])->name('beasiswa.umumkan');
+        Route::post('/beasiswa/{scholarship}/bayarkan', [BeasiswaController::class, 'bayarkan'])->name('beasiswa.bayarkan');
 
         Route::put('/pendaftar/{applicant}', [PendaftarController::class, 'update'])->name('pendaftar.perbarui');
         Route::delete('/pendaftar/{applicant}', [PendaftarController::class, 'destroy'])->name('pendaftar.hapus');

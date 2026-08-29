@@ -103,6 +103,91 @@
         <div class="col-lg-4">
           <div class="card">
             <div class="card-header">
+              <h4>Pengumuman</h4>
+            </div>
+            <div class="card-body">
+              @if(! $scholarship->isDiumumkan())
+                <p class="text-muted">
+                  Beasiswa ini belum diumumkan. Pastikan verifikasi pendaftar telah selesai sebelum mengumumkan.
+                </p>
+                <form action="{{ route('admin.beasiswa.umumkan', $scholarship) }}" method="POST" id="form-umumkan">
+                  @csrf
+                  <div class="form-group mb-3">
+                    <label for="tanggal_pengumuman">Tanggal Pengumuman</label>
+                    <input type="text" name="tanggal_pengumuman" id="tanggal_pengumuman"
+                      class="form-control flatpickr bg-white" value="{{ old('tanggal_pengumuman', now()->toDateString()) }}" placeholder="Pilih tanggal">
+                    <small class="form-text text-muted">Kosongkan atau gunakan tanggal hari ini.</small>
+                    @error('tanggal_pengumuman')
+                      <div class="text-danger small">{{ $message }}</div>
+                    @enderror
+                  </div>
+                  <button type="button" class="btn btn-success btn-block" id="btn-umumkan">
+                    <i class="fas fa-bullhorn"></i> Umumkan Beasiswa
+                  </button>
+                </form>
+              @else
+                <div class="alert alert-success mb-3">
+                  <strong><i class="fas fa-bullhorn"></i> Diumumkan</strong><br>
+                  {{ $scholarship->tanggal_pengumuman->translatedFormat('d F Y') }}
+                </div>
+                <form action="{{ route('admin.beasiswa.umumkan', $scholarship) }}" method="POST" class="mb-3">
+                  @csrf
+                  <div class="form-group mb-2">
+                    <label for="tanggal_pengumuman">Edit Tanggal Pengumuman</label>
+                    <input type="text" name="tanggal_pengumuman" id="tanggal_pengumuman"
+                      class="form-control flatpickr bg-white" value="{{ old('tanggal_pengumuman', $scholarship->tanggal_pengumuman->toDateString()) }}" placeholder="Pilih tanggal">
+                    @error('tanggal_pengumuman')
+                      <div class="text-danger small">{{ $message }}</div>
+                    @enderror
+                  </div>
+                  <button type="submit" class="btn btn-outline-success btn-block">
+                    <i class="fas fa-save"></i> Simpan Tanggal Pengumuman
+                  </button>
+                </form>
+
+                @if($scholarship->isDibayarkan())
+                  <div class="alert alert-success mb-3">
+                    <strong><i class="fas fa-money-bill-wave"></i> Dibayarkan</strong><br>
+                    {{ $scholarship->tanggal_pembayaran->translatedFormat('d F Y') }}
+                  </div>
+                  <form action="{{ route('admin.beasiswa.bayarkan', $scholarship) }}" method="POST">
+                    @csrf
+                    <div class="form-group mb-2">
+                      <label for="tanggal_pembayaran">Edit Tanggal Pembayaran</label>
+                      <input type="text" name="tanggal_pembayaran" id="tanggal_pembayaran"
+                        class="form-control flatpickr bg-white" value="{{ old('tanggal_pembayaran', $scholarship->tanggal_pembayaran->toDateString()) }}" placeholder="Pilih tanggal">
+                      @error('tanggal_pembayaran')
+                        <div class="text-danger small">{{ $message }}</div>
+                      @enderror
+                    </div>
+                    <button type="submit" class="btn btn-outline-success btn-block">
+                      <i class="fas fa-save"></i> Simpan Tanggal Pembayaran
+                    </button>
+                  </form>
+                @else
+                  <hr>
+                  <form action="{{ route('admin.beasiswa.bayarkan', $scholarship) }}" method="POST" id="form-bayarkan">
+                    @csrf
+                    <div class="form-group mb-3">
+                      <label for="tanggal_pembayaran">Tanggal Pembayaran</label>
+                      <input type="text" name="tanggal_pembayaran" id="tanggal_pembayaran"
+                        class="form-control flatpickr bg-white" value="{{ old('tanggal_pembayaran', now()->toDateString()) }}" placeholder="Pilih tanggal">
+                      <small class="form-text text-muted">Kosongkan atau gunakan tanggal hari ini.</small>
+                      @error('tanggal_pembayaran')
+                        <div class="text-danger small">{{ $message }}</div>
+                      @enderror
+                    </div>
+                    <button type="button" class="btn btn-primary btn-block" id="btn-bayarkan">
+                      <i class="fas fa-money-bill-wave"></i> Tandai Dibayarkan
+                    </button>
+                  </form>
+                @endif
+              @endif
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
               <h4>Pendaftar</h4>
             </div>
             <div class="card-body">
@@ -123,6 +208,12 @@
                           <span class="badge badge-warning">Verifikasi</span>
                         @elseif($applicant->status === 'diterima')
                           <span class="badge badge-info">Diterima Tahap 1</span>
+                        @elseif($applicant->status === 'verifikasi_akhir')
+                          <span class="badge badge-primary">Verifikasi Akhir</span>
+                        @elseif($applicant->status === 'selesai' && $applicant->isDibayarkan())
+                          <span class="badge badge-success">Dibayarkan</span>
+                        @elseif($applicant->status === 'selesai' && $applicant->isDiumumkan())
+                          <span class="badge badge-success">Diumumkan</span>
                         @elseif($applicant->status === 'selesai')
                           <span class="badge badge-success">Selesai</span>
                         @elseif($applicant->status === 'revisi')
@@ -147,3 +238,51 @@
     </div>
 </section>
 @endsection
+
+@push('script')
+<script>
+  flatpickr('.flatpickr', {
+    dateFormat: 'Y-m-d'
+  });
+
+  var btnUmumkan = document.getElementById('btn-umumkan');
+  if (btnUmumkan) {
+    btnUmumkan.addEventListener('click', function () {
+      Swal.fire({
+        title: 'Umumkan Beasiswa?',
+        text: 'Beasiswa ini akan segera diumumkan dan SEMUA pendaftar yang telah selesai akan diberitahu. Lanjutkan?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#47c363',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Umumkan!',
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.getElementById('form-umumkan').submit();
+        }
+      });
+    });
+  }
+
+  var btnBayarkan = document.getElementById('btn-bayarkan');
+  if (btnBayarkan) {
+    btnBayarkan.addEventListener('click', function () {
+      Swal.fire({
+        title: 'Tandai Dibayarkan?',
+        text: 'Beasiswa ini akan ditandai telah dibayarkan dan SEMUA pendaftar yang telah selesai akan diberitahu. Lanjutkan?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#47c363',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Dibayarkan!',
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.getElementById('form-bayarkan').submit();
+        }
+      });
+    });
+  }
+</script>
+@endpush

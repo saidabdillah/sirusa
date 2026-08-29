@@ -29,6 +29,8 @@ class ScholarshipFactory extends Factory
             'deskripsi' => fake()->paragraph(),
             'persyaratan' => fake()->paragraph(),
             'status' => 'aktif',
+            'tanggal_pengumuman' => null,
+            'tanggal_pembayaran' => null,
         ];
     }
 }

@@ -118,6 +118,12 @@
                     <i class="fas fa-check-double"></i><br>
                     <strong>Selamat! Pendaftaran Anda Diterima.</strong><br>
                     Beasiswa ini telah berhasil Anda peroleh.
+                    @if($application->isDiumumkan())
+                      <br><small>Diumumkan pada {{ $application->beasiswa->tanggal_pengumuman->translatedFormat('d F Y') }}. Beasiswa dapat diambil terhitung dari tanggal pengumuman.</small>
+                    @endif
+                    @if($application->isDibayarkan())
+                      <br><small>Dibayarkan pada {{ $application->beasiswa->tanggal_pembayaran->translatedFormat('d F Y') }}.</small>
+                    @endif
                   </div>
                 @elseif($application->status === 'revisi')
                   <div class="alert alert-warning">

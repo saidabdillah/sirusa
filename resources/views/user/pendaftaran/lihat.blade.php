@@ -323,12 +323,20 @@
               @endif
             </div>
             @if($applicant->status === 'selesai')
-              <div class="alert alert-success text-left">
-                <strong><i class="fas fa-award"></i> Nomor Penetapan</strong><br>
-                {{ $applicant->nomor_penetapan ?: '-' }}
-                <br>
-                <small>Tanggal: {{ $applicant->tanggal_penetapan ? \Carbon\Carbon::parse($applicant->tanggal_penetapan)->translatedFormat('d F Y') : '-' }}</small>
-              </div>
+              @if($applicant->isDiumumkan())
+                <div class="alert alert-info text-left">
+                  <strong><i class="fas fa-bullhorn"></i> Pengumuman</strong><br>
+                  Beasiswa ini telah diumumkan pada <strong>{{ $applicant->beasiswa->tanggal_pengumuman->translatedFormat('d F Y') }}</strong>.
+                  <br>
+                  <small>Beasiswa dapat diambil terhitung dari tanggal pengumuman tersebut.</small>
+                </div>
+              @endif
+              @if($applicant->isDibayarkan())
+                <div class="alert alert-success text-left">
+                  <strong><i class="fas fa-money-bill-wave"></i> Pembayaran</strong><br>
+                  Beasiswa ini telah dibayarkan pada <strong>{{ $applicant->beasiswa->tanggal_pembayaran->translatedFormat('d F Y') }}</strong>.
+                </div>
+              @endif
             @endif
             @if($applicant->catatan)
             <div class="text-left">

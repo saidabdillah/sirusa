@@ -28,8 +28,6 @@ return new class extends Migration
             $table->string('dokumen_surat_pernyataan')->nullable();
             $table->enum('status', ['verifikasi', 'diterima', 'verifikasi_akhir', 'revisi', 'ditolak', 'selesai'])->default('verifikasi');
             $table->text('catatan')->nullable();
-            $table->string('nomor_penetapan')->nullable();
-            $table->date('tanggal_penetapan')->nullable();
             $table->timestamps();
             $table->unique(['user_id', 'beasiswa_id']);
         });

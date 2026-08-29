@@ -25,6 +25,8 @@ class DashboardController extends Controller
     {
         $totalScholarships = Scholarship::count();
         $activeScholarships = Scholarship::where('status', 'aktif')->count();
+        $announcedScholarships = Scholarship::whereNotNull('tanggal_pengumuman')->count();
+        $paidScholarships = Scholarship::whereNotNull('tanggal_pembayaran')->count();
         $totalApplicants = Applicant::count();
         $pendingApplicants = Applicant::where('status', 'verifikasi')->count();
         $acceptedApplicants = Applicant::whereIn('status', ['diterima', 'verifikasi_akhir'])->count();
@@ -46,6 +48,8 @@ class DashboardController extends Controller
         return view('dasbor', compact(
             'totalScholarships',
             'activeScholarships',
+            'announcedScholarships',
+            'paidScholarships',
             'totalApplicants',
             'pendingApplicants',
             'acceptedApplicants',

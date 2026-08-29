@@ -31,8 +31,6 @@ class Applicant extends Model
         'dokumen_surat_pernyataan',
         'status',
         'catatan',
-        'nomor_penetapan',
-        'tanggal_penetapan',
     ];
 
     protected function casts(): array
@@ -70,5 +68,15 @@ class Applicant extends Model
         return filled($this->dokumen_surat_pernyataan)
             && filled($this->dokumen_sktm)
             && filled($this->dokumen_bukti_ukt);
+    }
+
+    public function isDiumumkan(): bool
+    {
+        return $this->status === 'selesai' && $this->beasiswa?->isDiumumkan();
+    }
+
+    public function isDibayarkan(): bool
+    {
+        return $this->status === 'selesai' && $this->beasiswa?->isDibayarkan();
     }
 }
