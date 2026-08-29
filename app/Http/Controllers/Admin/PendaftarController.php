@@ -32,6 +32,13 @@ class PendaftarController extends Controller
 
         $applicant->update($data);
 
+        if (isset($data['status']) && $data['status'] === 'selesai' && ! $applicant->nomor_penetapan) {
+            $applicant->forceFill([
+                'nomor_penetapan' => sprintf('SK/%s/PEND/%04d', now()->format('Y'), $applicant->id),
+                'tanggal_penetapan' => now()->toDateString(),
+            ])->save();
+        }
+
         if (isset($data['status']) && $data['status'] !== $oldStatus) {
             $applicant->user->notify(new ApplicantStatusChanged($applicant, $applicant->getStatusLabelAttribute()));
         }

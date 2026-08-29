@@ -29,6 +29,12 @@ class PendaftaranController extends Controller
 
         $beasiswaId = $request->input('beasiswa_id');
         $scholarship = Scholarship::with('fakultas.prodi')->findOrFail($beasiswaId);
+
+        if ($scholarship->isExpired()) {
+            return redirect()->route('user.beasiswa.index')
+                ->with('error', 'Pendaftaran beasiswa sudah ditutup.');
+        }
+
         $profile = $user->profile;
 
         return view('user.pendaftaran.buat', compact('scholarship', 'profile'));
@@ -250,9 +256,9 @@ class PendaftaranController extends Controller
             abort(403);
         }
 
-        if ($applicant->status !== 'diterima') {
+        if (! in_array($applicant->status, ['diterima', 'verifikasi_akhir'])) {
             return redirect()->route('user.pendaftaran.lihat', $applicant)
-                ->with('error', 'Berkas Tahap 2 hanya bisa diunggah setelah diterima');
+                ->with('error', 'Berkas Tahap 2 tidak dapat diubah pada status ini');
         }
 
         $applicant->load('beasiswa');
@@ -266,9 +272,9 @@ class PendaftaranController extends Controller
             abort(403);
         }
 
-        if ($applicant->status !== 'diterima') {
+        if (! in_array($applicant->status, ['diterima', 'verifikasi_akhir'])) {
             return redirect()->route('user.pendaftaran.lihat', $applicant)
-                ->with('error', 'Berkas Tahap 2 hanya bisa diunggah setelah diterima');
+                ->with('error', 'Berkas Tahap 2 tidak dapat diubah pada status ini');
         }
 
         $request->validate([
@@ -311,6 +317,7 @@ class PendaftaranController extends Controller
             }
         }
 
+        $data['status'] = 'verifikasi_akhir';
         $applicant->update($data);
 
         return redirect()->route('user.pendaftaran.lihat', $applicant)

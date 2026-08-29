@@ -5,12 +5,23 @@ namespace App\Http\Controllers\Profile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profil\UpdateProfilRequest;
 use App\Models\UserProfile;
+use App\Services\WilayahService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    private const PROVINSI = 'Kalimantan Selatan';
+
+    private const KABUPATEN = 'Balangan';
+
+    private const KABUPATEN_CODE = '6311';
+
+    public function __construct(
+        private WilayahService $wilayah
+    ) {}
+
     public function index(): View
     {
         $user = auth()->user();
@@ -18,12 +29,29 @@ class ProfileController extends Controller
         $missingFields = $user->getMissingProfileFields();
         $profileComplete = $user->isProfileComplete();
 
-        return view('profil.index', compact('profile', 'missingFields', 'profileComplete'));
+        $districts = $this->wilayah->getDistricts(self::KABUPATEN_CODE);
+
+        $selectedDistrict = null;
+        if ($profile?->kecamatan) {
+            $selectedDistrict = collect($districts)->first(
+                fn ($district) => strtolower($district['district'] ?? '') === strtolower($profile->kecamatan)
+            );
+        }
+
+        return view('profil.index', compact(
+            'profile',
+            'missingFields',
+            'profileComplete',
+            'districts',
+            'selectedDistrict'
+        ));
     }
 
     public function update(UpdateProfilRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $data['provinsi'] = self::PROVINSI;
+        $data['kabupaten_kota'] = self::KABUPATEN;
 
         try {
             if ($request->hasFile('foto_profil')) {

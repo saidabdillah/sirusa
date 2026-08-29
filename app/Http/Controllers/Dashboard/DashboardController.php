@@ -27,7 +27,7 @@ class DashboardController extends Controller
         $activeScholarships = Scholarship::where('status', 'aktif')->count();
         $totalApplicants = Applicant::count();
         $pendingApplicants = Applicant::where('status', 'verifikasi')->count();
-        $acceptedApplicants = Applicant::where('status', 'diterima')->count();
+        $acceptedApplicants = Applicant::whereIn('status', ['diterima', 'verifikasi_akhir'])->count();
         $revisionApplicants = Applicant::where('status', 'revisi')->count();
         $rejectedApplicants = Applicant::where('status', 'ditolak')->count();
         $completedApplicants = Applicant::where('status', 'selesai')->count();
@@ -64,7 +64,7 @@ class DashboardController extends Controller
         $totalApplications = Applicant::where('user_id', $userId)->count();
         $pendingApplications = Applicant::where('user_id', $userId)->where('status', 'verifikasi')->count();
         $acceptedApplications = Applicant::where('user_id', $userId)
-            ->whereIn('status', ['diterima', 'selesai'])
+            ->whereIn('status', ['diterima', 'verifikasi_akhir', 'selesai'])
             ->count();
         $rejectedApplications = Applicant::where('user_id', $userId)->where('status', 'ditolak')->count();
 

@@ -24,6 +24,8 @@ class ScholarshipFactory extends Factory
             'tingkat_gelar' => 'S1',
             'cakupan' => 'penuh',
             'batas_waktu' => fake()->dateTimeBetween('+1 week', '+1 month'),
+            'ipk_minimal' => '0.00',
+            'semester_minimal' => 0,
             'deskripsi' => fake()->paragraph(),
             'persyaratan' => fake()->paragraph(),
             'status' => 'aktif',

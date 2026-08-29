@@ -31,6 +31,8 @@ class Applicant extends Model
         'dokumen_surat_pernyataan',
         'status',
         'catatan',
+        'nomor_penetapan',
+        'tanggal_penetapan',
     ];
 
     protected function casts(): array
@@ -55,10 +57,18 @@ class Applicant extends Model
         return match ($this->status) {
             'verifikasi' => 'Verifikasi',
             'diterima' => 'Diterima',
+            'verifikasi_akhir' => 'Verifikasi Akhir',
             'revisi' => 'Perlu Revisi',
             'ditolak' => 'Ditolak',
             'selesai' => 'Selesai',
             default => '-',
         };
+    }
+
+    public function isBerkasTahap2Lengkap(): bool
+    {
+        return filled($this->dokumen_surat_pernyataan)
+            && filled($this->dokumen_sktm)
+            && filled($this->dokumen_bukti_ukt);
     }
 }

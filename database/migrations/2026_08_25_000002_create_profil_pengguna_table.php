@@ -19,6 +19,10 @@ return new class extends Migration
             $table->enum('agama', ['Islam', 'Kristen', 'Katholik', 'Hindu', 'Buddha', 'Konghucu'])->nullable();
             $table->string('telepon', 20)->nullable();
             $table->text('alamat')->nullable();
+            $table->string('provinsi')->nullable();
+            $table->string('kabupaten_kota')->nullable();
+            $table->string('kecamatan')->nullable();
+            $table->string('desa_kelurahan')->nullable();
             $table->string('foto_profil')->nullable();
             $table->enum('status_orang_tua', ['Lengkap', 'Yatim', 'Piatu', 'Yatim Piatu', 'Wali'])->nullable();
             $table->string('nama_ayah')->nullable();

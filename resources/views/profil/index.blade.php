@@ -133,8 +133,45 @@
                   </div>
                 </div>
 
+                {{-- DATA TEMPAT TINGGAL --}}
+                <h5 class="mb-3 mt-4">Alamat Tempat Tinggal</h5>
+
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="provinsi">Provinsi</label>
+                    <input type="text" class="form-control" id="provinsi" name="provinsi" value="{{ old('provinsi', $profile->provinsi ?? 'Kalimantan Selatan') }}" readonly>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="kabupaten_kota">Kabupaten/Kota</label>
+                    <input type="text" class="form-control" id="kabupaten_kota" name="kabupaten_kota" value="{{ old('kabupaten_kota', $profile->kabupaten_kota ?? 'Balangan') }}" readonly>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="kecamatan">Kecamatan <span class="text-danger">*</span></label>
+                    <select class="form-control @error('kecamatan') is-invalid @enderror" id="kecamatan" name="kecamatan">
+                      <option value="">Pilih Kecamatan</option>
+                      @foreach($districts as $district)
+                        <option value="{{ $district['district'] }}" data-code="{{ $district['code'] }}"
+                          {{ old('kecamatan', $profile->kecamatan ?? '') === $district['district'] ? 'selected' : '' }}>
+                          {{ $district['district'] }}
+                        </option>
+                      @endforeach
+                    </select>
+                    @error('kecamatan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="desa_kelurahan">Desa/Kelurahan <span class="text-danger">*</span></label>
+                    <select class="form-control @error('desa_kelurahan') is-invalid @enderror" id="desa_kelurahan" name="desa_kelurahan">
+                      <option value="">{{ ($profile->desa_kelurahan ?? '') ? 'Pilih Desa/Kelurahan' : 'Pilih Kecamatan terlebih dahulu' }}</option>
+                    </select>
+                    @error('desa_kelurahan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+
                 <div class="form-group">
-                  <label for="alamat">Alamat Lengkap (sesuai KTP)</label>
+                  <label for="alamat">Alamat Detail (RT/RW, Nama Jalan, No. Rumah)</label>
                   <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="3">{{ old('alamat', $profile->alamat ?? '') }}</textarea>
                   @error('alamat')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -337,6 +374,34 @@
 
   flatpickr(".flatpickr", {
     dateFormat: "Y-m-d"
+  });
+
+  var desaUrlBase = "{{ url('/api/wilayah/desa') }}";
+
+  function populateDesa(code, selectedDesa) {
+    if (!code) {
+      $('#desa_kelurahan').html('<option value="">Pilih Kecamatan terlebih dahulu</option>');
+      return;
+    }
+    $.getJSON(desaUrlBase + '/' + code, function(data) {
+      var options = '<option value="">Pilih Desa/Kelurahan</option>';
+      $.each(data, function(i, item) {
+        var selected = (selectedDesa && selectedDesa === item.village) ? ' selected' : '';
+        options += '<option value="' + item.village + '"' + selected + '>' + item.village + '</option>';
+      });
+      $('#desa_kelurahan').html(options);
+    });
+  }
+
+  var initialDesa = "{{ old('desa_kelurahan', $profile->desa_kelurahan ?? '') }}";
+
+  if ($('#kecamatan').val()) {
+    populateDesa($('#kecamatan option:selected').data('code'), initialDesa);
+  }
+
+  $('#kecamatan').change(function() {
+    $('#desa_kelurahan').html('<option value="">Memuat data...</option>');
+    populateDesa($(this).find('option:selected').data('code'));
   });
 </script>
 @endpush

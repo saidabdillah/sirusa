@@ -19,6 +19,8 @@ class Scholarship extends Model
         'tingkat_gelar',
         'cakupan',
         'batas_waktu',
+        'ipk_minimal',
+        'semester_minimal',
         'deskripsi',
         'persyaratan',
         'status',

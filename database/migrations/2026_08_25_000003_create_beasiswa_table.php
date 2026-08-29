@@ -18,6 +18,8 @@ return new class extends Migration
             $table->date('batas_waktu');
             $table->text('deskripsi');
             $table->text('persyaratan')->nullable();
+            $table->decimal('ipk_minimal', 3, 2)->default(0);
+            $table->unsignedInteger('semester_minimal')->default(0);
             $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
             $table->timestamps();
         });

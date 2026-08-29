@@ -52,12 +52,14 @@
                   <input type="number" step="0.01" min="0" max="4"
                     class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk" value="{{ old('ipk') }}"
                     required>
+                  <small class="form-text text-muted">IPK minimal: {{ number_format($scholarship->ipk_minimal, 2) }}</small>
                   @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
                   <label for="semester">Semester <span class="text-danger">*</span></label>
                   <input type="number" min="1" max="14" class="form-control @error('semester') is-invalid @enderror"
                     id="semester" name="semester" value="{{ old('semester') }}" required>
+                  <small class="form-text text-muted">Semester minimal: {{ $scholarship->semester_minimal }}</small>
                   @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>

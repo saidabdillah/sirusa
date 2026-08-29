@@ -30,6 +30,8 @@
                       <span class="badge badge-warning">Verifikasi</span>
                     @elseif($applications[$scholarship->id] === 'diterima')
                       <span class="badge badge-info">Diterima Tahap 1</span>
+                    @elseif($applications[$scholarship->id] === 'verifikasi_akhir')
+                      <span class="badge badge-primary">Verifikasi Akhir</span>
                     @elseif($applications[$scholarship->id] === 'selesai')
                       <span class="badge badge-success">Selesai</span>
                     @elseif($applications[$scholarship->id] === 'revisi')
@@ -48,6 +50,14 @@
                   <div class="col-6">
                     <small class="text-muted">Gelar</small><br>
                     <strong>{{ $scholarship->tingkat_gelar }}</strong>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">IPK Minimal</small><br>
+                    <strong>{{ number_format($scholarship->ipk_minimal, 2) }}</strong>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Semester Minimal</small><br>
+                    <strong>{{ $scholarship->semester_minimal }}</strong>
                   </div>
                 </div>
                 <div class="row mb-2">

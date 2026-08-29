@@ -57,6 +57,14 @@
               </div>
               <div class="row mb-3">
                 <div class="col-md-6">
+                  <strong>IPK Minimal:</strong><br>
+                  {{ number_format($scholarship->ipk_minimal, 2) }}
+                </div>
+                <div class="col-md-6">
+                  <strong>Semester Minimal:</strong><br>
+                  {{ $scholarship->semester_minimal }}
+                </div>
+                <div class="col-md-6">
                   <strong>Batas Waktu:</strong><br>
                   <span class="{{ $scholarship->isExpired() ? 'text-danger' : '' }}">
                     {{ $scholarship->batas_waktu?->format('d M Y') }}

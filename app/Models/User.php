@@ -89,6 +89,8 @@ class User extends Authenticatable
             'agama' => 'Agama',
             'telepon' => 'Telepon',
             'alamat' => 'Alamat',
+            'kecamatan' => 'Kecamatan',
+            'desa_kelurahan' => 'Desa/Kelurahan',
             'status_orang_tua' => 'Status Orang Tua',
         ];
 

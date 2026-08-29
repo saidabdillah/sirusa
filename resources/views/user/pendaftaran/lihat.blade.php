@@ -30,7 +30,7 @@
       {{-- LEFT COLUMN --}}
       <div class="col-lg-8">
         {{-- Card 1: Data Diri --}}
-        @php $profile = $applicant->user->profile; @endphp
+        @php $profile = optional($applicant->user->profile); @endphp
         <div class="card">
           <div class="card-header">
             <h4>Data Diri Pendaftar</h4>
@@ -79,8 +79,22 @@
             </div>
             <div class="row mb-3">
               <div class="col-md-12">
-                <strong>Alamat</strong>
+                <strong>Alamat Detail</strong>
                 <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <strong>Kabupaten</strong>
+                <p class="mb-0">{{ $profile->kabupaten_kota ?: 'Balangan' }}</p>
+              </div>
+              <div class="col-md-4">
+                <strong>Kecamatan</strong>
+                <p class="mb-0">{{ $profile->kecamatan ?? '-' }}</p>
+              </div>
+              <div class="col-md-4">
+                <strong>Desa/Kelurahan</strong>
+                <p class="mb-0">{{ $profile->desa_kelurahan ?? '-' }}</p>
               </div>
             </div>
           </div>
@@ -298,6 +312,8 @@
                 <span class="badge badge-warning p-2"><i class="fas fa-clock"></i> Verifikasi</span>
               @elseif($applicant->status === 'diterima')
                 <span class="badge badge-info p-2"><i class="fas fa-check-circle"></i> Diterima Tahap 1</span>
+              @elseif($applicant->status === 'verifikasi_akhir')
+                <span class="badge badge-primary p-2"><i class="fas fa-hourglass-half"></i> Verifikasi Akhir</span>
               @elseif($applicant->status === 'selesai')
                 <span class="badge badge-success p-2"><i class="fas fa-check-double"></i> Selesai</span>
               @elseif($applicant->status === 'revisi')
@@ -306,6 +322,14 @@
                 <span class="badge badge-danger p-2"><i class="fas fa-times-circle"></i> Ditolak</span>
               @endif
             </div>
+            @if($applicant->status === 'selesai')
+              <div class="alert alert-success text-left">
+                <strong><i class="fas fa-award"></i> Nomor Penetapan</strong><br>
+                {{ $applicant->nomor_penetapan ?: '-' }}
+                <br>
+                <small>Tanggal: {{ $applicant->tanggal_penetapan ? \Carbon\Carbon::parse($applicant->tanggal_penetapan)->translatedFormat('d F Y') : '-' }}</small>
+              </div>
+            @endif
             @if($applicant->catatan)
             <div class="text-left">
               <strong>Catatan Admin:</strong>
@@ -347,6 +371,11 @@
             <h4>Aksi</h4>
           </div>
           <div class="card-body">
+            @if($applicant->status === 'verifikasi_akhir')
+              <div class="alert alert-primary mb-0">
+                <i class="fas fa-hourglass-half"></i> Berkas Tahap 2 sedang diverifikasi admin. Mohon menunggu hasil verifikasi akhir.
+              </div>
+            @endif
             @if($applicant->status === 'revisi')
               <a href="{{ route('user.pendaftaran.lengkapi', $applicant) }}" class="btn btn-warning btn-block mb-2">
                 <i class="fas fa-edit"></i> Revisi Pendaftaran

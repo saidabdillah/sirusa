@@ -27,7 +27,7 @@
                 <div class="col-md-6">
                   <strong>Sisa Kuota:</strong><br>
                   @php
-                    $diterima = $scholarship->pendaftar()->whereIn('status', ['diterima', 'selesai'])->count();
+                    $diterima = $scholarship->pendaftar()->whereIn('status', ['diterima', 'verifikasi_akhir', 'selesai'])->count();
                     $sisa = $scholarship->kuota - $diterima;
                   @endphp
                   <span class="{{ $sisa <= 0 ? 'text-danger' : '' }}">{{ max($sisa, 0) }} orang</span>
@@ -107,6 +107,12 @@
                   <a href="{{ route('user.pendaftaran.melengkapi', $application) }}" class="btn btn-info btn-lg btn-block">
                     <i class="fas fa-upload"></i> Unggah Berkas Tahap 2
                   </a>
+                @elseif($application->status === 'verifikasi_akhir')
+                  <div class="alert alert-primary">
+                    <i class="fas fa-hourglass-half"></i><br>
+                    <strong>Verifikasi Akhir</strong><br>
+                    Berkas Tahap 2 sedang diperiksa admin. Mohon menunggu.
+                  </div>
                 @elseif($application->status === 'selesai')
                   <div class="alert alert-success">
                     <i class="fas fa-check-double"></i><br>
@@ -173,6 +179,15 @@
         icon: 'success',
         title: 'Pendaftaran Diterima!',
         text: 'Selamat! Pendaftaran Anda diterima tahap 1. Silakan lengkapi berkas tahap 2.',
+        confirmButtonText: 'Mengerti'
+      });
+    </script>
+  @elseif($application && $application->status === 'verifikasi_akhir')
+    <script>
+      Swal.fire({
+        icon: 'info',
+        title: 'Verifikasi Akhir',
+        text: 'Berkas Tahap 2 Anda sedang diverifikasi admin. Silakan menunggu hasil.',
         confirmButtonText: 'Mengerti'
       });
     </script>

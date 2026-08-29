@@ -45,6 +45,8 @@ test('admin creating scholarship notifies all standard users', function () {
         'tingkat_gelar' => 'S1',
         'cakupan' => 'penuh',
         'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'ipk_minimal' => 3.0,
+        'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Syarat',
         'status' => 'aktif',

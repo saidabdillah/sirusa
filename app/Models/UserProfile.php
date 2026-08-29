@@ -22,6 +22,10 @@ class UserProfile extends Model
         'agama',
         'telepon',
         'alamat',
+        'provinsi',
+        'kabupaten_kota',
+        'kecamatan',
+        'desa_kelurahan',
         'foto_profil',
         'status_orang_tua',
         'nama_ayah',
@@ -48,5 +52,18 @@ class UserProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getAlamatLengkapAttribute(): string
+    {
+        $parts = array_filter([
+            $this->alamat,
+            $this->desa_kelurahan,
+            $this->kecamatan ? 'Kec. '.$this->kecamatan : null,
+            $this->kabupaten_kota,
+            $this->provinsi,
+        ]);
+
+        return implode(', ', $parts);
     }
 }

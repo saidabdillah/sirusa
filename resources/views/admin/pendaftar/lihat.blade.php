@@ -23,7 +23,7 @@
       {{-- LEFT COLUMN --}}
       <div class="col-lg-8">
         {{-- Card 1: Data Diri --}}
-        @php $profile = $applicant->user->profile; @endphp
+        @php $profile = optional($applicant->user->profile); @endphp
         <div class="card">
           <div class="card-header">
             <h4>Data Diri Pendaftar</h4>
@@ -72,8 +72,22 @@
             </div>
             <div class="row mb-3">
               <div class="col-md-12">
-                <strong>Alamat</strong>
+                <strong>Alamat Detail</strong>
                 <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <strong>Kabupaten</strong>
+                <p class="mb-0">{{ $profile->kabupaten_kota ?: 'Balangan' }}</p>
+              </div>
+              <div class="col-md-4">
+                <strong>Kecamatan</strong>
+                <p class="mb-0">{{ $profile->kecamatan ?? '-' }}</p>
+              </div>
+              <div class="col-md-4">
+                <strong>Desa/Kelurahan</strong>
+                <p class="mb-0">{{ $profile->desa_kelurahan ?? '-' }}</p>
               </div>
             </div>
           </div>
@@ -346,6 +360,22 @@
             <h4>Ubah Status</h4>
           </div>
           <div class="card-body">
+            @if(in_array($applicant->status, ['selesai', 'ditolak'], true))
+              @if($applicant->status === 'selesai')
+                <div class="alert alert-success mb-3">
+                  <strong><i class="fas fa-award"></i> Nomor Penetapan</strong><br>
+                  {{ $applicant->nomor_penetapan ?: '-' }}
+                  <br>
+                  <small>Tanggal: {{ $applicant->tanggal_penetapan ? \Carbon\Carbon::parse($applicant->tanggal_penetapan)->translatedFormat('d F Y') : '-' }}</small>
+                </div>
+              @else
+                <div class="alert alert-danger mb-3"><i class="fas fa-times-circle"></i> Pendaftar ditolak.</div>
+              @endif
+              <div class="form-group">
+                <label for="status">Status</label>
+                <input type="text" class="form-control" value="{{ $applicant->getStatusLabelAttribute() }}" readonly>
+              </div>
+            @else
             <form action="{{ route('admin.pendaftar.perbarui', $applicant) }}" method="POST">
               @csrf
               @method('PUT')
@@ -354,6 +384,7 @@
                 <select class="form-control @error('status') is-invalid @enderror" name="status" id="status" required>
                   <option value="verifikasi" {{ $applicant->status === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
                   <option value="diterima" {{ $applicant->status === 'diterima' ? 'selected' : '' }}>Diterima Tahap 1</option>
+                  <option value="verifikasi_akhir" {{ $applicant->status === 'verifikasi_akhir' ? 'selected' : '' }}>Verifikasi Akhir (Tahap 2)</option>
                   <option value="selesai" {{ $applicant->status === 'selesai' ? 'selected' : '' }}>Selesai (Diterima)</option>
                   <option value="revisi" {{ $applicant->status === 'revisi' ? 'selected' : '' }}>Perlu Revisi</option>
                   <option value="ditolak" {{ $applicant->status === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
@@ -374,6 +405,7 @@
                 <i class="fas fa-save"></i> Perbarui Status
               </button>
             </form>
+            @endif
           </div>
         </div>
         @endif

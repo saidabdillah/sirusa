@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Applicant;
 
+use App\Models\Scholarship;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreApplicantRequest extends FormRequest
 {
@@ -61,5 +63,44 @@ class StoreApplicantRequest extends FormRequest
             'dokumen_pas_foto.mimes' => 'Format pas foto harus jpg, jpeg, atau png',
             'dokumen_pas_foto.max' => 'Ukuran pas foto maksimal 20MB',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            $scholarship = Scholarship::find($this->input('beasiswa_id'));
+
+            if (! $scholarship) {
+                return;
+            }
+
+            if ($scholarship->isExpired()) {
+                $validator->errors()->add('beasiswa_id', 'Pendaftaran beasiswa sudah ditutup.');
+
+                return;
+            }
+
+            if ((float) $scholarship->ipk_minimal > 0) {
+                $ipk = (float) $this->input('ipk');
+
+                if ($ipk < (float) $scholarship->ipk_minimal) {
+                    $validator->errors()->add(
+                        'ipk',
+                        "IPK minimal untuk beasiswa ini adalah {$scholarship->ipk_minimal}. IPK Anda belum memenuhi syarat."
+                    );
+                }
+            }
+
+            if ((int) $scholarship->semester_minimal > 0) {
+                $semester = (int) $this->input('semester');
+
+                if ($semester < (int) $scholarship->semester_minimal) {
+                    $validator->errors()->add(
+                        'semester',
+                        "Semester minimal untuk beasiswa ini adalah {$scholarship->semester_minimal}. Semester Anda belum memenuhi syarat."
+                    );
+                }
+            }
+        });
     }
 }

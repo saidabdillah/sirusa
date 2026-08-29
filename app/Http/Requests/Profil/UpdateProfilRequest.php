@@ -22,6 +22,8 @@ class UpdateProfilRequest extends FormRequest
             'agama' => 'nullable|in:Islam,Kristen,Katholik,Hindu,Buddha,Konghucu',
             'telepon' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
+            'kecamatan' => 'required|string|max:255',
+            'desa_kelurahan' => 'required|string|max:255',
             'foto_profil' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'status_orang_tua' => 'nullable|in:Lengkap,Yatim,Piatu,Yatim Piatu,Wali',
             'nama_ayah' => 'nullable|string|max:255',

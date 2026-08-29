@@ -38,8 +38,10 @@
                       <th>Kampus</th>
                       <th>Kuota</th>
                       <th>Gelar</th>
-                      <th>Batas Waktu</th>
-                      <th>Status</th>
+                     <th>Batas Waktu</th>
+                     <th>IPK Min</th>
+                     <th>Semester Min</th>
+                     <th>Status</th>
                       <th>Aksi</th>
                     </tr>
                   </thead>
@@ -58,6 +60,8 @@
                             {{ $scholarship->batas_waktu?->format('d M Y') }}
                           </span>
                         </td>
+                        <td>{{ number_format($scholarship->ipk_minimal, 2) }}</td>
+                        <td>{{ $scholarship->semester_minimal }}</td>
                         <td>
                           @if($scholarship->status === 'aktif')
                             <span class="badge badge-success">Aktif</span>

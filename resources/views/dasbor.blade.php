@@ -230,6 +230,8 @@
                             <span class="badge badge-warning">Verifikasi</span>
                           @elseif($applicant->status === 'diterima')
                             <span class="badge badge-info">Diterima Tahap 1</span>
+                          @elseif($applicant->status === 'verifikasi_akhir')
+                            <span class="badge badge-primary">Verifikasi Akhir</span>
                           @elseif($applicant->status === 'selesai')
                             <span class="badge badge-success">Selesai</span>
                           @elseif($applicant->status === 'revisi')
@@ -347,6 +349,8 @@
                             <span class="badge badge-warning">Verifikasi</span>
                           @elseif($applicant->status === 'diterima')
                             <span class="badge badge-info">Diterima Tahap 1</span>
+                          @elseif($applicant->status === 'verifikasi_akhir')
+                            <span class="badge badge-primary">Verifikasi Akhir</span>
                           @elseif($applicant->status === 'selesai')
                             <span class="badge badge-success">Selesai</span>
                           @elseif($applicant->status === 'revisi')

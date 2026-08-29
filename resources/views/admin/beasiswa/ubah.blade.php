@@ -82,6 +82,18 @@
                     @error('batas_waktu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
+                    <label for="ipk_minimal">IPK Minimal <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk_minimal') is-invalid @enderror"
+                      id="ipk_minimal" name="ipk_minimal" value="{{ old('ipk_minimal', $scholarship->ipk_minimal) }}" placeholder="cth: 3.00" required>
+                    @error('ipk_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label for="semester_minimal">Semester Minimal <span class="text-danger">*</span></label>
+                    <input type="number" min="1" max="14" class="form-control @error('semester_minimal') is-invalid @enderror"
+                      id="semester_minimal" name="semester_minimal" value="{{ old('semester_minimal', $scholarship->semester_minimal) }}" placeholder="cth: 3" required>
+                    @error('semester_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-3">
                     <label for="status">Status <span class="text-danger">*</span></label>
                     <select class="form-control @error('status') is-invalid @enderror" id="status" name="status" required>
                       <option value="aktif" {{ old('status', $scholarship->status) === 'aktif' ? 'selected' : '' }}>Aktif</option>
@@ -241,6 +253,7 @@ $(document).ready(function() {
         }
       },
       placeholder: 'Cari kampus...',
+      minimumInputLength: 2,
       allowClear: true
     });
   });

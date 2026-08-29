@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Applicant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateApplicantRequest extends FormRequest
 {
@@ -14,7 +15,7 @@ class UpdateApplicantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'sometimes|in:verifikasi,diterima,revisi,ditolak,selesai',
+            'status' => 'sometimes|in:verifikasi,diterima,verifikasi_akhir,revisi,ditolak,selesai',
             'catatan' => 'nullable|string',
             'fakultas' => 'nullable|string|max:255',
             'prodi' => 'nullable|string|max:255',
@@ -38,5 +39,65 @@ class UpdateApplicantRequest extends FormRequest
         return [
             'status.in' => 'Status tidak valid',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            $applicant = $this->route('applicant');
+
+            if (! $applicant || ! $this->has('status')) {
+                return;
+            }
+
+            $target = $this->input('status');
+            $current = $applicant->status;
+
+            if ($target === $current) {
+                return;
+            }
+
+            if (in_array($current, ['selesai', 'ditolak'], true)) {
+                $validator->errors()->add('status', 'Status sudah final dan tidak dapat diubah lagi.');
+
+                return;
+            }
+
+            if ($target === 'verifikasi') {
+                return;
+            }
+
+            if ($target === 'diterima') {
+                if (! in_array($current, ['verifikasi', 'revisi'], true)) {
+                    $validator->errors()->add('status', 'Status Diterima hanya dapat diatur dari Verifikasi atau Revisi.');
+                }
+
+                return;
+            }
+
+            if ($target === 'verifikasi_akhir') {
+                if ($current !== 'diterima') {
+                    $validator->errors()->add('status', 'Verifikasi Akhir hanya dapat diatur dari status Diterima.');
+                } elseif (! $applicant->isBerkasTahap2Lengkap()) {
+                    $validator->errors()->add('status', 'Berkas Tahap 2 (surat pernyataan, SKTM, bukti UKT) harus lengkap terlebih dahulu.');
+                }
+
+                return;
+            }
+
+            if ($target === 'selesai') {
+                if ($current !== 'verifikasi_akhir') {
+                    $validator->errors()->add('status', 'Pendaftar harus melewati Verifikasi Akhir sebelum Selesai.');
+                } elseif (! $applicant->isBerkasTahap2Lengkap()) {
+                    $validator->errors()->add('status', 'Berkas Tahap 2 (surat pernyataan, SKTM, bukti UKT) harus lengkap terlebih dahulu.');
+                }
+
+                return;
+            }
+
+            if (in_array($target, ['revisi', 'ditolak'], true)) {
+                return;
+            }
+        });
     }
 }
