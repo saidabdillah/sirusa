@@ -21,112 +21,141 @@ beforeEach(function () {
     $this->user = User::factory()->standardUser()->create(['email' => 'user@announce.test']);
 });
 
-test('admin announcing scholarship sets tanggal_pengumuman and notifies all selesai applicants', function () {
+test('admin announcing scholarship sets tanggal_pengumuman, tanggal_pengumuman_selesai and notifies all applicants', function () {
     Notification::fake();
 
     $scholarship = Scholarship::factory()->create();
-    $applicant = Applicant::factory()->create([
+    $applicantDiterima = Applicant::factory()->create([
         'beasiswa_id' => $scholarship->id,
         'user_id' => $this->user->id,
-        'status' => 'selesai',
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'diterima',
+    ]);
+
+    // Create another applicant with hasil_pengumuman = tidak_diterima (should ALSO be notified now)
+    $user2 = User::factory()->standardUser()->create(['email' => 'user2@announce.test']);
+    $applicantTidakDiterima = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $user2->id,
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'tidak_diterima',
+    ]);
+
+    // Create applicant with status verifikasi (should also be notified)
+    $user3 = User::factory()->standardUser()->create(['email' => 'user3@announce.test']);
+    $applicantVerifikasi = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $user3->id,
+        'status' => 'verifikasi',
+        'hasil_pengumuman' => null,
     ]);
 
     actingAs($this->admin)
-        ->post(route('admin.beasiswa.umumkan', $scholarship))
+        ->post(route('admin.beasiswa.umumkan', $scholarship), [
+            'tanggal_pengumuman' => now()->toDateString(),
+            'tanggal_pengumuman_selesai' => now()->addDays(7)->toDateString(),
+        ])
         ->assertRedirect();
 
-    expect($scholarship->refresh()->tanggal_pengumuman)->not->toBeNull();
-    expect($applicant->refresh()->isDiumumkan())->toBeTrue();
+    $scholarship->refresh();
+    expect($scholarship->tanggal_pengumuman)->not->toBeNull();
+    expect($scholarship->tanggal_pengumuman_selesai)->not->toBeNull();
+
+    // All applicants should be notified (diterima, tidak_diterima, verifikasi)
     Notification::assertSentTo($this->user, PengumumanBeasiswa::class);
+    Notification::assertSentTo($user2, PengumumanBeasiswa::class);
+    Notification::assertSentTo($user3, PengumumanBeasiswa::class);
 });
 
-test('applicant becoming selesai after announcement is automatically diumumkan', function () {
-    $scholarship = Scholarship::factory()->create(['tanggal_pengumuman' => now()->subDay()]);
-    $applicant = Applicant::factory()->create([
-        'beasiswa_id' => $scholarship->id,
-        'user_id' => $this->user->id,
-        'status' => 'selesai',
-    ]);
-
-    expect($applicant->isDiumumkan())->toBeTrue();
-});
-
-test('admin can mark announced scholarship as paid and notifies applicants', function () {
-    Notification::fake();
-
-    $scholarship = Scholarship::factory()->create(['tanggal_pengumuman' => now()->subDay()]);
-    $applicant = Applicant::factory()->create([
-        'beasiswa_id' => $scholarship->id,
-        'user_id' => $this->user->id,
-        'status' => 'selesai',
-    ]);
-
-    actingAs($this->admin)
-        ->post(route('admin.beasiswa.bayarkan', $scholarship))
-        ->assertRedirect();
-
-    expect($scholarship->refresh()->tanggal_pembayaran)->not->toBeNull();
-    expect($applicant->refresh()->isDibayarkan())->toBeTrue();
-    Notification::assertSentTo($this->user, PengumumanBeasiswa::class);
-});
-
-test('admin cannot pay for a scholarship that has not been announced', function () {
+test('admin can choose announcement date and end date', function () {
     $scholarship = Scholarship::factory()->create();
 
     actingAs($this->admin)
-        ->post(route('admin.beasiswa.bayarkan', $scholarship))
-        ->assertRedirect();
-
-    expect($scholarship->refresh()->tanggal_pembayaran)->toBeNull();
-});
-
-test('admin can choose announcement date', function () {
-    $scholarship = Scholarship::factory()->create();
-
-    actingAs($this->admin)
-        ->post(route('admin.beasiswa.umumkan', $scholarship), ['tanggal_pengumuman' => '2026-09-15'])
+        ->post(route('admin.beasiswa.umumkan', $scholarship), [
+            'tanggal_pengumuman' => '2026-09-15',
+            'tanggal_pengumuman_selesai' => '2026-09-20',
+        ])
         ->assertRedirect();
 
     expect($scholarship->refresh()->tanggal_pengumuman->toDateString())->toBe('2026-09-15');
+    expect($scholarship->tanggal_pengumuman_selesai->toDateString())->toBe('2026-09-20');
 });
 
-test('admin can choose payment date', function () {
-    $scholarship = Scholarship::factory()->create(['tanggal_pengumuman' => now()->subDay()]);
-
-    actingAs($this->admin)
-        ->post(route('admin.beasiswa.bayarkan', $scholarship), ['tanggal_pembayaran' => '2026-09-20'])
-        ->assertRedirect();
-
-    expect($scholarship->refresh()->tanggal_pembayaran->toDateString())->toBe('2026-09-20');
-});
-
-test('admin can edit announcement date after announced', function () {
-    $scholarship = Scholarship::factory()->create(['tanggal_pengumuman' => now()->subDay()]);
-
-    actingAs($this->admin)
-        ->post(route('admin.beasiswa.umumkan', $scholarship), ['tanggal_pengumuman' => '2026-08-01'])
-        ->assertRedirect();
-
-    expect($scholarship->refresh()->tanggal_pengumuman->toDateString())->toBe('2026-08-01');
-});
-
-test('admin can edit payment date after paid', function () {
+test('admin can edit announcement date and end date after announced', function () {
     $scholarship = Scholarship::factory()->create([
-        'tanggal_pengumuman' => now()->subDay(),
-        'tanggal_pembayaran' => now()->subDay(),
+        'tanggal_pengumuman' => '2026-07-25',
+        'tanggal_pengumuman_selesai' => '2026-08-01',
     ]);
 
     actingAs($this->admin)
-        ->post(route('admin.beasiswa.bayarkan', $scholarship), ['tanggal_pembayaran' => '2026-08-05'])
+        ->post(route('admin.beasiswa.umumkan', $scholarship), [
+            'tanggal_pengumuman' => '2026-08-01',
+            'tanggal_pengumuman_selesai' => '2026-08-04',
+        ])
         ->assertRedirect();
 
-    expect($scholarship->refresh()->tanggal_pembayaran->toDateString())->toBe('2026-08-05');
+    expect($scholarship->refresh()->tanggal_pengumuman->toDateString())->toBe('2026-08-01');
+    expect($scholarship->tanggal_pengumuman_selesai->toDateString())->toBe('2026-08-04');
+});
+
+test('applicant with status diterima and hasil_pengumuman=diterima is diumumkan when pengumuman active', function () {
+    $scholarship = Scholarship::factory()->create([
+        'tanggal_pengumuman' => now()->subDay(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5),
+    ]);
+    $applicant = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $this->user->id,
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'diterima',
+    ]);
+
+    expect($applicant->isPengumumanBerlangsung())->toBeTrue();
+    expect($applicant->isDiumumkan())->toBeTrue();
+});
+
+test('applicant with status diterima but hasil_pengumuman=tidak_diterima is not diumumkan', function () {
+    $scholarship = Scholarship::factory()->create([
+        'tanggal_pengumuman' => now()->subDay(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5),
+    ]);
+    $applicant = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $this->user->id,
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'tidak_diterima',
+    ]);
+
+    expect($applicant->isPengumumanBerlangsung())->toBeTrue();
+    expect($applicant->isDiumumkan())->toBeFalse();
+});
+
+test('applicant with status verifikasi is not diumumkan even when pengumuman active', function () {
+    $scholarship = Scholarship::factory()->create([
+        'tanggal_pengumuman' => now()->subDay(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5),
+    ]);
+    $applicant = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $this->user->id,
+        'status' => 'verifikasi',
+        'hasil_pengumuman' => null,
+    ]);
+
+    expect($applicant->isPengumumanBerlangsung())->toBeTrue();
+    expect($applicant->isDiumumkan())->toBeFalse();
 });
 
 test('editing announcement date does not send duplicate notifications', function () {
     Notification::fake();
 
     $scholarship = Scholarship::factory()->create(['tanggal_pengumuman' => now()->subDay()]);
+    $applicant = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $this->user->id,
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'diterima',
+    ]);
 
     actingAs($this->admin)
         ->post(route('admin.beasiswa.umumkan', $scholarship), ['tanggal_pengumuman' => '2026-08-01'])
@@ -143,14 +172,10 @@ test('invalid announcement date is rejected', function () {
         ->assertSessionHasErrors('tanggal_pengumuman');
 });
 
-test('non-admin user cannot announce or pay a scholarship', function () {
+test('non-admin user cannot announce a scholarship', function () {
     $scholarship = Scholarship::factory()->create();
 
     actingAs($this->user)
         ->post(route('admin.beasiswa.umumkan', $scholarship))
-        ->assertForbidden();
-
-    actingAs($this->user)
-        ->post(route('admin.beasiswa.bayarkan', $scholarship))
         ->assertForbidden();
 });

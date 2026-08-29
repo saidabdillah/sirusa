@@ -109,7 +109,7 @@
             <div class="card-body">
               <div class="mb-3">
                 <strong>Status:</strong><br>
-                <span class="badge badge-secondary">Perlu Revisi</span>
+                <span class="badge badge-secondary">Revisi</span>
               </div>
               @if($applicant->catatan)
                 <div>

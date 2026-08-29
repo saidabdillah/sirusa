@@ -38,8 +38,6 @@
                   <strong>Tingkat Gelar:</strong><br>
                   {{ $scholarship->tingkat_gelar }}
                 </div>
-              </div>
-              <div class="row mb-3">
                 <div class="col-md-6">
                   <strong>Tunjangan:</strong><br>
                   <span class="badge badge-{{ $scholarship->cakupan === 'penuh' ? 'success' : 'warning' }}">
@@ -53,6 +51,10 @@
                   <span class="{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
                     {{ $scholarship->batas_waktu?->format('d M Y') }}
                   </span>
+                </div>
+                <div class="col-md-6">
+                  <strong>Tingkat Gelar:</strong><br>
+                  {{ $scholarship->tingkat_gelar }}
                 </div>
               </div>
               <hr>
@@ -99,36 +101,14 @@
                     <i class="fas fa-clock"></i> Menunggu Verifikasi
                   </button>
                 @elseif($application->status === 'diterima')
-                  <div class="alert alert-info">
-                    <i class="fas fa-check-circle"></i><br>
-                    <strong>Pendaftaran Tahap 1 Diterima!</strong><br>
-                    Silakan lengkapi berkas Tahap 2.
-                  </div>
-                  <a href="{{ route('user.pendaftaran.melengkapi', $application) }}" class="btn btn-info btn-lg btn-block">
-                    <i class="fas fa-upload"></i> Unggah Berkas Tahap 2
-                  </a>
-                @elseif($application->status === 'verifikasi_akhir')
-                  <div class="alert alert-primary">
-                    <i class="fas fa-hourglass-half"></i><br>
-                    <strong>Verifikasi Akhir</strong><br>
-                    Berkas Tahap 2 sedang diperiksa admin. Mohon menunggu.
-                  </div>
-                @elseif($application->status === 'selesai')
                   <div class="alert alert-success">
-                    <i class="fas fa-check-double"></i><br>
-                    <strong>Selamat! Pendaftaran Anda Diterima.</strong><br>
-                    Beasiswa ini telah berhasil Anda peroleh.
-                    @if($application->isDiumumkan())
-                      <br><small>Diumumkan pada {{ $application->beasiswa->tanggal_pengumuman->translatedFormat('d F Y') }}. Beasiswa dapat diambil terhitung dari tanggal pengumuman.</small>
-                    @endif
-                    @if($application->isDibayarkan())
-                      <br><small>Dibayarkan pada {{ $application->beasiswa->tanggal_pembayaran->translatedFormat('d F Y') }}.</small>
-                    @endif
+                    <i class="fas fa-check-circle"></i><br>
+                    <strong>Selamat! Pendaftaran Diterima.</strong>
                   </div>
                 @elseif($application->status === 'revisi')
                   <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i><br>
-                    <strong>Pendaftaran Perlu Revisi.</strong><br>
+                    <strong>Revisi.</strong><br>
                     Silakan perbaiki data Anda.
                   </div>
                   <a href="{{ route('user.pendaftaran.lengkapi', $application) }}" class="btn btn-warning btn-lg btn-block">
@@ -184,7 +164,7 @@
       Swal.fire({
         icon: 'success',
         title: 'Pendaftaran Diterima!',
-        text: 'Selamat! Pendaftaran Anda diterima tahap 1. Silakan lengkapi berkas tahap 2.',
+        text: 'Selamat! Pendaftaran Anda telah diterima.',
         confirmButtonText: 'Mengerti'
       });
     </script>
@@ -210,7 +190,7 @@
     <script>
       Swal.fire({
         icon: 'warning',
-        title: 'Perlu Revisi',
+        title: 'Revisi',
         text: 'Pendaftaran Anda perlu diperbaiki. Silakan revisi data Anda.',
         confirmButtonText: 'Mengerti'
       });

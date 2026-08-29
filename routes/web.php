@@ -11,6 +11,7 @@ use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\User\BeasiswaController as UserBeasiswaController;
 use App\Http\Controllers\User\PendaftaranController;
+use App\Http\Controllers\User\PengumumanController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('landing'))->name('landing');
@@ -70,7 +71,9 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::put('/beasiswa/{scholarship}', [BeasiswaController::class, 'update'])->name('beasiswa.perbarui');
         Route::delete('/beasiswa/{scholarship}', [BeasiswaController::class, 'destroy'])->name('beasiswa.hapus');
         Route::post('/beasiswa/{scholarship}/umumkan', [BeasiswaController::class, 'umumkan'])->name('beasiswa.umumkan');
-        Route::post('/beasiswa/{scholarship}/bayarkan', [BeasiswaController::class, 'bayarkan'])->name('beasiswa.bayarkan');
+        Route::delete('/beasiswa/{scholarship}/pengumuman', [BeasiswaController::class, 'pengumumanDestroy'])->name('beasiswa.pengumuman.destroy');
+        Route::get('/beasiswa/{scholarship}/hasil-pengumuman', [BeasiswaController::class, 'hasilPengumumanIndex'])->name('beasiswa.hasil-pengumuman');
+        Route::put('/beasiswa/{scholarship}/hasil-pengumuman', [BeasiswaController::class, 'hasilPengumumanUpdate'])->name('beasiswa.hasil-pengumuman.update');
 
         Route::put('/pendaftar/{applicant}', [PendaftarController::class, 'update'])->name('pendaftar.perbarui');
         Route::delete('/pendaftar/{applicant}', [PendaftarController::class, 'destroy'])->name('pendaftar.hapus');
@@ -142,9 +145,12 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::get('/pendaftaran/{applicant}', [PendaftaranController::class, 'show'])->name('pendaftaran.lihat');
         Route::get('/pendaftaran/{applicant}/lengkapi', [PendaftaranController::class, 'edit'])->name('pendaftaran.lengkapi');
         Route::put('/pendaftaran/{applicant}', [PendaftaranController::class, 'update'])->name('pendaftaran.perbarui');
-        Route::get('/pendaftaran/{applicant}/melengkapi', [PendaftaranController::class, 'melengkapi'])->name('pendaftaran.melengkapi');
-        Route::post('/pendaftaran/{applicant}/melengkapi', [PendaftaranController::class, 'storeMelengkapi'])->name('pendaftaran.simpan-melengkapi');
         Route::get('/daftar-beasiswa', [PendaftaranController::class, 'create'])->name('pendaftaran.buat');
         Route::post('/pendaftaran', [PendaftaranController::class, 'store'])->name('pendaftaran.simpan');
+    });
+
+    // Pengumuman routes (outside pengguna prefix for clean URL)
+    Route::middleware('role:user')->group(function () {
+        Route::get('/pengumuman/{scholarship}', [PengumumanController::class, 'show'])->name('pengumuman.show');
     });
 });

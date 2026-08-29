@@ -26,10 +26,11 @@ class Applicant extends Model
         'dokumen_surat_permohonan',
         'dokumen_pas_foto',
         'dokumen_prestasi',
+        'dokumen_surat_pernyataan',
         'dokumen_sktm',
         'dokumen_bukti_ukt',
-        'dokumen_surat_pernyataan',
         'status',
+        'hasil_pengumuman',
         'catatan',
     ];
 
@@ -55,28 +56,21 @@ class Applicant extends Model
         return match ($this->status) {
             'verifikasi' => 'Verifikasi',
             'diterima' => 'Diterima',
-            'verifikasi_akhir' => 'Verifikasi Akhir',
-            'revisi' => 'Perlu Revisi',
+            'revisi' => 'Revisi',
             'ditolak' => 'Ditolak',
-            'selesai' => 'Selesai',
             default => '-',
         };
     }
 
-    public function isBerkasTahap2Lengkap(): bool
-    {
-        return filled($this->dokumen_surat_pernyataan)
-            && filled($this->dokumen_sktm)
-            && filled($this->dokumen_bukti_ukt);
-    }
-
     public function isDiumumkan(): bool
     {
-        return $this->status === 'selesai' && $this->beasiswa?->isDiumumkan();
+        return $this->status === 'diterima' 
+            && $this->hasil_pengumuman === 'diterima' 
+            && $this->beasiswa?->isPengumumanAktif();
     }
 
-    public function isDibayarkan(): bool
+    public function isPengumumanBerlangsung(): bool
     {
-        return $this->status === 'selesai' && $this->beasiswa?->isDibayarkan();
+        return $this->beasiswa?->isPengumumanAktif() ?? false;
     }
 }

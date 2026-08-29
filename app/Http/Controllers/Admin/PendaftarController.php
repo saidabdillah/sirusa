@@ -16,7 +16,7 @@ class PendaftarController extends Controller
     public function index(Request $request): View
     {
         $request->validate([
-            'status' => 'nullable|in:verifikasi,diterima,verifikasi_akhir,revisi,ditolak,selesai',
+            'status' => 'nullable|in:verifikasi,diterima,revisi,ditolak',
             'beasiswa_id' => 'nullable|integer|exists:beasiswa,id',
         ]);
 
@@ -46,7 +46,7 @@ class PendaftarController extends Controller
     public function update(UpdateApplicantRequest $request, Applicant $applicant): RedirectResponse
     {
         $oldStatus = $applicant->status;
-        $data = $request->safe()->only(['status', 'catatan']);
+        $data = $request->safe()->only(['status', 'hasil_pengumuman', 'catatan']);
 
         $applicant->update($data);
 

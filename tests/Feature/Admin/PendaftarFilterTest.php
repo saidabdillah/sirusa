@@ -34,7 +34,8 @@ test('pendaftar index filters applicants by status', function () {
     Applicant::factory()->create([
         'beasiswa_id' => $scholarship->id,
         'user_id' => $this->user->id,
-        'status' => 'selesai',
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'diterima',
     ]);
     Applicant::factory()->create([
         'beasiswa_id' => $scholarship->id,
@@ -42,13 +43,13 @@ test('pendaftar index filters applicants by status', function () {
     ]);
 
     $response = actingAs($this->admin)
-        ->get(route('admin.pendaftar.index', ['status' => 'selesai']))
+        ->get(route('admin.pendaftar.index', ['status' => 'diterima']))
         ->assertOk();
 
     $applicants = $response->viewData('applicants');
 
     expect($applicants)->count()->toBe(1);
-    expect($applicants->first()->status)->toBe('selesai');
+    expect($applicants->first()->status)->toBe('diterima');
 });
 
 test('pendaftar index filters applicants by beasiswa', function () {
@@ -82,7 +83,8 @@ test('pendaftar index combines status and beasiswa filter', function () {
     Applicant::factory()->create([
         'beasiswa_id' => $scholarshipA->id,
         'user_id' => $this->user->id,
-        'status' => 'selesai',
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'diterima',
     ]);
     Applicant::factory()->create([
         'beasiswa_id' => $scholarshipA->id,
@@ -90,18 +92,19 @@ test('pendaftar index combines status and beasiswa filter', function () {
     ]);
     Applicant::factory()->create([
         'beasiswa_id' => $scholarshipB->id,
-        'status' => 'selesai',
+        'status' => 'diterima',
+        'hasil_pengumuman' => 'diterima',
     ]);
 
     $response = actingAs($this->admin)
-        ->get(route('admin.pendaftar.index', ['status' => 'selesai', 'beasiswa_id' => $scholarshipA->id]))
+        ->get(route('admin.pendaftar.index', ['status' => 'diterima', 'beasiswa_id' => $scholarshipA->id]))
         ->assertOk();
 
     $applicants = $response->viewData('applicants');
 
     expect($applicants)->count()->toBe(1);
     expect($applicants->first()->beasiswa_id)->toBe($scholarshipA->id);
-    expect($applicants->first()->status)->toBe('selesai');
+    expect($applicants->first()->status)->toBe('diterima');
 });
 
 test('pendaftar index rejects invalid status filter', function () {

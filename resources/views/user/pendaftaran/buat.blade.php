@@ -85,11 +85,6 @@
                   id="dokumen_surat_permohonan" name="dokumen_surat_permohonan" accept=".pdf,.jpg,.jpeg,.png" required>
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_surat_permohonan')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                @if(route('download.application-letter'))
-                <a href="{{ route('download.application-letter') }}" target="_blank" class="mt-1 d-inline-block">
-                  <i class="fas fa-download"></i> Download Surat Permohonan
-                </a>
-                @endif
               </div>
               <div class="form-group">
                 <label for="dokumen_transkrip">Transkrip Nilai / KHS <span class="text-danger">*</span></label>
@@ -111,6 +106,27 @@
                   id="dokumen_pas_foto" name="dokumen_pas_foto" accept=".jpg,.jpeg,.png" required>
                 <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_pas_foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+              <div class="form-group">
+                <label for="dokumen_surat_pernyataan">Surat Pernyataan Tidak Menerima Beasiswa Lain <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('dokumen_surat_pernyataan') is-invalid @enderror"
+                  id="dokumen_surat_pernyataan" name="dokumen_surat_pernyataan" accept=".pdf,.jpg,.jpeg,.png" required>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
+                @error('dokumen_surat_pernyataan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+              <div class="form-group">
+                <label for="dokumen_sktm">Surat Keterangan Tidak Mampu (SKTM) <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('dokumen_sktm') is-invalid @enderror"
+                  id="dokumen_sktm" name="dokumen_sktm" accept=".pdf,.jpg,.jpeg,.png" required>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
+                @error('dokumen_sktm')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+              <div class="form-group">
+                <label for="dokumen_bukti_ukt">Bukti Pembayaran UKT/SPP <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('dokumen_bukti_ukt') is-invalid @enderror"
+                  id="dokumen_bukti_ukt" name="dokumen_bukti_ukt" accept=".pdf,.jpg,.jpeg,.png" required>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
+                @error('dokumen_bukti_ukt')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
                 <label for="dokumen_prestasi">Sertifikat Prestasi (opsional)</label>

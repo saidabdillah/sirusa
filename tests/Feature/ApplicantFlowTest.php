@@ -25,6 +25,9 @@ function applicantPayload(Scholarship $scholarship, float $ipk = 3.5): array
         'dokumen_transkrip' => UploadedFile::fake()->create('transkrip.pdf', 10),
         'dokumen_surat_aktif' => UploadedFile::fake()->create('aktif.pdf', 10),
         'dokumen_pas_foto' => UploadedFile::fake()->image('foto.jpg'),
+        'dokumen_surat_pernyataan' => UploadedFile::fake()->create('pernyataan.pdf', 10),
+        'dokumen_sktm' => UploadedFile::fake()->create('sktm.pdf', 10),
+        'dokumen_bukti_ukt' => UploadedFile::fake()->create('ukt.pdf', 10),
     ];
 }
 
@@ -99,42 +102,50 @@ test('application rejected when beasiswa has expired', function () {
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
 
-test('verifikasi_akhir only allowed from diterima and requires tahap 2 documents', function () {
-    $applicant = Applicant::factory()->create(['status' => 'diterima']);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'verifikasi_akhir'])
-        ->assertSessionHasErrors('status');
-
-    $applicant->update([
-        'dokumen_surat_pernyataan' => 's.pd.f',
-        'dokumen_sktm' => 's.pd.f',
-        'dokumen_bukti_ukt' => 's.pd.f',
-    ]);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'verifikasi_akhir'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('verifikasi_akhir');
-});
-
-test('verifikasi_akhir cannot be set from verifikasi', function () {
+test('diterima requires hasil_pengumuman', function () {
     $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
 
     actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'verifikasi_akhir'])
-        ->assertSessionHasErrors('status');
+        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
+        ->assertSessionHasErrors('hasil_pengumuman');
 
     expect($applicant->refresh()->status)->toBe('verifikasi');
 });
 
-test('selesai only allowed from verifikasi_akhir and requires tahap 2 documents', function () {
+test('diterima can be set from verifikasi with hasil_pengumuman', function () {
     $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
 
     actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'selesai'])
-        ->assertSessionHasErrors('status');
+        ->put(route('admin.pendaftar.perbarui', $applicant), [
+            'status' => 'diterima',
+            'hasil_pengumuman' => 'diterima',
+        ])
+        ->assertRedirect();
+
+    expect($applicant->refresh()->status)->toBe('diterima');
+    expect($applicant->hasil_pengumuman)->toBe('diterima');
+});
+
+test('diterima can be set from revisi with hasil_pengumuman', function () {
+    $applicant = Applicant::factory()->create(['status' => 'revisi']);
+
+    actingAs($this->admin)
+        ->put(route('admin.pendaftar.perbarui', $applicant), [
+            'status' => 'diterima',
+            'hasil_pengumuman' => 'tidak_diterima',
+        ])
+        ->assertRedirect();
+
+    expect($applicant->refresh()->status)->toBe('diterima');
+    expect($applicant->hasil_pengumuman)->toBe('tidak_diterima');
+});
+
+test('diterima cannot be set from verifikasi without hasil_pengumuman', function () {
+    $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
+
+    actingAs($this->admin)
+        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
+        ->assertSessionHasErrors('hasil_pengumuman');
 
     expect($applicant->refresh()->status)->toBe('verifikasi');
 });
@@ -149,25 +160,30 @@ test('rejected applicant is a dead-end and cannot change status', function () {
     expect($applicant->refresh()->status)->toBe('ditolak');
 });
 
-test('marking selesai sets final status', function () {
-    $applicant = Applicant::factory()->create([
-        'status' => 'verifikasi_akhir',
-        'dokumen_surat_pernyataan' => 's.pd.f',
-        'dokumen_sktm' => 's.pd.f',
-        'dokumen_bukti_ukt' => 's.pd.f',
-    ]);
+test('revisi can be set from verifikasi', function () {
+    $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
 
     actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'selesai'])
+        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'revisi'])
         ->assertRedirect();
 
-    $applicant->refresh();
-    expect($applicant->status)->toBe('selesai');
+    expect($applicant->refresh()->status)->toBe('revisi');
 });
 
-test('full flow from submission to finalization', function () {
+test('ditolak can be set from verifikasi', function () {
+    $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
+
+    actingAs($this->admin)
+        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'ditolak'])
+        ->assertRedirect();
+
+    expect($applicant->refresh()->status)->toBe('ditolak');
+});
+
+test('full flow from submission to diterima with hasil_pengumuman', function () {
     $scholarship = Scholarship::factory()->create(['ipk_minimal' => 3.0, 'status' => 'aktif']);
 
+    // User submits application
     actingAs($this->user)
         ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship, 3.2))
         ->assertRedirect();
@@ -175,25 +191,23 @@ test('full flow from submission to finalization', function () {
     $applicant = Applicant::where('user_id', $this->user->id)->first();
     expect($applicant->status)->toBe('verifikasi');
 
+    // Admin verifies and accepts with hasil_pengumuman
     actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertRedirect();
-    expect($applicant->refresh()->status)->toBe('diterima');
-
-    actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan-melengkapi', $applicant), [
-            'dokumen_surat_pernyataan' => UploadedFile::fake()->create('pernyataan.pdf', 10),
-            'dokumen_sktm' => UploadedFile::fake()->create('sktm.pdf', 10),
-            'dokumen_bukti_ukt' => UploadedFile::fake()->create('ukt.pdf', 10),
+        ->put(route('admin.pendaftar.perbarui', $applicant), [
+            'status' => 'diterima',
+            'hasil_pengumuman' => 'diterima',
         ])
         ->assertRedirect();
+    expect($applicant->refresh()->status)->toBe('diterima');
+    expect($applicant->hasil_pengumuman)->toBe('diterima');
 
-    expect($applicant->refresh()->status)->toBe('verifikasi_akhir');
+    // Admin announces scholarship
+    $scholarship->update([
+        'tanggal_pengumuman' => now()->toDateString(),
+        'tanggal_pengumuman_selesai' => now()->addDays(7)->toDateString(),
+        'durasi_pengumuman' => 7,
+    ]);
 
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'selesai'])
-        ->assertRedirect();
-
-    $applicant->refresh();
-    expect($applicant->status)->toBe('selesai');
+    expect($scholarship->isPengumumanAktif())->toBeTrue();
+    expect($applicant->isPengumumanBerlangsung())->toBeTrue();
 });

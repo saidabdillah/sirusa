@@ -23,10 +23,10 @@ test('admin dashboard shows all applicant status counts', function () {
     Scholarship::factory()->create(['status' => 'non-aktif']);
 
     Applicant::factory()->create(['status' => 'verifikasi']);
-    Applicant::factory()->create(['status' => 'diterima']);
+    Applicant::factory()->create(['status' => 'diterima', 'hasil_pengumuman' => 'diterima']);
     Applicant::factory()->create(['status' => 'revisi']);
     Applicant::factory()->create(['status' => 'ditolak']);
-    Applicant::factory()->create(['status' => 'selesai']);
+    Applicant::factory()->create(['status' => 'diterima', 'hasil_pengumuman' => 'tidak_diterima']);
 
     actingAs($this->admin)
         ->get(route('dashboard'))
@@ -34,37 +34,36 @@ test('admin dashboard shows all applicant status counts', function () {
         ->assertSee('Total Pendaftar')
         ->assertSee('Verifikasi')
         ->assertSee('Diterima')
-        ->assertSee('Perlu Revisi')
+        ->assertSee('Revisi')
         ->assertSee('Ditolak')
-        ->assertSee('Selesai')
         ->assertSee('Total Beasiswa');
 });
 
 test('super admin dashboard shows all applicant status counts', function () {
     $superAdmin = User::factory()->superAdmin()->create(['email' => 'sa@test.com']);
 
-    Applicant::factory()->create(['status' => 'selesai']);
+    Applicant::factory()->create(['status' => 'diterima', 'hasil_pengumuman' => 'diterima']);
 
     actingAs($superAdmin)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSee('Total Pendaftar')
-        ->assertSee('Selesai');
+        ->assertSee('Diterima');
 });
 
-test('user dashboard counts diterima and selesai as accepted', function () {
+test('user dashboard counts diterima (all diterima status) as accepted', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
-    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima']);
-    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'selesai']);
+    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima', 'hasil_pengumuman' => 'diterima']);
+    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima', 'hasil_pengumuman' => 'tidak_diterima']);
 
     actingAs($user)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertViewHas('totalApplications', 2)
-        ->assertViewHas('acceptedApplications', 2)
+        ->assertViewHas('acceptedApplications', 2) // All diterima status
         ->assertViewHas('pendingApplications', 0)
-        ->assertViewHas('rejectedApplications', 0)
+        ->assertViewHas('rejectedApplications', 0) // Only ditolak status
         ->assertSee('Total Pendaftaran')
         ->assertSee('Verifikasi')
         ->assertSee('Diterima')

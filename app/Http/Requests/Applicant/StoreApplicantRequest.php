@@ -27,6 +27,9 @@ class StoreApplicantRequest extends FormRequest
             'dokumen_transkrip' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_surat_aktif' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_pas_foto' => 'required|file|mimes:jpg,jpeg,png|max:20480',
+            'dokumen_surat_pernyataan' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_sktm' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_bukti_ukt' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_prestasi.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
         ];
     }
@@ -62,6 +65,15 @@ class StoreApplicantRequest extends FormRequest
             'dokumen_pas_foto.required' => 'Pas foto harus diupload',
             'dokumen_pas_foto.mimes' => 'Format pas foto harus jpg, jpeg, atau png',
             'dokumen_pas_foto.max' => 'Ukuran pas foto maksimal 20MB',
+            'dokumen_surat_pernyataan.required' => 'Surat pernyataan harus diupload',
+            'dokumen_surat_pernyataan.mimes' => 'Format surat pernyataan harus pdf, jpg, jpeg, atau png',
+            'dokumen_surat_pernyataan.max' => 'Ukuran surat pernyataan maksimal 20MB',
+            'dokumen_sktm.required' => 'SKTM harus diupload',
+            'dokumen_sktm.mimes' => 'Format SKTM harus pdf, jpg, jpeg, atau png',
+            'dokumen_sktm.max' => 'Ukuran SKTM maksimal 20MB',
+            'dokumen_bukti_ukt.required' => 'Bukti UKT/SPP harus diupload',
+            'dokumen_bukti_ukt.mimes' => 'Format bukti UKT/SPP harus pdf, jpg, jpeg, atau png',
+            'dokumen_bukti_ukt.max' => 'Ukuran bukti UKT/SPP maksimal 20MB',
         ];
     }
 

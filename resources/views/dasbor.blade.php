@@ -15,6 +15,7 @@
 
     @if(auth()->user()->hasRole(['super_admin', 'admin']))
       {{-- ADMIN / SUPER ADMIN DASHBOARD --}}
+      {{-- Row 1: Main Statistics --}}
       <div class="row">
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
@@ -48,7 +49,7 @@
         </div>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
-            <div class="card-icon bg-info">
+            <div class="card-icon bg-success">
               <i class="fas fa-check-circle"></i>
             </div>
             <div class="card-wrap">
@@ -63,23 +64,24 @@
         </div>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
-            <div class="card-icon bg-success">
-              <i class="fas fa-check-double"></i>
+            <div class="card-icon bg-danger">
+              <i class="fas fa-times-circle"></i>
             </div>
             <div class="card-wrap">
               <div class="card-header">
-                <h4>Selesai</h4>
+                <h4>Ditolak</h4>
               </div>
               <div class="card-body">
-                {{ $completedApplicants }}
+                {{ $rejectedApplicants }}
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {{-- Row 2: Scholarship Statistics --}}
       <div class="row">
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
               <i class="fas fa-award"></i>
@@ -94,7 +96,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-success">
               <i class="fas fa-check-circle"></i>
@@ -109,7 +111,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-info">
               <i class="fas fa-bullhorn"></i>
@@ -124,23 +126,9 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-          <div class="card card-statistic-1">
-            <div class="card-icon bg-warning">
-              <i class="fas fa-money-bill-wave"></i>
-            </div>
-            <div class="card-wrap">
-              <div class="card-header">
-                <h4>Dibayarkan</h4>
-              </div>
-              <div class="card-body">
-                {{ $paidScholarships }}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
+      {{-- Row 3: Status Progress & Upcoming Deadlines --}}
       <div class="row">
         <div class="col-lg-6 col-md-12 col-12">
           <div class="card">
@@ -163,12 +151,12 @@
                   <span>{{ $acceptedApplicants }}</span>
                 </div>
                 <div class="progress" data-height="6">
-                  <div class="progress-bar bg-info" data-width="{{ $totalApplicants > 0 ? round($acceptedApplicants / $totalApplicants * 100) : 0 }}%"></div>
+                  <div class="progress-bar bg-success" data-width="{{ $totalApplicants > 0 ? round($acceptedApplicants / $totalApplicants * 100) : 0 }}%"></div>
                 </div>
               </div>
               <div class="mb-3">
                 <div class="d-flex justify-content-between mb-1">
-                  <span>Perlu Revisi</span>
+                  <span>Revisi</span>
                   <span>{{ $revisionApplicants }}</span>
                 </div>
                 <div class="progress" data-height="6">
@@ -182,15 +170,6 @@
                 </div>
                 <div class="progress" data-height="6">
                   <div class="progress-bar bg-danger" data-width="{{ $totalApplicants > 0 ? round($rejectedApplicants / $totalApplicants * 100) : 0 }}%"></div>
-                </div>
-              </div>
-              <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
-                  <span>Selesai</span>
-                  <span>{{ $completedApplicants }}</span>
-                </div>
-                <div class="progress" data-height="6">
-                  <div class="progress-bar bg-success" data-width="{{ $totalApplicants > 0 ? round($completedApplicants / $totalApplicants * 100) : 0 }}%"></div>
                 </div>
               </div>
               <div class="text-center mt-3">
@@ -226,6 +205,7 @@
         </div>
       </div>
 
+      {{-- Row 4: Recent Applicants --}}
       <div class="row">
         <div class="col-lg-12">
           <div class="card">
@@ -259,13 +239,9 @@
                           @if($applicant->status === 'verifikasi')
                             <span class="badge badge-warning">Verifikasi</span>
                           @elseif($applicant->status === 'diterima')
-                            <span class="badge badge-info">Diterima Tahap 1</span>
-                          @elseif($applicant->status === 'verifikasi_akhir')
-                            <span class="badge badge-primary">Verifikasi Akhir</span>
-                          @elseif($applicant->status === 'selesai')
-                            <span class="badge badge-success">Selesai</span>
+                            <span class="badge badge-success">Diterima</span>
                           @elseif($applicant->status === 'revisi')
-                            <span class="badge badge-secondary">Perlu Revisi</span>
+                            <span class="badge badge-secondary">Revisi</span>
                           @elseif($applicant->status === 'ditolak')
                             <span class="badge badge-danger">Ditolak</span>
                           @endif
@@ -348,6 +324,21 @@
             </div>
           </div>
         </div>
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-secondary">
+              <i class="fas fa-edit"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Revisi</h4>
+              </div>
+              <div class="card-body">
+                {{ $revisionApplications }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="row">
@@ -378,13 +369,9 @@
                           @if($applicant->status === 'verifikasi')
                             <span class="badge badge-warning">Verifikasi</span>
                           @elseif($applicant->status === 'diterima')
-                            <span class="badge badge-info">Diterima Tahap 1</span>
-                          @elseif($applicant->status === 'verifikasi_akhir')
-                            <span class="badge badge-primary">Verifikasi Akhir</span>
-                          @elseif($applicant->status === 'selesai')
-                            <span class="badge badge-success">Selesai</span>
+                            <span class="badge badge-success">Diterima</span>
                           @elseif($applicant->status === 'revisi')
-                            <span class="badge badge-secondary">Perlu Revisi</span>
+                            <span class="badge badge-secondary">Revisi</span>
                           @elseif($applicant->status === 'ditolak')
                             <span class="badge badge-danger">Ditolak</span>
                           @endif

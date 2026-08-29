@@ -12,6 +12,8 @@ use App\Notifications\PengumumanBeasiswa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class BeasiswaController extends Controller
 {
@@ -92,65 +94,101 @@ class BeasiswaController extends Controller
     public function umumkan(Request $request, Scholarship $scholarship): RedirectResponse
     {
         $request->validate([
-            'tanggal_pengumuman' => 'nullable|date',
+            'tanggal_pengumuman' => 'required|date',
+            'tanggal_pengumuman_selesai' => 'required|date|after_or_equal:tanggal_pengumuman',
         ]);
 
-        $tanggal = $request->date('tanggal_pengumuman')?->toDateString() ?? now()->toDateString();
+        $tanggal = $request->date('tanggal_pengumuman')->toDateString();
+        $selesai = $request->date('tanggal_pengumuman_selesai')->toDateString();
 
         $baruDiumumkan = ! $scholarship->isDiumumkan();
 
-        $scholarship->forceFill(['tanggal_pengumuman' => $tanggal])->save();
+        $scholarship->forceFill([
+            'tanggal_pengumuman' => $tanggal,
+            'tanggal_pengumuman_selesai' => $selesai,
+        ])->save();
 
         if ($baruDiumumkan) {
-            $penerima = $scholarship->pendaftar()
-                ->where('status', 'selesai')
+            $pendaftar = $scholarship->pendaftar()
                 ->with('user')
                 ->get();
 
-            foreach ($penerima as $applicant) {
-                $applicant->user->notify(new PengumumanBeasiswa($scholarship, 'diumumkan', $applicant));
+            $notifikasiBerhasil = 0;
+            $notifikasiGagal = 0;
+
+            foreach ($pendaftar as $applicant) {
+                try {
+                    // Coba kirim via queue
+                    $applicant->user->notify(new PengumumanBeasiswa($scholarship));
+                    $notifikasiBerhasil++;
+                } catch (\Exception $e) {
+                    // Fallback ke synchronous jika queue gagal
+                    try {
+                        $applicant->user->notifyNow(new PengumumanBeasiswa($scholarship));
+                        $notifikasiBerhasil++;
+                        Log::warning('Queue gagal, fallback ke sync untuk user: ' . $applicant->user->email, ['error' => $e->getMessage()]);
+                    } catch (\Exception $e2) {
+                        $notifikasiGagal++;
+                        Log::error('Notifikasi gagal total untuk user: ' . $applicant->user->email, ['error' => $e2->getMessage()]);
+                    }
+                }
+            }
+
+            $message = 'Beasiswa berhasil diumumkan. Periode: ' . $tanggal . ' s.d. ' . $selesai;
+            if ($notifikasiBerhasil > 0) {
+                $message .= '. Notifikasi terkirim ke ' . $notifikasiBerhasil . ' penerima';
+            }
+            if ($notifikasiGagal > 0) {
+                $message .= '. ' . $notifikasiGagal . ' notifikasi gagal (cek log).';
             }
 
             return redirect()->route('admin.beasiswa.lihat', $scholarship)
-                ->with('success', 'Beasiswa berhasil diumumkan dan '.$penerima->count().' pendaftar telah diberitahu.');
+                ->with('success', $message);
         }
 
         return redirect()->route('admin.beasiswa.lihat', $scholarship)
-            ->with('success', 'Tanggal pengumuman berhasil diperbarui.');
+            ->with('success', 'Tanggal pengumuman berhasil diperbarui. Periode: ' . $tanggal . ' s.d. ' . $selesai);
     }
 
-    public function bayarkan(Request $request, Scholarship $scholarship): RedirectResponse
+    public function hasilPengumumanIndex(Scholarship $scholarship): View
+    {
+        $applicants = $scholarship->pendaftar()
+            ->where('status', 'diterima')
+            ->with(['user.profile', 'beasiswa'])
+            ->latest()
+            ->paginate(20);
+
+        return view('admin.beasiswa.hasil-pengumuman', compact('scholarship', 'applicants'));
+    }
+
+    public function hasilPengumumanUpdate(Request $request, Scholarship $scholarship): RedirectResponse
     {
         $request->validate([
-            'tanggal_pembayaran' => 'nullable|date',
+            'hasil' => 'required|array',
+            'hasil.*' => 'in:diterima,tidak_diterima',
         ]);
 
-        if (! $scholarship->isDiumumkan()) {
-            return redirect()->route('admin.beasiswa.lihat', $scholarship)
-                ->with('error', 'Beasiswa harus diumumkan terlebih dahulu sebelum ditandai dibayarkan.');
-        }
-
-        $tanggal = $request->date('tanggal_pembayaran')?->toDateString() ?? now()->toDateString();
-
-        $baruDibayarkan = ! $scholarship->isDibayarkan();
-
-        $scholarship->forceFill(['tanggal_pembayaran' => $tanggal])->save();
-
-        if ($baruDibayarkan) {
-            $penerima = $scholarship->pendaftar()
-                ->where('status', 'selesai')
-                ->with('user')
-                ->get();
-
-            foreach ($penerima as $applicant) {
-                $applicant->user->notify(new PengumumanBeasiswa($scholarship, 'dibayarkan', $applicant));
+        $updated = 0;
+        foreach ($request->hasil as $applicantId => $hasil) {
+            $applicant = $scholarship->pendaftar()->where('id', $applicantId)->where('status', 'diterima')->first();
+            if ($applicant && $applicant->hasil_pengumuman !== $hasil) {
+                $applicant->update(['hasil_pengumuman' => $hasil]);
+                $updated++;
             }
-
-            return redirect()->route('admin.beasiswa.lihat', $scholarship)
-                ->with('success', 'Beasiswa berhasil ditandai dibayarkan dan '.$penerima->count().' pendaftar telah diberitahu.');
         }
+
+        return redirect()->route('admin.beasiswa.hasil-pengumuman', $scholarship)
+            ->with('success', "Hasil pengumuman berhasil diperbarui untuk {$updated} pendaftar.");
+    }
+
+    public function pengumumanDestroy(Scholarship $scholarship): RedirectResponse
+    {
+        $scholarship->forceFill([
+            'tanggal_pengumuman' => null,
+            'tanggal_pengumuman_selesai' => null,
+        ])->save();
 
         return redirect()->route('admin.beasiswa.lihat', $scholarship)
-            ->with('success', 'Tanggal pembayaran berhasil diperbarui.');
+            ->with('success', 'Pengumuman berhasil dihapus. Tanggal pengumuman dan selesai dikosongkan.');
     }
 }

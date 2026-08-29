@@ -25,7 +25,7 @@ class Scholarship extends Model
         'persyaratan',
         'status',
         'tanggal_pengumuman',
-        'tanggal_pembayaran',
+        'tanggal_pengumuman_selesai',
     ];
 
     protected function casts(): array
@@ -33,7 +33,7 @@ class Scholarship extends Model
         return [
             'batas_waktu' => 'date',
             'tanggal_pengumuman' => 'date',
-            'tanggal_pembayaran' => 'date',
+            'tanggal_pengumuman_selesai' => 'date',
         ];
     }
 
@@ -57,8 +57,16 @@ class Scholarship extends Model
         return filled($this->tanggal_pengumuman);
     }
 
-    public function isDibayarkan(): bool
+    public function isPengumumanAktif(): bool
     {
-        return filled($this->tanggal_pembayaran);
+        if (! $this->tanggal_pengumuman || ! $this->tanggal_pengumuman_selesai) {
+            return false;
+        }
+
+        $now = now('Asia/Jakarta');
+        $start = $this->tanggal_pengumuman;
+        $end = $this->tanggal_pengumuman_selesai->endOfDay();
+
+        return $now->gte($start) && $now->lte($end);
     }
 }

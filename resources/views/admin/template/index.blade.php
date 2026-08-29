@@ -85,9 +85,6 @@
                   <a href="{{ route('preview.application-letter') }}" class="btn btn-info" target="_blank">
                     <i class="fas fa-eye"></i> Preview Template
                   </a>
-                  <a href="{{ route('download.application-letter') }}" class="btn btn-secondary" target="_blank">
-                    <i class="fas fa-download"></i> Download Template
-                  </a>
                   <form action="{{ route('admin.template.hapus') }}" method="POST" class="d-inline btn-delete-form">
                     @csrf
                     @method('DELETE')

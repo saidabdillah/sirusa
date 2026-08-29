@@ -86,6 +86,9 @@ test('user registering scholarship notifies all admins and super admins', functi
         'dokumen_transkrip' => UploadedFile::fake()->create('transkrip.pdf', 100, 'application/pdf'),
         'dokumen_surat_aktif' => UploadedFile::fake()->create('aktif.pdf', 100, 'application/pdf'),
         'dokumen_pas_foto' => UploadedFile::fake()->image('foto.jpg'),
+        'dokumen_surat_pernyataan' => UploadedFile::fake()->create('pernyataan.pdf', 100, 'application/pdf'),
+        'dokumen_sktm' => UploadedFile::fake()->create('sktm.pdf', 100, 'application/pdf'),
+        'dokumen_bukti_ukt' => UploadedFile::fake()->create('ukt.pdf', 100, 'application/pdf'),
     ]))->assertRedirect(route('user.pendaftaran.index'));
 
     Notification::assertSentTo($this->admin, NewApplication::class);
@@ -112,7 +115,7 @@ test('admin changing applicant status notifies the owner user', function () {
         ->assertRedirect();
 
     Notification::assertSentTo($this->standardUser, ApplicantStatusChanged::class, function ($notification) {
-        return $notification->newStatus === 'Perlu Revisi';
+        return $notification->newStatus === 'Revisi';
     });
 
     Notification::assertNotSentTo($this->admin, ApplicantStatusChanged::class);

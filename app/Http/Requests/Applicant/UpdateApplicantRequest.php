@@ -15,7 +15,8 @@ class UpdateApplicantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'sometimes|in:verifikasi,diterima,verifikasi_akhir,revisi,ditolak,selesai',
+            'status' => 'sometimes|in:verifikasi,diterima,revisi,ditolak',
+            'hasil_pengumuman' => 'nullable|in:diterima,tidak_diterima',
             'catatan' => 'nullable|string',
             'fakultas' => 'nullable|string|max:255',
             'prodi' => 'nullable|string|max:255',
@@ -57,8 +58,8 @@ class UpdateApplicantRequest extends FormRequest
                 return;
             }
 
-            if (in_array($current, ['selesai', 'ditolak'], true)) {
-                $validator->errors()->add('status', 'Status sudah final dan tidak dapat diubah lagi.');
+            if ($current === 'ditolak') {
+                $validator->errors()->add('status', 'Status sudah final (Ditolak) dan tidak dapat diubah lagi.');
 
                 return;
             }
@@ -72,24 +73,9 @@ class UpdateApplicantRequest extends FormRequest
                     $validator->errors()->add('status', 'Status Diterima hanya dapat diatur dari Verifikasi atau Revisi.');
                 }
 
-                return;
-            }
-
-            if ($target === 'verifikasi_akhir') {
-                if ($current !== 'diterima') {
-                    $validator->errors()->add('status', 'Verifikasi Akhir hanya dapat diatur dari status Diterima.');
-                } elseif (! $applicant->isBerkasTahap2Lengkap()) {
-                    $validator->errors()->add('status', 'Berkas Tahap 2 (surat pernyataan, SKTM, bukti UKT) harus lengkap terlebih dahulu.');
-                }
-
-                return;
-            }
-
-            if ($target === 'selesai') {
-                if ($current !== 'verifikasi_akhir') {
-                    $validator->errors()->add('status', 'Pendaftar harus melewati Verifikasi Akhir sebelum Selesai.');
-                } elseif (! $applicant->isBerkasTahap2Lengkap()) {
-                    $validator->errors()->add('status', 'Berkas Tahap 2 (surat pernyataan, SKTM, bukti UKT) harus lengkap terlebih dahulu.');
+                // Validasi hasil_pengumuman wajib saat status Diterima
+                if (! $this->has('hasil_pengumuman') || ! in_array($this->input('hasil_pengumuman'), ['diterima', 'tidak_diterima'], true)) {
+                    $validator->errors()->add('hasil_pengumuman', 'Wajib memilih hasil pengumuman (Mendapat/Tidak Mendapat Beasiswa).');
                 }
 
                 return;

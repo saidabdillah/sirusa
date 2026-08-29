@@ -26,13 +26,11 @@ class DashboardController extends Controller
         $totalScholarships = Scholarship::count();
         $activeScholarships = Scholarship::where('status', 'aktif')->count();
         $announcedScholarships = Scholarship::whereNotNull('tanggal_pengumuman')->count();
-        $paidScholarships = Scholarship::whereNotNull('tanggal_pembayaran')->count();
         $totalApplicants = Applicant::count();
         $pendingApplicants = Applicant::where('status', 'verifikasi')->count();
-        $acceptedApplicants = Applicant::whereIn('status', ['diterima', 'verifikasi_akhir'])->count();
+        $acceptedApplicants = Applicant::where('status', 'diterima')->count();
         $revisionApplicants = Applicant::where('status', 'revisi')->count();
         $rejectedApplicants = Applicant::where('status', 'ditolak')->count();
-        $completedApplicants = Applicant::where('status', 'selesai')->count();
 
         $recentApplicants = Applicant::with(['user', 'beasiswa'])
             ->latest()
@@ -49,13 +47,11 @@ class DashboardController extends Controller
             'totalScholarships',
             'activeScholarships',
             'announcedScholarships',
-            'paidScholarships',
             'totalApplicants',
             'pendingApplicants',
             'acceptedApplicants',
             'revisionApplicants',
             'rejectedApplicants',
-            'completedApplicants',
             'recentApplicants',
             'upcomingDeadlines',
         ));
@@ -67,10 +63,9 @@ class DashboardController extends Controller
 
         $totalApplications = Applicant::where('user_id', $userId)->count();
         $pendingApplications = Applicant::where('user_id', $userId)->where('status', 'verifikasi')->count();
-        $acceptedApplications = Applicant::where('user_id', $userId)
-            ->whereIn('status', ['diterima', 'verifikasi_akhir', 'selesai'])
-            ->count();
+        $acceptedApplications = Applicant::where('user_id', $userId)->where('status', 'diterima')->count();
         $rejectedApplications = Applicant::where('user_id', $userId)->where('status', 'ditolak')->count();
+        $revisionApplications = Applicant::where('user_id', $userId)->where('status', 'revisi')->count();
 
         $recentApplications = Applicant::where('user_id', $userId)
             ->with('beasiswa')
@@ -89,6 +84,7 @@ class DashboardController extends Controller
             'pendingApplications' => $pendingApplications,
             'acceptedApplications' => $acceptedApplications,
             'rejectedApplications' => $rejectedApplications,
+            'revisionApplications' => $revisionApplications,
             'recentApplications' => $recentApplications,
             'availableScholarships' => $availableScholarships,
         ]);

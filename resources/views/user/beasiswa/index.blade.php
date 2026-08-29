@@ -29,11 +29,7 @@
                     @if($applications[$scholarship->id] === 'verifikasi')
                       <span class="badge badge-warning">Verifikasi</span>
                     @elseif($applications[$scholarship->id] === 'diterima')
-                      <span class="badge badge-info">Diterima Tahap 1</span>
-                    @elseif($applications[$scholarship->id] === 'verifikasi_akhir')
-                      <span class="badge badge-primary">Verifikasi Akhir</span>
-                    @elseif($applications[$scholarship->id] === 'selesai')
-                      <span class="badge badge-success">Selesai</span>
+                      <span class="badge badge-success">Diterima</span>
                     @elseif($applications[$scholarship->id] === 'revisi')
                       <span class="badge badge-secondary">Revisi</span>
                     @elseif($applications[$scholarship->id] === 'ditolak')

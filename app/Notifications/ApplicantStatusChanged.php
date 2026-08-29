@@ -25,10 +25,9 @@ class ApplicantStatusChanged extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $description = match ($this->applicant->status) {
-            'diterima' => 'Silakan lengkapi berkas tahap 2.',
+            'diterima' => 'Selamat, pendaftaran Anda diterima.',
             'revisi' => 'Silakan perbaiki data pendaftaran Anda.',
             'ditolak' => 'Anda dapat menghubungi admin untuk informasi lebih lanjut.',
-            'selesai' => 'Selamat, pendaftaran Anda diterima sepenuhnya.',
             default => 'Silakan periksa status pendaftaran Anda.',
         };
 

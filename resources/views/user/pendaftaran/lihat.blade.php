@@ -37,57 +37,49 @@
           </div>
           <div class="card-body">
             <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Nama Lengkap</strong>
                 <p class="mb-0">{{ $profile->nama_lengkap ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Username</strong>
                 <p class="mb-0">{{ $applicant->user->username ?? '-' }}</p>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>NIK</strong>
                 <p class="mb-0">{{ $profile->nik ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
                 <strong>Tempat, Tanggal Lahir</strong>
                 <p class="mb-0">{{ $profile->tempat_lahir ?? '-' }}, {{ $profile->tanggal_lahir ?
                   $profile->tanggal_lahir->translatedFormat('d F Y') : '-' }}</p>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Jenis Kelamin</strong>
                 <p class="mb-0">{{ $profile->jenis_kelamin ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Email</strong>
                 <p class="mb-0">{{ $applicant->user->email ?? '-' }}</p>
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Agama</strong>
                 <p class="mb-0">{{ $profile->agama ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Telepon</strong>
                 <p class="mb-0">{{ $profile->telepon ?? '-' }}</p>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <strong>Alamat Detail</strong>
-                <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
               <div class="col-md-4">
                 <strong>Kabupaten</strong>
                 <p class="mb-0">{{ $profile->kabupaten_kota ?: 'Balangan' }}</p>
               </div>
+            </div>
+            <div class="row mb-3">
               <div class="col-md-4">
                 <strong>Kecamatan</strong>
                 <p class="mb-0">{{ $profile->kecamatan ?? '-' }}</p>
@@ -95,6 +87,10 @@
               <div class="col-md-4">
                 <strong>Desa/Kelurahan</strong>
                 <p class="mb-0">{{ $profile->desa_kelurahan ?? '-' }}</p>
+              </div>
+              <div class="col-md-4">
+                <strong>Alamat Detail</strong>
+                <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
               </div>
             </div>
           </div>
@@ -113,7 +109,9 @@
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-12"><h6 class="text-muted">Ayah</h6></div>
+              <div class="col-md-12">
+                <h6 class="text-muted">Ayah</h6>
+              </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-4">
@@ -130,7 +128,9 @@
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-12"><h6 class="text-muted">Ibu</h6></div>
+              <div class="col-md-12">
+                <h6 class="text-muted">Ibu</h6>
+              </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-4">
@@ -148,7 +148,9 @@
             </div>
             @if($profile->nama_wali)
             <div class="row mb-3">
-              <div class="col-md-12"><h6 class="text-muted">Wali</h6></div>
+              <div class="col-md-12">
+                <h6 class="text-muted">Wali</h6>
+              </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-4">
@@ -204,17 +206,20 @@
           </div>
           <div class="card-body">
             @php
-            $docs = [
+            $allDocs = [
             ['key' => 'dokumen_ktp', 'label' => 'Kartu Tanda Penduduk (KTP)'],
             ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga (KK)'],
             ['key' => 'dokumen_surat_permohonan', 'label' => 'Surat Permohonan'],
             ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
             ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],
             ['key' => 'dokumen_pas_foto', 'label' => 'Pas Foto 3x4'],
+            ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
+            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
+            ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
             ];
             @endphp
 
-            @foreach($docs as $doc)
+            @foreach($allDocs as $doc)
             <div class="mb-4">
               <strong>{{ $doc['label'] }}</strong>
               <div class="mt-2">
@@ -260,41 +265,6 @@
                 @endif
               </div>
             </div>
-
-            <hr>
-
-            <h5 class="mb-3"><i class="fas fa-file-alt mr-1"></i> Berkas Tahap 2</h5>
-
-            @php
-            $tahap2Docs = [
-            ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
-            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
-            ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
-            ];
-            @endphp
-
-            @foreach($tahap2Docs as $doc)
-            <div class="mb-4">
-              <strong>{{ $doc['label'] }}</strong>
-              <div class="mt-2">
-                @if($applicant->{$doc['key']})
-                <div class="d-flex flex-wrap">
-                  <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" target="_blank"
-                    class="btn btn-sm btn-primary mr-2">
-                    <i class="fas fa-eye"></i> Lihat
-                  </a>
-                  <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" download
-                    class="btn btn-sm btn-outline-secondary mr-2">
-                    <i class="fas fa-download"></i> Download
-                  </a>
-                </div>
-                @else
-                <span class="text-muted">Belum diunggah</span>
-                @endif
-              </div>
-            </div>
-            <hr>
-            @endforeach
           </div>
         </div>
       </div>
@@ -309,34 +279,25 @@
           <div class="card-body text-center">
             <div class="mb-3">
               @if($applicant->status === 'verifikasi')
-                <span class="badge badge-warning p-2"><i class="fas fa-clock"></i> Verifikasi</span>
+              <span class="badge badge-warning p-2"><i class="fas fa-clock"></i> Verifikasi</span>
               @elseif($applicant->status === 'diterima')
-                <span class="badge badge-info p-2"><i class="fas fa-check-circle"></i> Diterima Tahap 1</span>
-              @elseif($applicant->status === 'verifikasi_akhir')
-                <span class="badge badge-primary p-2"><i class="fas fa-hourglass-half"></i> Verifikasi Akhir</span>
-              @elseif($applicant->status === 'selesai')
-                <span class="badge badge-success p-2"><i class="fas fa-check-double"></i> Selesai</span>
+              <span class="badge badge-success p-2"><i class="fas fa-check-circle"></i> Diterima</span>
               @elseif($applicant->status === 'revisi')
-                <span class="badge badge-secondary p-2"><i class="fas fa-edit"></i> Perlu Revisi</span>
+              <span class="badge badge-secondary p-2"><i class="fas fa-edit"></i> Revisi</span>
               @elseif($applicant->status === 'ditolak')
-                <span class="badge badge-danger p-2"><i class="fas fa-times-circle"></i> Ditolak</span>
+              <span class="badge badge-danger p-2"><i class="fas fa-times-circle"></i> Ditolak</span>
               @endif
             </div>
-            @if($applicant->status === 'selesai')
-              @if($applicant->isDiumumkan())
-                <div class="alert alert-info text-left">
-                  <strong><i class="fas fa-bullhorn"></i> Pengumuman</strong><br>
-                  Beasiswa ini telah diumumkan pada <strong>{{ $applicant->beasiswa->tanggal_pengumuman->translatedFormat('d F Y') }}</strong>.
-                  <br>
-                  <small>Beasiswa dapat diambil terhitung dari tanggal pengumuman tersebut.</small>
-                </div>
-              @endif
-              @if($applicant->isDibayarkan())
-                <div class="alert alert-success text-left">
-                  <strong><i class="fas fa-money-bill-wave"></i> Pembayaran</strong><br>
-                  Beasiswa ini telah dibayarkan pada <strong>{{ $applicant->beasiswa->tanggal_pembayaran->translatedFormat('d F Y') }}</strong>.
-                </div>
-              @endif
+            @if($applicant->status === 'diterima' && $applicant->hasil_pengumuman === 'diterima')
+            @if($applicant->isDiumumkan())
+            <div class="alert alert-info text-left">
+              <strong><i class="fas fa-bullhorn"></i> Pengumuman</strong><br>
+              Beasiswa ini telah diumumkan pada <strong>{{ $applicant->beasiswa->tanggal_pengumuman->translatedFormat('d
+                F Y') }}</strong>.
+              <br>
+              <small>Beasiswa dapat diambil terhitung dari tanggal pengumuman tersebut.</small>
+            </div>
+            @endif
             @endif
             @if($applicant->catatan)
             <div class="text-left">
@@ -379,20 +340,10 @@
             <h4>Aksi</h4>
           </div>
           <div class="card-body">
-            @if($applicant->status === 'verifikasi_akhir')
-              <div class="alert alert-primary mb-0">
-                <i class="fas fa-hourglass-half"></i> Berkas Tahap 2 sedang diverifikasi admin. Mohon menunggu hasil verifikasi akhir.
-              </div>
-            @endif
             @if($applicant->status === 'revisi')
-              <a href="{{ route('user.pendaftaran.lengkapi', $applicant) }}" class="btn btn-warning btn-block mb-2">
-                <i class="fas fa-edit"></i> Revisi Pendaftaran
-              </a>
-            @endif
-            @if($applicant->status === 'diterima')
-              <a href="{{ route('user.pendaftaran.melengkapi', $applicant) }}" class="btn btn-info btn-block mb-2">
-                <i class="fas fa-upload"></i> Unggah Berkas Tahap 2
-              </a>
+            <a href="{{ route('user.pendaftaran.lengkapi', $applicant) }}" class="btn btn-warning btn-block mb-2">
+              <i class="fas fa-edit"></i> Revisi Pendaftaran
+            </a>
             @endif
           </div>
         </div>

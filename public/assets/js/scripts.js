@@ -624,24 +624,4 @@ $(function () {
       },
     });
   }
-
-  // SweetAlert2 Delete Confirmation
-  $(document).on("click", ".btn-delete", function (e) {
-    e.preventDefault();
-    var form = $(this).closest(".btn-delete-form");
-    Swal.fire({
-      title: "Yakin hapus?",
-      text: "Data akan dihapus permanen!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Ya, Hapus!",
-      cancelButtonText: "Batal",
-    }).then(function (result) {
-      if (result.isConfirmed) {
-        form.submit();
-      }
-    });
-  });
 });

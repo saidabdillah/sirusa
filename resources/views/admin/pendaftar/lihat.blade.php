@@ -30,57 +30,49 @@
           </div>
           <div class="card-body">
             <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Nama Lengkap</strong>
                 <p class="mb-0">{{ $profile->nama_lengkap ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Username</strong>
                 <p class="mb-0">{{ $applicant->user->username ?? '-' }}</p>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>NIK</strong>
                 <p class="mb-0">{{ $profile->nik ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
                 <strong>Tempat, Tanggal Lahir</strong>
                 <p class="mb-0">{{ $profile->tempat_lahir ?? '-' }}, {{ $profile->tanggal_lahir ?
                   $profile->tanggal_lahir->translatedFormat('d F Y') : '-' }}</p>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Jenis Kelamin</strong>
                 <p class="mb-0">{{ $profile->jenis_kelamin ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Email</strong>
                 <p class="mb-0">{{ $applicant->user->email ?? '-' }}</p>
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Agama</strong>
                 <p class="mb-0">{{ $profile->agama ?? '-' }}</p>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <strong>Telepon</strong>
                 <p class="mb-0">{{ $profile->telepon ?? '-' }}</p>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <strong>Alamat Detail</strong>
-                <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
               <div class="col-md-4">
                 <strong>Kabupaten</strong>
                 <p class="mb-0">{{ $profile->kabupaten_kota ?: 'Balangan' }}</p>
               </div>
+            </div>
+            <div class="row mb-3">
               <div class="col-md-4">
                 <strong>Kecamatan</strong>
                 <p class="mb-0">{{ $profile->kecamatan ?? '-' }}</p>
@@ -88,6 +80,10 @@
               <div class="col-md-4">
                 <strong>Desa/Kelurahan</strong>
                 <p class="mb-0">{{ $profile->desa_kelurahan ?? '-' }}</p>
+              </div>
+              <div class="col-md-4">
+                <strong>Alamat Detail</strong>
+                <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
               </div>
             </div>
           </div>
@@ -106,7 +102,9 @@
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-12"><h6 class="text-muted">Ayah</h6></div>
+              <div class="col-md-12">
+                <h6 class="text-muted">Ayah</h6>
+              </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-4">
@@ -123,7 +121,9 @@
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-12"><h6 class="text-muted">Ibu</h6></div>
+              <div class="col-md-12">
+                <h6 class="text-muted">Ibu</h6>
+              </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-4">
@@ -141,7 +141,9 @@
             </div>
             @if($profile->nama_wali)
             <div class="row mb-3">
-              <div class="col-md-12"><h6 class="text-muted">Wali</h6></div>
+              <div class="col-md-12">
+                <h6 class="text-muted">Wali</h6>
+              </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-3">
@@ -208,6 +210,9 @@
             ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
             ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],
             ['key' => 'dokumen_pas_foto', 'label' => 'Pas Foto 3x4'],
+            ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
+            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
+            ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
             ];
             @endphp
 
@@ -257,41 +262,6 @@
                 @endif
               </div>
             </div>
-
-            <hr>
-
-            <h5 class="mb-3"><i class="fas fa-file-alt mr-1"></i> Berkas Tahap 2</h5>
-
-            @php
-            $tahap2Docs = [
-            ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
-            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
-            ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
-            ];
-            @endphp
-
-            @foreach($tahap2Docs as $doc)
-            <div class="mb-4">
-              <strong>{{ $doc['label'] }}</strong>
-              <div class="mt-2">
-                @if($applicant->{$doc['key']})
-                <div class="d-flex flex-wrap">
-                  <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" target="_blank"
-                    class="btn btn-sm btn-primary mr-2">
-                    <i class="fas fa-eye"></i> Lihat
-                  </a>
-                  <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" download
-                    class="btn btn-sm btn-outline-secondary mr-2">
-                    <i class="fas fa-download"></i> Download
-                  </a>
-                </div>
-                @else
-                <span class="text-muted">Belum diunggah</span>
-                @endif
-              </div>
-            </div>
-            <hr>
-            @endforeach
           </div>
         </div>
       </div>
@@ -360,45 +330,51 @@
             <h4>Ubah Status</h4>
           </div>
           <div class="card-body">
-            @if(in_array($applicant->status, ['selesai', 'ditolak'], true))
-              @if($applicant->status === 'selesai')
-                @if($applicant->isDiumumkan())
-                  <div class="alert alert-info mb-3">
-                    <strong><i class="fas fa-bullhorn"></i> Pengumuman</strong><br>
-                    Diumumkan pada {{ $applicant->beasiswa->tanggal_pengumuman->translatedFormat('d F Y') }}
-                  </div>
-                @endif
-                @if($applicant->isDibayarkan())
-                  <div class="alert alert-success mb-3">
-                    <strong><i class="fas fa-money-bill-wave"></i> Pembayaran</strong><br>
-                    Dibayarkan pada {{ $applicant->beasiswa->tanggal_pembayaran->translatedFormat('d F Y') }}
-                  </div>
-                @endif
-              @else
-                <div class="alert alert-danger mb-3"><i class="fas fa-times-circle"></i> Pendaftar ditolak.</div>
-              @endif
-              <div class="form-group">
-                <label for="status">Status</label>
-                <input type="text" class="form-control" value="{{ $applicant->getStatusLabelAttribute() }}" readonly>
-              </div>
+            @if($applicant->status === 'ditolak')
+            <div class="alert alert-danger mb-3"><i class="fas fa-times-circle"></i> Pendaftar ditolak.</div>
+            <div class="form-group">
+              <label for="status">Status</label>
+              <input type="text" class="form-control" value="{{ $applicant->getStatusLabelAttribute() }}" readonly>
+            </div>
             @else
-            <form action="{{ route('admin.pendaftar.perbarui', $applicant) }}" method="POST">
+            <form action="{{ route('admin.pendaftar.perbarui', $applicant) }}" method="POST" id="form-update-status">
               @csrf
               @method('PUT')
               <div class="form-group">
                 <label for="status">Status</label>
                 <select class="form-control @error('status') is-invalid @enderror" name="status" id="status" required>
-                  <option value="verifikasi" {{ $applicant->status === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
-                  <option value="diterima" {{ $applicant->status === 'diterima' ? 'selected' : '' }}>Diterima Tahap 1</option>
-                  <option value="verifikasi_akhir" {{ $applicant->status === 'verifikasi_akhir' ? 'selected' : '' }}>Verifikasi Akhir (Tahap 2)</option>
-                  <option value="selesai" {{ $applicant->status === 'selesai' ? 'selected' : '' }}>Selesai (Diterima)</option>
-                  <option value="revisi" {{ $applicant->status === 'revisi' ? 'selected' : '' }}>Perlu Revisi</option>
+                  <option value="verifikasi" {{ $applicant->status === 'verifikasi' ? 'selected' : '' }}>Verifikasi
+                  </option>
+                  <option value="diterima" {{ $applicant->status === 'diterima' ? 'selected' : '' }}>Diterima</option>
+                  <option value="revisi" {{ $applicant->status === 'revisi' ? 'selected' : '' }}>Revisi</option>
                   <option value="ditolak" {{ $applicant->status === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
                 </select>
                 @error('status')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>
+
+              {{-- Hasil Pengumuman - hanya tampil saat status Diterima --}}
+              <div class="form-group" id="hasil-pengumuman-group"
+                style="display: {{ $applicant->status === 'diterima' ? 'block' : 'none' }};">
+                <label>Apakah mendapatkan beasiswa?</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="hasil_pengumuman" id="hasil_diterima"
+                    value="diterima" {{ $applicant->hasil_pengumuman === 'diterima' ? 'checked' : '' }} required>
+                  <label class="form-check-label" for="hasil_diterima">Ya</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="hasil_pengumuman" id="hasil_tidak"
+                    value="tidak_diterima" {{ $applicant->hasil_pengumuman === 'tidak_diterima' ? 'checked' : '' }}>
+                  <label class="form-check-label" for="hasil_tidak">Tidak</label>
+                </div>
+                @error('hasil_pengumuman')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+                <small class="form-text text-muted">Wajib dipilih saat status Diterima. Akan digunakan untuk
+                  pengumuman.</small>
+              </div>
+
               <div class="form-group">
                 <label for="catatan">Catatan</label>
                 <textarea class="form-control @error('catatan') is-invalid @enderror" name="catatan" id="catatan"
@@ -407,7 +383,7 @@
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>
-              <button type="submit" class="btn btn-primary btn-block">
+              <button type="button" class="btn btn-primary btn-block" id="btn-update-status">
                 <i class="fas fa-save"></i> Perbarui Status
               </button>
             </form>
@@ -438,3 +414,49 @@
   </div>
 </section>
 @endsection
+
+@push('script')
+<script>
+  $(document).ready(function() {
+    // Show/hide hasil_pengumuman based on status selection
+    $('#status').on('change', function() {
+      if ($(this).val() === 'diterima') {
+        $('#hasil-pengumuman-group').show();
+      } else {
+        $('#hasil-pengumuman-group').hide();
+      }
+    });
+
+    // Initial state
+    if ($('#status').val() !== 'diterima') {
+      $('#hasil-pengumuman-group').hide();
+    }
+
+    // SweetAlert2 confirmation for status update
+    $('#btn-update-status').on('click', function () {
+      var status = $('#status').val();
+      var statusText = $('#status option:selected').text();
+      var confirmMessage = 'Yakin ingin mengubah status menjadi "' + statusText + '"?';
+      
+      if (status === 'diterima') {
+        confirmMessage += '\n\nPilih "Ya" jika mendapatkan beasiswa, "Tidak" jika tidak mendapat beasiswa.';
+      }
+
+      Swal.fire({
+        title: 'Konfirmasi Perubahan Status',
+        text: confirmMessage,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#47c363',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Perbarui!',
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.getElementById('form-update-status').submit();
+        }
+      });
+    });
+  });
+</script>
+@endpush

@@ -29,11 +29,9 @@
                   <select name="status" id="status" class="form-control" onchange="this.form.submit()">
                     <option value="">-- Semua Status --</option>
                     <option value="verifikasi" {{ request('status') === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
-                    <option value="diterima" {{ request('status') === 'diterima' ? 'selected' : '' }}>Diterima Tahap 1</option>
-                    <option value="verifikasi_akhir" {{ request('status') === 'verifikasi_akhir' ? 'selected' : '' }}>Verifikasi Akhir</option>
-                    <option value="revisi" {{ request('status') === 'revisi' ? 'selected' : '' }}>Perlu Revisi</option>
+                    <option value="diterima" {{ request('status') === 'diterima' ? 'selected' : '' }}>Diterima</option>
+                    <option value="revisi" {{ request('status') === 'revisi' ? 'selected' : '' }}>Revisi</option>
                     <option value="ditolak" {{ request('status') === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
-                    <option value="selesai" {{ request('status') === 'selesai' ? 'selected' : '' }}>Selesai</option>
                   </select>
                 </div>
                 <div class="col-md-4 mb-2 mb-md-0">
@@ -82,13 +80,9 @@
                         @if($applicant->status === 'verifikasi')
                           <span class="badge badge-warning">Verifikasi</span>
                         @elseif($applicant->status === 'diterima')
-                          <span class="badge badge-info">Diterima Tahap 1</span>
-                        @elseif($applicant->status === 'verifikasi_akhir')
-                          <span class="badge badge-primary">Verifikasi Akhir</span>
-                        @elseif($applicant->status === 'selesai')
-                          <span class="badge badge-success">Selesai</span>
+                          <span class="badge badge-success">Diterima</span>
                         @elseif($applicant->status === 'revisi')
-                          <span class="badge badge-secondary">Perlu Revisi</span>
+                          <span class="badge badge-secondary">Revisi</span>
                         @elseif($applicant->status === 'ditolak')
                           <span class="badge badge-danger">Ditolak</span>
                         @endif
