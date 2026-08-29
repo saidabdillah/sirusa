@@ -19,6 +19,69 @@
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Total Pendaftar</h4>
+              </div>
+              <div class="card-body">
+                {{ $totalApplicants }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-warning">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Verifikasi</h4>
+              </div>
+              <div class="card-body">
+                {{ $pendingApplicants }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-info">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Diterima</h4>
+              </div>
+              <div class="card-body">
+                {{ $acceptedApplicants }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-success">
+              <i class="fas fa-check-double"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Selesai</h4>
+              </div>
+              <div class="card-body">
+                {{ $completedApplicants }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-primary">
               <i class="fas fa-award"></i>
             </div>
             <div class="card-wrap">
@@ -46,36 +109,6 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-          <div class="card card-statistic-1">
-            <div class="card-icon bg-warning">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="card-wrap">
-              <div class="card-header">
-                <h4>Total Pendaftar</h4>
-              </div>
-              <div class="card-body">
-                {{ $totalApplicants }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-          <div class="card card-statistic-1">
-            <div class="card-icon bg-info">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="card-wrap">
-              <div class="card-header">
-                <h4>Verifikasi</h4>
-              </div>
-              <div class="card-body">
-                {{ $pendingApplicants }}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="row">
@@ -87,11 +120,29 @@
             <div class="card-body">
               <div class="mb-3">
                 <div class="d-flex justify-content-between mb-1">
+                  <span>Verifikasi</span>
+                  <span>{{ $pendingApplicants }}</span>
+                </div>
+                <div class="progress" data-height="6">
+                  <div class="progress-bar bg-warning" data-width="{{ $totalApplicants > 0 ? round($pendingApplicants / $totalApplicants * 100) : 0 }}%"></div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
                   <span>Diterima</span>
                   <span>{{ $acceptedApplicants }}</span>
                 </div>
                 <div class="progress" data-height="6">
-                  <div class="progress-bar bg-success" data-width="{{ $totalApplicants > 0 ? round($acceptedApplicants / $totalApplicants * 100) : 0 }}%"></div>
+                  <div class="progress-bar bg-info" data-width="{{ $totalApplicants > 0 ? round($acceptedApplicants / $totalApplicants * 100) : 0 }}%"></div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Perlu Revisi</span>
+                  <span>{{ $revisionApplicants }}</span>
+                </div>
+                <div class="progress" data-height="6">
+                  <div class="progress-bar bg-secondary" data-width="{{ $totalApplicants > 0 ? round($revisionApplicants / $totalApplicants * 100) : 0 }}%"></div>
                 </div>
               </div>
               <div class="mb-3">
@@ -105,11 +156,11 @@
               </div>
               <div class="mb-3">
                 <div class="d-flex justify-content-between mb-1">
-                  <span>Verifikasi</span>
-                  <span>{{ $pendingApplicants }}</span>
+                  <span>Selesai</span>
+                  <span>{{ $completedApplicants }}</span>
                 </div>
                 <div class="progress" data-height="6">
-                  <div class="progress-bar bg-info" data-width="{{ $totalApplicants > 0 ? round($pendingApplicants / $totalApplicants * 100) : 0 }}%"></div>
+                  <div class="progress-bar bg-success" data-width="{{ $totalApplicants > 0 ? round($completedApplicants / $totalApplicants * 100) : 0 }}%"></div>
                 </div>
               </div>
               <div class="text-center mt-3">

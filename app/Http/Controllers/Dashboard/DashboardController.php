@@ -28,7 +28,9 @@ class DashboardController extends Controller
         $totalApplicants = Applicant::count();
         $pendingApplicants = Applicant::where('status', 'verifikasi')->count();
         $acceptedApplicants = Applicant::where('status', 'diterima')->count();
+        $revisionApplicants = Applicant::where('status', 'revisi')->count();
         $rejectedApplicants = Applicant::where('status', 'ditolak')->count();
+        $completedApplicants = Applicant::where('status', 'selesai')->count();
 
         $recentApplicants = Applicant::with(['user', 'beasiswa'])
             ->latest()
@@ -47,7 +49,9 @@ class DashboardController extends Controller
             'totalApplicants',
             'pendingApplicants',
             'acceptedApplicants',
+            'revisionApplicants',
             'rejectedApplicants',
+            'completedApplicants',
             'recentApplicants',
             'upcomingDeadlines',
         ));
@@ -59,7 +63,9 @@ class DashboardController extends Controller
 
         $totalApplications = Applicant::where('user_id', $userId)->count();
         $pendingApplications = Applicant::where('user_id', $userId)->where('status', 'verifikasi')->count();
-        $acceptedApplications = Applicant::where('user_id', $userId)->where('status', 'diterima')->count();
+        $acceptedApplications = Applicant::where('user_id', $userId)
+            ->whereIn('status', ['diterima', 'selesai'])
+            ->count();
         $rejectedApplications = Applicant::where('user_id', $userId)->where('status', 'ditolak')->count();
 
         $recentApplications = Applicant::where('user_id', $userId)
