@@ -1,0 +1,319 @@
+<?php
+
+namespace App\Http\Controllers\User;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Applicant\StoreApplicantRequest;
+use App\Models\Applicant;
+use App\Models\Scholarship;
+use App\Models\User;
+use App\Notifications\NewApplication;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
+
+class PendaftaranController extends Controller
+{
+    public function create(Request $request): View
+    {
+        $user = auth()->user();
+
+        if (! $user->isProfileComplete()) {
+            $missing = $user->getMissingProfileFields();
+
+            return redirect()->route('profile')
+                ->with('error', 'Profil belum lengkap. Silakan lengkapi data berikut terlebih dahulu: '.implode(', ', $missing));
+        }
+
+        $beasiswaId = $request->input('beasiswa_id');
+        $scholarship = Scholarship::with('fakultas.prodi')->findOrFail($beasiswaId);
+        $profile = $user->profile;
+
+        return view('user.pendaftaran.buat', compact('scholarship', 'profile'));
+    }
+
+    public function store(StoreApplicantRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $data['user_id'] = auth()->id();
+
+        $uploadPath = 'pendaftaran/'.auth()->id().'/'.$data['beasiswa_id'];
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($uploadPath)) {
+            $disk->makeDirectory($uploadPath);
+        }
+
+        $fileFields = ['dokumen_ktp', 'dokumen_kk', 'dokumen_surat_permohonan', 'dokumen_transkrip', 'dokumen_surat_aktif'];
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $filename = str_replace('dokumen_', '', $field).'.'.$file->getClientOriginalExtension();
+                try {
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    $data[$field] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        if ($request->hasFile('dokumen_pas_foto')) {
+            $file = $request->file('dokumen_pas_foto');
+            $filename = 'pas_foto.'.$file->getClientOriginalExtension();
+            try {
+                $path = $disk->putFileAs($uploadPath, $file, $filename);
+                $data['dokumen_pas_foto'] = $path;
+            } catch (\Throwable $e) {
+                Log::error('Upload gagal untuk dokumen_pas_foto: '.$e->getMessage());
+
+                return back()->withInput()->withErrors([
+                    'dokumen_pas_foto' => 'Gagal upload pas foto: '.$e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($request->hasFile('dokumen_prestasi')) {
+            $prestasi = [];
+            foreach ($request->file('dokumen_prestasi') as $i => $file) {
+                $filename = 'prestasi_'.($i + 1).'.'.$file->getClientOriginalExtension();
+                try {
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    $prestasi[] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        'dokumen_prestasi' => 'Gagal upload prestasi ke-'.($i + 1).': '.$e->getMessage(),
+                    ]);
+                }
+            }
+            $data['dokumen_prestasi'] = $prestasi;
+        }
+
+        $applicant = Applicant::create($data);
+
+        $applicantName = auth()->user()->profile?->nama_lengkap ?? auth()->user()->username;
+        $admins = User::role(['super_admin', 'admin'])->get();
+        $admins->each->notify(new NewApplication($applicant, $applicantName));
+
+        return redirect()->route('user.pendaftaran.index')->with('success', 'Pendaftaran berhasil dikirim');
+    }
+
+    public function index(): View
+    {
+        $applicants = Applicant::with('beasiswa')
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        return view('user.pendaftaran.index', compact('applicants'));
+    }
+
+    public function show(Applicant $applicant): View
+    {
+        if ($applicant->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $applicant->load('beasiswa');
+
+        return view('user.pendaftaran.lihat', compact('applicant'));
+    }
+
+    public function edit(Applicant $applicant): View
+    {
+        if ($applicant->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($applicant->status !== 'revisi') {
+            return redirect()->route('user.pendaftaran.lihat', $applicant)
+                ->with('error', 'Pendaftaran hanya bisa diperbarui jika status Perlu Revisi');
+        }
+
+        $applicant->load('beasiswa');
+        $profile = auth()->user()->profile;
+
+        return view('user.pendaftaran.lengkapi', compact('applicant', 'profile'));
+    }
+
+    public function update(Request $request, Applicant $applicant): RedirectResponse
+    {
+        if ($applicant->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($applicant->status !== 'revisi') {
+            return redirect()->route('user.pendaftaran.lihat', $applicant)
+                ->with('error', 'Pendaftaran hanya bisa diperbarui jika status Perlu Revisi');
+        }
+
+        $request->validate([
+            'fakultas' => 'required|string|max:255',
+            'prodi' => 'required|string|max:255',
+            'ipk' => 'required|numeric|between:0,4',
+            'semester' => 'required|integer|between:1,14',
+            'dokumen_ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_surat_permohonan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_transkrip' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_surat_aktif' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_pas_foto' => 'nullable|file|mimes:jpg,jpeg,png|max:20480',
+            'dokumen_prestasi.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+        ]);
+
+        $data = $request->only([
+            'fakultas', 'prodi', 'ipk', 'semester',
+        ]);
+
+        $uploadPath = 'pendaftaran/'.auth()->id().'/'.$applicant->beasiswa_id;
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($uploadPath)) {
+            $disk->makeDirectory($uploadPath);
+        }
+
+        $fileFields = ['dokumen_ktp', 'dokumen_kk', 'dokumen_surat_permohonan', 'dokumen_transkrip', 'dokumen_surat_aktif'];
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $filename = str_replace('dokumen_', '', $field).'.'.$file->getClientOriginalExtension();
+                try {
+                    if ($applicant->$field && $disk->exists($applicant->$field)) {
+                        $disk->delete($applicant->$field);
+                    }
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    $data[$field] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        if ($request->hasFile('dokumen_pas_foto')) {
+            $file = $request->file('dokumen_pas_foto');
+            $filename = 'pas_foto.'.$file->getClientOriginalExtension();
+            try {
+                if ($applicant->dokumen_pas_foto && $disk->exists($applicant->dokumen_pas_foto)) {
+                    $disk->delete($applicant->dokumen_pas_foto);
+                }
+                $path = $disk->putFileAs($uploadPath, $file, $filename);
+                $data['dokumen_pas_foto'] = $path;
+            } catch (\Throwable $e) {
+                Log::error('Upload gagal untuk dokumen_pas_foto: '.$e->getMessage());
+
+                return back()->withInput()->withErrors([
+                    'dokumen_pas_foto' => 'Gagal upload pas foto: '.$e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($request->hasFile('dokumen_prestasi')) {
+            $prestasi = $applicant->dokumen_prestasi ?? [];
+            foreach ($request->file('dokumen_prestasi') as $i => $file) {
+                $filename = 'prestasi_'.(count($prestasi) + $i + 1).'.'.$file->getClientOriginalExtension();
+                try {
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    $prestasi[] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        'dokumen_prestasi' => 'Gagal upload prestasi ke-'.($i + 1).': '.$e->getMessage(),
+                    ]);
+                }
+            }
+            $data['dokumen_prestasi'] = $prestasi;
+        }
+
+        $data['status'] = 'verifikasi';
+        $applicant->update($data);
+
+        return redirect()->route('user.pendaftaran.lihat', $applicant)
+            ->with('success', 'Pendaftaran berhasil diperbarui dan dikirim untuk verifikasi ulang');
+    }
+
+    public function melengkapi(Applicant $applicant): View
+    {
+        if ($applicant->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($applicant->status !== 'diterima') {
+            return redirect()->route('user.pendaftaran.lihat', $applicant)
+                ->with('error', 'Berkas Tahap 2 hanya bisa diunggah setelah diterima');
+        }
+
+        $applicant->load('beasiswa');
+
+        return view('user.pendaftaran.melengkapi', compact('applicant'));
+    }
+
+    public function storeMelengkapi(Request $request, Applicant $applicant): RedirectResponse
+    {
+        if ($applicant->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($applicant->status !== 'diterima') {
+            return redirect()->route('user.pendaftaran.lihat', $applicant)
+                ->with('error', 'Berkas Tahap 2 hanya bisa diunggah setelah diterima');
+        }
+
+        $request->validate([
+            'dokumen_surat_pernyataan' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_sktm' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_bukti_ukt' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
+        ], [
+            'dokumen_surat_pernyataan.required' => 'Surat pernyataan harus diupload',
+            'dokumen_sktm.required' => 'Surat Keterangan Tidak Mampu harus diupload',
+            'dokumen_bukti_ukt.required' => 'Bukti UKT/SPP harus diupload',
+        ]);
+
+        $uploadPath = 'pendaftaran/'.auth()->id().'/'.$applicant->beasiswa_id;
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($uploadPath)) {
+            $disk->makeDirectory($uploadPath);
+        }
+
+        $data = [];
+
+        $tahapDuaFields = ['dokumen_surat_pernyataan', 'dokumen_sktm', 'dokumen_bukti_ukt'];
+        foreach ($tahapDuaFields as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $filename = str_replace('dokumen_', '', $field).'.'.$file->getClientOriginalExtension();
+                try {
+                    if ($applicant->$field && $disk->exists($applicant->$field)) {
+                        $disk->delete($applicant->$field);
+                    }
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    $data[$field] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        $applicant->update($data);
+
+        return redirect()->route('user.pendaftaran.lihat', $applicant)
+            ->with('success', 'Berkas Tahap 2 berhasil diunggah. Menunggu verifikasi akhir.');
+    }
+}
