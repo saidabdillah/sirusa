@@ -3,11 +3,13 @@
 @section('title', 'SIRUSA — Sistem Informasi Beasiswa')
 
 @section('content')
+<div id="top"></div>
 {{-- Navbar --}}
 <nav class="navbar navbar-expand-lg navbar-light bg-white landing-navbar sticky-top">
   <div class="container">
-    <a class="navbar-brand font-weight-bold" href="{{ route('landing') }}">
-      <i class="fas fa-graduation-cap text-primary mr-2"></i>SIRUSA
+    <a class="navbar-brand font-weight-bold d-flex align-items-center" href="#top">
+      <img src="{{ asset('assets/img/stisla-transparent.svg') }}" alt="SIRUSA" height="30" class="mr-2">
+      SIRUSA
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#landingNav"
       aria-controls="landingNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -16,7 +18,7 @@
     <div class="collapse navbar-collapse" id="landingNav">
       <ul class="navbar-nav mr-auto">
         <li class="nav-item">
-          <a class="nav-link" href="{{ route('landing') }}"><i class="fas fa-home mr-1"></i>Beranda</a>
+          <a class="nav-link" href="#top"><i class="fas fa-home mr-1"></i>Beranda</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#beasiswa"><i class="fas fa-award mr-1"></i>Beasiswa</a>
@@ -194,8 +196,9 @@
   <div class="container">
     <div class="row">
       <div class="col-md-4 mb-4">
-        <h5 class="font-weight-bold">
-          <i class="fas fa-graduation-cap text-primary mr-2"></i>SIRUSA
+        <h5 class="font-weight-bold d-flex align-items-center">
+          <img src="{{ asset('assets/img/stisla-light.svg') }}" alt="SIRUSA" height="30" class="mr-2">
+          SIRUSA
         </h5>
         <p class="text-white-50 mb-0">Sistem Informasi Beasiswa — menghubungkan mahasiswa dengan peluang beasiswa dari
           berbagai kampus.</p>

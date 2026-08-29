@@ -60,6 +60,17 @@
       }
     }
 
+    @media (max-width: 991.98px) {
+      .landing-navbar .navbar-nav {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .landing-navbar .navbar-collapse {
+        align-items: stretch;
+      }
+    }
+
     .landing-hero,
     .landing-cta {
       background: linear-gradient(135deg, #16335c 0%, #346CB0 60%, #5db0e6 100%);
@@ -103,6 +114,8 @@
 
 <body>
   @yield('content')
+  <script src="{{ asset('assets/modules/jquery.min.js') }}"></script>
+  <script src="{{ asset('assets/modules/bootstrap/js/bootstrap.min.js') }}"></script>
   @stack('script')
 </body>
 
