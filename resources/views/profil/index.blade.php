@@ -72,13 +72,12 @@
                       <small class="text-muted">Format: JPG, JPEG, PNG. Maks 2MB.</small>
                       @if($profile && $profile->foto_profil)
                         <div class="mt-2">
-                          <button type="button" class="btn btn-sm btn-danger" id="hapusFotoBtn">
+                          <button type="button" class="btn btn-sm btn-danger"
+                                  id="hapusFotoBtn"
+                                  data-info-url="{{ route('profile.photo.info') }}"
+                                  data-action="{{ route('profile.photo.delete') }}">
                             <i class="fas fa-trash"></i> Hapus Foto
                           </button>
-                          <form id="hapusFotoForm" action="{{ route('profile.photo.delete') }}" method="POST" class="d-none">
-                            @csrf
-                            @method('DELETE')
-                          </form>
                         </div>
                       @endif
                     </div>
@@ -432,38 +431,47 @@
 
 @push('script')
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var hapusFotoBtn = document.getElementById('hapusFotoBtn');
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('#hapusFotoBtn');
+    if (!btn) return;
 
-    if (hapusFotoBtn) {
-      hapusFotoBtn.addEventListener('click', function (e) {
-        e.preventDefault();
+    e.preventDefault();
 
-        fetch("{{ route('profile.photo.info') }}", {
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-          },
-        })
-          .then(function (res) { return res.json(); })
-          .then(function (data) {
-            Swal.fire({
-              title: data.title,
-              text: data.text,
-              icon: data.icon,
-              showCancelButton: true,
-              confirmButtonColor: data.confirmButtonColor,
-              cancelButtonColor: '#6c757d',
-              confirmButtonText: data.confirmButtonText,
-              cancelButtonText: 'Batal',
-            }).then(function (result) {
-              if (result.isConfirmed) {
-                document.getElementById('hapusFotoForm').submit();
-              }
+    fetch(btn.dataset.infoUrl, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+      },
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        Swal.fire({
+          title: data.title,
+          text: data.text,
+          icon: data.icon,
+          showCancelButton: true,
+          confirmButtonColor: data.confirmButtonColor,
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: data.confirmButtonText,
+          cancelButtonText: 'Batal',
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            fetch(btn.dataset.action, {
+              method: 'DELETE',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              },
+            }).then(function () {
+              window.location.reload();
             });
-          });
+          }
+        });
+      })
+      .catch(function () {
+        Swal.fire('Error', 'Gagal memuat data. Silakan coba lagi.', 'error');
       });
-    }
   });
 
   document.getElementById('foto_profil').addEventListener('change', function(e) {

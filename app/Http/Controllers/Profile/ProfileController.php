@@ -77,11 +77,17 @@ class ProfileController extends Controller
         $data['provinsi'] = self::PROVINSI;
         $data['kabupaten_kota'] = self::KABUPATEN;
 
+        unset($data['foto_profil']);
+
         try {
             if ($request->hasFile('foto_profil')) {
                 $file = $request->file('foto_profil');
+                $old = auth()->user()->profile?->foto_profil;
                 $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
                 $data['foto_profil'] = Storage::disk('local')->putFileAs('profil', $file, $filename);
+                if ($old && Storage::disk('local')->exists($old)) {
+                    Storage::disk('local')->delete($old);
+                }
             }
 
             UserProfile::updateOrCreate(

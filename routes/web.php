@@ -73,8 +73,8 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
     })->name('profile.photo.info');
     Route::get('/profil/foto/{path}', function ($path) {
         $disk = Storage::disk('local');
-        if ($disk->exists('profil/'.$path)) {
-            $file = $disk->path('profil/'.$path);
+        if ($disk->exists($path)) {
+            $file = $disk->path($path);
             $mimeType = mime_content_type($file);
 
             return response()->file($file, [
