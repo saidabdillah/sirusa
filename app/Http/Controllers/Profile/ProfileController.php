@@ -9,6 +9,8 @@ use App\Models\UserProfile;
 use App\Services\WilayahService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -78,9 +80,8 @@ class ProfileController extends Controller
         try {
             if ($request->hasFile('foto_profil')) {
                 $file = $request->file('foto_profil');
-                $filename = time().'_'.$file->getClientOriginalName();
-                $file->move(public_path('storage/profil'), $filename);
-                $data['foto_profil'] = 'profil/'.$filename;
+                $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+                $data['foto_profil'] = Storage::disk('public')->putFileAs('profil', $file, $filename);
             }
 
             UserProfile::updateOrCreate(

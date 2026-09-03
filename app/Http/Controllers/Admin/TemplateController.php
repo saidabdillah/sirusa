@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateTemplateRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class TemplateController extends Controller
 {
+    private const TEMPLATE_EXTENSIONS = ['docx', 'doc', 'pdf'];
+
     public function index(): View
     {
-        $dir = public_path('storage/templates');
-        $files = ['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'];
-
         $templateExists = false;
-        foreach ($files as $file) {
-            if (file_exists($dir.'/'.$file)) {
+        foreach (self::TEMPLATE_EXTENSIONS as $ext) {
+            if (Storage::disk('public')->exists('templates/surat_permohonan.'.$ext)) {
                 $templateExists = true;
                 break;
             }
@@ -25,39 +25,32 @@ class TemplateController extends Controller
         return view('admin.template.index', compact('templateExists'));
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(UpdateTemplateRequest $request): RedirectResponse
     {
-        $request->validate([
-            'template' => 'required|file|mimes:docx,doc,pdf|max:10240',
-        ]);
+        $disk = Storage::disk('public');
 
-        $dir = public_path('storage/templates');
-        if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        // Hapus file lama
-        foreach (['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'] as $old) {
-            $oldPath = $dir.'/'.$old;
-            if (file_exists($oldPath)) {
-                unlink($oldPath);
+        foreach (self::TEMPLATE_EXTENSIONS as $ext) {
+            $path = 'templates/surat_permohonan.'.$ext;
+            if ($disk->exists($path)) {
+                $disk->delete($path);
             }
         }
 
         $file = $request->file('template');
         $filename = 'surat_permohonan.'.$file->getClientOriginalExtension();
-        $file->move($dir, $filename);
+        $disk->putFileAs('templates', $file, $filename);
 
         return redirect()->route('admin.template.index')->with('success', 'Template surat permohonan berhasil diunggah');
     }
 
     public function destroy(): RedirectResponse
     {
-        $dir = public_path('storage/templates');
-        foreach (['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'] as $file) {
-            $path = $dir.'/'.$file;
-            if (file_exists($path)) {
-                unlink($path);
+        $disk = Storage::disk('public');
+
+        foreach (self::TEMPLATE_EXTENSIONS as $ext) {
+            $path = 'templates/surat_permohonan.'.$ext;
+            if ($disk->exists($path)) {
+                $disk->delete($path);
             }
         }
 
