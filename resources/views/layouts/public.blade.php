@@ -7,6 +7,8 @@
 
   <title>@yield('title', 'SIRUSA &mdash; Sistem Informasi Beasiswa')</title>
 
+  <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/stisla.svg') }}">
+
   <!-- General CSS Files -->
   <link rel="stylesheet" href="{{ asset('assets/modules/bootstrap/css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/modules/fontawesome/css/all.min.css') }}">

@@ -14,8 +14,8 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        $this->call(KampusSeeder::class);
-        $this->call(ScholarshipSeeder::class);
+        // $this->call(KampusSeeder::class);
+        // $this->call(ScholarshipSeeder::class);
 
         // Buat roles
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
