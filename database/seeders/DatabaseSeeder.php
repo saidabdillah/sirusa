@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
 
         // Buat user super_admin
         $superAdminUser = User::firstOrCreate(
-            ['email' => 'superadmin@sirusa.com'],
+            ['email' => 'msaidabdillah18@gmail.com'],
             [
                 'username' => 'superadmin',
                 'password' => 'password',
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
 
         // Buat user admin
         $adminUser = User::firstOrCreate(
-            ['email' => 'msaidabdillah18@gmail.com'],
+            ['email' => 'admin@sirusa.com'],
             [
                 'username' => 'admin',
                 'password' => 'password',
