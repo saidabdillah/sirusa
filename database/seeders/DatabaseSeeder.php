@@ -57,6 +57,6 @@ class DatabaseSeeder extends Seeder
         $adminUser->assignRole('admin');
 
         // Buat 3 user demo dengan profil lengkap + pendaftar contoh
-        $this->call(UserSeeder::class);
+        // $this->call(UserSeeder::class);
     }
 }
