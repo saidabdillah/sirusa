@@ -81,7 +81,7 @@ class ProfileController extends Controller
             if ($request->hasFile('foto_profil')) {
                 $file = $request->file('foto_profil');
                 $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-                $data['foto_profil'] = Storage::disk('public')->putFileAs('profil', $file, $filename);
+                $data['foto_profil'] = Storage::disk('local')->putFileAs('profil', $file, $filename);
             }
 
             UserProfile::updateOrCreate(

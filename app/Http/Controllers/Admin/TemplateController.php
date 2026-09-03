@@ -16,7 +16,7 @@ class TemplateController extends Controller
     {
         $templateExists = false;
         foreach (self::TEMPLATE_EXTENSIONS as $ext) {
-            if (Storage::disk('public')->exists('templates/surat_permohonan.'.$ext)) {
+            if (Storage::disk('local')->exists('templates/surat_permohonan.'.$ext)) {
                 $templateExists = true;
                 break;
             }
@@ -27,7 +27,7 @@ class TemplateController extends Controller
 
     public function update(UpdateTemplateRequest $request): RedirectResponse
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
 
         foreach (self::TEMPLATE_EXTENSIONS as $ext) {
             $path = 'templates/surat_permohonan.'.$ext;
@@ -45,7 +45,7 @@ class TemplateController extends Controller
 
     public function destroy(): RedirectResponse
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
 
         foreach (self::TEMPLATE_EXTENSIONS as $ext) {
             $path = 'templates/surat_permohonan.'.$ext;

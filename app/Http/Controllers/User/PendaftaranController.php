@@ -58,7 +58,7 @@ class PendaftaranController extends Controller
         $data['semester'] = $profile?->semester;
 
         $uploadPath = 'pendaftaran/'.auth()->id().'/'.$data['beasiswa_id'];
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
 
         if (! $disk->exists($uploadPath)) {
             $disk->makeDirectory($uploadPath);
@@ -204,7 +204,7 @@ class PendaftaranController extends Controller
         ];
 
         $uploadPath = 'pendaftaran/'.auth()->id().'/'.$applicant->beasiswa_id;
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
 
         if (! $disk->exists($uploadPath)) {
             $disk->makeDirectory($uploadPath);
