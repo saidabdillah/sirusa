@@ -147,6 +147,7 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::delete('/beasiswa/{scholarship}', [BeasiswaController::class, 'destroy'])->name('beasiswa.hapus');
 
         Route::put('/pendaftar/{applicant}', [PendaftarController::class, 'update'])->name('pendaftar.perbarui');
+        Route::get('/pendaftar/{applicant}/info', [PendaftarController::class, 'deleteInfo'])->name('pendaftar.info');
         Route::delete('/pendaftar/{applicant}', [PendaftarController::class, 'destroy'])->name('pendaftar.hapus');
 
         Route::get('/pengumuman/{scholarship}/ubah', [PengumumanJadwalController::class, 'edit'])->name('pengumuman.ubah');

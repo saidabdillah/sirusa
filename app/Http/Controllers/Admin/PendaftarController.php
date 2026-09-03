@@ -8,6 +8,7 @@ use App\Http\Requests\Applicant\UpdateApplicantRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Notifications\ApplicantStatusChanged;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -68,6 +69,19 @@ class PendaftarController extends Controller
         }
 
         return redirect()->route('admin.pendaftar.lihat', $applicant)->with('success', 'Status pendaftar berhasil diperbarui');
+    }
+
+    public function deleteInfo(Applicant $applicant): JsonResponse
+    {
+        $name = $applicant->user->profile->nama_lengkap ?? $applicant->user->username;
+
+        return response()->json([
+            'title' => 'Hapus Data Pendaftar?',
+            'text' => 'Data pendaftar atas nama "'.$name.'" beserta seluruh dokumennya akan dihapus permanen.',
+            'icon' => 'warning',
+            'confirmButtonText' => 'Ya, Hapus',
+            'confirmButtonColor' => '#d33',
+        ]);
     }
 
     public function destroy(Applicant $applicant): RedirectResponse

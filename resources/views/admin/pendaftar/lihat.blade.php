@@ -378,10 +378,10 @@
             <h4>Aksi</h4>
           </div>
           <div class="card-body">
-            <form action="{{ route('admin.pendaftar.hapus', $applicant) }}" method="POST" class="btn-delete-form">
+            <form action="{{ route('admin.pendaftar.hapus', $applicant) }}" method="POST" class="btn-delete-form" id="hapusPendaftarForm">
               @csrf
               @method('DELETE')
-              <button type="button" class="btn btn-danger btn-delete">
+              <button type="button" class="btn btn-danger btn-delete" id="hapusPendaftarBtn">
                 <i class="fas fa-trash"></i> Hapus Data
               </button>
             </form>
@@ -396,8 +396,7 @@
 
 @push('script')
 <script>
-  $(document).ready(function() {
-    // SweetAlert2 confirmation for status update
+  $(document).ready(function () {
     $('#btn-update-status').on('click', function () {
       var status = $('#status').val();
       var statusText = $('#status option:selected').text();
@@ -418,6 +417,40 @@
         }
       });
     });
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var hapusPendaftarBtn = document.getElementById('hapusPendaftarBtn');
+
+    if (hapusPendaftarBtn) {
+      hapusPendaftarBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        fetch("{{ route('admin.pendaftar.info', $applicant) }}", {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            Swal.fire({
+              title: data.title,
+              text: data.text,
+              icon: data.icon,
+              showCancelButton: true,
+              confirmButtonColor: data.confirmButtonColor,
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: data.confirmButtonText,
+              cancelButtonText: 'Batal',
+            }).then(function (result) {
+              if (result.isConfirmed) {
+                document.getElementById('hapusPendaftarForm').submit();
+              }
+            });
+          });
+      });
+    }
   });
 </script>
 @endpush
