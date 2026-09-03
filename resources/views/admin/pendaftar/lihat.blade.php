@@ -354,27 +354,6 @@
                 @enderror
               </div>
 
-              {{-- Hasil Pengumuman - hanya tampil saat status Diterima --}}
-              <div class="form-group" id="hasil-pengumuman-group"
-                style="display: {{ $applicant->status === 'diterima' ? 'block' : 'none' }};">
-                <label>Apakah mendapatkan beasiswa?</label>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="hasil_pengumuman" id="hasil_diterima"
-                    value="diterima" {{ $applicant->hasil_pengumuman === 'diterima' ? 'checked' : '' }} required>
-                  <label class="form-check-label" for="hasil_diterima">Ya</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="hasil_pengumuman" id="hasil_tidak"
-                    value="tidak_diterima" {{ $applicant->hasil_pengumuman === 'tidak_diterima' ? 'checked' : '' }}>
-                  <label class="form-check-label" for="hasil_tidak">Tidak</label>
-                </div>
-                @error('hasil_pengumuman')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-                @enderror
-                <small class="form-text text-muted">Wajib dipilih saat status Diterima. Akan digunakan untuk
-                  pengumuman.</small>
-              </div>
-
               <div class="form-group">
                 <label for="catatan">Catatan</label>
                 <textarea class="form-control @error('catatan') is-invalid @enderror" name="catatan" id="catatan"
@@ -418,29 +397,11 @@
 @push('script')
 <script>
   $(document).ready(function() {
-    // Show/hide hasil_pengumuman based on status selection
-    $('#status').on('change', function() {
-      if ($(this).val() === 'diterima') {
-        $('#hasil-pengumuman-group').show();
-      } else {
-        $('#hasil-pengumuman-group').hide();
-      }
-    });
-
-    // Initial state
-    if ($('#status').val() !== 'diterima') {
-      $('#hasil-pengumuman-group').hide();
-    }
-
     // SweetAlert2 confirmation for status update
     $('#btn-update-status').on('click', function () {
       var status = $('#status').val();
       var statusText = $('#status option:selected').text();
       var confirmMessage = 'Yakin ingin mengubah status menjadi "' + statusText + '"?';
-      
-      if (status === 'diterima') {
-        confirmMessage += '\n\nPilih "Ya" jika mendapatkan beasiswa, "Tidak" jika tidak mendapat beasiswa.';
-      }
 
       Swal.fire({
         title: 'Konfirmasi Perubahan Status',

@@ -26,7 +26,15 @@ class BeasiswaController extends Controller
         $user = auth()->user();
         $application = $user->applicants()->where('beasiswa_id', $scholarship->id)->first();
         $profileComplete = $user->isProfileComplete();
+        $eligibilityError = $scholarship->eligibilityIssueFor($user->profile);
+        $canApply = $profileComplete && ! $application && $eligibilityError === null && ! $scholarship->isExpired();
 
-        return view('user.beasiswa.lihat', compact('scholarship', 'application', 'profileComplete'));
+        return view('user.beasiswa.lihat', compact(
+            'scholarship',
+            'application',
+            'profileComplete',
+            'eligibilityError',
+            'canApply',
+        ));
     }
 }

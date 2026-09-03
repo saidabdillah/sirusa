@@ -23,10 +23,10 @@ test('admin dashboard shows all applicant status counts', function () {
     Scholarship::factory()->create(['status' => 'non-aktif']);
 
     Applicant::factory()->create(['status' => 'verifikasi']);
-    Applicant::factory()->create(['status' => 'diterima', 'hasil_pengumuman' => 'diterima']);
+    Applicant::factory()->create(['status' => 'diterima']);
     Applicant::factory()->create(['status' => 'revisi']);
     Applicant::factory()->create(['status' => 'ditolak']);
-    Applicant::factory()->create(['status' => 'diterima', 'hasil_pengumuman' => 'tidak_diterima']);
+    Applicant::factory()->create(['status' => 'diterima']);
 
     actingAs($this->admin)
         ->get(route('dashboard'))
@@ -42,7 +42,7 @@ test('admin dashboard shows all applicant status counts', function () {
 test('super admin dashboard shows all applicant status counts', function () {
     $superAdmin = User::factory()->superAdmin()->create(['email' => 'sa@test.com']);
 
-    Applicant::factory()->create(['status' => 'diterima', 'hasil_pengumuman' => 'diterima']);
+    Applicant::factory()->create(['status' => 'diterima']);
 
     actingAs($superAdmin)
         ->get(route('dashboard'))
@@ -54,8 +54,8 @@ test('super admin dashboard shows all applicant status counts', function () {
 test('user dashboard counts diterima (all diterima status) as accepted', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
-    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima', 'hasil_pengumuman' => 'diterima']);
-    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima', 'hasil_pengumuman' => 'tidak_diterima']);
+    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima']);
+    Applicant::factory()->create(['user_id' => $user->id, 'status' => 'diterima']);
 
     actingAs($user)
         ->get(route('dashboard'))

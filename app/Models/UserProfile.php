@@ -32,14 +32,20 @@ class UserProfile extends Model
         'status_ayah',
         'pekerjaan_ayah',
         'penghasilan_ayah',
+        'nik_ayah',
         'nama_ibu',
         'status_ibu',
         'pekerjaan_ibu',
         'penghasilan_ibu',
+        'nik_ibu',
         'nama_wali',
         'pekerjaan_wali',
         'penghasilan_wali',
         'hubungan_wali',
+        'nik_wali',
+        'prodi_id',
+        'ipk',
+        'semester',
     ];
 
     protected function casts(): array
@@ -52,6 +58,11 @@ class UserProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function prodi(): BelongsTo
+    {
+        return $this->belongsTo(Prodi::class);
     }
 
     public function getAlamatLengkapAttribute(): string

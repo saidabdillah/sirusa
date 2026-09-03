@@ -49,6 +49,11 @@
                       <i class="fas fa-redo"></i> Reset
                     </a>
                   @endif
+                  @if($applicants->total() > 0)
+                    <a href="{{ route('admin.pendaftar.export', request()->only(['status', 'beasiswa_id'])) }}" class="btn btn-success btn-block mt-2">
+                      <i class="fas fa-file-excel"></i> Export Excel
+                    </a>
+                  @endif
                 </div>
               </div>
             </form>

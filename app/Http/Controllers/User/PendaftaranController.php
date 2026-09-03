@@ -16,7 +16,7 @@ use Illuminate\View\View;
 
 class PendaftaranController extends Controller
 {
-    public function create(Request $request): View
+    public function create(Request $request): RedirectResponse|View
     {
         $user = auth()->user();
 
@@ -24,15 +24,21 @@ class PendaftaranController extends Controller
             $missing = $user->getMissingProfileFields();
 
             return redirect()->route('profile')
-                ->with('error', 'Profil belum lengkap. Silakan lengkapi data berikut terlebih dahulu: ' . implode(', ', $missing));
+                ->with('error', 'Profil belum lengkap. Silakan lengkapi data berikut terlebih dahulu: '.implode(', ', $missing));
         }
 
-        $beasiswaId = $request->input('beasiswa_id');
-        $scholarship = Scholarship::with('fakultas.prodi')->findOrFail($beasiswaId);
+        $scholarship = Scholarship::findOrFail($request->input('beasiswa_id'));
 
-        if ($scholarship->isExpired()) {
-            return redirect()->route('user.beasiswa.index')
-                ->with('error', 'Pendaftaran beasiswa sudah ditutup.');
+        if ($user->applicants()->where('beasiswa_id', $scholarship->id)->exists()) {
+            return redirect()->route('user.beasiswa.lihat', $scholarship)
+                ->with('error', 'Anda sudah mendaftar beasiswa ini.');
+        }
+
+        $eligibilityError = $scholarship->eligibilityIssueFor($user->profile);
+
+        if ($eligibilityError) {
+            return redirect()->route('user.beasiswa.lihat', $scholarship)
+                ->with('error', $eligibilityError);
         }
 
         $profile = $user->profile;
@@ -45,7 +51,13 @@ class PendaftaranController extends Controller
         $data = $request->validated();
         $data['user_id'] = auth()->id();
 
-        $uploadPath = 'pendaftaran/' . auth()->id() . '/' . $data['beasiswa_id'];
+        $profile = $request->user()->profile;
+        $data['fakultas'] = $profile?->prodi?->fakultas?->nama;
+        $data['prodi'] = $profile?->prodi?->nama;
+        $data['ipk'] = $profile?->ipk;
+        $data['semester'] = $profile?->semester;
+
+        $uploadPath = 'pendaftaran/'.auth()->id().'/'.$data['beasiswa_id'];
         $disk = Storage::disk('public');
 
         if (! $disk->exists($uploadPath)) {
@@ -65,15 +77,15 @@ class PendaftaranController extends Controller
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
-                $filename = str_replace('dokumen_', '', $field) . '.' . $file->getClientOriginalExtension();
+                $filename = str_replace('dokumen_', '', $field).'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
                     $data[$field] = $path;
                 } catch (\Throwable $e) {
-                    Log::error('Upload gagal untuk ' . $field . ': ' . $e->getMessage());
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
 
                     return back()->withInput()->withErrors([
-                        $field => 'Gagal upload ' . $field . ': ' . $e->getMessage(),
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
                     ]);
                 }
             }
@@ -81,15 +93,15 @@ class PendaftaranController extends Controller
 
         if ($request->hasFile('dokumen_pas_foto')) {
             $file = $request->file('dokumen_pas_foto');
-            $filename = 'pas_foto.' . $file->getClientOriginalExtension();
+            $filename = 'pas_foto.'.$file->getClientOriginalExtension();
             try {
                 $path = $disk->putFileAs($uploadPath, $file, $filename);
                 $data['dokumen_pas_foto'] = $path;
             } catch (\Throwable $e) {
-                Log::error('Upload gagal untuk dokumen_pas_foto: ' . $e->getMessage());
+                Log::error('Upload gagal untuk dokumen_pas_foto: '.$e->getMessage());
 
                 return back()->withInput()->withErrors([
-                    'dokumen_pas_foto' => 'Gagal upload pas foto: ' . $e->getMessage(),
+                    'dokumen_pas_foto' => 'Gagal upload pas foto: '.$e->getMessage(),
                 ]);
             }
         }
@@ -97,15 +109,15 @@ class PendaftaranController extends Controller
         if ($request->hasFile('dokumen_prestasi')) {
             $prestasi = [];
             foreach ($request->file('dokumen_prestasi') as $i => $file) {
-                $filename = 'prestasi_' . ($i + 1) . '.' . $file->getClientOriginalExtension();
+                $filename = 'prestasi_'.($i + 1).'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
                     $prestasi[] = $path;
                 } catch (\Throwable $e) {
-                    Log::error('Upload gagal untuk dokumen_prestasi[' . $i . ']: ' . $e->getMessage());
+                    Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: '.$e->getMessage());
 
                     return back()->withInput()->withErrors([
-                        'dokumen_prestasi' => 'Gagal upload prestasi ke-' . ($i + 1) . ': ' . $e->getMessage(),
+                        'dokumen_prestasi' => 'Gagal upload prestasi ke-'.($i + 1).': '.$e->getMessage(),
                     ]);
                 }
             }
@@ -171,10 +183,6 @@ class PendaftaranController extends Controller
         }
 
         $request->validate([
-            'fakultas' => 'required|string|max:255',
-            'prodi' => 'required|string|max:255',
-            'ipk' => 'required|numeric|between:0,4',
-            'semester' => 'required|integer|between:1,14',
             'dokumen_ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_surat_permohonan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
@@ -187,14 +195,15 @@ class PendaftaranController extends Controller
             'dokumen_bukti_ukt' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
         ]);
 
-        $data = $request->only([
-            'fakultas',
-            'prodi',
-            'ipk',
-            'semester',
-        ]);
+        $profile = $request->user()->profile;
+        $data = [
+            'fakultas' => $profile?->prodi?->fakultas?->nama,
+            'prodi' => $profile?->prodi?->nama,
+            'ipk' => $profile?->ipk,
+            'semester' => $profile?->semester,
+        ];
 
-        $uploadPath = 'pendaftaran/' . auth()->id() . '/' . $applicant->beasiswa_id;
+        $uploadPath = 'pendaftaran/'.auth()->id().'/'.$applicant->beasiswa_id;
         $disk = Storage::disk('public');
 
         if (! $disk->exists($uploadPath)) {
@@ -214,7 +223,7 @@ class PendaftaranController extends Controller
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
-                $filename = str_replace('dokumen_', '', $field) . '.' . $file->getClientOriginalExtension();
+                $filename = str_replace('dokumen_', '', $field).'.'.$file->getClientOriginalExtension();
                 try {
                     if ($applicant->$field && $disk->exists($applicant->$field)) {
                         $disk->delete($applicant->$field);
@@ -222,10 +231,10 @@ class PendaftaranController extends Controller
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
                     $data[$field] = $path;
                 } catch (\Throwable $e) {
-                    Log::error('Upload gagal untuk ' . $field . ': ' . $e->getMessage());
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
 
                     return back()->withInput()->withErrors([
-                        $field => 'Gagal upload ' . $field . ': ' . $e->getMessage(),
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
                     ]);
                 }
             }
@@ -233,7 +242,7 @@ class PendaftaranController extends Controller
 
         if ($request->hasFile('dokumen_pas_foto')) {
             $file = $request->file('dokumen_pas_foto');
-            $filename = 'pas_foto.' . $file->getClientOriginalExtension();
+            $filename = 'pas_foto.'.$file->getClientOriginalExtension();
             try {
                 if ($applicant->dokumen_pas_foto && $disk->exists($applicant->dokumen_pas_foto)) {
                     $disk->delete($applicant->dokumen_pas_foto);
@@ -241,10 +250,10 @@ class PendaftaranController extends Controller
                 $path = $disk->putFileAs($uploadPath, $file, $filename);
                 $data['dokumen_pas_foto'] = $path;
             } catch (\Throwable $e) {
-                Log::error('Upload gagal untuk dokumen_pas_foto: ' . $e->getMessage());
+                Log::error('Upload gagal untuk dokumen_pas_foto: '.$e->getMessage());
 
                 return back()->withInput()->withErrors([
-                    'dokumen_pas_foto' => 'Gagal upload pas foto: ' . $e->getMessage(),
+                    'dokumen_pas_foto' => 'Gagal upload pas foto: '.$e->getMessage(),
                 ]);
             }
         }
@@ -252,15 +261,15 @@ class PendaftaranController extends Controller
         if ($request->hasFile('dokumen_prestasi')) {
             $prestasi = $applicant->dokumen_prestasi ?? [];
             foreach ($request->file('dokumen_prestasi') as $i => $file) {
-                $filename = 'prestasi_' . (count($prestasi) + $i + 1) . '.' . $file->getClientOriginalExtension();
+                $filename = 'prestasi_'.(count($prestasi) + $i + 1).'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
                     $prestasi[] = $path;
                 } catch (\Throwable $e) {
-                    Log::error('Upload gagal untuk dokumen_prestasi[' . $i . ']: ' . $e->getMessage());
+                    Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: '.$e->getMessage());
 
                     return back()->withInput()->withErrors([
-                        'dokumen_prestasi' => 'Gagal upload prestasi ke-' . ($i + 1) . ': ' . $e->getMessage(),
+                        'dokumen_prestasi' => 'Gagal upload prestasi ke-'.($i + 1).': '.$e->getMessage(),
                     ]);
                 }
             }

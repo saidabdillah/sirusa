@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Scholarship;
 
+use App\Models\Prodi;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateScholarshipRequest extends FormRequest
 {
@@ -15,7 +17,7 @@ class UpdateScholarshipRequest extends FormRequest
     {
         return [
             'nama' => 'required|string|max:255',
-            'kampus' => 'required|string|max:255',
+            'kampus_id' => 'required|integer|exists:kampus,id',
             'kuota' => 'required|integer|min:0',
             'tingkat_gelar' => 'required|in:S1,S2,S3',
             'cakupan' => 'required|in:penuh,sebagian',
@@ -25,10 +27,25 @@ class UpdateScholarshipRequest extends FormRequest
             'deskripsi' => 'required|string',
             'persyaratan' => 'nullable|string',
             'status' => 'required|in:aktif,non-aktif',
-            'fakultas' => 'required|array|min:1',
-            'fakultas.*.nama' => 'required|string|max:255',
-            'fakultas.*.prodi' => 'required|array|min:1',
-            'fakultas.*.prodi.*.nama' => 'required|string|max:255',
+            'prodi_ids' => 'required|array|min:1',
+            'prodi_ids.*' => 'required|integer|distinct|exists:prodi,id',
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                $kampusId = (int) $this->input('kampus_id');
+
+                foreach ($this->input('prodi_ids', []) as $prodiId) {
+                    $fakultas = Prodi::query()->whereKey($prodiId)->first()?->fakultas;
+
+                    if ($fakultas && $fakultas->kampus_id !== $kampusId) {
+                        $validator->errors()->add('prodi_ids', 'Semua program studi harus berada di kampus tujuan beasiswa.');
+                    }
+                }
+            },
         ];
     }
 
@@ -36,12 +53,15 @@ class UpdateScholarshipRequest extends FormRequest
     {
         return [
             'nama.required' => 'Nama beasiswa harus diisi',
-            'kampus.required' => 'Kampus tujuan harus diisi',
+            'kampus_id.required' => 'Kampus tujuan harus dipilih',
+            'kampus_id.exists' => 'Kampus tujuan tidak valid',
             'kuota.required' => 'Kuota harus diisi',
             'kuota.integer' => 'Kuota harus berupa angka',
             'kuota.min' => 'Kuota minimal 0',
             'tingkat_gelar.required' => 'Tingkat gelar harus dipilih',
+            'tingkat_gelar.in' => 'Tingkat gelar tidak valid',
             'cakupan.required' => 'Cakupan harus dipilih',
+            'cakupan.in' => 'Cakupan tidak valid',
             'batas_waktu.required' => 'Batas waktu harus diisi',
             'ipk_minimal.required' => 'IPK minimal harus diisi',
             'ipk_minimal.numeric' => 'IPK minimal harus berupa angka',
@@ -51,10 +71,10 @@ class UpdateScholarshipRequest extends FormRequest
             'semester_minimal.between' => 'Semester minimal harus antara 1 hingga 14',
             'deskripsi.required' => 'Deskripsi harus diisi',
             'status.required' => 'Status harus dipilih',
-            'fakultas.required' => 'Minimal harus ada 1 fakultas',
-            'fakultas.*.nama.required' => 'Nama fakultas harus diisi',
-            'fakultas.*.prodi.required' => 'Minimal harus ada 1 program studi per fakultas',
-            'fakultas.*.prodi.*.nama.required' => 'Nama program studi harus diisi',
+            'prodi_ids.required' => 'Minimal harus memilih 1 program studi',
+            'prodi_ids.min' => 'Minimal harus memilih 1 program studi',
+            'prodi_ids.*.exists' => 'Program studi yang dipilih tidak valid',
+            'prodi_ids.*.distinct' => 'Program studi tidak boleh dipilih lebih dari sekali',
         ];
     }
 }

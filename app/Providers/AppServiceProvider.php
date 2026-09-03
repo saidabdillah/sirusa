@@ -37,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
                 'totalBeasiswa' => Scholarship::count(),
                 'beasiswaAktif' => Scholarship::where('status', 'aktif')->count(),
                 'totalPendaftar' => Applicant::count(),
-                'totalSelesai' => Applicant::where('status', 'selesai')->count(),
+                'totalSelesai' => Applicant::where('status', 'diterima')->count(),
                 'totalKampus' => $kampusMitra->count(),
                 'beasiswaPopuler' => Scholarship::where('status', 'aktif')->latest()->take(4)->get(),
                 'kampusMitra' => $kampusMitra,

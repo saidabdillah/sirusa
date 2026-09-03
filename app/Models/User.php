@@ -91,6 +91,9 @@ class User extends Authenticatable
             'alamat' => 'Alamat',
             'kecamatan' => 'Kecamatan',
             'desa_kelurahan' => 'Desa/Kelurahan',
+            'prodi_id' => 'Program Studi',
+            'ipk' => 'IPK',
+            'semester' => 'Semester',
             'status_orang_tua' => 'Status Orang Tua',
         ];
 

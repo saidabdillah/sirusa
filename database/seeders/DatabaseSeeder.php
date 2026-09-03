@@ -14,9 +14,8 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // $this->call([
-        //     ScholarshipSeeder::class,
-        // ]);
+        $this->call(KampusSeeder::class);
+        $this->call(ScholarshipSeeder::class);
 
         // Buat roles
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
@@ -57,15 +56,7 @@ class DatabaseSeeder extends Seeder
         );
         $adminUser->assignRole('admin');
 
-        // Buat user biasa
-        // $userUser = User::firstOrCreate(
-        //     ['email' => 'user@sirusa.com'],
-        //     [
-        //         'username' => 'user123',
-        //         'password' => 'password',
-        //         'status' => 'aktif',
-        //     ]
-        // );
-        // $userUser->assignRole('user');
+        // Buat 3 user demo dengan profil lengkap + pendaftar contoh
+        $this->call(UserSeeder::class);
     }
 }

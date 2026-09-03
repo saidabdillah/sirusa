@@ -288,17 +288,6 @@
               <span class="badge badge-danger p-2"><i class="fas fa-times-circle"></i> Ditolak</span>
               @endif
             </div>
-            @if($applicant->status === 'diterima' && $applicant->hasil_pengumuman === 'diterima')
-            @if($applicant->isDiumumkan())
-            <div class="alert alert-info text-left">
-              <strong><i class="fas fa-bullhorn"></i> Pengumuman</strong><br>
-              Beasiswa ini telah diumumkan pada <strong>{{ $applicant->beasiswa->tanggal_pengumuman->translatedFormat('d
-                F Y') }}</strong>.
-              <br>
-              <small>Beasiswa dapat diambil terhitung dari tanggal pengumuman tersebut.</small>
-            </div>
-            @endif
-            @endif
             @if($applicant->catatan)
             <div class="text-left">
               <strong>Catatan Admin:</strong>

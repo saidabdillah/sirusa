@@ -134,8 +134,6 @@
                 </div>
 
                 {{-- DATA TEMPAT TINGGAL --}}
-                <h5 class="mb-3 mt-4">Alamat Tempat Tinggal</h5>
-
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="provinsi">Provinsi</label>
@@ -178,6 +176,47 @@
 
                 <hr>
 
+                {{-- DATA KAMPUS --}}
+                <h5 class="mb-3">Data Kampus</h5>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="nama_kampus">Nama Kampus <span class="text-danger">*</span></label>
+                    <select class="form-control @error('prodi_id') is-invalid @enderror" id="nama_kampus" name="nama_kampus">
+                      <option value="">Pilih Kampus</option>
+                      @foreach($kampusList as $kampus)
+                        <option value="{{ $kampus->nama_kampus }}" {{ old('nama_kampus', $profile->prodi?->fakultas?->kampus?->nama_kampus ?? '') === $kampus->nama_kampus ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="fakultas">Fakultas <span class="text-danger">*</span></label>
+                    <select class="form-control" id="fakultas" name="fakultas">
+                      <option value="">Pilih Kampus terlebih dahulu</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="prodi">Program Studi <span class="text-danger">*</span></label>
+                    <select class="form-control @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id">
+                      <option value="">Pilih Fakultas terlebih dahulu</option>
+                    </select>
+                    @error('prodi_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label for="ipk">IPK <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk" value="{{ old('ipk', $profile->ipk ?? '') }}">
+                    @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label for="semester">Semester <span class="text-danger">*</span></label>
+                    <input type="number" min="1" max="14" class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester" value="{{ old('semester', $profile->semester ?? '') }}">
+                    @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+
+                <hr>
+
                 {{-- DATA ORANG TUA --}}
                 <h5 class="mb-3">Data Orang Tua</h5>
                 <div class="form-group">
@@ -201,6 +240,13 @@
                     @error('nama_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
+                    <label for="nik_ayah">NIK Ayah</label>
+                    <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah" name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
+                    @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
                     <label for="pekerjaan_ayah">Pekerjaan Ayah</label>
                     <select class="form-control @error('pekerjaan_ayah') is-invalid @enderror" id="pekerjaan_ayah" name="pekerjaan_ayah">
                       <option value="">Pilih Pekerjaan</option>
@@ -209,6 +255,15 @@
                       @endforeach
                     </select>
                     @error('pekerjaan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="status_ayah">Status Ayah</label>
+                    <select class="form-control @error('status_ayah') is-invalid @enderror" id="status_ayah" name="status_ayah">
+                      <option value="">Pilih Status</option>
+                      <option value="Hidup" {{ old('status_ayah', $profile->status_ayah ?? '') === 'Hidup' ? 'selected' : '' }}>Hidup</option>
+                      <option value="Meninggal Dunia" {{ old('status_ayah', $profile->status_ayah ?? '') === 'Meninggal Dunia' ? 'selected' : '' }}>Meninggal Dunia</option>
+                    </select>
+                    @error('status_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
                 <div class="form-row">
@@ -222,15 +277,6 @@
                     </select>
                     @error('penghasilan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-6">
-                    <label for="status_ayah">Status Ayah</label>
-                    <select class="form-control @error('status_ayah') is-invalid @enderror" id="status_ayah" name="status_ayah">
-                      <option value="">Pilih Status</option>
-                      <option value="Hidup" {{ old('status_ayah', $profile->status_ayah ?? '') === 'Hidup' ? 'selected' : '' }}>Hidup</option>
-                      <option value="Meninggal Dunia" {{ old('status_ayah', $profile->status_ayah ?? '') === 'Meninggal Dunia' ? 'selected' : '' }}>Meninggal Dunia</option>
-                    </select>
-                    @error('status_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
                 </div>
 
                 <h6 class="text-muted mb-2 mt-3">Ibu</h6>
@@ -241,6 +287,13 @@
                     @error('nama_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
+                    <label for="nik_ibu">NIK Ibu</label>
+                    <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu" name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
+                    @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
                     <label for="pekerjaan_ibu">Pekerjaan Ibu</label>
                     <select class="form-control @error('pekerjaan_ibu') is-invalid @enderror" id="pekerjaan_ibu" name="pekerjaan_ibu">
                       <option value="">Pilih Pekerjaan</option>
@@ -249,6 +302,15 @@
                       @endforeach
                     </select>
                     @error('pekerjaan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="status_ibu">Status Ibu</label>
+                    <select class="form-control @error('status_ibu') is-invalid @enderror" id="status_ibu" name="status_ibu">
+                      <option value="">Pilih Status</option>
+                      <option value="Hidup" {{ old('status_ibu', $profile->status_ibu ?? '') === 'Hidup' ? 'selected' : '' }}>Hidup</option>
+                      <option value="Meninggal Dunia" {{ old('status_ibu', $profile->status_ibu ?? '') === 'Meninggal Dunia' ? 'selected' : '' }}>Meninggal Dunia</option>
+                    </select>
+                    @error('status_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
                 <div class="form-row">
@@ -261,15 +323,6 @@
                       @endforeach
                     </select>
                     @error('penghasilan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="status_ibu">Status Ibu</label>
-                    <select class="form-control @error('status_ibu') is-invalid @enderror" id="status_ibu" name="status_ibu">
-                      <option value="">Pilih Status</option>
-                      <option value="Hidup" {{ old('status_ibu', $profile->status_ibu ?? '') === 'Hidup' ? 'selected' : '' }}>Hidup</option>
-                      <option value="Meninggal Dunia" {{ old('status_ibu', $profile->status_ibu ?? '') === 'Meninggal Dunia' ? 'selected' : '' }}>Meninggal Dunia</option>
-                    </select>
-                    @error('status_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
 
@@ -284,6 +337,13 @@
                     @error('nama_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
+                    <label for="nik_wali">NIK Wali</label>
+                    <input type="text" class="form-control @error('nik_wali') is-invalid @enderror" id="nik_wali" name="nik_wali" value="{{ old('nik_wali', $profile->nik_wali ?? '') }}" maxlength="16">
+                    @error('nik_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
                     <label for="hubungan_wali">Hubungan</label>
                     <select class="form-control @error('hubungan_wali') is-invalid @enderror" id="hubungan_wali" name="hubungan_wali">
                       <option value="">Pilih Hubungan</option>
@@ -293,8 +353,6 @@
                     </select>
                     @error('hubungan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                </div>
-                <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="pekerjaan_wali">Pekerjaan Wali</label>
                     <select class="form-control @error('pekerjaan_wali') is-invalid @enderror" id="pekerjaan_wali" name="pekerjaan_wali">
@@ -305,6 +363,8 @@
                     </select>
                     @error('pekerjaan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
+                </div>
+                <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="penghasilan_wali">Penghasilan Wali</label>
                     <select class="form-control @error('penghasilan_wali') is-invalid @enderror" id="penghasilan_wali" name="penghasilan_wali">
@@ -403,5 +463,58 @@
     $('#desa_kelurahan').html('<option value="">Memuat data...</option>');
     populateDesa($(this).find('option:selected').data('code'));
   });
+
+  var kampusData = @json($kampusJson);
+
+  var selectedKampus = "{{ old('nama_kampus', $profile->prodi?->fakultas?->kampus?->nama_kampus ?? '') }}";
+  var selectedFakultas = "{{ old('fakultas', $profile->prodi?->fakultas?->nama ?? '') }}";
+  var selectedProdiId = "{{ old('prodi_id', $profile->prodi_id ?? '') }}";
+
+  function loadFakultas(namaKampus, selected) {
+    var $fak = $('#fakultas');
+    $fak.html('<option value="">Pilih Fakultas</option>');
+    $('#prodi').html('<option value="">Pilih Fakultas terlebih dahulu</option>');
+
+    var kampus = kampusData.find(function(k) { return k.nama === namaKampus; });
+    if (!kampus) return;
+
+    kampus.fakultas.forEach(function(f) {
+      var selectedAttr = (selected && selected === f.nama) ? ' selected' : '';
+      $fak.append('<option value="' + f.nama + '"' + selectedAttr + '>' + f.nama + '</option>');
+    });
+
+    if (selected) {
+      loadProdi(namaKampus, selected);
+    }
+  }
+
+  function loadProdi(namaKampus, fakultas) {
+    var $prodi = $('#prodi');
+    $prodi.html('<option value="">Pilih Program Studi</option>');
+
+    var kampus = kampusData.find(function(k) { return k.nama === namaKampus; });
+    if (!kampus) return;
+
+    var fak = kampus.fakultas.find(function(f) { return f.nama === fakultas; });
+    if (!fak) return;
+
+    fak.prodi.forEach(function(p) {
+      var selectedAttr = (selectedProdiId && String(selectedProdiId) === String(p.id)) ? ' selected' : '';
+      $prodi.append('<option value="' + p.id + '"' + selectedAttr + '>' + p.nama + '</option>');
+    });
+  }
+
+  $('#nama_kampus').change(function() {
+    $('#fakultas').html('<option value="">Memuat data...</option>');
+    loadFakultas($(this).val(), '');
+  });
+
+  $('#fakultas').change(function() {
+    loadProdi($('#nama_kampus').val(), $(this).val());
+  });
+
+  if (selectedKampus) {
+    loadFakultas(selectedKampus, selectedFakultas);
+  }
 </script>
 @endpush

@@ -23,38 +23,22 @@ class PengumumanBeasiswa extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $tanggalMulai = $this->scholarship->tanggal_pengumuman?->format('d F Y');
-        $tanggalSelesai = $this->scholarship->tanggal_pengumuman_selesai?->format('d F Y');
-
         return (new MailMessage)
-            ->subject('Pengumuman Beasiswa Dibuka - SIRUSA')
+            ->subject('Pengumuman Penerima Beasiswa - SIRUSA')
             ->greeting('Halo '.($notifiable->username ?? 'Pengguna').',')
-            ->line('Pengumuman beasiswa "'.$this->scholarship->nama.'" telah dibuka.')
-            ->line('Periode pengumuman: '.$tanggalMulai.' s.d. '.$tanggalSelesai)
-            ->line('Pengumuman beasiswa telah dibuka. Silakan cek hasilnya.')
+            ->line('Pengumuman penerima untuk beasiswa "'.$this->scholarship->nama.'" telah tersedia.')
+            ->line('Silakan lihat daftar penerima melalui tautan berikut.')
             ->action('Lihat Pengumuman', route('pengumuman.show', $this->scholarship))
             ->salutation('Salam, Tim SIRUSA');
     }
 
     public function toDatabase(object $notifiable): array
     {
-        $tanggalMulai = $this->scholarship->tanggal_pengumuman?->format('d F Y');
-        $tanggalSelesai = $this->scholarship->tanggal_pengumuman_selesai?->format('d F Y');
-
         return [
-            'title' => 'Pengumuman Beasiswa Dibuka',
-            'message' => 'Beasiswa "'.$this->scholarship->nama.'" diumumkan ('.$tanggalMulai.' s.d. '.$tanggalSelesai.'). Silakan cek hasil pengumumannya.',
+            'title' => 'Pengumuman Beasiswa',
+            'message' => 'Pengumuman penerima untuk beasiswa "'.$this->scholarship->nama.'" telah tersedia.',
             'icon' => 'fa-bullhorn',
             'url' => route('pengumuman.show', $this->scholarship),
         ];
-    }
-
-    /**
-     * Kirim notifikasi secara synchronous (bypass queue)
-     * Dipakai sebagai fallback jika queue worker tidak jalan
-     */
-    public function sendSync(object $notifiable): void
-    {
-        $this->sendNow($notifiable);
     }
 }

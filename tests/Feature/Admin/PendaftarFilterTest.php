@@ -35,7 +35,6 @@ test('pendaftar index filters applicants by status', function () {
         'beasiswa_id' => $scholarship->id,
         'user_id' => $this->user->id,
         'status' => 'diterima',
-        'hasil_pengumuman' => 'diterima',
     ]);
     Applicant::factory()->create([
         'beasiswa_id' => $scholarship->id,
@@ -84,7 +83,6 @@ test('pendaftar index combines status and beasiswa filter', function () {
         'beasiswa_id' => $scholarshipA->id,
         'user_id' => $this->user->id,
         'status' => 'diterima',
-        'hasil_pengumuman' => 'diterima',
     ]);
     Applicant::factory()->create([
         'beasiswa_id' => $scholarshipA->id,
@@ -93,7 +91,6 @@ test('pendaftar index combines status and beasiswa filter', function () {
     Applicant::factory()->create([
         'beasiswa_id' => $scholarshipB->id,
         'status' => 'diterima',
-        'hasil_pengumuman' => 'diterima',
     ]);
 
     $response = actingAs($this->admin)

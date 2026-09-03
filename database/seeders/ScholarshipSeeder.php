@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Kampus;
 use App\Models\Scholarship;
 use Illuminate\Database\Seeder;
 
@@ -85,6 +86,8 @@ class ScholarshipSeeder extends Seeder
         foreach ($scholarships as $data) {
             $fakultasData = $data['fakultas'] ?? [];
             unset($data['fakultas']);
+
+            $data['kampus_id'] = Kampus::where('nama_kampus', $data['kampus'])->value('id');
 
             $scholarship = Scholarship::create($data);
 

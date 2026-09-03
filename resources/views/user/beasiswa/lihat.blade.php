@@ -26,11 +26,7 @@
                 </div>
                 <div class="col-md-6">
                   <strong>Sisa Kuota:</strong><br>
-                  @php
-                    $diterima = $scholarship->pendaftar()->whereIn('status', ['diterima', 'verifikasi_akhir', 'selesai'])->count();
-                    $sisa = $scholarship->kuota - $diterima;
-                  @endphp
-                  <span class="{{ $sisa <= 0 ? 'text-danger' : '' }}">{{ max($sisa, 0) }} orang</span>
+                  {{ $scholarship->sisaKuota() }} orang
                 </div>
               </div>
               <div class="row mb-3">
@@ -103,7 +99,8 @@
                 @elseif($application->status === 'diterima')
                   <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i><br>
-                    <strong>Selamat! Pendaftaran Diterima.</strong>
+                    <strong>Selamat! Anda Diterima.</strong><br>
+                    Pendaftaran Anda telah disetujui dan Anda berhak menerima beasiswa ini.
                   </div>
                 @elseif($application->status === 'revisi')
                   <div class="alert alert-warning">
@@ -130,6 +127,11 @@
                 <a href="{{ route('profile') }}" class="btn btn-warning btn-lg btn-block">
                   <i class="fas fa-user-edit"></i> Lengkapi Profil
                 </a>
+              @elseif($eligibilityError)
+                <div class="alert alert-warning">
+                  <i class="fas fa-exclamation-triangle"></i><br>
+                  {{ $eligibilityError }}
+                </div>
               @else
                 <div class="mb-3">
                   <div class="text-muted">Batas waktu pendaftaran</div>
@@ -138,7 +140,7 @@
                   </div>
                 </div>
                 <a href="{{ route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]) }}" class="btn btn-primary btn-lg btn-block">
-                  <i class="fas fa-paper-plane"></i> Daftar Sekarang
+                  <i class="fas fa-paper-plane"></i> Ajukan Sekarang
                 </a>
               @endif
             </div>
@@ -165,24 +167,6 @@
         icon: 'success',
         title: 'Pendaftaran Diterima!',
         text: 'Selamat! Pendaftaran Anda telah diterima.',
-        confirmButtonText: 'Mengerti'
-      });
-    </script>
-  @elseif($application && $application->status === 'verifikasi_akhir')
-    <script>
-      Swal.fire({
-        icon: 'info',
-        title: 'Verifikasi Akhir',
-        text: 'Berkas Tahap 2 Anda sedang diverifikasi admin. Silakan menunggu hasil.',
-        confirmButtonText: 'Mengerti'
-      });
-    </script>
-  @elseif($application && $application->status === 'selesai')
-    <script>
-      Swal.fire({
-        icon: 'success',
-        title: 'Selamat!',
-        text: 'Pendaftaran Anda telah diterima sepenuhnya.',
         confirmButtonText: 'Mengerti'
       });
     </script>

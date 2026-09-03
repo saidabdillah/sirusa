@@ -29,33 +29,17 @@
               @csrf
               @method('PUT')
               <div class="card-body">
-                <h5 class="mb-3">Data Pendidikan</h5>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="fakultas">Fakultas <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('fakultas') is-invalid @enderror" id="fakultas"
-                      name="fakultas" value="{{ old('fakultas', $applicant->fakultas) }}" required>
-                    @error('fakultas')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="prodi">Program Studi <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('prodi') is-invalid @enderror" id="prodi"
-                      name="prodi" value="{{ old('prodi', $applicant->prodi) }}" required>
-                    @error('prodi')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
+                <div class="alert alert-success">
+                  <i class="fas fa-check-circle"></i>
+                  <strong>Data pendidikan terisi otomatis dari profil:</strong><br>
+                  Fakultas: <strong>{{ $profile->prodi?->fakultas?->nama ?? '-' }}</strong><br>
+                  Program Studi: <strong>{{ $profile->prodi?->nama ?? '-' }}</strong><br>
+                  IPK: <strong>{{ $profile->ipk ?? '-' }}</strong> &nbsp;|&nbsp;
+                  Semester: <strong>{{ $profile->semester ?? '-' }}</strong><br>
+                  <small class="text-muted">Jika data di atas perlu diubah, perbarui terlebih dahulu melalui
+                    <a href="{{ route('profile') }}">halaman Profil</a>, kemudian revisi pendaftaran kembali.</small>
                 </div>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="ipk">IPK <span class="text-danger">*</span></label>
-                    <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk" value="{{ old('ipk', $applicant->ipk) }}" required>
-                    @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="semester">Semester <span class="text-danger">*</span></label>
-                    <input type="number" min="1" max="14" class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester" value="{{ old('semester', $applicant->semester) }}" required>
-                    @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                </div>
+
                 <h5 class="mb-3 mt-4">Dokumen Pendukung (Kosongkan jika tidak ingin mengganti)</h5>
                 @foreach([
                   ['key' => 'dokumen_ktp', 'label' => 'KTP', 'accept' => '.pdf,.jpg,.jpeg,.png'],

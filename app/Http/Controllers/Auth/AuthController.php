@@ -28,7 +28,13 @@ class AuthController extends Controller
 
     public function simpanMasuk(StoreLoginRequest $request): RedirectResponse
     {
-        $credentials = $request->validated();
+        $login = $request->validated('login');
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        $credentials = [
+            $field => $login,
+            'password' => $request->validated('password'),
+        ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::user();
@@ -38,8 +44,8 @@ class AuthController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                return back()->withInput($request->only('email'))->withErrors([
-                    'email' => 'Akun Anda belum diaktifkan. Silakan hubungi admin.',
+                return back()->withInput($request->only('login'))->withErrors([
+                    'login' => 'Akun Anda belum diaktifkan. Silakan hubungi admin.',
                 ]);
             }
 
@@ -48,8 +54,8 @@ class AuthController extends Controller
             return redirect()->route('dashboard')->with('success', 'Selamat datang kembali!');
         }
 
-        return back()->withInput($request->only('email'))->withErrors([
-            'email' => 'Email atau kata sandi salah',
+        return back()->withInput($request->only('login'))->withErrors([
+            'login' => 'Email atau username atau kata sandi salah',
         ]);
     }
 

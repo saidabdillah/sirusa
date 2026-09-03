@@ -16,7 +16,6 @@ class UpdateApplicantRequest extends FormRequest
     {
         return [
             'status' => 'sometimes|in:verifikasi,diterima,revisi,ditolak',
-            'hasil_pengumuman' => 'nullable|in:diterima,tidak_diterima',
             'catatan' => 'nullable|string',
             'fakultas' => 'nullable|string|max:255',
             'prodi' => 'nullable|string|max:255',
@@ -73,9 +72,19 @@ class UpdateApplicantRequest extends FormRequest
                     $validator->errors()->add('status', 'Status Diterima hanya dapat diatur dari Verifikasi atau Revisi.');
                 }
 
-                // Validasi hasil_pengumuman wajib saat status Diterima
-                if (! $this->has('hasil_pengumuman') || ! in_array($this->input('hasil_pengumuman'), ['diterima', 'tidak_diterima'], true)) {
-                    $validator->errors()->add('hasil_pengumuman', 'Wajib memilih hasil pengumuman (Mendapat/Tidak Mendapat Beasiswa).');
+                $beasiswa = $applicant->beasiswa;
+                if ($beasiswa && (int) $beasiswa->kuota > 0) {
+                    $diterima = $beasiswa->pendaftar()
+                        ->where('status', 'diterima')
+                        ->where('id', '!=', $applicant->id)
+                        ->count();
+
+                    if ($diterima >= (int) $beasiswa->kuota) {
+                        $validator->errors()->add(
+                            'status',
+                            "Kuota beasiswa ini ({$beasiswa->kuota}) sudah penuh. Pendaftar tidak dapat diterima."
+                        );
+                    }
                 }
 
                 return;

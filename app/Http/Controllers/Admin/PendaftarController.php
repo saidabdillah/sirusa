@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\PendaftarExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Applicant\UpdateApplicantRequest;
 use App\Models\Applicant;
@@ -10,6 +11,8 @@ use App\Notifications\ApplicantStatusChanged;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PendaftarController extends Controller
 {
@@ -36,6 +39,16 @@ class PendaftarController extends Controller
         return view('admin.pendaftar.index', compact('applicants', 'beasiswas'));
     }
 
+    public function export(Request $request): BinaryFileResponse
+    {
+        $request->validate([
+            'status' => 'nullable|in:verifikasi,diterima,revisi,ditolak',
+            'beasiswa_id' => 'nullable|integer|exists:beasiswa,id',
+        ]);
+
+        return Excel::download(new PendaftarExport($request), 'daftar-pendaftar.xlsx');
+    }
+
     public function show(Applicant $applicant): View
     {
         $applicant->load(['user.profile', 'beasiswa']);
@@ -46,7 +59,7 @@ class PendaftarController extends Controller
     public function update(UpdateApplicantRequest $request, Applicant $applicant): RedirectResponse
     {
         $oldStatus = $applicant->status;
-        $data = $request->safe()->only(['status', 'hasil_pengumuman', 'catatan']);
+        $data = $request->safe()->only(['status', 'catatan']);
 
         $applicant->update($data);
 

@@ -35,8 +35,4 @@ return [
         ],
     ],
 
-    'kampus' => [
-        'api_key' => env('KAMPUS_API_KEY'),
-    ],
-
 ];

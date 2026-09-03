@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Applicant;
 
+use App\Models\Applicant;
 use App\Models\Scholarship;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -17,10 +18,6 @@ class StoreApplicantRequest extends FormRequest
     {
         return [
             'beasiswa_id' => 'required|exists:beasiswa,id',
-            'fakultas' => 'required|string|max:255',
-            'prodi' => 'required|string|max:255',
-            'ipk' => 'required|numeric|between:0,4',
-            'semester' => 'required|integer|between:1,14',
             'dokumen_ktp' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_kk' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_surat_permohonan' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
@@ -39,14 +36,6 @@ class StoreApplicantRequest extends FormRequest
         return [
             'beasiswa_id.required' => 'Beasiswa harus dipilih',
             'beasiswa_id.exists' => 'Beasiswa tidak ditemukan',
-            'fakultas.required' => 'Fakultas harus diisi',
-            'prodi.required' => 'Program Studi harus diisi',
-            'ipk.required' => 'IPK harus diisi',
-            'ipk.numeric' => 'IPK harus berupa angka',
-            'ipk.between' => 'IPK harus antara 0 hingga 4',
-            'semester.required' => 'Semester harus diisi',
-            'semester.integer' => 'Semester harus berupa angka',
-            'semester.between' => 'Semester harus antara 1 hingga 14',
             'dokumen_ktp.required' => 'Dokumen KTP harus diupload',
             'dokumen_ktp.mimes' => 'Format KTP harus pdf, jpg, jpeg, atau png',
             'dokumen_ktp.max' => 'Ukuran KTP maksimal 20MB',
@@ -92,26 +81,47 @@ class StoreApplicantRequest extends FormRequest
                 return;
             }
 
-            if ((float) $scholarship->ipk_minimal > 0) {
-                $ipk = (float) $this->input('ipk');
-
-                if ($ipk < (float) $scholarship->ipk_minimal) {
-                    $validator->errors()->add(
-                        'ipk',
-                        "IPK minimal untuk beasiswa ini adalah {$scholarship->ipk_minimal}. IPK Anda belum memenuhi syarat."
-                    );
-                }
+            $user = $this->user();
+            if (! $user) {
+                return;
             }
 
-            if ((int) $scholarship->semester_minimal > 0) {
-                $semester = (int) $this->input('semester');
+            $alreadyApplied = Applicant::where('user_id', $user->id)
+                ->where('beasiswa_id', $scholarship->id)
+                ->exists();
 
-                if ($semester < (int) $scholarship->semester_minimal) {
-                    $validator->errors()->add(
-                        'semester',
-                        "Semester minimal untuk beasiswa ini adalah {$scholarship->semester_minimal}. Semester Anda belum memenuhi syarat."
-                    );
-                }
+            if ($alreadyApplied) {
+                $validator->errors()->add('beasiswa_id', 'Anda sudah mendaftar beasiswa ini.');
+
+                return;
+            }
+
+            $profile = $user->profile;
+
+            if (! $profile || ! $profile->prodi_id) {
+                $validator->errors()->add('beasiswa_id', 'Profil Anda belum memiliki Program Studi. Silakan lengkapi profil Anda terlebih dahulu.');
+
+                return;
+            }
+
+            if (! $scholarship->allowsProdi($profile)) {
+                $validator->errors()->add('beasiswa_id', 'Program Studi Anda tidak termasuk dalam beasiswa ini.');
+
+                return;
+            }
+
+            if ((float) $profile->ipk < (float) $scholarship->ipk_minimal) {
+                $validator->errors()->add(
+                    'ipk',
+                    "IPK minimal untuk beasiswa ini adalah {$scholarship->ipk_minimal}. IPK Anda belum memenuhi syarat."
+                );
+            }
+
+            if ((int) $profile->semester < (int) $scholarship->semester_minimal) {
+                $validator->errors()->add(
+                    'semester',
+                    "Semester minimal untuk beasiswa ini adalah {$scholarship->semester_minimal}. Semester Anda belum memenuhi syarat."
+                );
             }
         });
     }

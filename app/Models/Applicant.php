@@ -30,7 +30,6 @@ class Applicant extends Model
         'dokumen_sktm',
         'dokumen_bukti_ukt',
         'status',
-        'hasil_pengumuman',
         'catatan',
     ];
 
@@ -60,17 +59,5 @@ class Applicant extends Model
             'ditolak' => 'Ditolak',
             default => '-',
         };
-    }
-
-    public function isDiumumkan(): bool
-    {
-        return $this->status === 'diterima' 
-            && $this->hasil_pengumuman === 'diterima' 
-            && $this->beasiswa?->isPengumumanAktif();
-    }
-
-    public function isPengumumanBerlangsung(): bool
-    {
-        return $this->beasiswa?->isPengumumanAktif() ?? false;
     }
 }

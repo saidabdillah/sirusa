@@ -23,20 +23,26 @@ return new class extends Migration
             $table->string('kabupaten_kota')->nullable();
             $table->string('kecamatan')->nullable();
             $table->string('desa_kelurahan')->nullable();
+            $table->foreignId('prodi_id')->nullable()->constrained('prodi')->nullOnDelete();
+            $table->decimal('ipk', 3, 2)->nullable();
+            $table->unsignedTinyInteger('semester')->nullable();
             $table->string('foto_profil')->nullable();
             $table->enum('status_orang_tua', ['Lengkap', 'Yatim', 'Piatu', 'Yatim Piatu', 'Wali'])->nullable();
             $table->string('nama_ayah')->nullable();
             $table->enum('status_ayah', ['Hidup', 'Meninggal Dunia'])->nullable();
             $table->enum('pekerjaan_ayah', ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'])->nullable();
             $table->enum('penghasilan_ayah', ['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'])->nullable();
+            $table->string('nik_ayah', 16)->nullable();
             $table->string('nama_ibu')->nullable();
             $table->enum('status_ibu', ['Hidup', 'Meninggal Dunia'])->nullable();
             $table->enum('pekerjaan_ibu', ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'])->nullable();
             $table->enum('penghasilan_ibu', ['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'])->nullable();
+            $table->string('nik_ibu', 16)->nullable();
             $table->string('nama_wali')->nullable();
             $table->enum('pekerjaan_wali', ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'])->nullable();
             $table->enum('penghasilan_wali', ['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'])->nullable();
             $table->enum('hubungan_wali', ['Paman', 'Bibi', 'Kakek', 'Nenek', 'Lainnya'])->nullable();
+            $table->string('nik_wali', 16)->nullable();
             $table->timestamps();
         });
     }

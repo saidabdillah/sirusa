@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\BeasiswaController;
+use App\Http\Controllers\Admin\KampusController;
 use App\Http\Controllers\Admin\PendaftarController;
 use App\Http\Controllers\Admin\PenggunaController;
+use App\Http\Controllers\Admin\PengumumanJadwalController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
@@ -52,31 +54,60 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
     Route::delete('/notifikasi', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
     Route::delete('/notifikasi/sudah-dibaca', [NotificationController::class, 'destroyRead'])->name('notifications.destroy-read');
     Route::delete('/notifikasi/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Pengumuman publik (akses semua role yang login)
+    Route::get('/pengumuman/{scholarship}', [PengumumanController::class, 'show'])->name('pengumuman.show');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
 
     // Admin + Super Admin routes
     Route::middleware('role:super_admin|admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/kampus', [KampusController::class, 'index'])->name('kampus.index');
+        Route::get('/kampus/{kampus}/fakultas', [KampusController::class, 'fakultasIndex'])->name('kampus.fakultas.index');
+        Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi', [KampusController::class, 'prodiIndex'])->name('kampus.prodi.index');
         Route::get('/beasiswa', [BeasiswaController::class, 'index'])->name('beasiswa.index');
         Route::get('/beasiswa/{scholarship}/lihat', [BeasiswaController::class, 'show'])->name('beasiswa.lihat');
 
+        Route::get('/pendaftar/export', [PendaftarController::class, 'export'])->name('pendaftar.export');
         Route::get('/pendaftar', [PendaftarController::class, 'index'])->name('pendaftar.index');
         Route::get('/pendaftar/{applicant}/lihat', [PendaftarController::class, 'show'])->name('pendaftar.lihat');
+
+        Route::get('/pengumuman/{scholarship}/export-pdf', [PengumumanController::class, 'exportPdf'])->name('pengumuman.export-pdf');
+
+        Route::get('/pengumuman', [PengumumanJadwalController::class, 'index'])->name('pengumuman.index');
     });
 
     // Admin routes (only admin manages scholarships)
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/kampus/buat', [KampusController::class, 'create'])->name('kampus.buat');
+        Route::post('/kampus', [KampusController::class, 'store'])->name('kampus.simpan');
+        Route::get('/kampus/{kampus}/ubah', [KampusController::class, 'edit'])->name('kampus.ubah');
+        Route::put('/kampus/{kampus}', [KampusController::class, 'update'])->name('kampus.perbarui');
+        Route::delete('/kampus/{kampus}', [KampusController::class, 'destroy'])->name('kampus.hapus');
+
+        Route::get('/kampus/{kampus}/fakultas/buat', [KampusController::class, 'fakultasCreate'])->name('kampus.fakultas.buat');
+        Route::post('/kampus/{kampus}/fakultas', [KampusController::class, 'fakultasStore'])->name('kampus.fakultas.simpan');
+        Route::get('/kampus/{kampus}/fakultas/{fakultas}/ubah', [KampusController::class, 'fakultasEdit'])->name('kampus.fakultas.ubah');
+        Route::put('/kampus/{kampus}/fakultas/{fakultas}', [KampusController::class, 'fakultasUpdate'])->name('kampus.fakultas.perbarui');
+        Route::delete('/kampus/{kampus}/fakultas/{fakultas}', [KampusController::class, 'fakultasDestroy'])->name('kampus.fakultas.hapus');
+
+        Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi/buat', [KampusController::class, 'prodiCreate'])->name('kampus.prodi.buat');
+        Route::post('/kampus/{kampus}/fakultas/{fakultas}/prodi', [KampusController::class, 'prodiStore'])->name('kampus.prodi.simpan');
+        Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}/ubah', [KampusController::class, 'prodiEdit'])->name('kampus.prodi.ubah');
+        Route::put('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}', [KampusController::class, 'prodiUpdate'])->name('kampus.prodi.perbarui');
+        Route::delete('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}', [KampusController::class, 'prodiDestroy'])->name('kampus.prodi.hapus');
+
         Route::get('/beasiswa/buat', [BeasiswaController::class, 'create'])->name('beasiswa.buat');
         Route::post('/beasiswa', [BeasiswaController::class, 'store'])->name('beasiswa.simpan');
         Route::get('/beasiswa/{scholarship}/ubah', [BeasiswaController::class, 'edit'])->name('beasiswa.ubah');
         Route::put('/beasiswa/{scholarship}', [BeasiswaController::class, 'update'])->name('beasiswa.perbarui');
         Route::delete('/beasiswa/{scholarship}', [BeasiswaController::class, 'destroy'])->name('beasiswa.hapus');
-        Route::post('/beasiswa/{scholarship}/umumkan', [BeasiswaController::class, 'umumkan'])->name('beasiswa.umumkan');
-        Route::delete('/beasiswa/{scholarship}/pengumuman', [BeasiswaController::class, 'pengumumanDestroy'])->name('beasiswa.pengumuman.destroy');
-        Route::get('/beasiswa/{scholarship}/hasil-pengumuman', [BeasiswaController::class, 'hasilPengumumanIndex'])->name('beasiswa.hasil-pengumuman');
-        Route::put('/beasiswa/{scholarship}/hasil-pengumuman', [BeasiswaController::class, 'hasilPengumumanUpdate'])->name('beasiswa.hasil-pengumuman.update');
 
         Route::put('/pendaftar/{applicant}', [PendaftarController::class, 'update'])->name('pendaftar.perbarui');
         Route::delete('/pendaftar/{applicant}', [PendaftarController::class, 'destroy'])->name('pendaftar.hapus');
+
+        Route::get('/pengumuman/{scholarship}/ubah', [PengumumanJadwalController::class, 'edit'])->name('pengumuman.ubah');
+        Route::put('/pengumuman/{scholarship}', [PengumumanJadwalController::class, 'update'])->name('pengumuman.perbarui');
+        Route::delete('/pengumuman/{scholarship}', [PengumumanJadwalController::class, 'destroy'])->name('pengumuman.hapus');
 
         Route::get('/template', [TemplateController::class, 'index'])->name('template.index');
         Route::put('/template', [TemplateController::class, 'update'])->name('template.perbarui');
@@ -147,10 +178,5 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::put('/pendaftaran/{applicant}', [PendaftaranController::class, 'update'])->name('pendaftaran.perbarui');
         Route::get('/daftar-beasiswa', [PendaftaranController::class, 'create'])->name('pendaftaran.buat');
         Route::post('/pendaftaran', [PendaftaranController::class, 'store'])->name('pendaftaran.simpan');
-    });
-
-    // Pengumuman routes (outside pengguna prefix for clean URL)
-    Route::middleware('role:user')->group(function () {
-        Route::get('/pengumuman/{scholarship}', [PengumumanController::class, 'show'])->name('pengumuman.show');
     });
 });

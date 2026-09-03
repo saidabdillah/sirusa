@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Applicant;
+use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
+use App\Models\UserProfile;
 use App\Notifications\ApplicantStatusChanged;
 use App\Notifications\NewApplication;
 use App\Notifications\NewScholarship;
@@ -36,11 +38,14 @@ beforeEach(function () {
 test('admin creating scholarship notifies all standard users', function () {
     Notification::fake();
 
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas']);
+    $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+
     actingAs($this->admin);
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Test',
-        'kampus' => 'Universitas',
+        'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
         'cakupan' => 'penuh',
@@ -50,9 +55,7 @@ test('admin creating scholarship notifies all standard users', function () {
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Syarat',
         'status' => 'aktif',
-        'fakultas' => [
-            ['nama' => 'Teknik', 'prodi' => [['nama' => 'Informatika']]],
-        ],
+        'prodi_ids' => [$prodi->id],
     ])->assertRedirect(route('admin.beasiswa.index'));
 
     $scholarship = Scholarship::where('nama', 'Beasiswa Test')->first();
@@ -70,16 +73,38 @@ test('admin creating scholarship notifies all standard users', function () {
 test('user registering scholarship notifies all admins and super admins', function () {
     Notification::fake();
 
-    $scholarship = Scholarship::factory()->create(['status' => 'aktif']);
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas']);
+    $fakultas = $kampus->fakultas()->create(['nama' => 'Fakultas Teknik']);
+    $prodi = $fakultas->prodi()->create(['nama' => 'Informatika']);
+
+    UserProfile::create([
+        'user_id' => $this->standardUser->id,
+        'nama_lengkap' => 'Ahmad Fauzi',
+        'nik' => '6302000000000001',
+        'tempat_lahir' => 'Balangan',
+        'tanggal_lahir' => '2000-01-01',
+        'jenis_kelamin' => 'Laki-laki',
+        'agama' => 'Islam',
+        'telepon' => '081234567890',
+        'alamat' => 'RT 01',
+        'kecamatan' => 'Awayan',
+        'desa_kelurahan' => 'Ambakiang',
+        'status_orang_tua' => 'Wali',
+        'nama_wali' => 'Paman',
+        'hubungan_wali' => 'Paman',
+        'pekerjaan_wali' => 'Petani',
+        'penghasilan_wali' => '< 1jt',
+        'prodi_id' => $prodi->id,
+        'ipk' => 3.5,
+        'semester' => 4,
+    ]);
+
+    $scholarship = Scholarship::factory()->create(['status' => 'aktif', 'kampus_id' => $kampus->id]);
 
     actingAs($this->standardUser);
 
-    post(route('user.pendaftaran.simpan'), array_merge([
+    post(route('user.pendaftaran.simpan'), [
         'beasiswa_id' => $scholarship->id,
-        'fakultas' => 'Fakultas Teknik',
-        'prodi' => 'Informatika',
-        'ipk' => 3.5,
-        'semester' => 4,
         'dokumen_ktp' => UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf'),
         'dokumen_kk' => UploadedFile::fake()->create('kk.pdf', 100, 'application/pdf'),
         'dokumen_surat_permohonan' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
@@ -89,7 +114,7 @@ test('user registering scholarship notifies all admins and super admins', functi
         'dokumen_surat_pernyataan' => UploadedFile::fake()->create('pernyataan.pdf', 100, 'application/pdf'),
         'dokumen_sktm' => UploadedFile::fake()->create('sktm.pdf', 100, 'application/pdf'),
         'dokumen_bukti_ukt' => UploadedFile::fake()->create('ukt.pdf', 100, 'application/pdf'),
-    ]))->assertRedirect(route('user.pendaftaran.index'));
+    ])->assertRedirect(route('user.pendaftaran.index'));
 
     Notification::assertSentTo($this->admin, NewApplication::class);
     Notification::assertSentTo($this->superAdmin, NewApplication::class);

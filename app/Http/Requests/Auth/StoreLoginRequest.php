@@ -14,7 +14,7 @@ class StoreLoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|exists:users,email|max:255',
+            'login' => 'required|string|max:255',
             'password' => 'required|min:8|max:255',
         ];
     }
@@ -22,9 +22,8 @@ class StoreLoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'Email harus diisi',
-            'email.email' => 'Email tidak valid',
-            'email.exists' => 'Email tidak terdaftar',
+            'login.required' => 'Email atau username harus diisi',
+            'login.max' => 'Email atau username terlalu panjang',
             'password.required' => 'Kata sandi harus diisi',
             'password.min' => 'Kata sandi minimal 8 karakter',
         ];

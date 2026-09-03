@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Kampus;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,9 +24,22 @@ beforeEach(function () {
             ],
         ], 200),
     ]);
+
+    $this->kampus = Kampus::create([
+        'nama_kampus' => 'Universitas Lambung Mangkurat',
+    ]);
+    $this->fakultas = $this->kampus->fakultas()->create([
+        'nama' => 'Fakultas Teknik',
+    ]);
+    $this->prodi = $this->fakultas->prodi()->create([
+        'nama' => 'Teknik Informatika',
+    ]);
+    $this->prodi2 = $this->fakultas->prodi()->create([
+        'nama' => 'Teknik Elektro',
+    ]);
 });
 
-test('user can open profil form with region fields', function () {
+test('user can open profil form with region and campus fields', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     actingAs($user)
@@ -36,18 +50,28 @@ test('user can open profil form with region fields', function () {
         ->assertSee('Kalimantan Selatan')
         ->assertSee('Balangan')
         ->assertSee('Awayan')
-        ->assertSee('Juai');
+        ->assertSee('Juai')
+        ->assertSee('Data Kampus')
+        ->assertSee('Universitas Lambung Mangkurat')
+        ->assertSee('IPK')
+        ->assertSee('Semester');
 });
 
-test('user can update profile with region', function () {
+test('user can update profile with campus data and parent nik', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     $payload = [
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
+        'nik_ayah' => '6302000000000002',
+        'nik_ibu' => '6302000000000003',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
         'alamat' => 'RT 01 RW 02',
+        'prodi_id' => $this->prodi->id,
+        'ipk' => 3.75,
+        'semester' => 5,
+        'status_orang_tua' => 'Lengkap',
     ];
 
     actingAs($user)
@@ -58,23 +82,68 @@ test('user can update profile with region', function () {
     $this->assertDatabaseHas('profil_pengguna', [
         'user_id' => $user->id,
         'nama_lengkap' => 'Ahmad Fauzi',
+        'nik_ayah' => '6302000000000002',
+        'nik_ibu' => '6302000000000003',
         'provinsi' => 'Kalimantan Selatan',
         'kabupaten_kota' => 'Balangan',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
         'alamat' => 'RT 01 RW 02',
+        'prodi_id' => $this->prodi->id,
+        'ipk' => 3.75,
+        'semester' => 5,
     ]);
 });
 
-test('profil update requires kecamatan and desa', function () {
+test('profil update requires campus data ipk and semester', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     actingAs($user)
-        ->put(route('profile.update'), ['nama_lengkap' => 'Budi'])
-        ->assertSessionHasErrors(['kecamatan', 'desa_kelurahan']);
+        ->put(route('profile.update'), [
+            'nama_lengkap' => 'Budi',
+            'kecamatan' => 'Awayan',
+            'desa_kelurahan' => 'Ambakiang',
+        ])
+        ->assertSessionHasErrors(['prodi_id', 'ipk', 'semester']);
 });
 
-test('profile is incomplete without region and complete with it', function () {
+test('profil update validates parent nik to 16 digits', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    $base = [
+        'nama_lengkap' => 'Budi',
+        'kecamatan' => 'Awayan',
+        'desa_kelurahan' => 'Ambakiang',
+        'prodi_id' => $this->prodi->id,
+        'ipk' => 3.5,
+        'semester' => 4,
+    ];
+
+    actingAs($user)
+        ->put(route('profile.update'), $base + [
+            'nik_ayah' => '123',
+            'nik_ibu' => '456',
+            'nik_wali' => '789',
+        ])
+        ->assertSessionHasErrors(['nik_ayah', 'nik_ibu', 'nik_wali']);
+});
+
+test('profil update validates ipk and semester range', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    actingAs($user)
+        ->put(route('profile.update'), [
+            'nama_lengkap' => 'Budi',
+            'kecamatan' => 'Awayan',
+            'desa_kelurahan' => 'Ambakiang',
+            'prodi_id' => $this->prodi->id,
+            'ipk' => 5,
+            'semester' => 20,
+        ])
+        ->assertSessionHasErrors(['ipk', 'semester']);
+});
+
+test('profile is incomplete without campus data and complete with it', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     UserProfile::create([
@@ -92,16 +161,20 @@ test('profile is incomplete without region and complete with it', function () {
         'hubungan_wali' => 'Paman',
         'pekerjaan_wali' => 'Petani',
         'penghasilan_wali' => '< 1jt',
+        'kecamatan' => 'Awayan',
+        'desa_kelurahan' => 'Ambakiang',
     ]);
 
     expect($user->refresh()->isProfileComplete())->toBeFalse();
     $missing = $user->getMissingProfileFields();
-    $this->assertContains('Kecamatan', $missing);
-    $this->assertContains('Desa/Kelurahan', $missing);
+    $this->assertContains('Program Studi', $missing);
+    $this->assertContains('IPK', $missing);
+    $this->assertContains('Semester', $missing);
 
     $user->profile->update([
-        'kecamatan' => 'Awayan',
-        'desa_kelurahan' => 'Ambakiang',
+        'prodi_id' => $this->prodi->id,
+        'ipk' => 3.5,
+        'semester' => 4,
     ]);
 
     expect($user->refresh()->isProfileComplete())->toBeTrue();

@@ -32,15 +32,15 @@
 
               <div class="form-row">
                 <div class="form-group col-md-8">
-                  <label for="kampus">Kampus Tujuan <span class="text-danger">*</span></label>
-                  <select class="form-control select2-search @error('kampus') is-invalid @enderror" id="kampus"
-                    name="kampus" data-url="{{ route('api.kampus.search') }}" required>
-                    @if(old('kampus'))
-                    <option value="{{ old('kampus') }}" selected>{{ old('kampus') }}</option>
-                    @endif
+                  <label for="kampus_id">Kampus Tujuan <span class="text-danger">*</span></label>
+                  <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id" required>
+                    <option value="">Pilih Kampus</option>
+                    @foreach($kampusList as $kampus)
+                      <option value="{{ $kampus->id }}" {{ old('kampus_id', $kampusList->first()?->id ?? '') == $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
+                    @endforeach
                   </select>
-                  @error('kampus')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Ketik nama kampus untuk mencari</small>
+                  @error('kampus_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Pilih kampus tujuan beasiswa dari daftar yang dikelola di menu Kampus</small>
                 </div>
                 <div class="form-group col-md-4">
                   <label for="tingkat_gelar">Tingkat Gelar <span class="text-danger">*</span></label>
@@ -145,15 +145,44 @@
             </div>
             <div class="card-body">
               <div class="alert alert-info mb-3">
-                <i class="fas fa-info-circle mr-1"></i> Tentukan fakultas dan program studi yang tersedia untuk beasiswa
-                ini. Pendaftar akan memilih dari daftar yang Anda tentukan.
+                <i class="fas fa-info-circle mr-1"></i> Centang program studi yang berhak mengikuti beasiswa ini
+                (minimal 1). Daftar mengikuti kampus yang dipilih.
               </div>
 
-              <div id="fakultas-container"></div>
+              <div id="prodi-tree">
+                @forelse($kampusList as $kampus)
+                  <div class="kampus-tree d-none" data-kampus-id="{{ $kampus->id }}">
+                    @foreach($kampus->fakultas as $fakultas)
+                      <div class="mb-3">
+                        <strong class="d-block mb-2"><i class="fas fa-university mr-1"></i>{{ $fakultas->nama }}</strong>
+                        <div class="row">
+                          @foreach($fakultas->prodi as $prodi)
+                            <div class="col-md-4 mb-1">
+                              <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input prodi-check" id="prodi-{{ $prodi->id }}"
+                                  name="prodi_ids[]" value="{{ $prodi->id }}" @checked(in_array($prodi->id, old('prodi_ids', [])))>
+                                <label class="custom-control-label" for="prodi-{{ $prodi->id }}">{{ $prodi->nama }}</label>
+                              </div>
+                            </div>
+                          @endforeach
+                        </div>
+                      </div>
+                    @endforeach
+                    @if($kampus->fakultas->isEmpty())
+                      <p class="text-muted mb-0">Belum ada fakultas pada kampus ini. Tambahkan melalui menu
+                        <a href="{{ route('admin.kampus.index') }}">Kampus</a>.</p>
+                    @endif
+                  </div>
+                @empty
+                  <p class="text-muted mb-0">Belum ada kampus terdaftar. Tambahkan melalui menu
+                    <a href="{{ route('admin.kampus.index') }}">Kampus</a>.</p>
+                @endforelse
+              </div>
 
-              <button type="button" class="btn btn-dashed btn-primary btn-block mt-2" id="btn-add-fakultas">
-                <i class="fas fa-plus mr-1"></i> Tambah Fakultas
-              </button>
+              @error('prodi_ids')
+                <div class="alert alert-danger mt-2 mb-0">{{ $message }}</div>
+              @enderror
+              <small class="text-muted mt-1 d-block" id="prodi-hint"></small>
             </div>
           </div>
 
@@ -163,7 +192,7 @@
               <a href="{{ route('admin.beasiswa.index') }}" class="btn btn-outline-secondary mr-2">
                 <i class="fas fa-arrow-left mr-1"></i> Batal
               </a>
-              <button type="submit" class="btn btn-primary">
+              <button type="submit" class="btn btn-primary" id="btn-simpan">
                 <i class="fas fa-save mr-1"></i> Simpan Beasiswa
               </button>
             </div>
@@ -176,133 +205,25 @@
 @endsection
 
 @push('script')
-<style>
-  .btn-dashed {
-    border: 2px dashed #ccc;
-    background: transparent;
-    color: #666;
-    transition: all 0.2s;
-  }
-
-  .btn-dashed:hover {
-    border-color: #4e73df;
-    color: #4e73df;
-    background: rgba(78, 115, 223, 0.05);
-  }
-
-  .btn-dashed.btn-primary {
-    border-color: #4e73df;
-    color: #4e73df;
-  }
-
-  .btn-dashed.btn-primary:hover {
-    background: #4e73df;
-    color: #fff;
-  }
-
-  .border-left-primary {
-    border-left: 4px solid #4e73df !important;
-  }
-
-  .fakultas-entry .card-header .btn {
-    line-height: 1;
-  }
-</style>
-
 <script>
   $(document).ready(function() {
-    $('.select2-search').each(function() {
-      var url = $(this).data('url');
-      $(this).select2({
-        ajax: {
-          url: url,
-          dataType: 'json',
-          delay: 300,
-          data: function(params) {
-            return { q: params.term };
-          },
-          processResults: function(data) {
-            return {
-              results: data.map(function(item) {
-                return { id: item.id, text: item.text };
-              })
-            };
-          }
-        },
-        placeholder: 'Cari kampus...',
-        minimumInputLength: 2,
-        allowClear: true
+    function showKampusTree() {
+      var selected = $('#kampus_id').val();
+      $('#prodi-tree .kampus-tree').each(function() {
+        $(this).toggleClass('d-none', String($(this).data('kampus-id')) !== String(selected));
       });
-    });
-
-    var fakultasIndex = 0;
-
-    function updateFakultasNumbers() {
-      $('#fakultas-container .fakultas-entry').each(function(i) {
-        $(this).attr('data-index', i);
-        $(this).find('.badge').text(i + 1);
-        $(this).find('strong').text('Fakultas #' + (i + 1));
-      });
+      updateProdiHint();
     }
 
-    function updateProdiNumbers($fakultasEntry) {
-      $fakultasEntry.find('.prodi-entry').each(function(i) {
-        var fIdx = $(this).closest('.fakultas-entry').data('index');
-        $(this).find('input').attr('name', 'fakultas[' + fIdx + '][prodi][' + i + '][nama]');
-        $(this).find('.input-group-text').text((i + 1) + '.');
-      });
+    function updateProdiHint() {
+      var count = $('#prodi-tree .kampus-tree:not(.d-none) .prodi-check:checked').length;
+      $('#prodi-hint').text(count === 0 ? 'Belum ada program studi yang dipilih. Minimal pilih 1.' : count + ' program studi dipilih.');
     }
 
-    $('#btn-add-fakultas').on('click', function() {
-      var idx = fakultasIndex++;
-      var num = $('#fakultas-container .fakultas-entry').length + 1;
-      var html = '<div class="fakultas-entry mb-3" data-index="' + idx + '">' +
-        '<div class="card border-left-primary">' +
-        '<div class="card-header py-2">' +
-        '<div class="d-flex align-items-center w-100">' +
-        '<div class="d-flex align-items-center">' +
-        '<span class="badge badge-primary rounded-circle mr-2" style="width: 28px; height: 28px; font-size: 14px;">' + num + '</span>' +
-        '<strong>Fakultas #' + num + '</strong>' +
-        '</div>' +
-        '<button type="button" class="btn btn-danger btn-sm btn-remove-fakultas ml-auto" title="Hapus Fakultas"><i class="fas fa-trash"></i></button>' +
-        '</div></div>' +
-        '<div class="card-body">' +
-        '<div class="form-group">' +
-        '<label>Nama Fakultas <span class="text-danger">*</span></label>' +
-        '<input type="text" class="form-control" name="fakultas[' + idx + '][nama]" required placeholder="Contoh: Fakultas Teknik"></div>' +
-        '<label>Program Studi <span class="text-danger">*</span></label>' +
-        '<div class="prodi-list">' +
-        '<div class="input-group mb-2 prodi-entry">' +
-        '<div class="input-group-prepend"><span class="input-group-text">1.</span></div>' +
-        '<input type="text" class="form-control" name="fakultas[' + idx + '][prodi][0][nama]" required placeholder="Nama Program Studi">' +
-        '<div class="input-group-append"><button type="button" class="btn btn-outline-danger btn-remove-prodi" title="Hapus Prodi"><i class="fas fa-times"></i></button></div>' +
-        '</div></div>' +
-        '<button type="button" class="btn btn-dashed btn-sm btn-add-prodi mt-2"><i class="fas fa-plus mr-1"></i> Tambah Program Studi</button>' +
-        '</div></div></div>';
-      $('#fakultas-container').append(html);
-    });
+    $('#kampus_id').on('change', showKampusTree);
+    $('#prodi-tree').on('change', '.prodi-check', updateProdiHint);
 
-    $(document).on('click', '.btn-remove-fakultas', function() {
-      $(this).closest('.fakultas-entry').remove();
-      updateFakultasNumbers();
-    });
-
-    $(document).on('click', '.btn-add-prodi', function() {
-      var $entry = $(this).closest('.fakultas-entry');
-      var fIdx = $entry.data('index');
-      var prodiCount = $entry.find('.prodi-entry').length;
-      var html = '<div class="input-group mb-2 prodi-entry">' +
-        '<div class="input-group-prepend"><span class="input-group-text">' + (prodiCount + 1) + '.</span></div>' +
-        '<input type="text" class="form-control" name="fakultas[' + fIdx + '][prodi][' + prodiCount + '][nama]" required placeholder="Nama Program Studi">' +
-        '<div class="input-group-append"><button type="button" class="btn btn-outline-danger btn-remove-prodi" title="Hapus Prodi"><i class="fas fa-times"></i></button></div></div>';
-      $entry.find('.prodi-list').append(html);
-    });
-
-    $(document).on('click', '.btn-remove-prodi', function() {
-      var $list = $(this).closest('.prodi-list');
-      $(this).closest('.prodi-entry').remove();
-      updateProdiNumbers($list.closest('.fakultas-entry'));
-    });
+    showKampusTree();
 
     flatpickr('.flatpickr', {
       dateFormat: 'Y-m-d'

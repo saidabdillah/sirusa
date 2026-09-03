@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Applicant;
+use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,11 +40,15 @@ test('admin can view scholarship index and detail', function () {
 // ─── Scholarship: only admin can manage ─────────────────────────
 
 test('admin can access scholarship create form and create one', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $fakultas = $kampus->fakultas()->create(['nama' => 'Teknik']);
+    $prodi = $fakultas->prodi()->create(['nama' => 'Informatika']);
+
     actingAs($this->admin)->get(route('admin.beasiswa.buat'))->assertOk();
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Prestasi',
-        'kampus' => 'Universitas Indonesia',
+        'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
         'cakupan' => 'penuh',
@@ -53,12 +58,11 @@ test('admin can access scholarship create form and create one', function () {
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'IPK >= 3.0',
         'status' => 'aktif',
-        'fakultas' => [
-            ['nama' => 'Teknik', 'prodi' => [['nama' => 'Informatika']]],
-        ],
+        'prodi_ids' => [$prodi->id],
     ])->assertRedirect(route('admin.beasiswa.index'));
 
     $this->assertDatabaseHas('beasiswa', ['nama' => 'Beasiswa Prestasi']);
+    $this->assertEquals('Universitas Indonesia', Scholarship::where('nama', 'Beasiswa Prestasi')->first()->kampus);
 });
 
 test('super admin cannot access scholarship create form', function () {
@@ -66,9 +70,12 @@ test('super admin cannot access scholarship create form', function () {
 });
 
 test('super admin cannot create scholarship', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Kampus']);
+    $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+
     actingAs($this->superAdmin)->post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Terlarang',
-        'kampus' => 'Kampus',
+        'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
         'cakupan' => 'penuh',
@@ -78,9 +85,7 @@ test('super admin cannot create scholarship', function () {
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
         'status' => 'aktif',
-        'fakultas' => [
-            ['nama' => 'Teknik', 'prodi' => [['nama' => 'Informatika']]],
-        ],
+        'prodi_ids' => [$prodi->id],
     ])->assertForbidden();
 
     $this->assertDatabaseMissing('beasiswa', ['nama' => 'Beasiswa Terlarang']);

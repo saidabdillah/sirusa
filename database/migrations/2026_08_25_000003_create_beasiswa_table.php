@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama');
             $table->string('kampus');
+            $table->foreignId('kampus_id')->nullable()->constrained('kampus')->nullOnDelete();
             $table->unsignedInteger('kuota')->default(0);
             $table->enum('tingkat_gelar', ['S1', 'S2', 'S3']);
             $table->enum('cakupan', ['penuh', 'sebagian']);
@@ -20,9 +21,10 @@ return new class extends Migration
             $table->text('persyaratan')->nullable();
             $table->decimal('ipk_minimal', 3, 2)->default(0);
             $table->unsignedInteger('semester_minimal')->default(0);
+            $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
             $table->date('tanggal_pengumuman')->nullable();
             $table->date('tanggal_pengumuman_selesai')->nullable();
-            $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
+            $table->timestamp('pengumuman_notified_at')->nullable();
             $table->timestamps();
         });
     }

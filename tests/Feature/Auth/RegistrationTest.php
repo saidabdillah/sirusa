@@ -40,10 +40,10 @@ test('newly registered user cannot login before activation', function () {
     ]);
 
     $response = post(route('login.store'), [
-        'email' => 'pendaftar.sirusa@gmail.com',
+        'login' => 'pendaftar.sirusa@gmail.com',
         'password' => 'password123',
     ]);
 
-    $response->assertSessionHasErrors('email');
+    $response->assertSessionHasErrors('login');
     expect(auth()->check())->toBeFalse();
 });

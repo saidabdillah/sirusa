@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Profile;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profil\UpdateProfilRequest;
+use App\Models\Kampus;
 use App\Models\UserProfile;
 use App\Services\WilayahService;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +32,25 @@ class ProfileController extends Controller
 
         $districts = $this->wilayah->getDistricts(self::KABUPATEN_CODE);
 
+        $kampusList = Kampus::with('fakultas.prodi')
+            ->orderBy('nama_kampus')
+            ->get();
+
+        $kampusJson = $kampusList->map(function (Kampus $kampus) {
+            return [
+                'nama' => $kampus->nama_kampus,
+                'fakultas' => $kampus->fakultas->map(function ($fakultas) {
+                    return [
+                        'nama' => $fakultas->nama,
+                        'prodi' => $fakultas->prodi->map(fn ($prodi) => [
+                            'id' => $prodi->id,
+                            'nama' => $prodi->nama,
+                        ])->values(),
+                    ];
+                })->values(),
+            ];
+        });
+
         $selectedDistrict = null;
         if ($profile?->kecamatan) {
             $selectedDistrict = collect($districts)->first(
@@ -43,7 +63,9 @@ class ProfileController extends Controller
             'missingFields',
             'profileComplete',
             'districts',
-            'selectedDistrict'
+            'selectedDistrict',
+            'kampusList',
+            'kampusJson'
         ));
     }
 
