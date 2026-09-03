@@ -96,4 +96,24 @@ class ProfileController extends Controller
             return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan profil: '.$e->getMessage());
         }
     }
+
+    public function destroyPhoto(): RedirectResponse
+    {
+        $profile = auth()->user()->profile;
+
+        if (! $profile?->foto_profil) {
+            return back()->with('error', 'Anda belum memiliki foto profil.');
+        }
+
+        try {
+            Storage::disk('local')->delete($profile->foto_profil);
+            $profile->update(['foto_profil' => null]);
+
+            return back()->with('success', 'Foto profil berhasil dihapus');
+        } catch (\Throwable $e) {
+            Log::error('Gagal hapus foto profil: '.$e->getMessage());
+
+            return back()->with('error', 'Terjadi kesalahan saat menghapus foto profil: '.$e->getMessage());
+        }
+    }
 }

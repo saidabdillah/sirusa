@@ -85,10 +85,10 @@
                   <a href="{{ route('preview.application-letter') }}" class="btn btn-info" target="_blank">
                     <i class="fas fa-eye"></i> Preview Template
                   </a>
-                  <form action="{{ route('admin.template.hapus') }}" method="POST" class="d-inline btn-delete-form">
+                  <form action="{{ route('admin.template.hapus') }}" method="POST" class="d-inline" id="hapusTemplateForm">
                     @csrf
                     @method('DELETE')
-                    <button type="button" class="btn btn-danger btn-delete">
+                    <button type="button" class="btn btn-danger" id="hapusTemplateBtn">
                       <i class="fas fa-trash"></i> Hapus Template
                     </button>
                   </form>
@@ -101,3 +101,41 @@
     </div>
 </section>
 @endsection
+
+@push('script')
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var hapusTemplateBtn = document.getElementById('hapusTemplateBtn');
+
+    if (hapusTemplateBtn) {
+      hapusTemplateBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        fetch("{{ route('admin.template.info') }}", {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            Swal.fire({
+              title: data.title,
+              text: data.text,
+              icon: data.icon,
+              showCancelButton: true,
+              confirmButtonColor: data.confirmButtonColor,
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: data.confirmButtonText,
+              cancelButtonText: 'Batal',
+            }).then(function (result) {
+              if (result.isConfirmed) {
+                document.getElementById('hapusTemplateForm').submit();
+              }
+            });
+          });
+      });
+    }
+  });
+</script>
+@endpush

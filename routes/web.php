@@ -15,6 +15,7 @@ use App\Http\Controllers\User\BeasiswaController as UserBeasiswaController;
 use App\Http\Controllers\User\PendaftaranController;
 use App\Http\Controllers\User\PengumumanController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', fn () => view('landing'))->name('landing');
 
@@ -35,11 +36,54 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'status.aktif'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'keluar'])->name('logout');
+    Route::get('/keluar/info', function () {
+        return response()->json([
+            'title' => 'Keluar?',
+            'text' => 'Anda akan keluar dari akun SIRUSA.',
+            'icon' => 'question',
+            'confirmButtonText' => 'Ya, Keluar',
+            'confirmButtonColor' => '#d33',
+        ]);
+    })->name('logout.info');
     Route::get('/dasbor', DashboardController::class)->name('dashboard');
 
     // Profil
     Route::get('/profil', [ProfileController::class, 'index'])->name('profile');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profil/foto', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.delete');
+    Route::get('/profil/foto/info', function () {
+        $profile = auth()->user()->profile;
+        if (! $profile?->foto_profil) {
+            return response()->json([
+                'title' => 'Tidak Ada Foto',
+                'text' => 'Anda belum mengunggah foto profil.',
+                'icon' => 'info',
+                'confirmButtonText' => 'OK',
+                'confirmButtonColor' => '#3085d6',
+            ]);
+        }
+
+        return response()->json([
+            'title' => 'Hapus Foto Profil?',
+            'text' => 'Foto profil Anda akan dihapus permanen.',
+            'icon' => 'warning',
+            'confirmButtonText' => 'Ya, Hapus',
+            'confirmButtonColor' => '#d33',
+        ]);
+    })->name('profile.photo.info');
+    Route::get('/profil/foto/{path}', function ($path) {
+        $disk = Storage::disk('local');
+        if ($disk->exists('profil/'.$path)) {
+            $file = $disk->path('profil/'.$path);
+            $mimeType = mime_content_type($file);
+
+            return response()->file($file, [
+                'Content-Type' => $mimeType,
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+        abort(404);
+    })->name('profile.photo')->where('path', '.*');
 
     // Pengaturan akun
     Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');
@@ -112,6 +156,7 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::get('/template', [TemplateController::class, 'index'])->name('template.index');
         Route::put('/template', [TemplateController::class, 'update'])->name('template.perbarui');
         Route::delete('/template', [TemplateController::class, 'destroy'])->name('template.hapus');
+        Route::get('/template/info', [TemplateController::class, 'deleteInfo'])->name('template.info');
     });
 
     // Admin + Super Admin routes
@@ -131,7 +176,7 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
 
     // Preview surat permohonan template (inline view)
     Route::get('/preview/surat-permohonan', function () {
-        $dir = public_path('storage/templates');
+        $dir = Storage::disk('local')->path('templates');
         $files = ['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'];
 
         foreach ($files as $file) {
@@ -152,7 +197,7 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
 
     // Download surat permohonan template
     Route::get('/download/surat-permohonan', function () {
-        $dir = public_path('storage/templates');
+        $dir = Storage::disk('local')->path('templates');
         $files = ['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'];
 
         foreach ($files as $file) {

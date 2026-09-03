@@ -61,7 +61,7 @@
                   <div class="d-flex align-items-center">
                     <div class="mr-3">
                       @if($profile && $profile->foto_profil)
-                        <img src="{{ asset('storage/' . $profile->foto_profil) }}" alt="Foto Profil" class="rounded-circle" width="100" height="100" id="previewImg">
+                        <img src="{{ route('profile.photo', $profile->foto_profil) }}" alt="Foto Profil" class="rounded-circle" width="100" height="100" id="previewImg" style="object-fit:cover;">
                       @else
                         <img src="{{ asset('assets/img/avatar/avatar-1.png') }}" alt="Avatar" class="rounded-circle" width="100" height="100" id="previewImg">
                       @endif
@@ -70,6 +70,17 @@
                       <input type="file" class="form-control @error('foto_profil') is-invalid @enderror" name="foto_profil" id="foto_profil" accept="image/*">
                       @error('foto_profil')<div class="invalid-feedback">{{ $message }}</div>@enderror
                       <small class="text-muted">Format: JPG, JPEG, PNG. Maks 2MB.</small>
+                      @if($profile && $profile->foto_profil)
+                        <div class="mt-2">
+                          <button type="button" class="btn btn-sm btn-danger" id="hapusFotoBtn">
+                            <i class="fas fa-trash"></i> Hapus Foto
+                          </button>
+                          <form id="hapusFotoForm" action="{{ route('profile.photo.delete') }}" method="POST" class="d-none">
+                            @csrf
+                            @method('DELETE')
+                          </form>
+                        </div>
+                      @endif
                     </div>
                   </div>
                 </div>
@@ -421,6 +432,40 @@
 
 @push('script')
 <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var hapusFotoBtn = document.getElementById('hapusFotoBtn');
+
+    if (hapusFotoBtn) {
+      hapusFotoBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        fetch("{{ route('profile.photo.info') }}", {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            Swal.fire({
+              title: data.title,
+              text: data.text,
+              icon: data.icon,
+              showCancelButton: true,
+              confirmButtonColor: data.confirmButtonColor,
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: data.confirmButtonText,
+              cancelButtonText: 'Batal',
+            }).then(function (result) {
+              if (result.isConfirmed) {
+                document.getElementById('hapusFotoForm').submit();
+              }
+            });
+          });
+      });
+    }
+  });
+
   document.getElementById('foto_profil').addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (file) {

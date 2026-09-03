@@ -42,7 +42,11 @@
       </div>
     </li>
     <li class="dropdown"><a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-        <img alt="image" src="{{ asset('assets/img/avatar/avatar-1.png') }}" class="rounded-circle mr-1">
+        @if(Auth::user()->profile?->foto_profil)
+          <img alt="image" src="{{ route('profile.photo', Auth::user()->profile->foto_profil) }}" class="rounded-circle mr-1" width="30" height="30" style="object-fit:cover;">
+        @else
+          <img alt="image" src="{{ asset('assets/img/avatar/avatar-1.png') }}" class="rounded-circle mr-1">
+        @endif
         <div class="d-sm-none d-lg-inline-block">Hai, {{ Auth::user()->username }}</div>
       </a>
       <div class="dropdown-menu dropdown-menu-right">
@@ -54,7 +58,7 @@
           <i class="fas fa-cog"></i> Pengaturan
         </a>
         <div class="dropdown-divider"></div>
-        <a href="#" class="dropdown-item has-icon text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+        <a href="#" class="dropdown-item has-icon text-danger" id="logoutBtn">
           <i class="fas fa-sign-out-alt"></i> Keluar
         </a>
         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
@@ -64,3 +68,39 @@
     </li>
   </ul>
 </nav>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var logoutBtn = document.getElementById('logoutBtn');
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        fetch("{{ route('logout.info') }}", {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            Swal.fire({
+              title: data.title,
+              text: data.text,
+              icon: data.icon,
+              showCancelButton: true,
+              confirmButtonColor: data.confirmButtonColor,
+              cancelButtonColor: '#6c757d',
+              confirmButtonText: data.confirmButtonText,
+              cancelButtonText: 'Batal',
+            }).then(function (result) {
+              if (result.isConfirmed) {
+                document.getElementById('logout-form').submit();
+              }
+            });
+          });
+      });
+    }
+  });
+</script>

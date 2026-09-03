@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateTemplateRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -55,5 +56,37 @@ class TemplateController extends Controller
         }
 
         return redirect()->route('admin.template.index')->with('success', 'Template surat permohonan berhasil dihapus');
+    }
+
+    public function deleteInfo(): JsonResponse
+    {
+        $disk = Storage::disk('local');
+        $found = null;
+
+        foreach (self::TEMPLATE_EXTENSIONS as $ext) {
+            $path = 'templates/surat_permohonan.'.$ext;
+            if ($disk->exists($path)) {
+                $found = $ext;
+                break;
+            }
+        }
+
+        if (! $found) {
+            return response()->json([
+                'title' => 'Tidak Ada Template',
+                'text' => 'Tidak ada template surat permohonan yang tersedia.',
+                'icon' => 'info',
+                'confirmButtonText' => 'OK',
+                'confirmButtonColor' => '#3085d6',
+            ]);
+        }
+
+        return response()->json([
+            'title' => 'Hapus Template?',
+            'text' => 'File "surat_permohonan.'.$found.'" akan dihapus permanen.',
+            'icon' => 'warning',
+            'confirmButtonText' => 'Ya, Hapus',
+            'confirmButtonColor' => '#d33',
+        ]);
     }
 }
