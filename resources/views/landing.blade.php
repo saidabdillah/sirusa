@@ -35,11 +35,6 @@
           </a>
         </li>
         @else
-        <li class="nav-item mr-lg-2 mb-2 mb-lg-0">
-          <a class="btn btn-outline-primary btn-block" href="{{ route('login') }}">
-            <i class="fas fa-sign-in-alt mr-1"></i>Masuk
-          </a>
-        </li>
         <li class="nav-item">
           <a class="btn btn-primary btn-block" href="{{ route('register') }}">
             <i class="fas fa-user-plus mr-1"></i>Daftar
@@ -184,6 +179,10 @@
     </div>
     @if($kampusMitra->isEmpty())
     <div class="alert alert-info text-center mb-0">Belum ada kampus mitra.</div>
+    @elseif($kampusMitra->count() === 1)
+    <div class="kampus-marquee rounded py-3 px-2 text-center">
+      <span>{{ $kampusMitra->first() }}</span>
+    </div>
     @else
     <div class="kampus-marquee rounded py-3 px-2">
       <div class="kampus-marquee__track" id="kampusTrack">

@@ -57,21 +57,28 @@
               <div class="form-group">
                 <label for="dokumen_ktp">KTP <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_ktp') is-invalid @enderror" id="dokumen_ktp"
-                  name="dokumen_ktp" accept=".pdf,.jpg,.jpeg,.png" required>
+                  name="dokumen_ktp" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_ktp')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
                 <label for="dokumen_kk">Kartu Keluarga <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_kk') is-invalid @enderror" id="dokumen_kk"
-                  name="dokumen_kk" accept=".pdf,.jpg,.jpeg,.png" required>
+                  name="dokumen_kk" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
+                <label for="dokumen_akta">Akta Kelahiran <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('dokumen_akta') is-invalid @enderror" id="dokumen_akta"
+                  name="dokumen_akta" accept=".pdf,.jpg,.jpeg,.png">
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
+                @error('dokumen_akta')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+              <div class="form-group">
                 <label for="dokumen_surat_permohonan">Surat Permohonan <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_surat_permohonan') is-invalid @enderror"
-                  id="dokumen_surat_permohonan" name="dokumen_surat_permohonan" accept=".pdf,.jpg,.jpeg,.png" required>
+                  id="dokumen_surat_permohonan" name="dokumen_surat_permohonan" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Template dapat diunduh dari
                   menu Template Surat.</small>
                 @error('dokumen_surat_permohonan')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -79,42 +86,43 @@
               <div class="form-group">
                 <label for="dokumen_transkrip">Transkrip Nilai / KHS <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_transkrip') is-invalid @enderror"
-                  id="dokumen_transkrip" name="dokumen_transkrip" accept=".pdf,.jpg,.jpeg,.png" required>
+                  id="dokumen_transkrip" name="dokumen_transkrip" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_transkrip')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
                 <label for="dokumen_surat_aktif">Surat Aktif Kuliah / KTM <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_surat_aktif') is-invalid @enderror"
-                  id="dokumen_surat_aktif" name="dokumen_surat_aktif" accept=".pdf,.jpg,.jpeg,.png" required>
+                  id="dokumen_surat_aktif" name="dokumen_surat_aktif" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_surat_aktif')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
                 <label for="dokumen_pas_foto">Pas Foto 3x4 <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_pas_foto') is-invalid @enderror"
-                  id="dokumen_pas_foto" name="dokumen_pas_foto" accept=".jpg,.jpeg,.png" required>
+                  id="dokumen_pas_foto" name="dokumen_pas_foto" accept=".jpg,.jpeg,.png">
                 <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_pas_foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
-                <label for="dokumen_surat_pernyataan">Surat Pernyataan Tidak Menerima Beasiswa Lain <span class="text-danger">*</span></label>
+                <label for="dokumen_surat_pernyataan">Surat Pernyataan Tidak Menerima Beasiswa Lain <span
+                    class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_surat_pernyataan') is-invalid @enderror"
-                  id="dokumen_surat_pernyataan" name="dokumen_surat_pernyataan" accept=".pdf,.jpg,.jpeg,.png" required>
+                  id="dokumen_surat_pernyataan" name="dokumen_surat_pernyataan" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_surat_pernyataan')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
                 <label for="dokumen_sktm">Surat Keterangan Tidak Mampu (SKTM) <span class="text-danger">*</span></label>
-                <input type="file" class="form-control @error('dokumen_sktm') is-invalid @enderror"
-                  id="dokumen_sktm" name="dokumen_sktm" accept=".pdf,.jpg,.jpeg,.png" required>
+                <input type="file" class="form-control @error('dokumen_sktm') is-invalid @enderror" id="dokumen_sktm"
+                  name="dokumen_sktm" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_sktm')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
               <div class="form-group">
                 <label for="dokumen_bukti_ukt">Bukti Pembayaran UKT/SPP <span class="text-danger">*</span></label>
                 <input type="file" class="form-control @error('dokumen_bukti_ukt') is-invalid @enderror"
-                  id="dokumen_bukti_ukt" name="dokumen_bukti_ukt" accept=".pdf,.jpg,.jpeg,.png" required>
+                  id="dokumen_bukti_ukt" name="dokumen_bukti_ukt" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB.</small>
                 @error('dokumen_bukti_ukt')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
@@ -128,51 +136,55 @@
               </div>
 
               <hr>
-              <h5 class="mb-3">KTP Orang Tua / Wali</h5>
+              <h5 class="mb-3">Berkas Orang Tua / Wali</h5>
               <input type="hidden" name="status_orang_tua" value="{{ $profile->status_orang_tua }}">
               <div class="alert alert-info">
-                KTP Orang Tua / Wali diwajibkan sesuai dengan status orang tua Anda di profil.
+                Berkas Orang Tua / Wali diwajibkan sesuai dengan status orang tua Anda di profil.
                 @if(! $profile->status_orang_tua)
-                  <div class="mt-2">
-                    <a href="{{ route('profile') }}" class="btn btn-warning btn-sm">
-                      <i class="fas fa-user-edit"></i> Lengkapi Status Orang Tua di Profil
-                    </a>
-                  </div>
+                <div class="mt-2">
+                  <a href="{{ route('profile') }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-user-edit"></i> Lengkapi Status Orang Tua di Profil
+                  </a>
+                </div>
                 @endif
               </div>
 
+              @if(in_array($profile->status_orang_tua, ['Lengkap', 'Piatu']))
               <div class="form-group">
-                <label for="ktp_ayah">KTP Ayah @if(in_array($profile->status_orang_tua, ['Lengkap', 'Piatu']))<span class="text-danger">*</span>@endif</label>
-                <input type="file" class="form-control @error('ktp_ayah') is-invalid @enderror"
-                  id="ktp_ayah" name="ktp_ayah" accept=".pdf,.jpg,.jpeg,.png"
-                  {{ in_array($profile->status_orang_tua, ['Lengkap', 'Piatu']) ? 'required' : '' }}>
+                <label for="ktp_ayah">KTP Ayah <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('ktp_ayah') is-invalid @enderror" id="ktp_ayah"
+                  name="ktp_ayah" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
                 @error('ktp_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              @endif
+              @if(in_array($profile->status_orang_tua, ['Lengkap', 'Yatim']))
               <div class="form-group">
-                <label for="ktp_ibu">KTP Ibu @if(in_array($profile->status_orang_tua, ['Lengkap', 'Yatim']))<span class="text-danger">*</span>@endif</label>
-                <input type="file" class="form-control @error('ktp_ibu') is-invalid @enderror"
-                  id="ktp_ibu" name="ktp_ibu" accept=".pdf,.jpg,.jpeg,.png"
-                  {{ in_array($profile->status_orang_tua, ['Lengkap', 'Yatim']) ? 'required' : '' }}>
+                <label for="ktp_ibu">KTP Ibu <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('ktp_ibu') is-invalid @enderror" id="ktp_ibu"
+                  name="ktp_ibu" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
                 @error('ktp_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              @endif
+              @if($profile->status_orang_tua === 'Yatim Piatu')
               <div class="form-group">
-                <label for="ktp_wali">KTP Wali @if($profile->status_orang_tua === 'Yatim Piatu')<span class="text-danger">*</span>@endif</label>
-                <input type="file" class="form-control @error('ktp_wali') is-invalid @enderror"
-                  id="ktp_wali" name="ktp_wali" accept=".pdf,.jpg,.jpeg,.png"
-                  {{ $profile->status_orang_tua === 'Yatim Piatu' ? 'required' : '' }}>
+                <label for="ktp_wali">KTP Wali <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('ktp_wali') is-invalid @enderror" id="ktp_wali"
+                  name="ktp_wali" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
                 @error('ktp_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              @endif
+              @if($profile->status_orang_tua === 'Yatim Piatu')
               <div class="form-group">
-                <label for="kk_wali">Kartu Keluarga Wali @if($profile->status_orang_tua === 'Yatim Piatu')<span class="text-danger">*</span>@endif</label>
-                <input type="file" class="form-control @error('kk_wali') is-invalid @enderror"
-                  id="kk_wali" name="kk_wali" accept=".pdf,.jpg,.jpeg,.png"
-                  {{ $profile->status_orang_tua === 'Yatim Piatu' ? 'required' : '' }}>
+                <label for="kk_wali">Kartu Keluarga Wali <span class="text-danger">*</span></label>
+                <input type="file" class="form-control @error('kk_wali') is-invalid @enderror" id="kk_wali"
+                  name="kk_wali" accept=".pdf,.jpg,.jpeg,.png">
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
                 @error('kk_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              @endif
             </div>
             <div class="card-footer text-right">
               <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-secondary">Batal</a>

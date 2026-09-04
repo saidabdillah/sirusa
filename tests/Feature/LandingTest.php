@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -19,7 +20,8 @@ test('guest sees masuk and daftar buttons on landing', function () {
         ->assertOk()
         ->assertSee('Masuk')
         ->assertSee('Daftar')
-        ->assertDontSee('Dasbor');
+        ->assertDontSee('Dasbor')
+        ->assertDontSee('btn-outline-primary');
 });
 
 test('authenticated user sees dashbor button instead of masuk and daftar on landing', function () {
@@ -33,4 +35,30 @@ test('authenticated user sees dashbor button instead of masuk and daftar on land
         ->assertDontSee('Masuk')
         ->assertDontSee(route('register'))
         ->assertDontSee(route('login'));
+});
+
+test('single campus is shown statically on landing', function () {
+    Scholarship::factory()->create(['kampus' => 'Universitas Tunggal']);
+
+    $this->get(route('landing'))
+        ->assertOk()
+        ->assertSee('Universitas Tunggal')
+        ->assertDontSee('kampus-marquee__track"');
+});
+
+test('multiple campuses render the animated campus marquee', function () {
+    Scholarship::factory()->create(['kampus' => 'Universitas A']);
+    Scholarship::factory()->create(['kampus' => 'Universitas B']);
+
+    $this->get(route('landing'))
+        ->assertOk()
+        ->assertSee('Universitas A')
+        ->assertSee('Universitas B')
+        ->assertSee('kampusTrack');
+});
+
+test('empty campus list shows no-campus message on landing', function () {
+    $this->get(route('landing'))
+        ->assertOk()
+        ->assertSee('Belum ada kampus mitra.');
 });

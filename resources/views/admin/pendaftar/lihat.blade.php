@@ -173,7 +173,7 @@
                 @endif
               </div>
             </div>
-            @if($profile->nama_wali)
+            @if(($profile->status_orang_tua ?? '') === 'Yatim Piatu' || $profile->nama_wali)
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Wali</h6>
@@ -274,6 +274,7 @@
             $docs = [
             ['key' => 'dokumen_ktp', 'label' => 'Kartu Tanda Penduduk (KTP)'],
             ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga (KK)'],
+            ['key' => 'dokumen_akta', 'label' => 'Akta Kelahiran'],
             ['key' => 'dokumen_surat_permohonan', 'label' => 'Surat Permohonan'],
             ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
             ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],
@@ -281,6 +282,10 @@
             ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
             ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
             ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
+            ['key' => 'ktp_ayah', 'label' => 'KTP Ayah'],
+            ['key' => 'ktp_ibu', 'label' => 'KTP Ibu'],
+            ['key' => 'ktp_wali', 'label' => 'KTP Wali'],
+            ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali'],
             ];
             @endphp
 
@@ -410,7 +415,7 @@
               @method('PUT')
               <div class="form-group">
                 <label for="status">Status</label>
-                <select class="form-control @error('status') is-invalid @enderror" name="status" id="status" required>
+                <select class="form-control @error('status') is-invalid @enderror" name="status" id="status">
                   <option value="verifikasi" {{ $applicant->status === 'verifikasi' ? 'selected' : '' }}>Verifikasi
                   </option>
                   <option value="diterima" {{ $applicant->status === 'diterima' ? 'selected' : '' }}>Diterima</option>

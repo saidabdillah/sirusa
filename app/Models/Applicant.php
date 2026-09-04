@@ -21,6 +21,7 @@ class Applicant extends Model
         'semester',
         'dokumen_ktp',
         'dokumen_kk',
+        'dokumen_akta',
         'dokumen_surat_aktif',
         'dokumen_transkrip',
         'dokumen_surat_permohonan',

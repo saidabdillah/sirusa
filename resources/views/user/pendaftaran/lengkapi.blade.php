@@ -41,29 +41,125 @@
                 </div>
 
                 <h5 class="mb-3 mt-4">Dokumen Pendukung (Kosongkan jika tidak ingin mengganti)</h5>
-                @foreach([
-                  ['key' => 'dokumen_ktp', 'label' => 'KTP', 'accept' => '.pdf,.jpg,.jpeg,.png'],
-                  ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga', 'accept' => '.pdf,.jpg,.jpeg,.png'],
-                  ['key' => 'dokumen_surat_permohonan', 'label' => 'Surat Permohonan', 'accept' => '.pdf,.jpg,.jpeg,.png'],
-                  ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS', 'accept' => '.pdf,.jpg,.jpeg,.png'],
-                  ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM', 'accept' => '.pdf,.jpg,.jpeg,.png'],
-                  ['key' => 'dokumen_pas_foto', 'label' => 'Pas Foto 3x4', 'accept' => '.jpg,.jpeg,.png'],
-                ] as $doc)
-                  <div class="form-group">
-                    <label for="{{ $doc['key'] }}">{{ $doc['label'] }}</label>
-                    @if($applicant->{$doc['key']})
-                      <div class="mb-1">
-                        <small class="text-muted">File saat ini: {{ basename($applicant->{$doc['key']}) }}</small>
-                        <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                          <i class="fas fa-eye"></i> Lihat
-                        </a>
-                      </div>
-                    @endif
-                    <input type="file" class="form-control @error($doc["key"]) is-invalid @enderror" id="{{ $doc['key'] }}" name="{{ $doc['key'] }}" accept="{{ $doc['accept'] }}">
-                    <small class="text-muted">Format: {{ str_replace('.', '', $doc['accept']) }}. Maksimal 20MB. Kosongkan jika tidak ingin mengganti.</small>
-                    @error($doc['key'])<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                @endforeach
+                <div class="form-group">
+                  <label for="dokumen_ktp">KTP</label>
+                  @if($applicant->dokumen_ktp)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_ktp) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_ktp) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_ktp') is-invalid @enderror" id="dokumen_ktp"
+                    name="dokumen_ktp" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_ktp')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_kk">Kartu Keluarga</label>
+                  @if($applicant->dokumen_kk)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_kk) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_kk) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_kk') is-invalid @enderror" id="dokumen_kk"
+                    name="dokumen_kk" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_akta">Akta Kelahiran</label>
+                  @if($applicant->dokumen_akta)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_akta) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_akta) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_akta') is-invalid @enderror" id="dokumen_akta"
+                    name="dokumen_akta" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_akta')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_surat_permohonan">Surat Permohonan</label>
+                  @if($applicant->dokumen_surat_permohonan)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_surat_permohonan) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_surat_permohonan) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_surat_permohonan') is-invalid @enderror"
+                    id="dokumen_surat_permohonan" name="dokumen_surat_permohonan" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_surat_permohonan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_transkrip">Transkrip Nilai / KHS</label>
+                  @if($applicant->dokumen_transkrip)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_transkrip) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_transkrip) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_transkrip') is-invalid @enderror"
+                    id="dokumen_transkrip" name="dokumen_transkrip" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_transkrip')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_surat_aktif">Surat Aktif Kuliah / KTM</label>
+                  @if($applicant->dokumen_surat_aktif)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_surat_aktif) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_surat_aktif) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_surat_aktif') is-invalid @enderror"
+                    id="dokumen_surat_aktif" name="dokumen_surat_aktif" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_surat_aktif')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_pas_foto">Pas Foto 3x4</label>
+                  @if($applicant->dokumen_pas_foto)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_pas_foto) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_pas_foto) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_pas_foto') is-invalid @enderror"
+                    id="dokumen_pas_foto" name="dokumen_pas_foto" accept=".jpg,.jpeg,.png">
+                  <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_pas_foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
 
                 <div class="form-group">
                   <label for="dokumen_prestasi">Sertifikat Prestasi (opsional)</label>
@@ -81,31 +177,86 @@
                 <h5 class="mb-3">KTP & Kartu Keluarga Orang Tua / Wali</h5>
                 @php
                   $profile = $applicant->user->profile;
-                  $ktpFields = [
-                    ['key' => 'ktp_ayah', 'label' => 'KTP Ayah', 'required' => in_array($profile?->status_orang_tua, ['Lengkap', 'Piatu'])],
-                    ['key' => 'ktp_ibu', 'label' => 'KTP Ibu', 'required' => in_array($profile?->status_orang_tua, ['Lengkap', 'Yatim'])],
-                    ['key' => 'ktp_wali', 'label' => 'KTP Wali', 'required' => $profile?->status_orang_tua === 'Yatim Piatu'],
-                    ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali', 'required' => $profile?->status_orang_tua === 'Yatim Piatu'],
-                  ];
                 @endphp
-                @foreach($ktpFields as $ktp)
-                  <div class="form-group">
-                    <label for="{{ $ktp['key'] }}">{{ $ktp['label'] }}
-                      @if($ktp['required'])<span class="text-danger">*</span>@endif
-                    </label>
-                    @if($applicant->{$ktp['key']})
-                      <div class="mb-1">
-                        <small class="text-muted">File saat ini: {{ basename($applicant->{$ktp['key']}) }}</small>
-                        <a href="{{ asset('storage/' . $applicant->{$ktp['key']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                          <i class="fas fa-eye"></i> Lihat
-                        </a>
-                      </div>
-                    @endif
-                    <input type="file" class="form-control @error($ktp['key']) is-invalid @enderror" id="{{ $ktp['key'] }}" name="{{ $ktp['key'] }}" accept=".pdf,.jpg,.jpeg,.png" {{ ($ktp['required'] && ! $applicant->{$ktp['key']}) ? 'required' : '' }}>
-                    <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin mengganti.</small>
-                    @error($ktp['key'])<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                @endforeach
+                @if(in_array($profile?->status_orang_tua, ['Lengkap', 'Piatu']))
+                <div class="form-group">
+                  <label for="ktp_ayah">KTP Ayah <span class="text-danger">*</span></label>
+                  @if($applicant->ktp_ayah)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->ktp_ayah) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->ktp_ayah) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('ktp_ayah') is-invalid @enderror" id="ktp_ayah"
+                    name="ktp_ayah" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('ktp_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @endif
+
+                @if(in_array($profile?->status_orang_tua, ['Lengkap', 'Yatim']))
+                <div class="form-group">
+                  <label for="ktp_ibu">KTP Ibu <span class="text-danger">*</span></label>
+                  @if($applicant->ktp_ibu)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->ktp_ibu) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->ktp_ibu) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('ktp_ibu') is-invalid @enderror" id="ktp_ibu"
+                    name="ktp_ibu" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('ktp_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @endif
+
+                @if(($profile?->status_orang_tua ?? '') === 'Yatim Piatu')
+                <div class="form-group">
+                  <label for="ktp_wali">KTP Wali <span class="text-danger">*</span></label>
+                  @if($applicant->ktp_wali)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->ktp_wali) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->ktp_wali) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('ktp_wali') is-invalid @enderror" id="ktp_wali"
+                    name="ktp_wali" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('ktp_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @endif
+
+                @if(($profile?->status_orang_tua ?? '') === 'Yatim Piatu')
+                <div class="form-group">
+                  <label for="kk_wali">Kartu Keluarga Wali <span class="text-danger">*</span></label>
+                  @if($applicant->kk_wali)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->kk_wali) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->kk_wali) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('kk_wali') is-invalid @enderror" id="kk_wali"
+                    name="kk_wali" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('kk_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @endif
               </div>
               <div class="card-footer text-right">
                 <a href="{{ route('user.pendaftaran.lihat', $applicant) }}" class="btn btn-secondary">Batal</a>

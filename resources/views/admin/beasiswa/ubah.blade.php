@@ -26,14 +26,14 @@
               <div class="card-body">
                 <div class="form-group">
                   <label for="nama">Nama Beasiswa <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $scholarship->nama) }}" required>
+                  <input type="text" class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $scholarship->nama) }}">
                   @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="form-row">
                   <div class="form-group col-md-8">
                     <label for="kampus_id">Kampus Tujuan <span class="text-danger">*</span></label>
-                    <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id" required>
+                    <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
                       <option value="">Pilih Kampus</option>
                       @foreach($kampusList as $kampus)
                         <option value="{{ $kampus->id }}" {{ old('kampus_id', $selectedKampusId) == $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
@@ -44,7 +44,7 @@
                   </div>
                   <div class="form-group col-md-4">
                     <label for="tingkat_gelar">Tingkat Gelar <span class="text-danger">*</span></label>
-                    <select class="form-control @error('tingkat_gelar') is-invalid @enderror" id="tingkat_gelar" name="tingkat_gelar" required>
+                    <select class="form-control @error('tingkat_gelar') is-invalid @enderror" id="tingkat_gelar" name="tingkat_gelar">
                       <option value="S1" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === 'S1' ? 'selected' : '' }}>S1</option>
                       <option value="S2" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === 'S2' ? 'selected' : '' }}>S2</option>
                       <option value="S3" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === 'S3' ? 'selected' : '' }}>S3</option>
@@ -56,17 +56,17 @@
                 <div class="form-row">
                   <div class="form-group col-md-3">
                     <label for="kuota">Kuota <span class="text-danger">*</span></label>
-                    <div class="input-group">
+                    <div class="input-group @error('kuota') is-invalid @enderror">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-users"></i></span>
                       </div>
-                      <input type="number" class="form-control @error('kuota') is-invalid @enderror" id="kuota" name="kuota" value="{{ old('kuota', $scholarship->kuota) }}" min="0" required>
+                      <input type="number" class="form-control @error('kuota') is-invalid @enderror" id="kuota" name="kuota" value="{{ old('kuota', $scholarship->kuota) }}" min="0">
                     </div>
-                    @error('kuota')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @error('kuota')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
                     <label for="cakupan">Tunjangan <span class="text-danger">*</span></label>
-                    <select class="form-control @error('cakupan') is-invalid @enderror" id="cakupan" name="cakupan" required>
+                    <select class="form-control @error('cakupan') is-invalid @enderror" id="cakupan" name="cakupan">
                       <option value="penuh" {{ old('cakupan', $scholarship->cakupan) === 'penuh' ? 'selected' : '' }}>Penuh</option>
                       <option value="sebagian" {{ old('cakupan', $scholarship->cakupan) === 'sebagian' ? 'selected' : '' }}>Sebagian</option>
                     </select>
@@ -74,29 +74,29 @@
                   </div>
                   <div class="form-group col-md-3">
                     <label for="batas_waktu">Batas Waktu <span class="text-danger">*</span></label>
-                    <div class="input-group">
+                    <div class="input-group @error('batas_waktu') is-invalid @enderror">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                       </div>
-                      <input type="text" class="form-control flatpickr bg-white @error('batas_waktu') is-invalid @enderror" id="batas_waktu" name="batas_waktu" value="{{ old('batas_waktu', $scholarship->batas_waktu?->format('Y-m-d')) }}" placeholder="Pilih tanggal" required>
+                      <input type="text" class="form-control flatpickr bg-white @error('batas_waktu') is-invalid @enderror" id="batas_waktu" name="batas_waktu" value="{{ old('batas_waktu', $scholarship->batas_waktu?->format('Y-m-d')) }}" placeholder="Pilih tanggal">
                     </div>
-                    @error('batas_waktu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @error('batas_waktu')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
                     <label for="ipk_minimal">IPK Minimal <span class="text-danger">*</span></label>
                     <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk_minimal') is-invalid @enderror"
-                      id="ipk_minimal" name="ipk_minimal" value="{{ old('ipk_minimal', $scholarship->ipk_minimal) }}" placeholder="cth: 3.00" required>
+                      id="ipk_minimal" name="ipk_minimal" value="{{ old('ipk_minimal', $scholarship->ipk_minimal) }}" placeholder="cth: 3.00">
                     @error('ipk_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
                     <label for="semester_minimal">Semester Minimal <span class="text-danger">*</span></label>
                     <input type="number" min="1" max="14" class="form-control @error('semester_minimal') is-invalid @enderror"
-                      id="semester_minimal" name="semester_minimal" value="{{ old('semester_minimal', $scholarship->semester_minimal) }}" placeholder="cth: 3" required>
+                      id="semester_minimal" name="semester_minimal" value="{{ old('semester_minimal', $scholarship->semester_minimal) }}" placeholder="cth: 3">
                     @error('semester_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
                     <label for="status">Status <span class="text-danger">*</span></label>
-                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status" required>
+                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
                       <option value="aktif" {{ old('status', $scholarship->status) === 'aktif' ? 'selected' : '' }}>Aktif</option>
                       <option value="non-aktif" {{ old('status', $scholarship->status) === 'non-aktif' ? 'selected' : '' }}>Non-aktif</option>
                     </select>
@@ -114,12 +114,12 @@
               <div class="card-body">
                 <div class="form-group">
                   <label for="deskripsi">Deskripsi <span class="text-danger">*</span></label>
-                  <textarea class="form-control @error('deskripsi') is-invalid @enderror" id="deskripsi" name="deskripsi" rows="4" required>{{ old('deskripsi', $scholarship->deskripsi) }}</textarea>
+                  <textarea class="form-control @error('deskripsi') is-invalid @enderror" id="deskripsi" name="deskripsi" rows="4">{{ old('deskripsi', $scholarship->deskripsi) }}</textarea>
                   @error('deskripsi')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="form-group mb-0">
-                  <label for="persyaratan">Persyaratan</label>
+                  <label for="persyaratan">Persyaratan <span class="text-danger">*</span></label>
                   <textarea class="form-control @error('persyaratan') is-invalid @enderror" id="persyaratan" name="persyaratan" rows="4">{{ old('persyaratan', $scholarship->persyaratan) }}</textarea>
                   @error('persyaratan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   <small class="text-muted">Pisahkan setiap persyaratan dengan enter</small>

@@ -67,6 +67,7 @@ class PendaftaranController extends Controller
         $fileFields = [
             'dokumen_ktp',
             'dokumen_kk',
+            'dokumen_akta',
             'dokumen_surat_permohonan',
             'dokumen_transkrip',
             'dokumen_surat_aktif',
@@ -202,6 +203,7 @@ class PendaftaranController extends Controller
         $request->validate([
             'dokumen_ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'dokumen_akta' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_surat_permohonan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_transkrip' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_surat_aktif' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
@@ -234,6 +236,7 @@ class PendaftaranController extends Controller
         $fileFields = [
             'dokumen_ktp',
             'dokumen_kk',
+            'dokumen_akta',
             'dokumen_surat_permohonan',
             'dokumen_transkrip',
             'dokumen_surat_aktif',

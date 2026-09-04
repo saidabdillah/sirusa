@@ -209,6 +209,7 @@
             $allDocs = [
             ['key' => 'dokumen_ktp', 'label' => 'Kartu Tanda Penduduk (KTP)'],
             ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga (KK)'],
+            ['key' => 'dokumen_akta', 'label' => 'Akta Kelahiran'],
             ['key' => 'dokumen_surat_permohonan', 'label' => 'Surat Permohonan'],
             ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
             ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],

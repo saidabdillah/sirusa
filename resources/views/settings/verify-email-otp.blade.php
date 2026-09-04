@@ -45,8 +45,7 @@
                            style="width: 48px; height: 56px; font-size: 1.5rem;"
                            autocomplete="one-time-code"
                            inputmode="numeric"
-                           @if ($i === 1) autofocus @endif
-                           required>
+                           @if ($i === 1) autofocus @endif>
                   @endfor
                 </div>
                 <input type="hidden" name="otp" id="otp-hidden" value="">

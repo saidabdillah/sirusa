@@ -61,6 +61,7 @@ function applicantPayload(Scholarship $scholarship): array
         'ktp_ibu' => UploadedFile::fake()->create('ktp_ibu.pdf', 10),
         'dokumen_ktp' => UploadedFile::fake()->create('ktp.pdf', 10),
         'dokumen_kk' => UploadedFile::fake()->create('kk.pdf', 10),
+        'dokumen_akta' => UploadedFile::fake()->create('akta.pdf', 10),
         'dokumen_surat_permohonan' => UploadedFile::fake()->create('permohonan.pdf', 10),
         'dokumen_transkrip' => UploadedFile::fake()->create('transkrip.pdf', 10),
         'dokumen_surat_aktif' => UploadedFile::fake()->create('aktif.pdf', 10),
