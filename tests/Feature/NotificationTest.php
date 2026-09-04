@@ -89,8 +89,9 @@ test('user registering scholarship notifies all admins and super admins', functi
         'alamat' => 'RT 01',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
-        'status_orang_tua' => 'Wali',
+        'status_orang_tua' => 'Yatim Piatu',
         'nama_wali' => 'Paman',
+        'nik_wali' => '6302000000000004',
         'hubungan_wali' => 'Paman',
         'pekerjaan_wali' => 'Petani',
         'penghasilan_wali' => '< 1jt',
@@ -105,6 +106,8 @@ test('user registering scholarship notifies all admins and super admins', functi
 
     post(route('user.pendaftaran.simpan'), [
         'beasiswa_id' => $scholarship->id,
+        'status_orang_tua' => 'Yatim Piatu',
+        'ktp_wali' => UploadedFile::fake()->create('ktp_wali.pdf', 100, 'application/pdf'),
         'dokumen_ktp' => UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf'),
         'dokumen_kk' => UploadedFile::fake()->create('kk.pdf', 100, 'application/pdf'),
         'dokumen_surat_permohonan' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),

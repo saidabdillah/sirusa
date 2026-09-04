@@ -126,6 +126,45 @@
                   file.</small>
                 @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+
+              <hr>
+              <h5 class="mb-3">KTP Orang Tua / Wali</h5>
+              <input type="hidden" name="status_orang_tua" value="{{ $profile->status_orang_tua }}">
+              <div class="alert alert-info">
+                KTP Orang Tua / Wali diwajibkan sesuai dengan status orang tua Anda di profil.
+                @if(! $profile->status_orang_tua)
+                  <div class="mt-2">
+                    <a href="{{ route('profile') }}" class="btn btn-warning btn-sm">
+                      <i class="fas fa-user-edit"></i> Lengkapi Status Orang Tua di Profil
+                    </a>
+                  </div>
+                @endif
+              </div>
+
+              <div class="form-group">
+                <label for="ktp_ayah">KTP Ayah @if(in_array($profile->status_orang_tua, ['Lengkap', 'Piatu']))<span class="text-danger">*</span>@endif</label>
+                <input type="file" class="form-control @error('ktp_ayah') is-invalid @enderror"
+                  id="ktp_ayah" name="ktp_ayah" accept=".pdf,.jpg,.jpeg,.png"
+                  {{ in_array($profile->status_orang_tua, ['Lengkap', 'Piatu']) ? 'required' : '' }}>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
+                @error('ktp_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+              <div class="form-group">
+                <label for="ktp_ibu">KTP Ibu @if(in_array($profile->status_orang_tua, ['Lengkap', 'Yatim']))<span class="text-danger">*</span>@endif</label>
+                <input type="file" class="form-control @error('ktp_ibu') is-invalid @enderror"
+                  id="ktp_ibu" name="ktp_ibu" accept=".pdf,.jpg,.jpeg,.png"
+                  {{ in_array($profile->status_orang_tua, ['Lengkap', 'Yatim']) ? 'required' : '' }}>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
+                @error('ktp_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+              <div class="form-group">
+                <label for="ktp_wali">KTP Wali @if($profile->status_orang_tua === 'Yatim Piatu')<span class="text-danger">*</span>@endif</label>
+                <input type="file" class="form-control @error('ktp_wali') is-invalid @enderror"
+                  id="ktp_wali" name="ktp_wali" accept=".pdf,.jpg,.jpeg,.png"
+                  {{ $profile->status_orang_tua === 'Yatim Piatu' ? 'required' : '' }}>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
+                @error('ktp_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
             </div>
             <div class="card-footer text-right">
               <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-secondary">Batal</a>

@@ -43,9 +43,9 @@
                       <td>{{ $scholarship->kampus }}</td>
                       <td>
                         @if($scholarship->tanggal_pengumuman && $scholarship->tanggal_pengumuman_selesai)
-                          {{ $scholarship->tanggal_pengumuman->format('d M Y') }}
+                          {{ $scholarship->tanggal_pengumuman->translatedFormat('d F Y') }}
                           s/d
-                          {{ $scholarship->tanggal_pengumuman_selesai->format('d M Y') }}
+                          {{ $scholarship->tanggal_pengumuman_selesai->translatedFormat('d F Y') }}
                         @else
                           <span class="text-muted">Belum diatur</span>
                         @endif

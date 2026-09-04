@@ -72,11 +72,11 @@
             <div class="card-body">
               <div class="mb-3">
                 <strong>Tanggal Dibuat:</strong><br>
-                {{ $user->created_at->format('d M Y H:i') }}
+                {{ $user->created_at->translatedFormat('d F Y H:i') }}
               </div>
               <div class="mb-3">
                 <strong>Terakhir Diperbarui:</strong><br>
-                {{ $user->updated_at->format('d M Y H:i') }}
+                {{ $user->updated_at->translatedFormat('d F Y H:i') }}
               </div>
               <div class="mb-3">
                 <strong>Jumlah Pendaftaran:</strong><br>

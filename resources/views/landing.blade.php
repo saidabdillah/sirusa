@@ -28,6 +28,13 @@
         </li>
       </ul>
       <ul class="navbar-nav align-items-lg-center">
+        @auth
+        <li class="nav-item">
+          <a class="btn btn-primary btn-block" href="{{ route('dashboard') }}">
+            Dasbor
+          </a>
+        </li>
+        @else
         <li class="nav-item mr-lg-2 mb-2 mb-lg-0">
           <a class="btn btn-outline-primary btn-block" href="{{ route('login') }}">
             <i class="fas fa-sign-in-alt mr-1"></i>Masuk
@@ -38,6 +45,7 @@
             <i class="fas fa-user-plus mr-1"></i>Daftar
           </a>
         </li>
+        @endauth
       </ul>
     </div>
   </div>
@@ -54,12 +62,18 @@
         <p class="lead mb-4">Gabung dengan ribuan mahasiswa dan dapatkan beasiswa dari berbagai kampus. Proses
           pendaftaran transparan, gratis, dan tanpa ribet.</p>
         <div class="d-flex flex-wrap">
+          @auth
+          <a href="{{ route('dashboard') }}" class="btn btn-light btn-lg mr-3 mb-2">
+            Dasbor
+          </a>
+          @else
           <a href="{{ route('register') }}" class="btn btn-light btn-lg mr-3 mb-2">
             <i class="fas fa-rocket mr-2"></i>Daftar Sekarang
           </a>
           <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg mb-2">
             <i class="fas fa-sign-in-alt mr-2"></i>Masuk
           </a>
+          @endauth
         </div>
       </div>
       <div class="col-lg-5 d-none d-lg-block">
@@ -144,10 +158,14 @@
             <p class="mb-1"><i class="fas fa-university text-primary mr-1"></i>{{ $beasiswa->kampus }}</p>
             <p class="mb-1"><i class="fas fa-layer-group text-primary mr-1"></i>{{ $beasiswa->tingkat_gelar }}</p>
             <p class="mb-0"><i class="fas fa-calendar-alt text-primary mr-1"></i>Batas: {{ $beasiswa->batas_waktu ?
-              $beasiswa->batas_waktu->translatedFormat('d M Y') : '-' }}</p>
+              $beasiswa->batas_waktu->translatedFormat('d F Y') : '-' }}</p>
           </div>
           <div class="card-footer bg-white text-center">
-            <a href="{{ route('register') }}" class="btn btn-sm btn-primary btn-block">Apply Sekarang</a>
+            @auth
+            <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-primary btn-block">Lihat Beasiswa</a>
+            @else
+            <a href="{{ route('register') }}" class="btn btn-sm btn-primary btn-block">Daftar Sekarang</a>
+            @endauth
           </div>
         </div>
       </div>
@@ -182,11 +200,19 @@
 <section class="py-5 bg-light">
   <div class="container">
     <div class="landing-cta rounded text-white text-center p-5">
+      @auth
+      <h2 class="font-weight-bold mb-3">Siap Melanjutkan Pendaftaran?</h2>
+      <p class="lead mb-4">Kunjungi dasbor Anda untuk melihat status beasiswa.</p>
+      <a href="{{ route('dashboard') }}" class="btn btn-light btn-lg">
+        Ke Dasbor
+      </a>
+      @else
       <h2 class="font-weight-bold mb-3">Siap Mendapatkan Beasiswa?</h2>
       <p class="lead mb-4">Daftar sekarang, gratis dan prosesnya mudah.</p>
       <a href="{{ route('register') }}" class="btn btn-light btn-lg">
         <i class="fas fa-rocket mr-2"></i>Daftar Sekarang
       </a>
+      @endauth
     </div>
   </div>
 </section>
@@ -207,8 +233,12 @@
         <h5 class="font-weight-bold">Navigasi</h5>
         <ul class="list-unstyled">
           <li><a class="text-white-50" href="{{ route('landing') }}"><i class="fas fa-chevron-right mr-1"></i>Beranda</a></li>
+          @auth
+          <li><a class="text-white-50" href="{{ route('dashboard') }}">Dasbor</a></li>
+          @else
           <li><a class="text-white-50" href="{{ route('login') }}"><i class="fas fa-chevron-right mr-1"></i>Masuk</a></li>
           <li><a class="text-white-50" href="{{ route('register') }}"><i class="fas fa-chevron-right mr-1"></i>Daftar</a></li>
+          @endauth
         </ul>
       </div>
       <div class="col-md-4 mb-4">

@@ -246,7 +246,7 @@
                             <span class="badge badge-danger">Ditolak</span>
                           @endif
                         </td>
-                        <td>{{ $applicant->created_at->format('d M Y') }}</td>
+                        <td>{{ $applicant->created_at->translatedFormat('d F Y') }}</td>
                       </tr>
                     @empty
                       <tr>
@@ -376,7 +376,7 @@
                             <span class="badge badge-danger">Ditolak</span>
                           @endif
                         </td>
-                        <td>{{ $applicant->created_at->format('d M Y') }}</td>
+                        <td>{{ $applicant->created_at->translatedFormat('d F Y') }}</td>
                         <td>
                           <a href="{{ route('user.pendaftaran.lihat', $applicant) }}" class="btn btn-sm btn-info">
                             <i class="fas fa-eye"></i>

@@ -51,6 +51,7 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
     Route::get('/profil', [ProfileController::class, 'index'])->name('profile');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profil/foto', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.delete');
+    Route::delete('/profil/ktp/{type}', [ProfileController::class, 'destroyKtp'])->name('profile.ktp.delete');
     Route::get('/profil/foto/info', function () {
         $profile = auth()->user()->profile;
         if (! $profile?->foto_profil) {

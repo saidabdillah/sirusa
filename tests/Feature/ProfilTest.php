@@ -11,6 +11,26 @@ use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('profil');
 
+function completeProfilePayload($prodi): array
+{
+    return [
+        'nama_lengkap' => 'Budi',
+        'nik' => '6302000000000001',
+        'tempat_lahir' => 'Balangan',
+        'tanggal_lahir' => '2000-01-01',
+        'jenis_kelamin' => 'Laki-laki',
+        'agama' => 'Islam',
+        'telepon' => '081234567890',
+        'alamat' => 'RT 01 RW 02',
+        'kecamatan' => 'Awayan',
+        'desa_kelurahan' => 'Ambakiang',
+        'prodi_id' => $prodi->id,
+        'ipk' => 3.5,
+        'semester' => 4,
+        'status_orang_tua' => 'Lengkap',
+    ];
+}
+
 beforeEach(function () {
     Role::create(['name' => 'super_admin']);
     Role::create(['name' => 'admin']);
@@ -63,15 +83,26 @@ test('user can update profile with campus data and parent nik', function () {
     $payload = [
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
-        'nik_ayah' => '6302000000000002',
-        'nik_ibu' => '6302000000000003',
+        'tempat_lahir' => 'Balangan',
+        'tanggal_lahir' => '2000-01-01',
+        'jenis_kelamin' => 'Laki-laki',
+        'agama' => 'Islam',
+        'telepon' => '081234567890',
+        'alamat' => 'RT 01 RW 02',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
-        'alamat' => 'RT 01 RW 02',
         'prodi_id' => $this->prodi->id,
         'ipk' => 3.75,
         'semester' => 5,
         'status_orang_tua' => 'Lengkap',
+        'nama_ayah' => 'Ayah Fauzi',
+        'nik_ayah' => '6302000000000002',
+        'pekerjaan_ayah' => 'Petani',
+        'penghasilan_ayah' => '< 1jt',
+        'nama_ibu' => 'Ibu Fauzi',
+        'nik_ibu' => '6302000000000003',
+        'pekerjaan_ibu' => 'Petani',
+        'penghasilan_ibu' => '< 1jt',
     ];
 
     actingAs($user)
@@ -110,20 +141,14 @@ test('profil update requires campus data ipk and semester', function () {
 test('profil update validates parent nik to 16 digits', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
-    $base = [
-        'nama_lengkap' => 'Budi',
-        'kecamatan' => 'Awayan',
-        'desa_kelurahan' => 'Ambakiang',
-        'prodi_id' => $this->prodi->id,
-        'ipk' => 3.5,
-        'semester' => 4,
-    ];
+    $base = array_merge(completeProfilePayload($this->prodi), [
+        'nik_wali' => '789',
+    ]);
 
     actingAs($user)
         ->put(route('profile.update'), $base + [
             'nik_ayah' => '123',
             'nik_ibu' => '456',
-            'nik_wali' => '789',
         ])
         ->assertSessionHasErrors(['nik_ayah', 'nik_ibu', 'nik_wali']);
 });
@@ -132,14 +157,10 @@ test('profil update validates ipk and semester range', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     actingAs($user)
-        ->put(route('profile.update'), [
-            'nama_lengkap' => 'Budi',
-            'kecamatan' => 'Awayan',
-            'desa_kelurahan' => 'Ambakiang',
-            'prodi_id' => $this->prodi->id,
+        ->put(route('profile.update'), array_merge(completeProfilePayload($this->prodi), [
             'ipk' => 5,
             'semester' => 20,
-        ])
+        ]))
         ->assertSessionHasErrors(['ipk', 'semester']);
 });
 
@@ -156,11 +177,15 @@ test('profile is incomplete without campus data and complete with it', function 
         'agama' => 'Islam',
         'telepon' => '081234567890',
         'alamat' => 'RT 01',
-        'status_orang_tua' => 'Wali',
-        'nama_wali' => 'Paman',
-        'hubungan_wali' => 'Paman',
-        'pekerjaan_wali' => 'Petani',
-        'penghasilan_wali' => '< 1jt',
+        'status_orang_tua' => 'Lengkap',
+        'nama_ayah' => 'Ayah',
+        'nik_ayah' => '6302000000000002',
+        'pekerjaan_ayah' => 'Petani',
+        'penghasilan_ayah' => '< 1jt',
+        'nama_ibu' => 'Ibu',
+        'nik_ibu' => '6302000000000003',
+        'pekerjaan_ibu' => 'Petani',
+        'penghasilan_ibu' => '< 1jt',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
     ]);

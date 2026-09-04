@@ -28,6 +28,10 @@ class StoreApplicantRequest extends FormRequest
             'dokumen_sktm' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_bukti_ukt' => 'required|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_prestasi.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'status_orang_tua' => 'required|in:Lengkap,Yatim,Piatu,Yatim Piatu',
+            'ktp_ayah' => 'required_if:status_orang_tua,Lengkap,Piatu|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'ktp_ibu' => 'required_if:status_orang_tua,Lengkap,Yatim|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'ktp_wali' => 'required_if:status_orang_tua,Yatim Piatu|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ];
     }
 
@@ -63,6 +67,16 @@ class StoreApplicantRequest extends FormRequest
             'dokumen_bukti_ukt.required' => 'Bukti UKT/SPP harus diupload',
             'dokumen_bukti_ukt.mimes' => 'Format bukti UKT/SPP harus pdf, jpg, jpeg, atau png',
             'dokumen_bukti_ukt.max' => 'Ukuran bukti UKT/SPP maksimal 20MB',
+            'status_orang_tua.required' => 'Status orang tua harus dipilih',
+            'ktp_ayah.required_if' => 'KTP ayah harus diupload',
+            'ktp_ayah.mimes' => 'Format KTP ayah harus pdf, jpg, jpeg, atau png',
+            'ktp_ayah.max' => 'Ukuran KTP ayah maksimal 2MB',
+            'ktp_ibu.required_if' => 'KTP ibu harus diupload',
+            'ktp_ibu.mimes' => 'Format KTP ibu harus pdf, jpg, jpeg, atau png',
+            'ktp_ibu.max' => 'Ukuran KTP ibu maksimal 2MB',
+            'ktp_wali.required_if' => 'KTP wali harus diupload',
+            'ktp_wali.mimes' => 'Format KTP wali harus pdf, jpg, jpeg, atau png',
+            'ktp_wali.max' => 'Ukuran KTP wali maksimal 2MB',
         ];
     }
 

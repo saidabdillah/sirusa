@@ -103,31 +103,32 @@ class User extends Authenticatable
         if ($status === 'Lengkap') {
             $fields += [
                 'nama_ayah' => 'Nama Ayah',
-                'status_ayah' => 'Status Ayah',
+                'nik_ayah' => 'NIK Ayah',
                 'pekerjaan_ayah' => 'Pekerjaan Ayah',
                 'penghasilan_ayah' => 'Penghasilan Ayah',
                 'nama_ibu' => 'Nama Ibu',
-                'status_ibu' => 'Status Ibu',
+                'nik_ibu' => 'NIK Ibu',
                 'pekerjaan_ibu' => 'Pekerjaan Ibu',
                 'penghasilan_ibu' => 'Penghasilan Ibu',
             ];
         } elseif ($status === 'Yatim') {
             $fields += [
                 'nama_ibu' => 'Nama Ibu',
-                'status_ibu' => 'Status Ibu',
+                'nik_ibu' => 'NIK Ibu',
                 'pekerjaan_ibu' => 'Pekerjaan Ibu',
                 'penghasilan_ibu' => 'Penghasilan Ibu',
             ];
         } elseif ($status === 'Piatu') {
             $fields += [
                 'nama_ayah' => 'Nama Ayah',
-                'status_ayah' => 'Status Ayah',
+                'nik_ayah' => 'NIK Ayah',
                 'pekerjaan_ayah' => 'Pekerjaan Ayah',
                 'penghasilan_ayah' => 'Penghasilan Ayah',
             ];
-        } elseif ($status === 'Yatim Piatu' || $status === 'Wali') {
+        } elseif ($status === 'Yatim Piatu') {
             $fields += [
                 'nama_wali' => 'Nama Wali',
+                'nik_wali' => 'NIK Wali',
                 'hubungan_wali' => 'Hubungan Wali',
                 'pekerjaan_wali' => 'Pekerjaan Wali',
                 'penghasilan_wali' => 'Penghasilan Wali',

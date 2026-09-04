@@ -98,12 +98,10 @@ test('export map returns full profile, parent, and guardian data', function () {
         'agama' => 'Islam',
         'status_orang_tua' => 'Lengkap',
         'nama_ayah' => 'Budi Ayah',
-        'status_ayah' => 'Hidup',
         'pekerjaan_ayah' => 'Petani',
         'penghasilan_ayah' => '1-3jt',
         'nik_ayah' => 'nIkAyah123',
         'nama_ibu' => 'Siti Ibu',
-        'status_ibu' => 'Hidup',
         'pekerjaan_ibu' => 'Wiraswasta',
         'penghasilan_ibu' => '< 1jt',
         'nik_ibu' => 'nikibu456',
@@ -117,8 +115,8 @@ test('export map returns full profile, parent, and guardian data', function () {
     $applicant = $this->user->applicants()->first();
     $row = (new PendaftarExport(request()))->map($applicant);
 
-    expect($row)->toContain('Balangan', '01 Jan 2000', 'Laki-laki', 'Islam', 'Lengkap')
-        ->and($row)->toContain('Budi Ayah', 'Hidup', 'Petani', '1-3jt', 'nIkAyah123')
+    expect($row)->toContain('Balangan', '01 Januari 2000', 'Laki-laki', 'Islam', 'Lengkap')
+        ->and($row)->toContain('Budi Ayah', 'Petani', '1-3jt', 'nIkAyah123')
         ->and($row)->toContain('Siti Ibu', 'Wiraswasta', '< 1jt', 'nikibu456')
         ->and($row)->toContain('Paman', 'nikwali789');
 });

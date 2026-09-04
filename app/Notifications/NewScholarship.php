@@ -27,7 +27,7 @@ class NewScholarship extends Notification implements ShouldQueue
             ->subject('Beasiswa Baru Tersedia - SIRUSA')
             ->greeting('Halo '.($notifiable->username ?? 'Pengguna').',')
             ->line('Beasiswa "'.$this->scholarship->nama.'" telah dibuka di '.$this->scholarship->kampus.'.')
-            ->line('Segera daftar sebelum batas waktu '.$this->scholarship->batas_waktu?->format('d F Y').'!')
+            ->line('Segera daftar sebelum batas waktu '.$this->scholarship->batas_waktu?->translatedFormat('d F Y').'!')
             ->action('Lihat Beasiswa', route('user.beasiswa.lihat', $this->scholarship))
             ->salutation('Salam, Tim SIRUSA');
     }

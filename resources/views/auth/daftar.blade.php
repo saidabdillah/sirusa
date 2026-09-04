@@ -54,6 +54,9 @@
             </form>
           </div>
         </div>
+        <div class="mt-5 text-muted text-center">
+          Sudah punya akun? <a href="{{ route('login') }}">Masuk Sekarang</a>
+        </div>
         <div class="simple-footer">
           Hak Cipta &copy; SIRUSA 2026
         </div>

@@ -122,6 +122,23 @@
             </div>
             <div class="row mb-3">
               <div class="col-md-12">
+                <strong>KTP Ayah:</strong>
+                @if($profile->ktp_ayah)
+                  <div class="mt-1">
+                    <a href="{{ route('profile.photo', $profile->ktp_ayah) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                      <i class="fas fa-eye"></i> Lihat
+                    </a>
+                    <a href="{{ route('profile.photo', $profile->ktp_ayah) }}" download class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-download"></i> Download
+                    </a>
+                  </div>
+                @else
+                  <span class="badge badge-warning ml-2">KTP belum diupload</span>
+                @endif
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-12">
                 <h6 class="text-muted">Ibu</h6>
               </div>
             </div>
@@ -137,6 +154,23 @@
               <div class="col-md-4">
                 <strong>Penghasilan</strong>
                 <p class="mb-0">{{ $profile->penghasilan_ibu ?? '-' }}</p>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <strong>KTP Ibu:</strong>
+                @if($profile->ktp_ibu)
+                  <div class="mt-1">
+                    <a href="{{ route('profile.photo', $profile->ktp_ibu) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                      <i class="fas fa-eye"></i> Lihat
+                    </a>
+                    <a href="{{ route('profile.photo', $profile->ktp_ibu) }}" download class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-download"></i> Download
+                    </a>
+                  </div>
+                @else
+                  <span class="badge badge-warning ml-2">KTP belum diupload</span>
+                @endif
               </div>
             </div>
             @if($profile->nama_wali)
@@ -161,6 +195,23 @@
               <div class="col-md-3">
                 <strong>Penghasilan</strong>
                 <p class="mb-0">{{ $profile->penghasilan_wali ?? '-' }}</p>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <strong>KTP Wali:</strong>
+                @if($profile->ktp_wali)
+                  <div class="mt-1">
+                    <a href="{{ route('profile.photo', $profile->ktp_wali) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                      <i class="fas fa-eye"></i> Lihat
+                    </a>
+                    <a href="{{ route('profile.photo', $profile->ktp_wali) }}" download class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-download"></i> Download
+                    </a>
+                  </div>
+                @else
+                  <span class="badge badge-warning ml-2">KTP belum diupload</span>
+                @endif
               </div>
             </div>
             @endif

@@ -55,7 +55,7 @@
                         <td>{{ $scholarship->tingkat_gelar }}</td>
                         <td>
                           <span class="{{ $scholarship->isExpired() ? 'text-danger' : '' }}">
-                            {{ $scholarship->batas_waktu?->format('d M Y') }}
+                            {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
                           </span>
                         </td>
                         <td>{{ number_format($scholarship->ipk_minimal, 2) }}</td>

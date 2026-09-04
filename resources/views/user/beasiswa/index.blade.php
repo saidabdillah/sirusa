@@ -66,7 +66,7 @@
                   <div class="col-6">
                     <small class="text-muted">Batas Waktu</small><br>
                     <strong class="{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
-                      {{ $scholarship->batas_waktu?->format('d M Y') }}
+                      {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
                     </strong>
                   </div>
                 </div>

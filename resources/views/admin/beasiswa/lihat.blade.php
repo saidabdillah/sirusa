@@ -69,7 +69,7 @@
               <div class="col-md-6">
                 <strong>Batas Waktu:</strong><br>
                 <span class="{{ $scholarship->isExpired() ? 'text-danger' : '' }}">
-                  {{ $scholarship->batas_waktu?->format('d M Y') }}
+                  {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
                 </span>
                 @if($scholarship->isExpired())
                 <span class="badge badge-danger ml-2">Telah Berakhir</span>
@@ -108,8 +108,8 @@
             @if($scholarship->tanggal_pengumuman && $scholarship->tanggal_pengumuman_selesai)
             <div class="mb-2">
               <strong>Periode:</strong><br>
-              {{ $scholarship->tanggal_pengumuman->format('d M Y') }} s/d
-              {{ $scholarship->tanggal_pengumuman_selesai->format('d M Y') }}
+              {{ $scholarship->tanggal_pengumuman->translatedFormat('d F Y') }} s/d
+              {{ $scholarship->tanggal_pengumuman_selesai->translatedFormat('d F Y') }}
             </div>
             @if($scholarship->isPengumumanAktif())
             <div class="alert alert-success mb-2">

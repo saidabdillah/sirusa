@@ -79,10 +79,12 @@ class ProfileController extends Controller
 
         unset($data['foto_profil']);
 
+        $profile = auth()->user()->profile;
+
         try {
             if ($request->hasFile('foto_profil')) {
                 $file = $request->file('foto_profil');
-                $old = auth()->user()->profile?->foto_profil;
+                $old = $profile?->foto_profil;
                 $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
                 $data['foto_profil'] = Storage::disk('local')->putFileAs('profil', $file, $filename);
                 if ($old && Storage::disk('local')->exists($old)) {
@@ -90,9 +92,25 @@ class ProfileController extends Controller
                 }
             }
 
+            $ktpData = [];
+            foreach (self::KTP_FIELDS as $field) {
+                if (! $request->hasFile($field)) {
+                    continue;
+                }
+                $file = $request->file($field);
+                $old = $profile?->{$field};
+                $filename = $field.'.'.$file->getClientOriginalExtension();
+                $ktpData[$field] = Storage::disk('local')->putFileAs('profil/'.auth()->id(), $file, $filename);
+                if ($old && Storage::disk('local')->exists($old)) {
+                    Storage::disk('local')->delete($old);
+                }
+            }
+
+            $ktpData = array_merge($data, $ktpData);
+
             UserProfile::updateOrCreate(
                 ['user_id' => auth()->id()],
-                $data
+                $ktpData
             );
 
             return redirect()->route('profile')->with('success', 'Profil berhasil diperbarui');
@@ -100,6 +118,37 @@ class ProfileController extends Controller
             Log::error('Gagal update profil: '.$e->getMessage());
 
             return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan profil: '.$e->getMessage());
+        }
+    }
+
+    private const KTP_FIELDS = ['ktp_ayah', 'ktp_ibu', 'ktp_wali'];
+
+    public function destroyKtp(string $type): RedirectResponse
+    {
+        $allowedTypes = ['ayah', 'ibu', 'wali'];
+
+        if (! in_array($type, $allowedTypes, true)) {
+            return back()->with('error', 'Tipe KTP tidak valid');
+        }
+
+        $profile = auth()->user()->profile;
+        $column = 'ktp_'.$type;
+
+        if (! $profile?->{$column}) {
+            return back()->with('error', 'KTP '.ucfirst($type).' belum diupload');
+        }
+
+        try {
+            if (Storage::disk('local')->exists($profile->{$column})) {
+                Storage::disk('local')->delete($profile->{$column});
+            }
+            $profile->update([$column => null]);
+
+            return back()->with('success', 'KTP '.ucfirst($type).' berhasil dihapus');
+        } catch (\Throwable $e) {
+            Log::error('Gagal hapus KTP '.$type.': '.$e->getMessage());
+
+            return back()->with('error', 'Terjadi kesalahan saat menghapus KTP: '.$e->getMessage());
         }
     }
 
