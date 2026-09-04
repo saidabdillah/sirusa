@@ -35,6 +35,11 @@
           </a>
         </li>
         @else
+        <li class="nav-item mr-lg-2 mb-2 mb-lg-0">
+          <a class="btn btn-outline-primary btn-block" href="{{ route('login') }}">
+            <i class="fas fa-sign-in-alt mr-1"></i>Masuk
+          </a>
+        </li>
         <li class="nav-item">
           <a class="btn btn-primary btn-block" href="{{ route('register') }}">
             <i class="fas fa-user-plus mr-1"></i>Daftar

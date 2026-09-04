@@ -50,7 +50,6 @@
         <div class="d-sm-none d-lg-inline-block">Hai, {{ Auth::user()->username }}</div>
       </a>
       <div class="dropdown-menu dropdown-menu-right">
-        <div class="dropdown-title">Masuk 5 menit yang lalu</div>
         <a href="{{ route('profile') }}" class="dropdown-item has-icon">
           <i class="far fa-user"></i> Profil
         </a>

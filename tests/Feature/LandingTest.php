@@ -20,8 +20,7 @@ test('guest sees masuk and daftar buttons on landing', function () {
         ->assertOk()
         ->assertSee('Masuk')
         ->assertSee('Daftar')
-        ->assertDontSee('Dasbor')
-        ->assertDontSee('btn-outline-primary');
+        ->assertDontSee('Dasbor');
 });
 
 test('authenticated user sees dashbor button instead of masuk and daftar on landing', function () {
