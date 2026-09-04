@@ -165,6 +165,14 @@
                 <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
                 @error('ktp_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              <div class="form-group">
+                <label for="kk_wali">Kartu Keluarga Wali @if($profile->status_orang_tua === 'Yatim Piatu')<span class="text-danger">*</span>@endif</label>
+                <input type="file" class="form-control @error('kk_wali') is-invalid @enderror"
+                  id="kk_wali" name="kk_wali" accept=".pdf,.jpg,.jpeg,.png"
+                  {{ $profile->status_orang_tua === 'Yatim Piatu' ? 'required' : '' }}>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB.</small>
+                @error('kk_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
             </div>
             <div class="card-footer text-right">
               <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-secondary">Batal</a>

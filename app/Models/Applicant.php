@@ -29,6 +29,10 @@ class Applicant extends Model
         'dokumen_surat_pernyataan',
         'dokumen_sktm',
         'dokumen_bukti_ukt',
+        'ktp_ayah',
+        'ktp_ibu',
+        'ktp_wali',
+        'kk_wali',
         'status',
         'catatan',
     ];

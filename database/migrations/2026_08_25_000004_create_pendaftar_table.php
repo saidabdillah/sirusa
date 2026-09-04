@@ -26,6 +26,10 @@ return new class extends Migration
             $table->string('dokumen_surat_pernyataan')->nullable();
             $table->string('dokumen_sktm')->nullable();
             $table->string('dokumen_bukti_ukt')->nullable();
+            $table->string('ktp_ayah')->nullable();
+            $table->string('ktp_ibu')->nullable();
+            $table->string('ktp_wali')->nullable();
+            $table->string('kk_wali')->nullable();
             $table->enum('status', ['verifikasi', 'diterima', 'revisi', 'ditolak'])->default('verifikasi');
             $table->text('catatan')->nullable();
             $table->timestamps();

@@ -32,6 +32,7 @@ class StoreApplicantRequest extends FormRequest
             'ktp_ayah' => 'required_if:status_orang_tua,Lengkap,Piatu|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'ktp_ibu' => 'required_if:status_orang_tua,Lengkap,Yatim|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'ktp_wali' => 'required_if:status_orang_tua,Yatim Piatu|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'kk_wali' => 'required_if:status_orang_tua,Yatim Piatu|nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ];
     }
 
@@ -77,6 +78,9 @@ class StoreApplicantRequest extends FormRequest
             'ktp_wali.required_if' => 'KTP wali harus diupload',
             'ktp_wali.mimes' => 'Format KTP wali harus pdf, jpg, jpeg, atau png',
             'ktp_wali.max' => 'Ukuran KTP wali maksimal 2MB',
+            'kk_wali.required_if' => 'Kartu keluarga wali harus diupload',
+            'kk_wali.mimes' => 'Format kartu keluarga wali harus pdf, jpg, jpeg, atau png',
+            'kk_wali.max' => 'Ukuran kartu keluarga wali maksimal 2MB',
         ];
     }
 

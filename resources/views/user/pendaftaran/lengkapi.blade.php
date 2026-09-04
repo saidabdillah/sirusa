@@ -78,13 +78,14 @@
                 </div>
 
                 <hr>
-                <h5 class="mb-3">KTP Orang Tua / Wali</h5>
+                <h5 class="mb-3">KTP & Kartu Keluarga Orang Tua / Wali</h5>
                 @php
                   $profile = $applicant->user->profile;
                   $ktpFields = [
                     ['key' => 'ktp_ayah', 'label' => 'KTP Ayah', 'required' => in_array($profile?->status_orang_tua, ['Lengkap', 'Piatu'])],
                     ['key' => 'ktp_ibu', 'label' => 'KTP Ibu', 'required' => in_array($profile?->status_orang_tua, ['Lengkap', 'Yatim'])],
                     ['key' => 'ktp_wali', 'label' => 'KTP Wali', 'required' => $profile?->status_orang_tua === 'Yatim Piatu'],
+                    ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali', 'required' => $profile?->status_orang_tua === 'Yatim Piatu'],
                   ];
                 @endphp
                 @foreach($ktpFields as $ktp)
@@ -92,15 +93,15 @@
                     <label for="{{ $ktp['key'] }}">{{ $ktp['label'] }}
                       @if($ktp['required'])<span class="text-danger">*</span>@endif
                     </label>
-                    @if($profile && $profile->{$ktp['key']})
+                    @if($applicant->{$ktp['key']})
                       <div class="mb-1">
-                        <small class="text-muted">File saat ini: {{ basename($profile->{$ktp['key']}) }}</small>
-                        <a href="{{ route('profile.photo', $profile->{$ktp['key']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <small class="text-muted">File saat ini: {{ basename($applicant->{$ktp['key']}) }}</small>
+                        <a href="{{ asset('storage/' . $applicant->{$ktp['key']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                           <i class="fas fa-eye"></i> Lihat
                         </a>
                       </div>
                     @endif
-                    <input type="file" class="form-control @error($ktp['key']) is-invalid @enderror" id="{{ $ktp['key'] }}" name="{{ $ktp['key'] }}" accept=".pdf,.jpg,.jpeg,.png" {{ $ktp['required'] ? 'required' : '' }}>
+                    <input type="file" class="form-control @error($ktp['key']) is-invalid @enderror" id="{{ $ktp['key'] }}" name="{{ $ktp['key'] }}" accept=".pdf,.jpg,.jpeg,.png" {{ ($ktp['required'] && ! $applicant->{$ktp['key']}) ? 'required' : '' }}>
                     <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin mengganti.</small>
                     @error($ktp['key'])<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>

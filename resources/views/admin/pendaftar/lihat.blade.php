@@ -123,12 +123,12 @@
             <div class="row mb-3">
               <div class="col-md-12">
                 <strong>KTP Ayah:</strong>
-                @if($profile->ktp_ayah)
+                @if($applicant->ktp_ayah)
                   <div class="mt-1">
-                    <a href="{{ route('profile.photo', $profile->ktp_ayah) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                    <a href="{{ asset('storage/' . $applicant->ktp_ayah) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
                       <i class="fas fa-eye"></i> Lihat
                     </a>
-                    <a href="{{ route('profile.photo', $profile->ktp_ayah) }}" download class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ asset('storage/' . $applicant->ktp_ayah) }}" download class="btn btn-sm btn-outline-secondary">
                       <i class="fas fa-download"></i> Download
                     </a>
                   </div>
@@ -159,12 +159,12 @@
             <div class="row mb-3">
               <div class="col-md-12">
                 <strong>KTP Ibu:</strong>
-                @if($profile->ktp_ibu)
+                @if($applicant->ktp_ibu)
                   <div class="mt-1">
-                    <a href="{{ route('profile.photo', $profile->ktp_ibu) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                    <a href="{{ asset('storage/' . $applicant->ktp_ibu) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
                       <i class="fas fa-eye"></i> Lihat
                     </a>
-                    <a href="{{ route('profile.photo', $profile->ktp_ibu) }}" download class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ asset('storage/' . $applicant->ktp_ibu) }}" download class="btn btn-sm btn-outline-secondary">
                       <i class="fas fa-download"></i> Download
                     </a>
                   </div>
@@ -200,17 +200,34 @@
             <div class="row mb-3">
               <div class="col-md-12">
                 <strong>KTP Wali:</strong>
-                @if($profile->ktp_wali)
+                @if($applicant->ktp_wali)
                   <div class="mt-1">
-                    <a href="{{ route('profile.photo', $profile->ktp_wali) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                    <a href="{{ asset('storage/' . $applicant->ktp_wali) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
                       <i class="fas fa-eye"></i> Lihat
                     </a>
-                    <a href="{{ route('profile.photo', $profile->ktp_wali) }}" download class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ asset('storage/' . $applicant->ktp_wali) }}" download class="btn btn-sm btn-outline-secondary">
                       <i class="fas fa-download"></i> Download
                     </a>
                   </div>
                 @else
                   <span class="badge badge-warning ml-2">KTP belum diupload</span>
+                @endif
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <strong>Kartu Keluarga Wali:</strong>
+                @if($applicant->kk_wali)
+                  <div class="mt-1">
+                    <a href="{{ asset('storage/' . $applicant->kk_wali) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                      <i class="fas fa-eye"></i> Lihat
+                    </a>
+                    <a href="{{ asset('storage/' . $applicant->kk_wali) }}" download class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-download"></i> Download
+                    </a>
+                  </div>
+                @else
+                  <span class="badge badge-warning ml-2">KK belum diupload</span>
                 @endif
               </div>
             </div>

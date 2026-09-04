@@ -7,9 +7,7 @@ use App\Http\Requests\Applicant\StoreApplicantRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
-use App\Models\UserProfile;
 use App\Notifications\NewApplication;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -126,7 +124,22 @@ class PendaftaranController extends Controller
             $data['dokumen_prestasi'] = $prestasi;
         }
 
-        $this->saveKtpUploads($request, $disk);
+        foreach (['ktp_ayah', 'ktp_ibu', 'ktp_wali', 'kk_wali'] as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $filename = $field.'.'.$file->getClientOriginalExtension();
+                try {
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    $data[$field] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
+                    ]);
+                }
+            }
+        }
 
         $applicant = Applicant::create($data);
 
@@ -197,6 +210,10 @@ class PendaftaranController extends Controller
             'dokumen_surat_pernyataan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_sktm' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
             'dokumen_bukti_ukt' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:20480',
+            'ktp_ayah' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'ktp_ibu' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'ktp_wali' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'kk_wali' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         $profile = $request->user()->profile;
@@ -280,77 +297,33 @@ class PendaftaranController extends Controller
             $data['dokumen_prestasi'] = $prestasi;
         }
 
-        $this->updateKtpUploads($request, $disk);
+        foreach (['ktp_ayah', 'ktp_ibu', 'ktp_wali', 'kk_wali'] as $field) {
+            if ($request->hasFile($field)) {
+                $file = $request->file($field);
+                $filename = $field.'.'.$file->getClientOriginalExtension();
+                try {
+                    $old = $applicant->{$field};
+                    $path = $disk->putFileAs($uploadPath, $file, $filename);
+
+                    if ($old && $disk->exists($old)) {
+                        $disk->delete($old);
+                    }
+
+                    $data[$field] = $path;
+                } catch (\Throwable $e) {
+                    Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
+
+                    return back()->withInput()->withErrors([
+                        $field => 'Gagal upload '.$field.': '.$e->getMessage(),
+                    ]);
+                }
+            }
+        }
 
         $data['status'] = 'verifikasi';
         $applicant->update($data);
 
         return redirect()->route('user.pendaftaran.lihat', $applicant)
             ->with('success', 'Pendaftaran berhasil diperbarui dan dikirim untuk verifikasi ulang');
-    }
-
-    private const KTP_FIELDS = ['ktp_ayah', 'ktp_ibu', 'ktp_wali'];
-
-    private function saveKtpUploads(Request $request, Filesystem $disk): void
-    {
-        $ktpData = [];
-
-        foreach (self::KTP_FIELDS as $field) {
-            if (! $request->hasFile($field)) {
-                continue;
-            }
-
-            $file = $request->file($field);
-            $filename = $field.'.'.$file->getClientOriginalExtension();
-
-            try {
-                $path = $disk->putFileAs('profil/'.auth()->id(), $file, $filename);
-                $ktpData[$field] = $path;
-            } catch (\Throwable $e) {
-                Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
-
-                throw $e;
-            }
-        }
-
-        if ($ktpData) {
-            UserProfile::updateOrCreate(
-                ['user_id' => auth()->id()],
-                $ktpData
-            );
-        }
-    }
-
-    private function updateKtpUploads(Request $request, Filesystem $disk): void
-    {
-        $profile = auth()->user()->profile;
-
-        if (! $profile) {
-            return;
-        }
-
-        foreach (self::KTP_FIELDS as $field) {
-            if (! $request->hasFile($field)) {
-                continue;
-            }
-
-            $file = $request->file($field);
-            $filename = $field.'.'.$file->getClientOriginalExtension();
-
-            try {
-                $old = $profile->{$field};
-                $path = $disk->putFileAs('profil/'.auth()->id(), $file, $filename);
-
-                if ($old && $disk->exists($old)) {
-                    $disk->delete($old);
-                }
-
-                $profile->update([$field => $path]);
-            } catch (\Throwable $e) {
-                Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
-
-                throw $e;
-            }
-        }
     }
 }

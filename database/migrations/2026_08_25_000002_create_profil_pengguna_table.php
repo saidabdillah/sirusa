@@ -43,9 +43,6 @@ return new class extends Migration
             $table->enum('penghasilan_wali', ['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'])->nullable();
             $table->enum('hubungan_wali', ['Paman', 'Bibi', 'Kakek', 'Nenek', 'Lainnya'])->nullable();
             $table->string('nik_wali', 16)->nullable();
-            $table->string('ktp_ayah')->nullable();
-            $table->string('ktp_ibu')->nullable();
-            $table->string('ktp_wali')->nullable();
             $table->timestamps();
         });
     }

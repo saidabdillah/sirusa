@@ -101,6 +101,10 @@ test('resmi can submit application when ipk meets minimum', function () {
         'semester' => 5,
         'status' => 'verifikasi',
     ]);
+
+    $applicant = Applicant::where('user_id', $this->user->id)->where('beasiswa_id', $scholarship->id)->first();
+    expect($applicant->ktp_ayah)->not->toBeNull();
+    expect($applicant->ktp_ibu)->not->toBeNull();
 });
 
 test('application rejected when ipk below minimum', function () {
@@ -297,4 +301,42 @@ test('full flow from submission to diterima', function () {
         ->assertRedirect();
 
     expect($applicant->refresh()->status)->toBe('diterima');
+});
+
+test('application with yatim piatu status requires kartu keluarga wali', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $user = $this->user;
+    $user->profile->update(['status_orang_tua' => 'Yatim Piatu']);
+
+    $scholarship = createEligibleScholarship($this->kampus->id);
+    $payload = applicantPayload($scholarship);
+    $payload['status_orang_tua'] = 'Yatim Piatu';
+    unset($payload['ktp_ayah'], $payload['ktp_ibu']);
+
+    actingAs($user)
+        ->post(route('user.pendaftaran.simpan'), $payload)
+        ->assertSessionHasErrors('kk_wali');
+
+    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
+});
+
+test('application with yatim piatu status stores kartu keluarga wali', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $user = $this->user;
+    $user->profile->update(['status_orang_tua' => 'Yatim Piatu']);
+
+    $scholarship = createEligibleScholarship($this->kampus->id);
+    $payload = applicantPayload($scholarship);
+    $payload['status_orang_tua'] = 'Yatim Piatu';
+    $payload['ktp_wali'] = UploadedFile::fake()->create('ktp_wali.pdf', 10);
+    $payload['kk_wali'] = UploadedFile::fake()->create('kk_wali.pdf', 10);
+    unset($payload['ktp_ayah'], $payload['ktp_ibu']);
+
+    actingAs($user)
+        ->post(route('user.pendaftaran.simpan'), $payload)
+        ->assertRedirect();
+
+    $applicant = Applicant::where('user_id', $user->id)->where('beasiswa_id', $scholarship->id)->first();
+    expect($applicant->ktp_wali)->not->toBeNull();
+    expect($applicant->kk_wali)->not->toBeNull();
 });

@@ -265,8 +265,6 @@
                     </select>
                     @error('pekerjaan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                </div>
-                <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="penghasilan_ayah">Penghasilan Ayah <span class="text-danger">*</span></label>
                     <select class="form-control @error('penghasilan_ayah') is-invalid @enderror" id="penghasilan_ayah" name="penghasilan_ayah" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Piatu']) ? 'required' : '' }}>
@@ -303,8 +301,6 @@
                     </select>
                     @error('pekerjaan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                </div>
-                <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="penghasilan_ibu">Penghasilan Ibu <span class="text-danger">*</span></label>
                     <select class="form-control @error('penghasilan_ibu') is-invalid @enderror" id="penghasilan_ibu" name="penghasilan_ibu" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Yatim']) ? 'required' : '' }}>
@@ -367,34 +363,6 @@
                     @error('penghasilan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
-
-                <hr>
-                <h5 class="mb-3">KTP Orang Tua / Wali</h5>
-                <p class="text-muted">Upload KTP juga bisa dilakukan saat mengajukan beasiswa. File yang diunggah di sini akan digunakan untuk pendaftaran.</p>
-
-                @foreach([
-                  ['key' => 'ktp_ayah', 'label' => 'KTP Ayah', 'required' => in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Piatu'])],
-                  ['key' => 'ktp_ibu', 'label' => 'KTP Ibu', 'required' => in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Yatim'])],
-                  ['key' => 'ktp_wali', 'label' => 'KTP Wali', 'required' => old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim Piatu'],
-                ] as $ktp)
-                  <div class="form-group">
-                    <label for="{{ $ktp['key'] }}">{{ $ktp['label'] }} @if($ktp['required'])<span class="text-danger">*</span>@endif</label>
-                    @if($profile && $profile->{$ktp['key']})
-                      <div class="mb-1">
-                        <small class="text-muted">File saat ini: {{ basename($profile->{$ktp['key']}) }}</small>
-                        <a href="{{ route('profile.photo', $profile->{$ktp['key']}) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                          <i class="fas fa-eye"></i> Lihat
-                        </a>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="hapusKtp('{{ str_replace('ktp_', '', $ktp['key']) }}')">
-                          <i class="fas fa-trash"></i> Hapus
-                        </button>
-                      </div>
-                    @endif
-                    <input type="file" class="form-control @error($ktp['key']) is-invalid @enderror" id="{{ $ktp['key'] }}" name="{{ $ktp['key'] }}" accept=".pdf,.jpg,.jpeg,.png" {{ $ktp['required'] ? 'required' : '' }}>
-                    <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maks 2MB.</small>
-                    @error($ktp['key'])<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                @endforeach
 
               </div>
               <div class="card-footer text-right">
@@ -493,28 +461,6 @@
       reader.readAsDataURL(file);
     }
   });
-
-  function hapusKtp(type) {
-    var label = { ayah: 'Ayah', ibu: 'Ibu', wali: 'Wali' }[type] || type;
-    Swal.fire({
-      title: 'Hapus KTP ' + label + '?',
-      text: 'File KTP akan dihapus permanen.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Ya, Hapus',
-      cancelButtonText: 'Batal',
-    }).then(function (result) {
-      if (!result.isConfirmed) return;
-      var form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '{{ route("profile.ktp.delete", "__TYPE__") }}'.replace('__TYPE__', type);
-      form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE">';
-      document.body.appendChild(form);
-      form.submit();
-    });
-  }
 
   flatpickr(".flatpickr", {
     dateFormat: "Y-m-d"

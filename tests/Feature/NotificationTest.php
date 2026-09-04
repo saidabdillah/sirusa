@@ -108,6 +108,7 @@ test('user registering scholarship notifies all admins and super admins', functi
         'beasiswa_id' => $scholarship->id,
         'status_orang_tua' => 'Yatim Piatu',
         'ktp_wali' => UploadedFile::fake()->create('ktp_wali.pdf', 100, 'application/pdf'),
+        'kk_wali' => UploadedFile::fake()->create('kk_wali.pdf', 100, 'application/pdf'),
         'dokumen_ktp' => UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf'),
         'dokumen_kk' => UploadedFile::fake()->create('kk.pdf', 100, 'application/pdf'),
         'dokumen_surat_permohonan' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),

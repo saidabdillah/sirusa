@@ -44,9 +44,6 @@ class UpdateProfilRequest extends FormRequest
             'pekerjaan_wali' => 'required_if:status_orang_tua,Yatim Piatu|in:PNS/TNI/Polri,Swasta,Wiraswasta,Petani,Buruh,Tidak Bekerja,Lainnya',
             'penghasilan_wali' => 'required_if:status_orang_tua,Yatim Piatu|in:< 1jt,1-3jt,3-5jt,5-10jt,> 10jt',
             'hubungan_wali' => 'required_if:status_orang_tua,Yatim Piatu|in:Paman,Bibi,Kakek,Nenek,Lainnya',
-            'ktp_ayah' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'ktp_ibu' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'ktp_wali' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ];
     }
 
