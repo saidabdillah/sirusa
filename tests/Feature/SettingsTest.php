@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Notifications\VerifyEmailChange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
@@ -81,4 +82,14 @@ test('OTP for email change is sent to the new email', function () {
     Notification::assertSentOnDemand(VerifyEmailChange::class, function ($notification, $channels, $notifiable) {
         return $notifiable->routes['mail'] === 'emailbaru@gmail.com';
     });
+});
+
+test('email otp verification form has no html5 required attribute', function () {
+    Cache::put('otp-email-change:'.$this->user->id, '123456', now()->addMinutes(5));
+
+    actingAs($this->user)
+        ->withSession(['pending_email_change' => 'emailbaru@gmail.com'])
+        ->get(route('settings.email.verify'))
+        ->assertOk()
+        ->assertDontSee(' required>', false);
 });

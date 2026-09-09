@@ -53,6 +53,13 @@ test('super admin can access create user form', function () {
 
     $response->assertOk();
     $response->assertViewIs('admin.pengguna.buat');
+    $response->assertDontSee(' required>', false);
+});
+
+test('super admin can access edit user form without html5 required attribute', function () {
+    $this->actingAs($this->superAdmin);
+
+    get(route('admin.pengguna.ubah', $this->admin))->assertOk()->assertDontSee(' required>', false);
 });
 
 test('super admin can create user with role', function () {

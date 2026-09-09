@@ -154,6 +154,7 @@ function confirmDelete(id, username) {
     cancelButtonText: 'Batal'
   }).then((result) => {
     if (result.isConfirmed) {
+      showSubmitLoading('Menghapus...');
       document.getElementById('delete-form-' + id).submit();
     }
   });
@@ -175,6 +176,7 @@ function confirmToggleStatus(id, aksi, username) {
     cancelButtonText: 'Batal'
   }).then((result) => {
     if (result.isConfirmed) {
+      showSubmitLoading(isNonaktif ? 'Menonaktifkan...' : 'Mengaktifkan...');
       document.getElementById('toggle-form-' + id).submit();
     }
   });

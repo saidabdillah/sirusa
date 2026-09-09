@@ -63,6 +63,7 @@ test('user can access OTP verification page with valid email', function () {
     $response->assertOk();
     $response->assertViewIs('auth.verifikasi-otp');
     $response->assertSee('updateHiddenInput');
+    $response->assertDontSee(' required>', false);
 });
 
 test('user cannot access OTP verification page without valid session', function () {

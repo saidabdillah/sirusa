@@ -46,7 +46,6 @@
                            autocomplete="one-time-code"
                            inputmode="numeric"
                            @if ($i === 1) autofocus @endif
-                           required>
                   @endfor
                 </div>
                 <input type="hidden" name="otp" id="otp-hidden" value="">

@@ -30,10 +30,17 @@
       <div class="col-12">
         <div class="card">
           @if(auth()->user()->hasRole('admin'))
-          <div class="card-header">
+          <div class="card-header d-flex justify-content-between align-items-center">
             <a href="{{ route('admin.kampus.fakultas.buat', $kampus) }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Fakultas
             </a>
+            <form action="{{ route('admin.kampus.fakultas.massDestroy', $kampus) }}" method="POST" id="form-mass-delete">
+              @csrf
+              @method('DELETE')
+              <button type="button" class="btn btn-danger" id="btn-mass-delete" disabled>
+                <i class="fas fa-trash"></i> Hapus Terpilih
+              </button>
+            </form>
           </div>
           @endif
           <div class="card-body">
@@ -41,6 +48,9 @@
               <table class="table table-striped" id="fakultasTable">
                 <thead>
                   <tr>
+                    @if(auth()->user()->hasRole('admin'))
+                    <th style="width: 40px;"><input type="checkbox" id="checkAll"></th>
+                    @endif
                     <th>No</th>
                     <th>Fakultas</th>
                     <th>Jumlah Prodi</th>
@@ -50,15 +60,18 @@
                 <tbody>
                   @forelse($fakultas as $data)
                   <tr>
+                    @if(auth()->user()->hasRole('admin'))
+                    <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
+                    @endif
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $data->nama }}</td>
                     <td>{{ $data->prodi_count }}</td>
                     <td>
-                      <a href="{{ route('admin.kampus.prodi.index', [$kampus, $data]) }}" class="btn btn-info btn-sm" title="Kelola Program Studi">
+                      <a href="{{ route('admin.kampus.prodi.index', [$kampus, $data]) }}" class="btn btn-info btn-sm mr-1" title="Kelola Program Studi">
                         <i class="fas fa-graduation-cap"></i>
                       </a>
                       @if(auth()->user()->hasRole('admin'))
-                      <a href="{{ route('admin.kampus.fakultas.ubah', [$kampus, $data]) }}" class="btn btn-warning btn-sm" title="Edit">
+                      <a href="{{ route('admin.kampus.fakultas.ubah', [$kampus, $data]) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
                         <i class="fas fa-edit"></i>
                       </a>
                       <form action="{{ route('admin.kampus.fakultas.hapus', [$kampus, $data]) }}" method="POST" class="d-inline"
@@ -75,7 +88,7 @@
                   </tr>
                   @empty
                   <tr>
-                    <td colspan="4" class="text-center">Belum ada fakultas. Klik "Tambah Fakultas" untuk menambahkan.</td>
+                    <td colspan="5" class="text-center">Belum ada fakultas. Klik "Tambah Fakultas" untuk menambahkan.</td>
                   </tr>
                   @endforelse
                 </tbody>
@@ -93,6 +106,7 @@
 <script>
   $(document).ready(function() {
   $('#fakultasTable').DataTable({
+    order: [],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",
@@ -108,6 +122,16 @@
       }
     }
   });
+
+  initMassDelete({
+    tableSelector: '#fakultasTable',
+    allSelector: '#checkAll',
+    itemSelector: '.row-check',
+    buttonSelector: '#btn-mass-delete',
+    formSelector: '#form-mass-delete',
+    entityLabel: 'fakultas',
+    confirmText: 'Seluruh program studi pada fakultas terpilih juga akan terhapus.'
+  });
 });
 
 function confirmDelete(id, namaFakultas) {
@@ -122,6 +146,7 @@ function confirmDelete(id, namaFakultas) {
     cancelButtonText: 'Batal'
   }).then((result) => {
     if (result.isConfirmed) {
+      showSubmitLoading('Menghapus...');
       document.getElementById('delete-form-' + id).submit();
     }
   });

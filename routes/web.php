@@ -126,18 +126,21 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::post('/kampus', [KampusController::class, 'store'])->name('kampus.simpan');
         Route::get('/kampus/{kampus}/ubah', [KampusController::class, 'edit'])->name('kampus.ubah');
         Route::put('/kampus/{kampus}', [KampusController::class, 'update'])->name('kampus.perbarui');
+        Route::delete('/kampus/hapus-massal', [KampusController::class, 'massDestroy'])->name('kampus.massDestroy');
         Route::delete('/kampus/{kampus}', [KampusController::class, 'destroy'])->name('kampus.hapus');
 
         Route::get('/kampus/{kampus}/fakultas/buat', [KampusController::class, 'fakultasCreate'])->name('kampus.fakultas.buat');
         Route::post('/kampus/{kampus}/fakultas', [KampusController::class, 'fakultasStore'])->name('kampus.fakultas.simpan');
         Route::get('/kampus/{kampus}/fakultas/{fakultas}/ubah', [KampusController::class, 'fakultasEdit'])->name('kampus.fakultas.ubah');
         Route::put('/kampus/{kampus}/fakultas/{fakultas}', [KampusController::class, 'fakultasUpdate'])->name('kampus.fakultas.perbarui');
+        Route::delete('/kampus/{kampus}/fakultas/hapus-massal', [KampusController::class, 'fakultasMassDestroy'])->name('kampus.fakultas.massDestroy');
         Route::delete('/kampus/{kampus}/fakultas/{fakultas}', [KampusController::class, 'fakultasDestroy'])->name('kampus.fakultas.hapus');
 
         Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi/buat', [KampusController::class, 'prodiCreate'])->name('kampus.prodi.buat');
         Route::post('/kampus/{kampus}/fakultas/{fakultas}/prodi', [KampusController::class, 'prodiStore'])->name('kampus.prodi.simpan');
         Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}/ubah', [KampusController::class, 'prodiEdit'])->name('kampus.prodi.ubah');
         Route::put('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}', [KampusController::class, 'prodiUpdate'])->name('kampus.prodi.perbarui');
+        Route::delete('/kampus/{kampus}/fakultas/{fakultas}/prodi/hapus-massal', [KampusController::class, 'prodiMassDestroy'])->name('kampus.prodi.massDestroy');
         Route::delete('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}', [KampusController::class, 'prodiDestroy'])->name('kampus.prodi.hapus');
 
         Route::get('/beasiswa/buat', [BeasiswaController::class, 'create'])->name('beasiswa.buat');

@@ -410,7 +410,7 @@
               @method('PUT')
               <div class="form-group">
                 <label for="status">Status</label>
-                <select class="form-control @error('status') is-invalid @enderror" name="status" id="status" required>
+                <select class="form-control @error('status') is-invalid @enderror" name="status" id="status">
                   <option value="verifikasi" {{ $applicant->status === 'verifikasi' ? 'selected' : '' }}>Verifikasi
                   </option>
                   <option value="diterima" {{ $applicant->status === 'diterima' ? 'selected' : '' }}>Diterima</option>
@@ -449,7 +449,7 @@
             <form action="{{ route('admin.pendaftar.hapus', $applicant) }}" method="POST" class="btn-delete-form" id="hapusPendaftarForm">
               @csrf
               @method('DELETE')
-              <button type="button" class="btn btn-danger btn-delete" id="hapusPendaftarBtn">
+              <button type="button" class="btn btn-danger" id="hapusPendaftarBtn">
                 <i class="fas fa-trash"></i> Hapus Data
               </button>
             </form>
@@ -481,6 +481,7 @@
         cancelButtonText: 'Batal'
       }).then((result) => {
         if (result.isConfirmed) {
+          showSubmitLoading('Menyimpan...');
           document.getElementById('form-update-status').submit();
         }
       });
@@ -513,6 +514,7 @@
               cancelButtonText: 'Batal',
             }).then(function (result) {
               if (result.isConfirmed) {
+                showSubmitLoading('Menghapus...');
                 document.getElementById('hapusPendaftarForm').submit();
               }
             });

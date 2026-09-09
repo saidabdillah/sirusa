@@ -44,7 +44,7 @@ test('admin can access scholarship create form and create one', function () {
     $fakultas = $kampus->fakultas()->create(['nama' => 'Teknik']);
     $prodi = $fakultas->prodi()->create(['nama' => 'Informatika']);
 
-    actingAs($this->admin)->get(route('admin.beasiswa.buat'))->assertOk();
+    actingAs($this->admin)->get(route('admin.beasiswa.buat'))->assertOk()->assertDontSee(' required>', false);
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Prestasi',
@@ -63,6 +63,14 @@ test('admin can access scholarship create form and create one', function () {
 
     $this->assertDatabaseHas('beasiswa', ['nama' => 'Beasiswa Prestasi']);
     $this->assertEquals('Universitas Indonesia', Scholarship::where('nama', 'Beasiswa Prestasi')->first()->kampus);
+});
+
+test('admin can access scholarship edit form without html5 required attribute', function () {
+    $scholarship = Scholarship::factory()->create();
+
+    actingAs($this->admin)->get(route('admin.beasiswa.ubah', $scholarship))
+        ->assertOk()
+        ->assertDontSee(' required>', false);
 });
 
 test('super admin cannot access scholarship create form', function () {

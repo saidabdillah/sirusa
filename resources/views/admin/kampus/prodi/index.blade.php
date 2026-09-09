@@ -31,10 +31,17 @@
       <div class="col-12">
         <div class="card">
           @if(auth()->user()->hasRole('admin'))
-          <div class="card-header">
+          <div class="card-header d-flex justify-content-between align-items-center">
             <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Program Studi
             </a>
+            <form action="{{ route('admin.kampus.prodi.massDestroy', [$kampus, $fakultas]) }}" method="POST" id="form-mass-delete">
+              @csrf
+              @method('DELETE')
+              <button type="button" class="btn btn-danger" id="btn-mass-delete" disabled>
+                <i class="fas fa-trash"></i> Hapus Terpilih
+              </button>
+            </form>
           </div>
           @endif
           <div class="card-body">
@@ -42,6 +49,9 @@
               <table class="table table-striped" id="prodiTable">
                 <thead>
                   <tr>
+                    @if(auth()->user()->hasRole('admin'))
+                    <th style="width: 40px;"><input type="checkbox" id="checkAll"></th>
+                    @endif
                     <th>No</th>
                     <th>Program Studi</th>
                     @if(auth()->user()->hasRole('admin'))
@@ -52,11 +62,14 @@
                 <tbody>
                   @forelse($prodi as $data)
                   <tr>
+                    @if(auth()->user()->hasRole('admin'))
+                    <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
+                    @endif
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $data->nama }}</td>
                     @if(auth()->user()->hasRole('admin'))
                     <td>
-                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}" class="btn btn-warning btn-sm" title="Edit">
+                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
                         <i class="fas fa-edit"></i>
                       </a>
                       <form action="{{ route('admin.kampus.prodi.hapus', [$kampus, $fakultas, $data]) }}" method="POST" class="d-inline"
@@ -73,7 +86,7 @@
                   </tr>
                   @empty
                   <tr>
-                    <td colspan="3" class="text-center">Belum ada program studi. Klik "Tambah Program Studi" untuk menambahkan.</td>
+                    <td colspan="4" class="text-center">Belum ada program studi. Klik "Tambah Program Studi" untuk menambahkan.</td>
                   </tr>
                   @endforelse
                 </tbody>
@@ -91,6 +104,7 @@
 <script>
   $(document).ready(function() {
   $('#prodiTable').DataTable({
+    order: [],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",
@@ -106,6 +120,16 @@
       }
     }
   });
+
+  initMassDelete({
+    tableSelector: '#prodiTable',
+    allSelector: '#checkAll',
+    itemSelector: '.row-check',
+    buttonSelector: '#btn-mass-delete',
+    formSelector: '#form-mass-delete',
+    entityLabel: 'program studi',
+    confirmText: 'Data terpilih akan dihapus permanen.'
+  });
 });
 
 function confirmDelete(id, namaProdi) {
@@ -120,6 +144,7 @@ function confirmDelete(id, namaProdi) {
     cancelButtonText: 'Batal'
   }).then((result) => {
     if (result.isConfirmed) {
+      showSubmitLoading('Menghapus...');
       document.getElementById('delete-form-' + id).submit();
     }
   });

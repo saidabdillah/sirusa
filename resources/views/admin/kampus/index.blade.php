@@ -29,10 +29,17 @@
       <div class="col-12">
         <div class="card">
           @if(auth()->user()->hasRole('admin'))
-          <div class="card-header">
+          <div class="card-header d-flex justify-content-between align-items-center">
             <a href="{{ route('admin.kampus.buat') }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Kampus
             </a>
+            <form action="{{ route('admin.kampus.massDestroy') }}" method="POST" id="form-mass-delete">
+              @csrf
+              @method('DELETE')
+              <button type="button" class="btn btn-danger" id="btn-mass-delete" disabled>
+                <i class="fas fa-trash"></i> Hapus Terpilih
+              </button>
+            </form>
           </div>
           @endif
           <div class="card-body">
@@ -40,6 +47,9 @@
               <table class="table table-striped" id="kampusTable">
                 <thead>
                   <tr>
+                    @if(auth()->user()->hasRole('admin'))
+                    <th style="width: 40px;"><input type="checkbox" id="checkAll"></th>
+                    @endif
                     <th>No</th>
                     <th>Kampus</th>
                     <th>Jumlah Fakultas</th>
@@ -49,15 +59,18 @@
                 <tbody>
                   @foreach($kampus as $data)
                   <tr>
+                    @if(auth()->user()->hasRole('admin'))
+                    <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
+                    @endif
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $data->nama_kampus }}</td>
                     <td>{{ $data->fakultas_count }}</td>
                     <td>
-                      <a href="{{ route('admin.kampus.fakultas.index', $data) }}" class="btn btn-info btn-sm" title="Kelola Fakultas">
+                      <a href="{{ route('admin.kampus.fakultas.index', $data) }}" class="btn btn-info btn-sm mr-1" title="Kelola Fakultas">
                         <i class="fas fa-building"></i>
                       </a>
                       @if(auth()->user()->hasRole('admin'))
-                      <a href="{{ route('admin.kampus.ubah', $data) }}" class="btn btn-warning btn-sm" title="Edit">
+                      <a href="{{ route('admin.kampus.ubah', $data) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
                         <i class="fas fa-edit"></i>
                       </a>
                       <form action="{{ route('admin.kampus.hapus', $data) }}" method="POST" class="d-inline"
@@ -88,6 +101,7 @@
 <script>
   $(document).ready(function() {
   $('#kampusTable').DataTable({
+    order: [],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",
@@ -103,6 +117,16 @@
       }
     }
   });
+
+  initMassDelete({
+    tableSelector: '#kampusTable',
+    allSelector: '#checkAll',
+    itemSelector: '.row-check',
+    buttonSelector: '#btn-mass-delete',
+    formSelector: '#form-mass-delete',
+    entityLabel: 'kampus',
+    confirmText: 'Seluruh fakultas dan program studi pada kampus terpilih juga akan terhapus.'
+  });
 });
 
 function confirmDelete(id, namaKampus) {
@@ -117,6 +141,7 @@ function confirmDelete(id, namaKampus) {
     cancelButtonText: 'Batal'
   }).then((result) => {
     if (result.isConfirmed) {
+      showSubmitLoading('Menghapus...');
       document.getElementById('delete-form-' + id).submit();
     }
   });

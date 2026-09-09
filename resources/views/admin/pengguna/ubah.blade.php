@@ -38,7 +38,7 @@
                   @if(auth()->user()->hasRole('super_admin'))
                     <div class="form-group col-md-6">
                       <label for="peran">Peran <span class="text-danger">*</span></label>
-                      <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran" required>
+                      <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
                         <option value="user" {{ old('peran', $user->getRoleNames()->first()) === 'user' ? 'selected' : '' }}>User</option>
                         <option value="admin" {{ old('peran', $user->getRoleNames()->first()) === 'admin' ? 'selected' : '' }}>Admin</option>
                         <option value="super_admin" {{ old('peran', $user->getRoleNames()->first()) === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
@@ -48,7 +48,7 @@
                   @endif
                   <div class="form-group {{ auth()->user()->hasRole('super_admin') ? 'col-md-6' : 'col-md-12' }}">
                     <label for="status">Status <span class="text-danger">*</span></label>
-                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status" required>
+                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
                       <option value="aktif" {{ old('status', $user->status) === 'aktif' ? 'selected' : '' }}>Aktif</option>
                       <option value="non-aktif" {{ old('status', $user->status) === 'non-aktif' ? 'selected' : '' }}>Nonaktif</option>
                     </select>

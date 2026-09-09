@@ -130,6 +130,7 @@
               cancelButtonText: 'Batal',
             }).then(function (result) {
               if (result.isConfirmed) {
+                showSubmitLoading('Menghapus...');
                 document.getElementById('hapusTemplateForm').submit();
               }
             });

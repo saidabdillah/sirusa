@@ -23,32 +23,32 @@
               <div class="card-body">
                 <div class="form-group">
                   <label for="username">Username <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username') }}" required>
+                  <input type="text" class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username') }}">
                   @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="form-group">
                   <label for="email">Email <span class="text-danger">*</span></label>
-                  <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required>
+                  <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">
                   @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="password">Kata Sandi <span class="text-danger">*</span></label>
-                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" required>
+                    <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password">
                     @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="password_confirmation">Konfirmasi Kata Sandi <span class="text-danger">*</span></label>
-                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required>
+                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation">
                   </div>
                 </div>
 
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="peran">Peran <span class="text-danger">*</span></label>
-                    <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran" required>
+                    <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
                       <option value="user" {{ old('peran') === 'user' ? 'selected' : '' }}>User</option>
                       <option value="admin" {{ old('peran') === 'admin' ? 'selected' : '' }}>Admin</option>
                       <option value="super_admin" {{ old('peran') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
@@ -57,7 +57,7 @@
                   </div>
                   <div class="form-group col-md-6">
                     <label for="status">Status <span class="text-danger">*</span></label>
-                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status" required>
+                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
                       <option value="aktif" {{ old('status', 'aktif') === 'aktif' ? 'selected' : '' }}>Aktif</option>
                       <option value="non-aktif" {{ old('status') === 'non-aktif' ? 'selected' : '' }}>Nonaktif</option>
                     </select>

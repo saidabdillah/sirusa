@@ -123,6 +123,7 @@
             cancelButtonText: cancelButtonText
         }).then((result) => {
             if (result.isConfirmed) {
+                showSubmitLoading('Menghapus...');
                 // Jika element adalah form, submit form
                 if (element.tagName === 'FORM') {
                     element.submit();

@@ -26,7 +26,7 @@
               <div class="card-body">
                 <div class="form-group">
                   <label for="nama">Nama Program Studi <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $prodi->nama) }}" required>
+                  <input type="text" class="form-control @error('nama') is-invalid @enderror" id="nama" name="nama" value="{{ old('nama', $prodi->nama) }}">
                   @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>

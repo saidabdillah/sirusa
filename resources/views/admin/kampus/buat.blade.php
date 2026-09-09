@@ -21,11 +21,34 @@
             <form action="{{ route('admin.kampus.simpan') }}" method="POST">
               @csrf
               <div class="card-body">
-                <div class="form-group">
-                  <label for="nama_kampus">Nama Kampus <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('nama_kampus') is-invalid @enderror" id="nama_kampus" name="nama_kampus" value="{{ old('nama_kampus') }}" required>
-                  @error('nama_kampus')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <label>Nama Kampus <span class="text-danger">*</span></label>
+                @error('nama_kampus')<div class="invalid-feedback d-block mb-2">{{ $message }}</div>@enderror
+                <div id="baris-kampus">
+                  @php
+                    $oldKampus = old('nama_kampus', ['']);
+                  if (! is_array($oldKampus)) {
+                      $oldKampus = [$oldKampus];
+                  }
+                  @endphp
+                  @foreach($oldKampus as $index => $value)
+                  <div class="form-group row">
+                    <div class="col">
+                      <input type="text"
+                        class="form-control {{ $errors->has('nama_kampus.'.$index) ? 'is-invalid' : '' }}"
+                        name="nama_kampus[]" value="{{ $value }}" placeholder="Contoh: Universitas Lambung Mangkurat">
+                      @error('nama_kampus.'.$index)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-auto align-self-center">
+                      <button type="button" class="btn btn-outline-danger baris-hapus" tabindex="-1" title="Hapus baris">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                  @endforeach
                 </div>
+                <button type="button" class="btn btn-outline-primary btn-block" id="tambah-baris">
+                  <i class="fas fa-plus mr-1"></i> Tambah Baris
+                </button>
               </div>
               <div class="card-footer text-right">
                 <a href="{{ route('admin.kampus.index') }}" class="btn btn-secondary">Batal</a>
@@ -38,3 +61,31 @@
     </div>
 </section>
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+  function updateHapus() {
+    $('#baris-kampus .baris-hapus').prop('disabled', $('#baris-kampus .form-group').length <= 1);
+  }
+
+  $('#tambah-baris').on('click', function() {
+    var $template = $('#baris-kampus .form-group').first().clone();
+    $template.find('input').val('').removeClass('is-invalid');
+    $template.find('.invalid-feedback').remove();
+    $('#baris-kampus').append($template);
+    $('#baris-kampus .form-group').last().find('input').focus();
+    updateHapus();
+  });
+
+  $('#baris-kampus').on('click', '.baris-hapus', function() {
+    if ($('#baris-kampus .form-group').length > 1) {
+      $(this).closest('.form-group').remove();
+      updateHapus();
+    }
+  });
+
+  updateHapus();
+});
+</script>
+@endpush

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Kampus\MassDeleteFakultasRequest;
+use App\Http\Requests\Kampus\MassDeleteKampusRequest;
+use App\Http\Requests\Kampus\MassDeleteProdiRequest;
 use App\Http\Requests\Kampus\StoreFakultasRequest;
 use App\Http\Requests\Kampus\StoreKampusRequest;
 use App\Http\Requests\Kampus\StoreProdiRequest;
@@ -33,7 +36,9 @@ class KampusController extends Controller
 
     public function store(StoreKampusRequest $request): RedirectResponse
     {
-        Kampus::create($request->validated());
+        foreach ($request->validated('nama_kampus') as $nama) {
+            Kampus::create(['nama_kampus' => $nama]);
+        }
 
         return redirect()->route('admin.kampus.index')->with('success', 'Kampus berhasil ditambahkan');
     }
@@ -57,6 +62,14 @@ class KampusController extends Controller
         return redirect()->route('admin.kampus.index')->with('success', 'Kampus berhasil dihapus');
     }
 
+    public function massDestroy(MassDeleteKampusRequest $request): RedirectResponse
+    {
+        $count = Kampus::whereIn('id', $request->validated('ids'))->delete();
+
+        return redirect()->route('admin.kampus.index')
+            ->with('success', "{$count} kampus berhasil dihapus");
+    }
+
     // ─── Fakultas ──────────────────────────────────────────────────
 
     public function fakultasIndex(Kampus $kampus): View
@@ -73,7 +86,9 @@ class KampusController extends Controller
 
     public function fakultasStore(StoreFakultasRequest $request, Kampus $kampus): RedirectResponse
     {
-        $kampus->fakultas()->create($request->validated());
+        foreach ($request->validated('nama') as $nama) {
+            $kampus->fakultas()->create(['nama' => $nama]);
+        }
 
         return redirect()->route('admin.kampus.fakultas.index', $kampus)
             ->with('success', 'Fakultas berhasil ditambahkan');
@@ -106,6 +121,16 @@ class KampusController extends Controller
             ->with('success', 'Fakultas berhasil dihapus');
     }
 
+    public function fakultasMassDestroy(MassDeleteFakultasRequest $request, Kampus $kampus): RedirectResponse
+    {
+        $count = Fakultas::where('kampus_id', $kampus->id)
+            ->whereIn('id', $request->validated('ids'))
+            ->delete();
+
+        return redirect()->route('admin.kampus.fakultas.index', $kampus)
+            ->with('success', "{$count} fakultas berhasil dihapus");
+    }
+
     // ─── Prodi ─────────────────────────────────────────────────────
 
     public function prodiIndex(Kampus $kampus, Fakultas $fakultas): View
@@ -128,7 +153,9 @@ class KampusController extends Controller
     {
         abort_unless($fakultas->kampus_id === $kampus->id, 404);
 
-        $fakultas->prodi()->create($request->validated());
+        foreach ($request->validated('nama') as $nama) {
+            $fakultas->prodi()->create(['nama' => $nama]);
+        }
 
         return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
             ->with('success', 'Program studi berhasil ditambahkan');
@@ -159,5 +186,17 @@ class KampusController extends Controller
 
         return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
             ->with('success', 'Program studi berhasil dihapus');
+    }
+
+    public function prodiMassDestroy(MassDeleteProdiRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse
+    {
+        abort_unless($fakultas->kampus_id === $kampus->id, 404);
+
+        $count = Prodi::where('fakultas_id', $fakultas->id)
+            ->whereIn('id', $request->validated('ids'))
+            ->delete();
+
+        return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
+            ->with('success', "{$count} program studi berhasil dihapus");
     }
 }

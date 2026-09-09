@@ -88,19 +88,19 @@
                 <h5 class="mb-3">Data Diri</h5>
                 <div class="form-group">
                   <label for="nama_lengkap">Nama Lengkap <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('nama_lengkap') is-invalid @enderror" id="nama_lengkap" name="nama_lengkap" value="{{ old('nama_lengkap', $profile->nama_lengkap ?? '') }}" required>
+                  <input type="text" class="form-control @error('nama_lengkap') is-invalid @enderror" id="nama_lengkap" name="nama_lengkap" value="{{ old('nama_lengkap', $profile->nama_lengkap ?? '') }}">
                   @error('nama_lengkap')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nik">NIK <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16" required>
+                    <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16">
                     @error('nik')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="telepon">Telepon <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('telepon') is-invalid @enderror" id="telepon" name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}" required>
+                    <input type="text" class="form-control @error('telepon') is-invalid @enderror" id="telepon" name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}">
                     @error('telepon')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
@@ -108,12 +108,12 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="tempat_lahir">Tempat Lahir <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('tempat_lahir') is-invalid @enderror" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir', $profile->tempat_lahir ?? '') }}" required>
+                    <input type="text" class="form-control @error('tempat_lahir') is-invalid @enderror" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir', $profile->tempat_lahir ?? '') }}">
                     @error('tempat_lahir')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="tanggal_lahir">Tanggal Lahir <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control flatpickr bg-white @error('tanggal_lahir') is-invalid @enderror" id="tanggal_lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir', $profile?->tanggal_lahir?->format('Y-m-d') ?? '') }}" placeholder="Pilih tanggal" style="cursor: pointer;" required>
+                    <input type="text" class="form-control flatpickr bg-white @error('tanggal_lahir') is-invalid @enderror" id="tanggal_lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir', $profile?->tanggal_lahir?->format('Y-m-d') ?? '') }}" placeholder="Pilih tanggal" style="cursor: pointer;">
                     @error('tanggal_lahir')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
@@ -121,7 +121,7 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="jenis_kelamin">Jenis Kelamin <span class="text-danger">*</span></label>
-                    <select class="form-control @error('jenis_kelamin') is-invalid @enderror" id="jenis_kelamin" name="jenis_kelamin" required>
+                    <select class="form-control @error('jenis_kelamin') is-invalid @enderror" id="jenis_kelamin" name="jenis_kelamin">
                       <option value="">Pilih Jenis Kelamin</option>
                       <option value="Laki-laki" {{ old('jenis_kelamin', $profile->jenis_kelamin ?? '') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
                       <option value="Perempuan" {{ old('jenis_kelamin', $profile->jenis_kelamin ?? '') === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
@@ -130,7 +130,7 @@
                   </div>
                   <div class="form-group col-md-6">
                     <label for="agama">Agama <span class="text-danger">*</span></label>
-                    <select class="form-control @error('agama') is-invalid @enderror" id="agama" name="agama" required>
+                    <select class="form-control @error('agama') is-invalid @enderror" id="agama" name="agama">
                       <option value="">Pilih Agama</option>
                       <option value="Islam" {{ old('agama', $profile->agama ?? '') === 'Islam' ? 'selected' : '' }}>Islam</option>
                       <option value="Kristen" {{ old('agama', $profile->agama ?? '') === 'Kristen' ? 'selected' : '' }}>Kristen</option>
@@ -180,7 +180,7 @@
 
                 <div class="form-group">
                   <label for="alamat">Alamat Detail (RT/RW, Nama Jalan, No. Rumah) <span class="text-danger">*</span></label>
-                  <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="3" required>{{ old('alamat', $profile->alamat ?? '') }}</textarea>
+                  <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="3">{{ old('alamat', $profile->alamat ?? '') }}</textarea>
                   @error('alamat')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
@@ -231,7 +231,7 @@
                 <h5 class="mb-3">Data Orang Tua</h5>
                 <div class="form-group">
                   <label for="status_orang_tua">Status Orang Tua <span class="text-danger">*</span></label>
-                  <select class="form-control @error('status_orang_tua') is-invalid @enderror" id="status_orang_tua" name="status_orang_tua" required>
+                  <select class="form-control @error('status_orang_tua') is-invalid @enderror" id="status_orang_tua" name="status_orang_tua">
                     <option value="">Pilih Status</option>
                     <option value="Lengkap" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Lengkap' ? 'selected' : '' }}>Lengkap (Ayah & Ibu)</option>
                     <option value="Yatim" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim' ? 'selected' : '' }}>Yatim (Ayah Meninggal)</option>
@@ -245,19 +245,19 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nama_ayah">Nama Ayah <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nama_ayah') is-invalid @enderror" id="nama_ayah" name="nama_ayah" value="{{ old('nama_ayah', $profile->nama_ayah ?? '') }}" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Piatu']) ? 'required' : '' }}>
+                    <input type="text" class="form-control @error('nama_ayah') is-invalid @enderror" id="nama_ayah" name="nama_ayah" value="{{ old('nama_ayah', $profile->nama_ayah ?? '') }}">
                     @error('nama_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="nik_ayah">NIK Ayah <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah" name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Piatu']) ? 'required' : '' }}>
+                    <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah" name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
                     @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="pekerjaan_ayah">Pekerjaan Ayah <span class="text-danger">*</span></label>
-                    <select class="form-control @error('pekerjaan_ayah') is-invalid @enderror" id="pekerjaan_ayah" name="pekerjaan_ayah" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Piatu']) ? 'required' : '' }}>
+                    <select class="form-control @error('pekerjaan_ayah') is-invalid @enderror" id="pekerjaan_ayah" name="pekerjaan_ayah">
                       <option value="">Pilih Pekerjaan</option>
                       @foreach(['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'] as $pekerjaan)
                         <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ayah', $profile->pekerjaan_ayah ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
@@ -267,7 +267,7 @@
                   </div>
                   <div class="form-group col-md-6">
                     <label for="penghasilan_ayah">Penghasilan Ayah <span class="text-danger">*</span></label>
-                    <select class="form-control @error('penghasilan_ayah') is-invalid @enderror" id="penghasilan_ayah" name="penghasilan_ayah" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Piatu']) ? 'required' : '' }}>
+                    <select class="form-control @error('penghasilan_ayah') is-invalid @enderror" id="penghasilan_ayah" name="penghasilan_ayah">
                       <option value="">Pilih Penghasilan</option>
                       @foreach(['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'] as $penghasilan)
                         <option value="{{ $penghasilan }}" {{ old('penghasilan_ayah', $profile->penghasilan_ayah ?? '') === $penghasilan ? 'selected' : '' }}>{{ $penghasilan }}</option>
@@ -281,19 +281,19 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nama_ibu">Nama Ibu <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nama_ibu') is-invalid @enderror" id="nama_ibu" name="nama_ibu" value="{{ old('nama_ibu', $profile->nama_ibu ?? '') }}" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Yatim']) ? 'required' : '' }}>
+                    <input type="text" class="form-control @error('nama_ibu') is-invalid @enderror" id="nama_ibu" name="nama_ibu" value="{{ old('nama_ibu', $profile->nama_ibu ?? '') }}">
                     @error('nama_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="nik_ibu">NIK Ibu <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu" name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Yatim']) ? 'required' : '' }}>
+                    <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu" name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
                     @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="pekerjaan_ibu">Pekerjaan Ibu <span class="text-danger">*</span></label>
-                    <select class="form-control @error('pekerjaan_ibu') is-invalid @enderror" id="pekerjaan_ibu" name="pekerjaan_ibu" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Yatim']) ? 'required' : '' }}>
+                    <select class="form-control @error('pekerjaan_ibu') is-invalid @enderror" id="pekerjaan_ibu" name="pekerjaan_ibu">
                       <option value="">Pilih Pekerjaan</option>
                       @foreach(['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'] as $pekerjaan)
                         <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ibu', $profile->pekerjaan_ibu ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
@@ -303,7 +303,7 @@
                   </div>
                   <div class="form-group col-md-6">
                     <label for="penghasilan_ibu">Penghasilan Ibu <span class="text-danger">*</span></label>
-                    <select class="form-control @error('penghasilan_ibu') is-invalid @enderror" id="penghasilan_ibu" name="penghasilan_ibu" {{ in_array(old('status_orang_tua', $profile->status_orang_tua ?? ''), ['Lengkap', 'Yatim']) ? 'required' : '' }}>
+                    <select class="form-control @error('penghasilan_ibu') is-invalid @enderror" id="penghasilan_ibu" name="penghasilan_ibu">
                       <option value="">Pilih Penghasilan</option>
                       @foreach(['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'] as $penghasilan)
                         <option value="{{ $penghasilan }}" {{ old('penghasilan_ibu', $profile->penghasilan_ibu ?? '') === $penghasilan ? 'selected' : '' }}>{{ $penghasilan }}</option>
@@ -320,19 +320,19 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nama_wali">Nama Wali <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nama_wali') is-invalid @enderror" id="nama_wali" name="nama_wali" value="{{ old('nama_wali', $profile->nama_wali ?? '') }}" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim Piatu' ? 'required' : '' }}>
+                    <input type="text" class="form-control @error('nama_wali') is-invalid @enderror" id="nama_wali" name="nama_wali" value="{{ old('nama_wali', $profile->nama_wali ?? '') }}">
                     @error('nama_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="nik_wali">NIK Wali <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nik_wali') is-invalid @enderror" id="nik_wali" name="nik_wali" value="{{ old('nik_wali', $profile->nik_wali ?? '') }}" maxlength="16" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim Piatu' ? 'required' : '' }}>
+                    <input type="text" class="form-control @error('nik_wali') is-invalid @enderror" id="nik_wali" name="nik_wali" value="{{ old('nik_wali', $profile->nik_wali ?? '') }}" maxlength="16">
                     @error('nik_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="hubungan_wali">Hubungan <span class="text-danger">*</span></label>
-                    <select class="form-control @error('hubungan_wali') is-invalid @enderror" id="hubungan_wali" name="hubungan_wali" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim Piatu' ? 'required' : '' }}>
+                    <select class="form-control @error('hubungan_wali') is-invalid @enderror" id="hubungan_wali" name="hubungan_wali">
                       <option value="">Pilih Hubungan</option>
                       @foreach(['Paman', 'Bibi', 'Kakek', 'Nenek', 'Lainnya'] as $hubungan)
                         <option value="{{ $hubungan }}" {{ old('hubungan_wali', $profile->hubungan_wali ?? '') === $hubungan ? 'selected' : '' }}>{{ $hubungan }}</option>
@@ -342,7 +342,7 @@
                   </div>
                   <div class="form-group col-md-6">
                     <label for="pekerjaan_wali">Pekerjaan Wali <span class="text-danger">*</span></label>
-                    <select class="form-control @error('pekerjaan_wali') is-invalid @enderror" id="pekerjaan_wali" name="pekerjaan_wali" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim Piatu' ? 'required' : '' }}>
+                    <select class="form-control @error('pekerjaan_wali') is-invalid @enderror" id="pekerjaan_wali" name="pekerjaan_wali">
                       <option value="">Pilih Pekerjaan</option>
                       @foreach(['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'] as $pekerjaan)
                         <option value="{{ $pekerjaan }}" {{ old('pekerjaan_wali', $profile->pekerjaan_wali ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
@@ -354,7 +354,7 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="penghasilan_wali">Penghasilan Wali <span class="text-danger">*</span></label>
-                    <select class="form-control @error('penghasilan_wali') is-invalid @enderror" id="penghasilan_wali" name="penghasilan_wali" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim Piatu' ? 'required' : '' }}>
+                    <select class="form-control @error('penghasilan_wali') is-invalid @enderror" id="penghasilan_wali" name="penghasilan_wali">
                       <option value="">Pilih Penghasilan</option>
                       @foreach(['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'] as $penghasilan)
                         <option value="{{ $penghasilan }}" {{ old('penghasilan_wali', $profile->penghasilan_wali ?? '') === $penghasilan ? 'selected' : '' }}>{{ $penghasilan }}</option>

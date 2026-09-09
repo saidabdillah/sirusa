@@ -74,7 +74,8 @@ test('user can open profil form with region and campus fields', function () {
         ->assertSee('Data Kampus')
         ->assertSee('Universitas Lambung Mangkurat')
         ->assertSee('IPK')
-        ->assertSee('Semester');
+        ->assertSee('Semester')
+        ->assertDontSee(' required>', false);
 });
 
 test('user can update profile with campus data and parent nik', function () {
