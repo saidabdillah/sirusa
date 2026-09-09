@@ -31,16 +31,20 @@
               </div>
 
               <div class="form-row">
-                <div class="form-group col-md-8">
-                  <label for="kampus_id">Kampus Tujuan <span class="text-danger">*</span></label>
-                  <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
+<div class="form-group col-md-8">
+                    <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
+                    <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
                     <option value="">Pilih Kampus</option>
                     @foreach($kampusList as $kampus)
-                      <option value="{{ $kampus->id }}" {{ old('kampus_id', $kampusList->first()?->id ?? '') == $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
+                      <option value="{{ $kampus->id }}" {{ old('kampus_id') == $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
                     @endforeach
                   </select>
                   @error('kampus_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Pilih kampus tujuan beasiswa dari daftar yang dikelola di menu Kampus</small>
+                  @if($kampusList->isEmpty())
+                    <small class="text-muted">Belum ada kampus terdaftar. <a href="{{ route('admin.kampus.buat') }}">Tambah Kampus</a> terlebih dahulu.</small>
+                  @else
+                    <small class="text-muted">Pilih kampus beasiswa dari daftar yang dikelola di menu Kampus</small>
+                  @endif
                 </div>
                 <div class="form-group col-md-4">
                   <label for="tingkat_gelar">Tingkat Gelar <span class="text-danger">*</span></label>
@@ -154,26 +158,32 @@
                       <div class="mb-3">
                         <strong class="d-block mb-2"><i class="fas fa-university mr-1"></i>{{ $fakultas->nama }}</strong>
                         <div class="row">
-                          @foreach($fakultas->prodi as $prodi)
-                            <div class="col-md-4 mb-1">
-                              <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input prodi-check" id="prodi-{{ $prodi->id }}"
-                                  name="prodi_ids[]" value="{{ $prodi->id }}" @checked(in_array($prodi->id, old('prodi_ids', [])))>
-                                <label class="custom-control-label" for="prodi-{{ $prodi->id }}">{{ $prodi->nama }}</label>
+@foreach($fakultas->prodi as $prodi)
+                              <div class="col-md-4 mb-1">
+                                <div class="custom-control custom-checkbox">
+                                  <input type="checkbox" class="custom-control-input prodi-check" id="prodi-{{ $prodi->id }}"
+                                    name="prodi_ids[]" value="{{ $prodi->id }}" @checked(in_array($prodi->id, old('prodi_ids', [])))>
+                                  <label class="custom-control-label" for="prodi-{{ $prodi->id }}">{{ $prodi->nama }}</label>
+                                </div>
                               </div>
-                            </div>
-                          @endforeach
+                            @endforeach
+                            @if($fakultas->prodi->isEmpty())
+                              <div class="col-12">
+                                <p class="text-muted mb-0">Belum ada program studi pada fakultas ini.
+                                  <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}">Tambah Prodi</a>.</p>
+                              </div>
+                            @endif
                         </div>
                       </div>
                     @endforeach
                     @if($kampus->fakultas->isEmpty())
-                      <p class="text-muted mb-0">Belum ada fakultas pada kampus ini. Tambahkan melalui menu
-                        <a href="{{ route('admin.kampus.index') }}">Kampus</a>.</p>
+                      <p class="text-muted mb-0">Belum ada fakultas pada kampus ini.
+                        <a href="{{ route('admin.kampus.fakultas.buat', $kampus) }}">Tambah Fakultas</a>.</p>
                     @endif
                   </div>
                 @empty
-                  <p class="text-muted mb-0">Belum ada kampus terdaftar. Tambahkan melalui menu
-                    <a href="{{ route('admin.kampus.index') }}">Kampus</a>.</p>
+                  <p class="text-muted mb-0">Belum ada kampus terdaftar.
+                    <a href="{{ route('admin.kampus.buat') }}">Tambah Kampus</a>.</p>
                 @endforelse
               </div>
 
@@ -208,7 +218,7 @@
     function showKampusTree() {
       var selected = $('#kampus_id').val();
       $('#prodi-tree .kampus-tree').each(function() {
-        $(this).toggleClass('d-none', String($(this).data('kampus-id')) !== String(selected));
+        $(this).toggleClass('d-none', String($(this).attr('data-kampus-id')) !== String(selected));
       });
       updateProdiHint();
     }

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('semester')->nullable();
             $table->string('dokumen_ktp')->nullable();
             $table->string('dokumen_kk')->nullable();
+            $table->string('dokumen_akta')->nullable();
             $table->string('dokumen_surat_aktif')->nullable();
             $table->string('dokumen_transkrip')->nullable();
             $table->string('dokumen_surat_permohonan')->nullable();

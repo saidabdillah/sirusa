@@ -89,7 +89,7 @@ test('update beasiswa ignores submitted announcement dates', function () {
             'ipk_minimal' => 3.0,
             'semester_minimal' => 3,
             'deskripsi' => 'Deskripsi',
-            'persyaratan' => null,
+            'persyaratan' => 'IPK >= 3.0',
             'status' => 'aktif',
             'tanggal_pengumuman' => now()->addMonths(3)->toDateString(),
             'tanggal_pengumuman_selesai' => now()->addMonths(3)->addDays(7)->toDateString(),

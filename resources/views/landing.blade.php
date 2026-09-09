@@ -184,6 +184,10 @@
     </div>
     @if($kampusMitra->isEmpty())
     <div class="alert alert-info text-center mb-0">Belum ada kampus mitra.</div>
+    @elseif($kampusMitra->count() === 1)
+    <div class="kampus-marquee rounded py-3 px-2 text-center">
+      <span>{{ $kampusMitra->first() }}</span>
+    </div>
     @else
     <div class="kampus-marquee rounded py-3 px-2">
       <div class="kampus-marquee__track" id="kampusTrack">

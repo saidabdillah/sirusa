@@ -32,7 +32,7 @@
 
                 <div class="form-row">
                   <div class="form-group col-md-8">
-                    <label for="kampus_id">Kampus Tujuan <span class="text-danger">*</span></label>
+                    <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
                     <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
                       <option value="">Pilih Kampus</option>
                       @foreach($kampusList as $kampus)
@@ -56,13 +56,13 @@
                 <div class="form-row">
                   <div class="form-group col-md-3">
                     <label for="kuota">Kuota <span class="text-danger">*</span></label>
-                    <div class="input-group">
+                    <div class="input-group @error('kuota') is-invalid @enderror">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-users"></i></span>
                       </div>
                       <input type="number" class="form-control @error('kuota') is-invalid @enderror" id="kuota" name="kuota" value="{{ old('kuota', $scholarship->kuota) }}" min="0">
                     </div>
-                    @error('kuota')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @error('kuota')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
                     <label for="cakupan">Tunjangan <span class="text-danger">*</span></label>
@@ -74,13 +74,13 @@
                   </div>
                   <div class="form-group col-md-3">
                     <label for="batas_waktu">Batas Waktu <span class="text-danger">*</span></label>
-                    <div class="input-group">
+                    <div class="input-group @error('batas_waktu') is-invalid @enderror">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                       </div>
                       <input type="text" class="form-control flatpickr bg-white @error('batas_waktu') is-invalid @enderror" id="batas_waktu" name="batas_waktu" value="{{ old('batas_waktu', $scholarship->batas_waktu?->format('Y-m-d')) }}" placeholder="Pilih tanggal">
                     </div>
-                    @error('batas_waktu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @error('batas_waktu')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-3">
                     <label for="ipk_minimal">IPK Minimal <span class="text-danger">*</span></label>
@@ -119,7 +119,7 @@
                 </div>
 
                 <div class="form-group mb-0">
-                  <label for="persyaratan">Persyaratan</label>
+                  <label for="persyaratan">Persyaratan <span class="text-danger">*</span></label>
                   <textarea class="form-control @error('persyaratan') is-invalid @enderror" id="persyaratan" name="persyaratan" rows="4">{{ old('persyaratan', $scholarship->persyaratan) }}</textarea>
                   @error('persyaratan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   <small class="text-muted">Pisahkan setiap persyaratan dengan enter</small>
@@ -205,7 +205,7 @@ $(document).ready(function() {
   function showKampusTree() {
     var selected = $('#kampus_id').val();
     $('#prodi-tree .kampus-tree').each(function() {
-      $(this).toggleClass('d-none', String($(this).data('kampus-id')) !== String(selected));
+      $(this).toggleClass('d-none', String($(this).attr('data-kampus-id')) !== String(selected));
     });
     updateProdiHint();
   }

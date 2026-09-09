@@ -44,7 +44,12 @@ test('admin can access scholarship create form and create one', function () {
     $fakultas = $kampus->fakultas()->create(['nama' => 'Teknik']);
     $prodi = $fakultas->prodi()->create(['nama' => 'Informatika']);
 
-    actingAs($this->admin)->get(route('admin.beasiswa.buat'))->assertOk()->assertDontSee(' required>', false);
+    actingAs($this->admin)->get(route('admin.beasiswa.buat'))
+        ->assertOk()
+        ->assertDontSee(' required>', false)
+        ->assertSee('>Kampus <span class="text-danger">*</span></label>', false)
+        ->assertSee('data-kampus-id="'.$kampus->id.'"', false)
+        ->assertDontSee('value="'.$kampus->id.'" selected', false);
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Prestasi',
@@ -71,6 +76,27 @@ test('admin can access scholarship edit form without html5 required attribute', 
     actingAs($this->admin)->get(route('admin.beasiswa.ubah', $scholarship))
         ->assertOk()
         ->assertDontSee(' required>', false);
+});
+
+test('create scholarship form links to add kampus when none exists', function () {
+    actingAs($this->admin)->get(route('admin.beasiswa.buat'))
+        ->assertOk()
+        ->assertSee(route('admin.kampus.buat'), false)
+        ->assertDontSee('alert-warning', false);
+});
+
+test('create scholarship form links to add fakultas and prodi when empty', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+
+    actingAs($this->admin)->get(route('admin.beasiswa.buat'))
+        ->assertOk()
+        ->assertSee(route('admin.kampus.fakultas.buat', $kampus), false);
+
+    $fakultas = $kampus->fakultas()->create(['nama' => 'Teknik']);
+
+    actingAs($this->admin)->get(route('admin.beasiswa.buat'))
+        ->assertOk()
+        ->assertSee(route('admin.kampus.prodi.buat', [$kampus, $fakultas]), false);
 });
 
 test('super admin cannot access scholarship create form', function () {
