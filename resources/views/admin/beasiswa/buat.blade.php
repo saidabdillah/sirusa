@@ -62,14 +62,14 @@
               <div class="form-row">
                 <div class="form-group col-md-3">
                   <label for="kuota">Kuota <span class="text-danger">*</span></label>
-                  <div class="input-group">
+                  <div class="input-group @error('kuota') is-invalid @enderror">
                     <div class="input-group-prepend">
                       <span class="input-group-text"><i class="fas fa-users"></i></span>
                     </div>
                     <input type="number" class="form-control @error('kuota') is-invalid @enderror" id="kuota"
-                      name="kuota" value="{{ old('kuota', 0) }}" min="0" placeholder="0">
+                      name="kuota" value="{{ old('kuota') }}" min="0" placeholder="contoh 10">
                   </div>
-                  @error('kuota')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  @error('kuota')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-3">
                   <label for="cakupan">Tunjangan <span class="text-danger">*</span></label>

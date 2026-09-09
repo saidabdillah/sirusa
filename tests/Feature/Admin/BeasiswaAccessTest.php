@@ -52,7 +52,8 @@ test('admin can access scholarship create form and create one', function () {
         ->assertSee('data-kampus-id="'.$kampus->id.'"', false)
         ->assertDontSee('value="'.$kampus->id.'" selected', false)
         ->assertSee('placeholder="contoh 3.00"', false)
-        ->assertSee('placeholder="contoh 3"', false);
+        ->assertSee('placeholder="contoh 3"', false)
+        ->assertSee('placeholder="contoh 10"', false);
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Prestasi',
