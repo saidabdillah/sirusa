@@ -118,15 +118,17 @@
     }
   });
 
-  initMassDelete({
-    tableSelector: '#kampusTable',
-    allSelector: '#checkAll',
-    itemSelector: '.row-check',
-    buttonSelector: '#btn-mass-delete',
-    formSelector: '#form-mass-delete',
-    entityLabel: 'kampus',
-    confirmText: 'Seluruh fakultas dan program studi pada kampus terpilih juga akan terhapus.'
-  });
+  if (typeof initMassDelete === 'function') {
+    initMassDelete({
+      tableSelector: '#kampusTable',
+      allSelector: '#checkAll',
+      itemSelector: '.row-check',
+      buttonSelector: '#btn-mass-delete',
+      formSelector: '#form-mass-delete',
+      entityLabel: 'kampus',
+      confirmText: 'Seluruh fakultas dan program studi pada kampus terpilih juga akan terhapus.'
+    });
+  }
 });
 
 function confirmDelete(id, namaKampus) {

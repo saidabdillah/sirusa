@@ -48,8 +48,11 @@ test('admin can access scholarship create form and create one', function () {
         ->assertOk()
         ->assertDontSee(' required>', false)
         ->assertSee('>Kampus <span class="text-danger">*</span></label>', false)
+        ->assertSee('>Persyaratan <span class="text-danger">*</span></label>', false)
         ->assertSee('data-kampus-id="'.$kampus->id.'"', false)
-        ->assertDontSee('value="'.$kampus->id.'" selected', false);
+        ->assertDontSee('value="'.$kampus->id.'" selected', false)
+        ->assertSee('placeholder="contoh 3.00"', false)
+        ->assertSee('placeholder="contoh 3"', false);
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Prestasi',
@@ -83,6 +86,79 @@ test('create scholarship form links to add kampus when none exists', function ()
         ->assertOk()
         ->assertSee(route('admin.kampus.buat'), false)
         ->assertDontSee('alert-warning', false);
+});
+
+test('scholarship index action buttons have spacing', function () {
+    Scholarship::factory()->create();
+
+    actingAs($this->admin)->get(route('admin.beasiswa.index'))
+        ->assertOk()
+        ->assertSee('btn btn-info btn-sm mr-1 mb-1', false)
+        ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
+        ->assertDontSee('d-flex gap-1', false);
+});
+
+test('password batas waktu validation fails for past dates', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $this->actingAs($this->admin);
+
+    post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Gagal',
+        'kampus_id' => $kampus->id,
+        'kuota' => 5,
+        'tingkat_gelar' => 'S1',
+        'cakupan' => 'penuh',
+        'batas_waktu' => now()->subDay()->format('Y-m-d'),
+        'ipk_minimal' => 3,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [],
+    ])->assertSessionHasErrors('batas_waktu');
+});
+
+test('scholarship store rejects zero kuota and zero ipk', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+
+    actingAs($this->admin)->post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Buruk',
+        'kampus_id' => $kampus->id,
+        'kuota' => 0,
+        'tingkat_gelar' => 'S1',
+        'cakupan' => 'penuh',
+        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'ipk_minimal' => 0,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [$prodi->id],
+    ])->assertSessionHasErrors(['kuota', 'ipk_minimal']);
+
+    $this->assertDatabaseMissing('beasiswa', ['nama' => 'Beasiswa Buruk']);
+});
+
+test('scholarship update rejects zero kuota and zero ipk', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+    $scholarship = Scholarship::factory()->create();
+
+    actingAs($this->admin)->put(route('admin.beasiswa.perbarui', $scholarship), [
+        'nama' => $scholarship->nama,
+        'kampus_id' => $kampus->id,
+        'kuota' => 0,
+        'tingkat_gelar' => 'S1',
+        'cakupan' => 'penuh',
+        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'ipk_minimal' => 0,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [$prodi->id],
+    ])->assertSessionHasErrors(['kuota', 'ipk_minimal']);
 });
 
 test('create scholarship form links to add fakultas and prodi when empty', function () {

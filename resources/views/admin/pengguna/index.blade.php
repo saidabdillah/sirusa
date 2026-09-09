@@ -74,12 +74,12 @@
                     </td>
                     <td>
                       @if(auth()->user()->hasRole('super_admin'))
-                      <a href="{{ route('admin.pengguna.ubah', $user) }}" class="btn btn-warning btn-sm" title="Edit">
+                      <a href="{{ route('admin.pengguna.ubah', $user) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
                         <i class="fas fa-edit"></i>
                       </a>
                       @endif
                       @if(! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline"
+                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline mr-1"
                         id="toggle-form-{{ $user->id }}">
                         @csrf
                         @method('PATCH')

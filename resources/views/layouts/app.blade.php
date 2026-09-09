@@ -26,6 +26,7 @@
   <!-- Template CSS -->
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/components.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
 
   <!-- Start GA -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-94034622-3"></script>
@@ -82,7 +83,7 @@
   <script src="{{ asset('assets/modules/sweetalert2/sweetalert2.min.js') }}"></script>
   <script src="{{ asset('assets/modules/flatpickr/flatpickr.min.js') }}"></script>
   <script src="{{ asset('assets/js/scripts.js') }}"></script>
-  <script src="{{ asset('assets/js/custom.js') }}"></script>
+  <script src="{{ asset('assets/js/custom.js').'?v='.filemtime(public_path('assets/js/custom.js')) }}"></script>
 
   @stack('script')
 </body>

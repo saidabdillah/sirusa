@@ -171,7 +171,7 @@
               </div>
             </div>
             <div class="card-footer text-right">
-              <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-secondary">Batal</a>
+              <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-secondary mr-2">Batal</a>
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-paper-plane"></i> Kirim Pendaftaran
               </button>

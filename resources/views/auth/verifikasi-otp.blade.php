@@ -29,11 +29,11 @@
 
               <div class="form-group">
                 <label>Masukkan Kode OTP</label>
-                <div class="d-flex gap-2 justify-content-center" id="otp-inputs">
+                <div class="d-flex justify-content-center" id="otp-inputs">
                   @for ($i = 1; $i <= 6; $i++)
                     <input type="text"
                            name="otp_digit_{{ $i }}"
-                           class="form-control text-center otp-digit"
+                           class="form-control text-center otp-digit mx-1"
                            maxlength="1"
                            style="width: 48px; height: 56px; font-size: 1.5rem;"
                            autocomplete="one-time-code"

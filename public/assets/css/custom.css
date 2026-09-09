@@ -5,4 +5,17 @@
  * 
  */
 
+/* Breadcrumb: on tablet & mobile let it drop below the title; XL keeps 2 columns */
+@media (max-width: 1199.98px) {
+  .section .section-header {
+    flex-wrap: wrap;
+  }
+  .section .section-header .section-header-breadcrumb {
+    flex-basis: 100%;
+    margin-left: 0;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+}
+
 /*# sourceMappingURL=custom.css.map */

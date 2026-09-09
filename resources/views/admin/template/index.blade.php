@@ -81,11 +81,11 @@
               </div>
 
               @if($templateExists)
-                <div class="mt-3 d-flex gap-2">
-                  <a href="{{ route('preview.application-letter') }}" class="btn btn-info" target="_blank">
+                <div class="mt-3 d-flex">
+                  <a href="{{ route('preview.application-letter') }}" class="btn btn-info mr-2 mb-1" target="_blank">
                     <i class="fas fa-eye"></i> Preview Template
                   </a>
-                  <form action="{{ route('admin.template.hapus') }}" method="POST" class="d-inline" id="hapusTemplateForm">
+                  <form action="{{ route('admin.template.hapus') }}" method="POST" class="d-inline mb-1" id="hapusTemplateForm">
                     @csrf
                     @method('DELETE')
                     <button type="button" class="btn btn-danger" id="hapusTemplateBtn">

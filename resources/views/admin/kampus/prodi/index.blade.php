@@ -60,7 +60,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @forelse($prodi as $data)
+                  @foreach($prodi as $data)
                   <tr>
                     @if(auth()->user()->hasRole('admin'))
                     <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
@@ -84,11 +84,7 @@
                     </td>
                     @endif
                   </tr>
-                  @empty
-                  <tr>
-                    <td colspan="4" class="text-center">Belum ada program studi. Klik "Tambah Program Studi" untuk menambahkan.</td>
-                  </tr>
-                  @endforelse
+                  @endforeach
                 </tbody>
               </table>
             </div>
@@ -121,15 +117,17 @@
     }
   });
 
-  initMassDelete({
-    tableSelector: '#prodiTable',
-    allSelector: '#checkAll',
-    itemSelector: '.row-check',
-    buttonSelector: '#btn-mass-delete',
-    formSelector: '#form-mass-delete',
-    entityLabel: 'program studi',
-    confirmText: 'Data terpilih akan dihapus permanen.'
-  });
+  if (typeof initMassDelete === 'function') {
+    initMassDelete({
+      tableSelector: '#prodiTable',
+      allSelector: '#checkAll',
+      itemSelector: '.row-check',
+      buttonSelector: '#btn-mass-delete',
+      formSelector: '#form-mass-delete',
+      entityLabel: 'program studi',
+      confirmText: 'Data terpilih akan dihapus permanen.'
+    });
+  }
 });
 
 function confirmDelete(id, namaProdi) {

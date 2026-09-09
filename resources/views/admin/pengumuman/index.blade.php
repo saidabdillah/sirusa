@@ -63,17 +63,17 @@
                       </td>
                       <td>{{ $scholarship->penerima_count }}</td>
                       <td>
-                        <div class="d-flex gap-1">
-                          <a href="{{ route('admin.pengumuman.ubah', $scholarship) }}" class="btn btn-primary btn-sm">
+                        <div class="d-flex">
+                          <a href="{{ route('admin.pengumuman.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1">
                             <i class="fas fa-edit"></i> Ubah
                           </a>
                           @if($scholarship->hasPengumuman())
-                            <a href="{{ route('pengumuman.show', $scholarship) }}" target="_blank" class="btn btn-info btn-sm">
+                            <a href="{{ route('pengumuman.show', $scholarship) }}" target="_blank" class="btn btn-info btn-sm mr-1 mb-1">
                               <i class="fas fa-external-link-alt"></i> Publik
                             </a>
                           @endif
                           @if($scholarship->tanggal_pengumuman)
-                            <form action="{{ route('admin.pengumuman.hapus', $scholarship) }}" method="POST" class="d-inline btn-delete-form">
+                            <form action="{{ route('admin.pengumuman.hapus', $scholarship) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                               @csrf
                               @method('DELETE')
                               <button type="button" class="btn btn-danger btn-sm btn-delete">

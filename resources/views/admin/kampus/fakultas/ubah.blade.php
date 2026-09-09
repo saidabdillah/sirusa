@@ -30,7 +30,7 @@
                 </div>
               </div>
               <div class="card-footer text-right">
-                <a href="{{ route('admin.kampus.fakultas.index', $kampus) }}" class="btn btn-secondary">Batal</a>
+                <a href="{{ route('admin.kampus.fakultas.index', $kampus) }}" class="btn btn-secondary mr-2">Batal</a>
                 <button type="submit" class="btn btn-primary">Simpan</button>
               </div>
             </form>

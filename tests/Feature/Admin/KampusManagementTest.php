@@ -61,7 +61,23 @@ test('buat kampus form uses trash remove button and server-side validation', fun
         ->assertSee('name="nama_kampus[]" value="" placeholder="Contoh: Universitas Lambung Mangkurat">', false)
         ->assertSee('fas fa-trash', false)
         ->assertSee('col-auto align-self-center', false)
+        ->assertSee('btn btn-secondary mr-2', false)
         ->assertDontSee('btn-block baris-hapus', false);
+});
+
+test('fakultas and prodi index render without colspan when empty', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Lambung Mangkurat']);
+    $this->actingAs($this->admin);
+
+    get(route('admin.kampus.fakultas.index', $kampus))
+        ->assertOk()
+        ->assertDontSee('colspan', false);
+
+    $fakultas = $kampus->fakultas()->create(['nama' => 'Fakultas Teknik']);
+
+    get(route('admin.kampus.prodi.index', [$kampus, $fakultas]))
+        ->assertOk()
+        ->assertDontSee('colspan', false);
 });
 
 test('ubah kampus forms do not use html5 required attribute', function () {

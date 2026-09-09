@@ -58,7 +58,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @forelse($fakultas as $data)
+                  @foreach($fakultas as $data)
                   <tr>
                     @if(auth()->user()->hasRole('admin'))
                     <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
@@ -86,11 +86,7 @@
                       @endif
                     </td>
                   </tr>
-                  @empty
-                  <tr>
-                    <td colspan="5" class="text-center">Belum ada fakultas. Klik "Tambah Fakultas" untuk menambahkan.</td>
-                  </tr>
-                  @endforelse
+                  @endforeach
                 </tbody>
               </table>
             </div>
@@ -123,15 +119,17 @@
     }
   });
 
-  initMassDelete({
-    tableSelector: '#fakultasTable',
-    allSelector: '#checkAll',
-    itemSelector: '.row-check',
-    buttonSelector: '#btn-mass-delete',
-    formSelector: '#form-mass-delete',
-    entityLabel: 'fakultas',
-    confirmText: 'Seluruh program studi pada fakultas terpilih juga akan terhapus.'
-  });
+  if (typeof initMassDelete === 'function') {
+    initMassDelete({
+      tableSelector: '#fakultasTable',
+      allSelector: '#checkAll',
+      itemSelector: '.row-check',
+      buttonSelector: '#btn-mass-delete',
+      formSelector: '#form-mass-delete',
+      entityLabel: 'fakultas',
+      confirmText: 'Seluruh program studi pada fakultas terpilih juga akan terhapus.'
+    });
+  }
 });
 
 function confirmDelete(id, namaFakultas) {

@@ -69,14 +69,14 @@
                         </td>
                         <td>
                           @if(auth()->user()->hasRole('admin'))
-                            <div class="d-flex gap-1">
-                              <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm">
+                            <div class="d-flex">
+                              <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm mr-1 mb-1">
                                 <i class="fas fa-eye"></i> Lihat
                               </a>
-                              <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm">
+                              <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1">
                                 <i class="fas fa-edit"></i> Ubah
                               </a>
-                              <form action="{{ route('admin.beasiswa.hapus', $scholarship) }}" method="POST" class="d-inline btn-delete-form">
+                              <form action="{{ route('admin.beasiswa.hapus', $scholarship) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="button" class="btn btn-danger btn-sm btn-delete">

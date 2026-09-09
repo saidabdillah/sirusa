@@ -82,7 +82,7 @@
                 </div>
                 <div class="form-group col-md-3">
                   <label for="batas_waktu">Batas Waktu <span class="text-danger">*</span></label>
-                  <div class="input-group">
+                  <div class="input-group @error('batas_waktu') is-invalid @enderror">
                     <div class="input-group-prepend">
                       <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                     </div>
@@ -90,18 +90,18 @@
                       class="form-control flatpickr bg-white @error('batas_waktu') is-invalid @enderror"
                       id="batas_waktu" name="batas_waktu" value="{{ old('batas_waktu') }}" placeholder="Pilih tanggal">
                   </div>
-                  @error('batas_waktu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  @error('batas_waktu')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-3">
                   <label for="ipk_minimal">IPK Minimal <span class="text-danger">*</span></label>
                   <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk_minimal') is-invalid @enderror"
-                    id="ipk_minimal" name="ipk_minimal" value="{{ old('ipk_minimal', '0.00') }}" placeholder="cth: 3.00">
+                    id="ipk_minimal" name="ipk_minimal" value="{{ old('ipk_minimal') }}" placeholder="contoh 3.00">
                   @error('ipk_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-3">
                   <label for="semester_minimal">Semester Minimal <span class="text-danger">*</span></label>
                   <input type="number" min="1" max="14" class="form-control @error('semester_minimal') is-invalid @enderror"
-                    id="semester_minimal" name="semester_minimal" value="{{ old('semester_minimal', 0) }}" placeholder="cth: 3">
+                    id="semester_minimal" name="semester_minimal" value="{{ old('semester_minimal') }}" placeholder="contoh 3">
                   @error('semester_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-3">
@@ -130,7 +130,7 @@
               </div>
 
               <div class="form-group mb-0">
-                <label for="persyaratan">Persyaratan</label>
+                <label for="persyaratan">Persyaratan <span class="text-danger">*</span></label>
                 <textarea class="form-control @error('persyaratan') is-invalid @enderror" id="persyaratan"
                   name="persyaratan" rows="4"
                   placeholder="Tulis persyaratan beasiswa...">{{ old('persyaratan') }}</textarea>
