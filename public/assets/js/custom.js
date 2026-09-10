@@ -68,6 +68,30 @@ $(function () {
     });
   });
 
+  // Generic status toggle button inside a form (.btn-confirm-toggle)
+  $(document).on("click", ".btn-confirm-toggle", function (e) {
+    e.preventDefault();
+
+    var $form = $(this).closest("form");
+    var $btn = $(this);
+
+    Swal.fire({
+      title: $btn.data("confirm-title") || "Ubah Status?",
+      text: $btn.data("confirm-text") || "Apakah Anda yakin ingin mengubah status item ini?",
+      icon: $btn.data("confirm-icon") || "warning",
+      showCancelButton: true,
+      confirmButtonColor: $btn.data("confirm-color") || "#e74c3c",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: $btn.data("confirm-button") || "Ya, Ubah!",
+      cancelButtonText: "Batal",
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        showSubmitLoading($btn.data("loading-text") || "Memproses...");
+        $form[0].submit();
+      }
+    });
+  });
+
   // Bulk delete: checkbox selection + "Hapus Terpilih" button
   window.initMassDelete = function (options) {
     var $table = $(options.tableSelector);

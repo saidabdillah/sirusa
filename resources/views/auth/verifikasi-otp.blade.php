@@ -1,6 +1,36 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+  #otp-inputs .otp-digit {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  @media (max-width: 575.98px) {
+    #otp-inputs .otp-digit {
+      width: 40px !important;
+      height: 48px !important;
+      font-size: 1.25rem !important;
+    }
+  }
+
+  @media (max-width: 380px) {
+    #otp-inputs .otp-digit {
+      width: 35px !important;
+      height: 44px !important;
+      font-size: 1.1rem !important;
+    }
+  }
+
+  @media (max-width: 340px) {
+    #otp-inputs .mx-1 {
+      margin-left: 2px !important;
+      margin-right: 2px !important;
+    }
+  }
+</style>
 <section class="section d-flex align-items-center justify-content-center" style="min-height: 100vh;">
   <div class="container">
     <div class="row">
@@ -38,7 +68,7 @@
                            style="width: 48px; height: 56px; font-size: 1.5rem;"
                            autocomplete="one-time-code"
                            inputmode="numeric"
-                           @if ($i === 1) autofocus @endif
+                           @if ($i === 1) autofocus @endif>
                   @endfor
                 </div>
                 <input type="hidden" name="otp" id="otp-hidden" value="">

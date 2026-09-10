@@ -84,12 +84,15 @@ test('OTP for email change is sent to the new email', function () {
     });
 });
 
-test('email otp verification form has no html5 required attribute', function () {
+test('email otp verification form has no html5 required attribute and renders six otp inputs', function () {
     Cache::put('otp-email-change:'.$this->user->id, '123456', now()->addMinutes(5));
 
-    actingAs($this->user)
+    $response = actingAs($this->user)
         ->withSession(['pending_email_change' => 'emailbaru@gmail.com'])
         ->get(route('settings.email.verify'))
         ->assertOk()
         ->assertDontSee(' required>', false);
+
+    $expectedCount = preg_match_all('/<input\b[^>]*\bname="otp_digit_\d+"[^>]*>/', $response->getContent(), $matches);
+    expect($expectedCount)->toBe(6);
 });

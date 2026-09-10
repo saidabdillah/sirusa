@@ -44,6 +44,18 @@ test('super admin can view user list', function () {
     $response->assertViewIs('admin.pengguna.index');
 });
 
+test('user list buttons use delegated confirm handlers instead of inline onclick', function () {
+    $this->actingAs($this->superAdmin);
+
+    $response = get(route('admin.pengguna.index'));
+
+    $response->assertOk();
+    $response->assertSee('btn-confirm-toggle', false);
+    $response->assertSee('btn-delete', false);
+    $response->assertDontSee('confirmToggleStatus(', false);
+    $response->assertDontSee('confirmDelete(', false);
+});
+
 // ─── Super Admin: Create ─────────────────────────────────────────
 
 test('super admin can access create user form', function () {

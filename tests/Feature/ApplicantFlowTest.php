@@ -341,3 +341,144 @@ test('application with yatim piatu status stores kartu keluarga wali', function 
     expect($applicant->ktp_wali)->not->toBeNull();
     expect($applicant->kk_wali)->not->toBeNull();
 });
+
+test('application accepted for semester one without surat aktif', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 1);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+    $payload = applicantPayload($scholarship);
+    unset($payload['dokumen_surat_aktif']);
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), $payload)
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('pendaftar', [
+        'user_id' => $this->user->id,
+        'beasiswa_id' => $scholarship->id,
+        'status' => 'verifikasi',
+    ]);
+});
+
+test('application rejected when surat aktif missing for scholarship requiring semester two or above', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 2]);
+    $payload = applicantPayload($scholarship);
+    unset($payload['dokumen_surat_aktif']);
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), $payload)
+        ->assertSessionHasErrors('dokumen_surat_aktif');
+
+    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
+});
+
+test('application accepted without surat aktif for scholarship requiring only semester one', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 1]);
+    $payload = applicantPayload($scholarship);
+    unset($payload['dokumen_surat_aktif']);
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), $payload)
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('pendaftar', [
+        'user_id' => $this->user->id,
+        'beasiswa_id' => $scholarship->id,
+        'status' => 'verifikasi',
+    ]);
+});
+
+test('application rejected when a document exceeds 2mb', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+    $payload = applicantPayload($scholarship);
+    $payload['dokumen_ktp'] = UploadedFile::fake()->create('ktp.pdf', 3000);
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), $payload)
+        ->assertSessionHasErrors('dokumen_ktp');
+
+    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
+});
+
+test('application form shows akta upload field and 2mb limit', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
+        ->assertOk()
+        ->assertSee('dokumen_akta')
+        ->assertSee('Maksimal 2MB')
+        ->assertDontSee('Maksimal 20MB');
+});
+
+test('application form marks surat aktif required only for scholarships with semester minimal two or above', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 2]);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
+        ->assertOk()
+        ->assertSee('Surat Aktif Kuliah / KTM <span class="text-danger">*</span>', false);
+
+    $firstYear = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 1]);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $firstYear->id]))
+        ->assertOk()
+        ->assertDontSee('Surat Aktif Kuliah / KTM <span class="text-danger">*</span>', false);
+});
+
+test('application form groups documents into categories', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
+        ->assertOk()
+        ->assertSee('Dokumen Diri Sendiri', false)
+        ->assertSee('Dokumen untuk Kampus', false)
+        ->assertSee('Dokumen Orang Tua / Wali', false)
+        ->assertSee(route('download.application-letter'), false)
+        ->assertSee('Unduh Template', false);
+});
+
+test('application form shows adaptive surat aktif hint per scholarship semester minimal', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 2]);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
+        ->assertOk()
+        ->assertSee('Wajib untuk beasiswa ini.', false)
+        ->assertDontSee('Tidak wajib untuk beasiswa ini.', false);
+
+    $firstYear = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 1]);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $firstYear->id]))
+        ->assertOk()
+        ->assertSee('Tidak wajib untuk beasiswa ini.', false)
+        ->assertDontSee('Wajib untuk beasiswa ini.', false);
+});
+
+test('lengkapi page groups documents and shows template download link', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+    $applicant = Applicant::factory()->create([
+        'user_id' => $this->user->id,
+        'beasiswa_id' => $scholarship->id,
+        'status' => 'revisi',
+    ]);
+
+    actingAs($this->user)
+        ->get(route('user.pendaftaran.lengkapi', $applicant))
+        ->assertOk()
+        ->assertSee('Dokumen Diri Sendiri', false)
+        ->assertSee('Dokumen untuk Kampus', false)
+        ->assertSee('Dokumen Orang Tua / Wali', false)
+        ->assertSee(route('download.application-letter'), false)
+        ->assertSee('Unduh Template', false);
+});

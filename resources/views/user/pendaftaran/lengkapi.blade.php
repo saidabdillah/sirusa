@@ -40,7 +40,7 @@
                     <a href="{{ route('profile') }}">halaman Profil</a>, kemudian revisi pendaftaran kembali.</small>
                 </div>
 
-                <h5 class="mb-3 mt-4">Dokumen Pendukung (Kosongkan jika tidak ingin mengganti)</h5>
+                <h5 class="mb-3 mt-4">Dokumen Diri Sendiri (Kosongkan jika tidak ingin mengganti)</h5>
                 <div class="form-group">
                   <label for="dokumen_ktp">KTP</label>
                   @if($applicant->dokumen_ktp)
@@ -54,7 +54,7 @@
                   @endif
                   <input type="file" class="form-control @error('dokumen_ktp') is-invalid @enderror" id="dokumen_ktp"
                     name="dokumen_ktp" accept=".pdf,.jpg,.jpeg,.png">
-                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_ktp')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -71,7 +71,7 @@
                   @endif
                   <input type="file" class="form-control @error('dokumen_kk') is-invalid @enderror" id="dokumen_kk"
                     name="dokumen_kk" accept=".pdf,.jpg,.jpeg,.png">
-                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -88,10 +88,41 @@
                   @endif
                   <input type="file" class="form-control @error('dokumen_akta') is-invalid @enderror" id="dokumen_akta"
                     name="dokumen_akta" accept=".pdf,.jpg,.jpeg,.png">
-                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_akta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+                <div class="form-group">
+                  <label for="dokumen_pas_foto">Pas Foto 3x4</label>
+                  @if($applicant->dokumen_pas_foto)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_pas_foto) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_pas_foto) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_pas_foto') is-invalid @enderror"
+                    id="dokumen_pas_foto" name="dokumen_pas_foto" accept=".jpg,.jpeg,.png">
+                  <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_pas_foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_prestasi">Sertifikat Prestasi (opsional)</label>
+                  @if($applicant->dokumen_prestasi && count($applicant->dokumen_prestasi) > 0)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ count($applicant->dokumen_prestasi) }} file</small>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror" id="dokumen_prestasi" name="dokumen_prestasi[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                  <small class="text-muted">Bisa upload multiple file. File baru akan ditambahkan ke daftar yang sudah ada. Maksimal 2MB per file.</small>
+                  @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+
+                <hr>
+                <h5 class="mb-3">Dokumen untuk Kampus</h5>
                 <div class="form-group">
                   <label for="dokumen_surat_permohonan">Surat Permohonan</label>
                   @if($applicant->dokumen_surat_permohonan)
@@ -105,7 +136,8 @@
                   @endif
                   <input type="file" class="form-control @error('dokumen_surat_permohonan') is-invalid @enderror"
                     id="dokumen_surat_permohonan" name="dokumen_surat_permohonan" accept=".pdf,.jpg,.jpeg,.png">
-                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Template:
+                    <a href="{{ route('download.application-letter') }}" target="_blank">Unduh Template</a>.<br>Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_surat_permohonan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -122,7 +154,7 @@
                   @endif
                   <input type="file" class="form-control @error('dokumen_transkrip') is-invalid @enderror"
                     id="dokumen_transkrip" name="dokumen_transkrip" accept=".pdf,.jpg,.jpeg,.png">
-                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_transkrip')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -139,42 +171,13 @@
                   @endif
                   <input type="file" class="form-control @error('dokumen_surat_aktif') is-invalid @enderror"
                     id="dokumen_surat_aktif" name="dokumen_surat_aktif" accept=".pdf,.jpg,.jpeg,.png">
-                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_surat_aktif')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group">
-                  <label for="dokumen_pas_foto">Pas Foto 3x4</label>
-                  @if($applicant->dokumen_pas_foto)
-                    <div class="mb-1">
-                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_pas_foto) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_pas_foto) }}" target="_blank"
-                        class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-eye"></i> Lihat
-                      </a>
-                    </div>
-                  @endif
-                  <input type="file" class="form-control @error('dokumen_pas_foto') is-invalid @enderror"
-                    id="dokumen_pas_foto" name="dokumen_pas_foto" accept=".jpg,.jpeg,.png">
-                  <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 20MB. Kosongkan jika tidak ingin
-                    mengganti.</small>
-                  @error('dokumen_pas_foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-
-                <div class="form-group">
-                  <label for="dokumen_prestasi">Sertifikat Prestasi (opsional)</label>
-                  @if($applicant->dokumen_prestasi && count($applicant->dokumen_prestasi) > 0)
-                    <div class="mb-1">
-                      <small class="text-muted">File saat ini: {{ count($applicant->dokumen_prestasi) }} file</small>
-                    </div>
-                  @endif
-                  <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror" id="dokumen_prestasi" name="dokumen_prestasi[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
-                  <small class="text-muted">Bisa upload multiple file. File baru akan ditambahkan ke daftar yang sudah ada. Maksimal 20MB per file.</small>
-                  @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
 
                 <hr>
-                <h5 class="mb-3">KTP & Kartu Keluarga Orang Tua / Wali</h5>
+                <h5 class="mb-3">Dokumen Orang Tua / Wali</h5>
                 @php
                   $profile = $applicant->user->profile;
                 @endphp

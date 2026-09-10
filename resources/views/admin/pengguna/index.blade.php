@@ -79,30 +79,40 @@
                       </a>
                       @endif
                       @if(! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline mr-1"
-                        id="toggle-form-{{ $user->id }}">
+                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline mr-1">
                         @csrf
                         @method('PATCH')
                         @if($user->status === 'aktif')
-                        <button type="button" class="btn btn-danger btn-sm" title="Nonaktifkan"
-                          onclick="confirmToggleStatus({{ $user->id }}, 'nonaktif', '{{ $user->username }}')">
+                        <button type="button" class="btn btn-danger btn-sm btn-confirm-toggle" title="Nonaktifkan"
+                          data-confirm-title="Nonaktifkan Pengguna?"
+                          data-confirm-text="Apakah Anda yakin ingin menonaktifkan '{{ $user->username }}'?"
+                          data-confirm-icon="warning"
+                          data-confirm-color="#e74c3c"
+                          data-confirm-button="Ya, Nonaktifkan!"
+                          data-loading-text="Menonaktifkan...">
                           <i class="fas fa-ban"></i>
                         </button>
                         @else
-                        <button type="button" class="btn btn-success btn-sm" title="Aktifkan"
-                          onclick="confirmToggleStatus({{ $user->id }}, 'aktif', '{{ $user->username }}')">
+                        <button type="button" class="btn btn-success btn-sm btn-confirm-toggle" title="Aktifkan"
+                          data-confirm-title="Aktifkan Pengguna?"
+                          data-confirm-text="Apakah Anda yakin ingin mengaktifkan '{{ $user->username }}'?"
+                          data-confirm-icon="question"
+                          data-confirm-color="#47c363"
+                          data-confirm-button="Ya, Aktifkan!"
+                          data-loading-text="Mengaktifkan...">
                           <i class="fas fa-check"></i>
                         </button>
                         @endif
                       </form>
                       @endif
                       @if(auth()->user()->hasRole('super_admin') && ! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="d-inline"
-                        id="delete-form-{{ $user->id }}">
+                      <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-sm" title="Hapus"
-                          onclick="confirmDelete({{ $user->id }}, '{{ $user->username }}')">
+                        <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
+                          data-confirm-title="Hapus Pengguna?"
+                          data-confirm-text="Apakah Anda yakin ingin menghapus '{{ $user->username }}'? Tindakan ini tidak dapat dibatalkan."
+                          data-confirm-button="Ya, Hapus!">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -141,45 +151,5 @@
     }
   });
 });
-
-function confirmDelete(id, username) {
-  Swal.fire({
-    title: 'Hapus Pengguna?',
-    text: "Apakah Anda yakin ingin menghapus '" + username + "'? Tindakan ini tidak dapat dibatalkan.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#e74c3c',
-    cancelButtonColor: '#6c757d',
-    confirmButtonText: 'Ya, Hapus!',
-    cancelButtonText: 'Batal'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      showSubmitLoading('Menghapus...');
-      document.getElementById('delete-form-' + id).submit();
-    }
-  });
-}
-
-function confirmToggleStatus(id, aksi, username) {
-  var isNonaktif = aksi === 'nonaktif';
-
-  Swal.fire({
-    title: isNonaktif ? 'Nonaktifkan Pengguna?' : 'Aktifkan Pengguna?',
-    text: isNonaktif
-      ? "Apakah Anda yakin ingin menonaktifkan '" + username + "'?"
-      : "Apakah Anda yakin ingin mengaktifkan '" + username + "'?",
-    icon: isNonaktif ? 'warning' : 'question',
-    showCancelButton: true,
-    confirmButtonColor: isNonaktif ? '#e74c3c' : '#47c363',
-    cancelButtonColor: '#6c757d',
-    confirmButtonText: isNonaktif ? 'Ya, Nonaktifkan!' : 'Ya, Aktifkan!',
-    cancelButtonText: 'Batal'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      showSubmitLoading(isNonaktif ? 'Menonaktifkan...' : 'Mengaktifkan...');
-      document.getElementById('toggle-form-' + id).submit();
-    }
-  });
-}
 </script>
 @endpush

@@ -29,7 +29,6 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         $profile = $user->profile;
-        $missingFields = $user->getMissingProfileFields();
         $profileComplete = $user->isProfileComplete();
 
         $districts = $this->wilayah->getDistricts(self::KABUPATEN_CODE);
@@ -62,7 +61,6 @@ class ProfileController extends Controller
 
         return view('profil.index', compact(
             'profile',
-            'missingFields',
             'profileComplete',
             'districts',
             'selectedDistrict',

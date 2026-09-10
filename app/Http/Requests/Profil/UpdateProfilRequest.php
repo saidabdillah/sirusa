@@ -132,6 +132,7 @@ class UpdateProfilRequest extends FormRequest
                 'max:255',
             ],
             'nik_ibu' => [
+                'required_if:status_orang_tua,Lengkap,Yatim',
                 'nullable',
                 'digits:16',
             ],
@@ -218,6 +219,7 @@ class UpdateProfilRequest extends FormRequest
             'penghasilan_ayah.required_if' => 'Penghasilan ayah harus dipilih.',
             'penghasilan_ayah.in' => 'Penghasilan ayah tidak valid.',
             'nama_ibu.required_if' => 'Nama ibu harus diisi.',
+            'nik_ibu.required_if' => 'NIK ibu harus diisi.',
             'nik_ibu.digits' => 'NIK ibu harus terdiri dari 16 digit.',
             'pekerjaan_ibu.required_if' => 'Pekerjaan ibu harus dipilih.',
             'pekerjaan_ibu.in' => 'Pekerjaan ibu tidak valid.',

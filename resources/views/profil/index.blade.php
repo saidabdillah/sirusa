@@ -25,15 +25,10 @@
         </div>
       @endif
 
-      @if(! $profileComplete && count($missingFields) > 0)
+      @if(! $profileComplete)
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
           <strong><i class="fas fa-exclamation-triangle"></i> Profil belum lengkap!</strong><br>
-          Anda harus melengkapi data berikut sebelum bisa mendaftar beasiswa:
-          <ul class="mb-0 mt-2">
-            @foreach($missingFields as $field)
-              <li>{{ $field }}</li>
-            @endforeach
-          </ul>
+          Anda harus melengkapi data berikut sebelum bisa mendaftar beasiswa.
           <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
         </div>
       @endif
@@ -191,18 +186,20 @@
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nama_kampus">Nama Kampus <span class="text-danger">*</span></label>
-                    <select class="form-control @error('prodi_id') is-invalid @enderror" id="nama_kampus" name="nama_kampus">
+                    <select class="form-control @error('nama_kampus') is-invalid @enderror" id="nama_kampus" name="nama_kampus">
                       <option value="">Pilih Kampus</option>
                       @foreach($kampusList as $kampus)
                         <option value="{{ $kampus->nama_kampus }}" {{ old('nama_kampus', $profile->prodi?->fakultas?->kampus?->nama_kampus ?? '') === $kampus->nama_kampus ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
                       @endforeach
                     </select>
+                    @error('nama_kampus')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
                     <label for="fakultas">Fakultas <span class="text-danger">*</span></label>
-                    <select class="form-control" id="fakultas" name="fakultas">
+                    <select class="form-control @error('fakultas') is-invalid @enderror" id="fakultas" name="fakultas">
                       <option value="">Pilih Kampus terlebih dahulu</option>
                     </select>
+                    @error('fakultas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
                 <div class="form-row">
@@ -241,6 +238,7 @@
                   @error('status_orang_tua')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
+                <div id="section-ayah" style="{{ in_array($profile->status_orang_tua ?? null, ['Lengkap', 'Piatu']) ? '' : 'display:none;' }}">
                 <h6 class="text-muted mb-2">Ayah</h6>
                 <div class="form-row">
                   <div class="form-group col-md-6">
@@ -276,7 +274,9 @@
                     @error('penghasilan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
+</div>
 
+<div id="section-ibu" style="{{ in_array($profile->status_orang_tua ?? null, ['Lengkap', 'Yatim']) ? '' : 'display:none;' }}">
                 <h6 class="text-muted mb-2 mt-3">Ibu</h6>
                 <div class="form-row">
                   <div class="form-group col-md-6">
@@ -312,11 +312,13 @@
                     @error('penghasilan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
+</div>
 
+<div id="section-wali" style="{{ ($profile->status_orang_tua ?? null) === 'Yatim Piatu' ? '' : 'display:none;' }}">
                 <hr>
 
                 {{-- DATA WALI (hanya jika yatim piatu) --}}
-                <h6 class="text-muted mb-2">Wali (wajib jika status Yatim Piatu)</h6>
+                <h6 class="text-muted mb-2">Wali</h6>
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nama_wali">Nama Wali <span class="text-danger">*</span></label>
@@ -363,6 +365,7 @@
                     @error('penghasilan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
+</div>
 
               </div>
               <div class="card-footer text-right">
@@ -546,5 +549,19 @@
   if (selectedKampus) {
     loadFakultas(selectedKampus, selectedFakultas);
   }
+
+  var $status = $('#status_orang_tua');
+
+  function applyParentSections(status) {
+    $('#section-ayah').toggle(status === 'Lengkap' || status === 'Piatu');
+    $('#section-ibu').toggle(status === 'Lengkap' || status === 'Yatim');
+    $('#section-wali').toggle(status === 'Yatim Piatu');
+  }
+
+  applyParentSections($status.val());
+
+  $status.on('change', function() {
+    applyParentSections($(this).val());
+  });
 </script>
 @endpush

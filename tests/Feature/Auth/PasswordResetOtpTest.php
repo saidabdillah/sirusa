@@ -63,6 +63,8 @@ test('user can access OTP verification page with valid email', function () {
     $response->assertOk();
     $response->assertViewIs('auth.verifikasi-otp');
     $response->assertSee('updateHiddenInput');
+    $expectedCount = preg_match_all('/<input\b[^>]*\bname="otp_digit_\d+"[^>]*>/', $response->getContent(), $matches);
+    expect($expectedCount)->toBe(6);
     $response->assertDontSee(' required>', false);
 });
 

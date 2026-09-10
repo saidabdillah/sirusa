@@ -5,6 +5,7 @@ namespace App\Http\Requests\Applicant;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreApplicantRequest extends FormRequest
@@ -52,10 +53,15 @@ class StoreApplicantRequest extends FormRequest
                 'max:2048',
             ],
             'dokumen_surat_aktif' => [
-                'required',
+                'nullable',
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
                 'max:2048',
+                Rule::requiredIf(function () {
+                    $scholarship = Scholarship::find($this->input('beasiswa_id'));
+
+                    return (int) ($scholarship?->semester_minimal ?? 0) >= 2;
+                }),
             ],
             'dokumen_pas_foto' => [
                 'required',

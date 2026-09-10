@@ -26,6 +26,10 @@ $("[data-confirm]").each(function () {
   var me = $(this),
     me_data = me.data("confirm");
 
+  if (typeof me_data !== "string") {
+    return;
+  }
+
   me_data = me_data.split("|");
   me.fireModal({
     title: me_data[0],

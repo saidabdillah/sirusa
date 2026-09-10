@@ -38,7 +38,14 @@ class NotificationController extends Controller
 
         $url = data_get($notification->data, 'url');
 
-        return redirect($url ?? route('dashboard'));
+        if ($url) {
+            $path = parse_url($url, PHP_URL_PATH) ?? '/';
+            $query = parse_url($url, PHP_URL_QUERY);
+
+            return redirect()->to($path.($query ? '?'.$query : ''));
+        }
+
+        return redirect()->route('dashboard');
     }
 
     public function destroy(DatabaseNotification $notification): RedirectResponse

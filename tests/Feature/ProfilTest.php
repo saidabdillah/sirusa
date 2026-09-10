@@ -77,6 +77,8 @@ test('user can open profil form with region and campus fields', function () {
         ->assertSee('Universitas Lambung Mangkurat')
         ->assertSee('IPK')
         ->assertSee('Semester')
+        ->assertSee('Anda harus melengkapi data berikut sebelum bisa mendaftar beasiswa.')
+        ->assertDontSee('<li>Status Orang Tua</li>', false)
         ->assertDontSee(' required>', false);
 });
 
@@ -131,6 +133,62 @@ test('user can update profile with campus data and parent nik', function () {
     ]);
 });
 
+test('profil hides parent sections that do not apply to the status', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    $payload = array_merge(completeProfilePayload($this->prodi), [
+        'status_orang_tua' => 'Yatim',
+        'nama_ibu' => 'Ibu Yatim',
+        'nik_ibu' => '6302000000000003',
+        'pekerjaan_ibu' => 'Petani',
+        'penghasilan_ibu' => '< 1jt',
+    ]);
+
+    actingAs($user)
+        ->put(route('profile.update'), $payload)
+        ->assertRedirect(route('profile'));
+
+    $response = actingAs($user->fresh())->get(route('profile'));
+    $response->assertOk();
+    $response->assertSee('id="section-ayah" style="display:none;"', false);
+    $response->assertSee('id="section-wali" style="display:none;"', false);
+    $response->assertDontSee('id="section-ibu" style="display:none;"', false);
+});
+
+test('profil shows wali section only for yatim piatu status', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    $payload = array_merge(completeProfilePayload($this->prodi), [
+        'status_orang_tua' => 'Yatim Piatu',
+        'nama_wali' => 'Paman Wawan',
+        'nik_wali' => '6302000000000004',
+        'hubungan_wali' => 'Paman',
+        'pekerjaan_wali' => 'Petani',
+        'penghasilan_wali' => '< 1jt',
+    ]);
+
+    actingAs($user)
+        ->put(route('profile.update'), $payload)
+        ->assertRedirect(route('profile'));
+
+    $response = actingAs($user->fresh())->get(route('profile'));
+    $response->assertOk();
+    $response->assertSee('id="section-wali"', false);
+    $response->assertSee('Nama Wali');
+});
+
+test('profil parent section toggle js matches the server side status mapping', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    $response = actingAs($user)->get(route('profile'));
+
+    $response->assertOk();
+    $response->assertSee("\$('#section-ayah').toggle(status === 'Lengkap' || status === 'Piatu');", false);
+    $response->assertSee("\$('#section-ibu').toggle(status === 'Lengkap' || status === 'Yatim');", false);
+    $response->assertSee("\$('#section-wali').toggle(status === 'Yatim Piatu');", false);
+    $response->assertDontSee('parentSectionSelectors', false);
+});
+
 test('profil update requires campus data ipk and semester', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
@@ -156,6 +214,33 @@ test('profil update validates parent nik to 16 digits', function () {
             'nik_ibu' => '456',
         ])
         ->assertSessionHasErrors(['nik_ayah', 'nik_ibu', 'nik_wali']);
+});
+
+test('profil shows validation messages under campus fakultas and nik ibu', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    actingAs($user)
+        ->from(route('profile'))
+        ->put(route('profile.update'), array_merge(completeProfilePayload($this->prodi), [
+            'nama_kampus' => '',
+            'fakultas' => '',
+            'nik_ibu' => '',
+        ]))
+        ->assertSessionHasErrors(['nama_kampus', 'fakultas', 'nik_ibu']);
+
+    $response = actingAs($user->fresh())->get(route('profile'));
+    $response->assertOk();
+
+    $html = $response->original->withErrors([
+        'nama_kampus' => 'Nama kampus harus dipilih.',
+        'fakultas' => 'Fakultas harus dipilih.',
+        'nik_ibu' => 'NIK ibu harus diisi.',
+    ])->render();
+
+    expect($html)->toContain('is-invalid')
+        ->and($html)->toContain('Nama kampus harus dipilih.')
+        ->and($html)->toContain('Fakultas harus dipilih.')
+        ->and($html)->toContain('NIK ibu harus diisi.');
 });
 
 test('profil update validates ipk and semester range', function () {

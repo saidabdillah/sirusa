@@ -167,6 +167,42 @@ test('unread notifications are marked as read when opened', function () {
     expect($latest->refresh()->read_at)->not->toBeNull();
 });
 
+test('notification with absolute stored url redirects to same path on current host', function () {
+    $this->standardUser->notify(new NewScholarship(Scholarship::factory()->create()));
+
+    $notification = $this->standardUser->notifications()->first();
+    $notification->data = ['url' => 'http://sirusa.test/pengguna/beasiswa/5'];
+    $notification->save();
+
+    actingAs($this->standardUser)
+        ->get(route('notifications.show', $notification))
+        ->assertRedirect(url('/pengguna/beasiswa/5'));
+});
+
+test('notification with relative stored url keeps path and query string', function () {
+    $this->standardUser->notify(new NewScholarship(Scholarship::factory()->create()));
+
+    $notification = $this->standardUser->notifications()->first();
+    $notification->data = ['url' => '/admin/pengguna?page=2'];
+    $notification->save();
+
+    actingAs($this->standardUser)
+        ->get(route('notifications.show', $notification))
+        ->assertRedirect(url('/admin/pengguna?page=2'));
+});
+
+test('notification without stored url redirects to dashboard', function () {
+    $this->standardUser->notify(new NewScholarship(Scholarship::factory()->create()));
+
+    $notification = $this->standardUser->notifications()->first();
+    $notification->data = [];
+    $notification->save();
+
+    actingAs($this->standardUser)
+        ->get(route('notifications.show', $notification))
+        ->assertRedirect(route('dashboard'));
+});
+
 // ─── Read-all action: must be POST, not GET ─────────────────────
 
 test('read all notifications uses POST form on index page', function () {
