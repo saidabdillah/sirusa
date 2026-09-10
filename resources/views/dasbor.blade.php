@@ -17,7 +17,7 @@
       {{-- ADMIN / SUPER ADMIN DASHBOARD --}}
       {{-- Row 1: Main Statistics --}}
       <div class="row">
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
               <i class="fas fa-users"></i>
@@ -32,7 +32,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-warning">
               <i class="fas fa-clock"></i>
@@ -47,7 +47,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-success">
               <i class="fas fa-check-circle"></i>
@@ -62,7 +62,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-danger">
               <i class="fas fa-times-circle"></i>
@@ -77,10 +77,7 @@
             </div>
           </div>
         </div>
-      </div>
 
-      {{-- Row 2: Scholarship Statistics --}}
-      <div class="row">
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
@@ -128,9 +125,9 @@
         </div>
       </div>
 
-      {{-- Row 3: Status Progress & Upcoming Deadlines --}}
+      {{-- Row 2: Status Progress & Upcoming Deadlines --}}
       <div class="row">
-        <div class="col-lg-6 col-md-12 col-12">
+        <div class="col-12">
           <div class="card">
             <div class="card-header">
               <h4>Status Pendaftar</h4>
@@ -179,7 +176,7 @@
           </div>
         </div>
 
-        <div class="col-lg-6 col-md-12 col-12">
+        <div class="col-12">
           <div class="card">
             <div class="card-header">
               <h4>Batas Waktu Mendatang</h4>
@@ -205,7 +202,7 @@
         </div>
       </div>
 
-      {{-- Row 4: Recent Applicants --}}
+      {{-- Row 3: Recent Applicants --}}
       <div class="row">
         <div class="col-lg-12">
           <div class="card">
@@ -264,7 +261,7 @@
     @else
       {{-- USER DASHBOARD --}}
       <div class="row">
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
               <i class="fas fa-file-alt"></i>
@@ -279,7 +276,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-warning">
               <i class="fas fa-clock"></i>
@@ -294,7 +291,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-success">
               <i class="fas fa-check-circle"></i>
@@ -309,7 +306,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-danger">
               <i class="fas fa-times-circle"></i>
@@ -324,7 +321,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-secondary">
               <i class="fas fa-edit"></i>
@@ -342,7 +339,7 @@
       </div>
 
       <div class="row">
-        <div class="col-lg-8 col-md-12 col-12">
+        <div class="col-12">
           <div class="card">
             <div class="card-header">
               <h4>Pendaftaran Terbaru</h4>
@@ -395,7 +392,7 @@
           </div>
         </div>
 
-        <div class="col-lg-4 col-md-12 col-12">
+        <div class="col-12">
           <div class="card">
             <div class="card-header">
               <h4>Beasiswa Tersedia</h4>

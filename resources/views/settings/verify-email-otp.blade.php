@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
+
 @section('content')
+@push('style')
 <style>
   #otp-inputs .otp-digit {
     flex: 0 0 auto;
@@ -31,6 +33,7 @@
     }
   }
 </style>
+@endpush
 <section class="section">
   <div class="section-header">
     <h1>Verifikasi Ganti Email</h1>

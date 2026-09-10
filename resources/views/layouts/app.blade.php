@@ -7,7 +7,7 @@
 
   <title>SIRUSA &mdash; Sistem Informasi Beasiswa</title>
 
-  <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/stisla.svg') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/stisla-fill.svg') }}">
 
   <!-- General CSS Files -->
   <link rel="stylesheet" href="{{ asset('assets/modules/bootstrap/css/bootstrap.min.css') }}">
@@ -26,7 +26,7 @@
   <!-- Template CSS -->
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/components.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/custom.css').'?v='.filemtime(public_path('assets/css/custom.css')) }}">
 
   <!-- Start GA -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-94034622-3"></script>
@@ -38,6 +38,9 @@
   gtag('config', 'UA-94034622-3');
   </script>
   <!-- /END GA -->
+
+  @stack('style')
+
 </head>
 
 <body>

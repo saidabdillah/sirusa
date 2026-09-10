@@ -18,4 +18,9 @@
   }
 }
 
+/* Form: uniform 8px (mb-2) spacing between all inputs across pages */
+.form-group {
+  margin-bottom: 8px;
+}
+
 /*# sourceMappingURL=custom.css.map */

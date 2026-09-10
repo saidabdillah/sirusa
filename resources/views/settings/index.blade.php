@@ -41,8 +41,8 @@
                 @error('email')
                   <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
+                <small class="text-muted">Kode verifikasi akan dikirim ke email baru Anda.</small>
               </div>
-              <small class="text-muted">Kode verifikasi akan dikirim ke email baru Anda.</small>
             </div>
             <div class="card-footer">
               <button type="submit" class="btn btn-primary">Kirim Kode Verifikasi</button>

@@ -9,9 +9,11 @@ use App\Notifications\ApplicantStatusChanged;
 use App\Notifications\NewApplication;
 use App\Notifications\NewScholarship;
 use App\Notifications\NewUserRegistered;
+use App\Notifications\OtpPasswordReset;
 use App\Notifications\UserActivated;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Mail\Markdown;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
@@ -31,6 +33,20 @@ beforeEach(function () {
     $this->superAdmin = User::factory()->superAdmin()->create(['email' => 'sa@test.com']);
     $this->admin = User::factory()->admin()->create(['email' => 'admin@test.com']);
     $this->standardUser = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+});
+
+// ─── Mail branding: published header replaces the Laravel logo ────
+
+test('notification emails use SIRUSA branding instead of the Laravel logo', function () {
+    $message = (new OtpPasswordReset('123456'))->toMail($this->standardUser);
+
+    $html = (string) app(Markdown::class)->render('notifications::email', $message->toArray());
+
+    expect($html)
+        ->toContain('SIRUSA')
+        ->not->toContain('stisla-fill.svg')
+        ->not->toContain('laravel.com/img/notification-logo')
+        ->not->toContain('<img');
 });
 
 // ─── NewScholarship: admin creates scholarship → all users ──────
