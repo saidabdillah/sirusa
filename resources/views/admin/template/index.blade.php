@@ -27,7 +27,7 @@
     <div class="section-body">
       <div class="row">
         <div class="col-lg-6">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-header">
               <h4>Unggah Template</h4>
             </div>
@@ -64,7 +64,7 @@
         </div>
 
         <div class="col-lg-6">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-header">
               <h4>Informasi</h4>
             </div>
@@ -81,7 +81,7 @@
               </div>
 
               @if($templateExists)
-                <div class="mt-3 d-flex">
+                <div class="mt-3 d-flex flex-wrap">
                   <a href="{{ route('preview.application-letter') }}" class="btn btn-info mr-2 mb-1" target="_blank">
                     <i class="fas fa-eye"></i> Preview Template
                   </a>

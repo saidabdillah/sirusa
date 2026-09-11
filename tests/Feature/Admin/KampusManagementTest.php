@@ -61,7 +61,7 @@ test('buat kampus form uses trash remove button and server-side validation', fun
         ->assertSee('name="nama_kampus[]" value="" placeholder="Contoh: Universitas Lambung Mangkurat">', false)
         ->assertSee('fas fa-trash', false)
         ->assertSee('col-auto align-self-center', false)
-        ->assertSee('btn btn-secondary mr-2', false)
+        ->assertSee('btn btn-outline-secondary mr-2', false)
         ->assertDontSee('btn-block baris-hapus', false);
 });
 
@@ -421,6 +421,40 @@ test('super admin can view structure but cannot manage', function () {
 
     $this->assertDatabaseMissing('kampus', ['nama_kampus' => 'Universitas Baru']);
     $this->assertDatabaseCount('prodi', 1);
+});
+
+test('kampus index uses standardised action buttons with global delete handler', function () {
+    [$kampus] = createKampusHierarchy();
+    $this->actingAs($this->admin);
+
+    get(route('admin.kampus.index'))
+        ->assertOk()
+        ->assertSee('btn btn-info btn-sm mr-1 mb-1', false)
+        ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
+        ->assertSee('btn btn-danger btn-sm btn-delete', false)
+        ->assertDontSee('confirmDelete(');
+});
+
+test('fakultas index uses standardised action buttons with global delete handler', function () {
+    [$kampus, $fakultas] = createKampusHierarchy();
+    $this->actingAs($this->admin);
+
+    get(route('admin.kampus.fakultas.index', $kampus))
+        ->assertOk()
+        ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
+        ->assertSee('btn btn-danger btn-sm btn-delete', false)
+        ->assertDontSee('confirmDelete(');
+});
+
+test('prodi index uses standardised action buttons with global delete handler', function () {
+    [$kampus, $fakultas, $prodi] = createKampusHierarchy();
+    $this->actingAs($this->admin);
+
+    get(route('admin.kampus.prodi.index', [$kampus, $fakultas]))
+        ->assertOk()
+        ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
+        ->assertSee('btn btn-danger btn-sm btn-delete', false)
+        ->assertDontSee('confirmDelete(');
 });
 
 // ─── Regular User & Unauthenticated ──────────────────────────────

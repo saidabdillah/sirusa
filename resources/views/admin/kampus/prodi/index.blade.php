@@ -31,7 +31,7 @@
       <div class="col-12">
         <div class="card">
           @if(auth()->user()->hasRole('admin'))
-          <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Program Studi
             </a>
@@ -69,15 +69,15 @@
                     <td>{{ $data->nama }}</td>
                     @if(auth()->user()->hasRole('admin'))
                     <td>
-                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
+                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
                         <i class="fas fa-edit"></i>
                       </a>
-                      <form action="{{ route('admin.kampus.prodi.hapus', [$kampus, $fakultas, $data]) }}" method="POST" class="d-inline"
-                        id="delete-form-{{ $data->id }}">
+                      <form action="{{ route('admin.kampus.prodi.hapus', [$kampus, $fakultas, $data]) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-sm" title="Hapus"
-                          onclick="confirmDelete({{ $data->id }}, '{{ $data->nama }}')">
+                        <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
+                          data-confirm-title="Hapus Program Studi?"
+                          data-confirm-text="Apakah Anda yakin ingin menghapus program studi '{{ $data->nama }}'? Tindakan ini tidak dapat dibatalkan.">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -129,23 +129,5 @@
     });
   }
 });
-
-function confirmDelete(id, namaProdi) {
-  Swal.fire({
-    title: 'Hapus Program Studi?',
-    text: "Apakah Anda yakin ingin menghapus program studi '" + namaProdi + "'? Tindakan ini tidak dapat dibatalkan.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#e74c3c',
-    cancelButtonColor: '#6c757d',
-    confirmButtonText: 'Ya, Hapus!',
-    cancelButtonText: 'Batal'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      showSubmitLoading('Menghapus...');
-      document.getElementById('delete-form-' + id).submit();
-    }
-  });
-}
 </script>
 @endpush

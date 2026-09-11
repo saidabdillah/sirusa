@@ -86,3 +86,49 @@ test('pengumuman page returns 404 when window dates not set', function () {
 
     actingAs($this->viewer)->get(route('pengumuman.show', $scholarship))->assertNotFound();
 });
+
+test('pengumuman page returns 404 for user who is not an applicant', function () {
+    $scholarship = Scholarship::factory()->create([
+        'status' => 'aktif',
+        'tanggal_pengumuman' => now()->subDay(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5),
+    ]);
+    Applicant::factory()->create(['beasiswa_id' => $scholarship->id, 'status' => 'diterima']);
+
+    actingAs($this->viewer)
+        ->get(route('pengumuman.show', $scholarship))
+        ->assertNotFound();
+});
+
+test('pengumuman page visible to applicant with non-accepted status', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'verifikasi@test.com']);
+    $scholarship = Scholarship::factory()->create([
+        'status' => 'aktif',
+        'tanggal_pengumuman' => now()->subDay(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5),
+    ]);
+    Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $user->id,
+        'status' => 'verifikasi',
+    ]);
+    Applicant::factory()->create(['beasiswa_id' => $scholarship->id, 'status' => 'diterima']);
+
+    actingAs($user)
+        ->get(route('pengumuman.show', $scholarship))
+        ->assertOk();
+});
+
+test('pengumuman page visible to admin who is not an applicant', function () {
+    $admin = User::factory()->admin()->create(['email' => 'admin@test.com']);
+    $scholarship = Scholarship::factory()->create([
+        'status' => 'aktif',
+        'tanggal_pengumuman' => now()->subDay(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5),
+    ]);
+    Applicant::factory()->create(['beasiswa_id' => $scholarship->id, 'status' => 'diterima']);
+
+    actingAs($admin)
+        ->get(route('pengumuman.show', $scholarship))
+        ->assertOk();
+});

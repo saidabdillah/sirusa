@@ -70,17 +70,17 @@
                         <td>
                           @if(auth()->user()->hasRole('admin'))
                             <div class="d-flex">
-                              <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm mr-1 mb-1">
-                                <i class="fas fa-eye"></i> Lihat
+                              <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm mr-1 mb-1" title="Lihat">
+                                <i class="fas fa-eye"></i>
                               </a>
-                              <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1">
-                                <i class="fas fa-edit"></i> Ubah
+                              <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
+                                <i class="fas fa-edit"></i>
                               </a>
                               <form action="{{ route('admin.beasiswa.hapus', $scholarship) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="button" class="btn btn-danger btn-sm btn-delete">
-                                  <i class="fas fa-trash"></i> Hapus
+                                <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus">
+                                  <i class="fas fa-trash"></i>
                                 </button>
                               </form>
                             </div>

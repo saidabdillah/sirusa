@@ -378,3 +378,10 @@ test('notification index shows delete buttons', function () {
     $response->assertSee(route('notifications.destroy-all'), false);
     $response->assertSee(route('notifications.destroy-read'), false);
 });
+
+test('notification index uses DataTables without colspan on empty state', function () {
+    $response = actingAs($this->admin)->get(route('notifications.index'));
+
+    $response->assertOk();
+    $response->assertDontSee('colspan', false);
+});

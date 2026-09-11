@@ -99,7 +99,7 @@
         </div>
       </div>
 
-<div class="col-lg-4">
+<div class="col-lg-4 sticky-sidebar">
         <div class="card">
           <div class="card-header">
             <h4>Pengumuman Penerima</h4>
@@ -159,7 +159,7 @@
             <div class="list-group list-group-flush">
               @forelse($applicants as $applicant)
               <a href="{{ route('admin.pendaftar.lihat', $applicant) }}" class="list-group-item list-group-item-action">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
                   <div>
                     <div class="font-weight-bold">{{ $applicant->user->profile->nama_lengkap ?? '-' }}</div>
                     <small class="text-muted">{{ $applicant->fakultas ?? '-' }}</small>
@@ -184,7 +184,7 @@
             <div class="mt-3">
               {{ $applicants->links() }}
             </div>
-          </div </div>
+          </div></div>
         </div>
       </div>
     </div>

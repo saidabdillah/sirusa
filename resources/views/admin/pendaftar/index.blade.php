@@ -21,6 +21,9 @@
     <div class="row">
       <div class="col-12">
           <div class="card">
+            <div class="card-header">
+              <h4>Daftar Pendaftar</h4>
+            </div>
             <div class="card-body">
             <form method="GET" action="{{ route('admin.pendaftar.index') }}" class="mb-3">
               <div class="form-row align-items-end">
@@ -44,12 +47,10 @@
                   </select>
                 </div>
                 <div class="col-md-4">
-                  @if(request()->filled('status') || request()->filled('beasiswa_id'))
-                    <a href="{{ route('admin.pendaftar.index') }}" class="btn btn-secondary btn-block">
-                      <i class="fas fa-redo"></i> Reset
-                    </a>
-                  @endif
-                  @if($applicants->total() > 0)
+                  <a href="{{ route('admin.pendaftar.index') }}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-redo"></i> Reset
+                  </a>
+                  @if($applicants->isNotEmpty())
                     <a href="{{ route('admin.pendaftar.export', request()->only(['status', 'beasiswa_id'])) }}" class="btn btn-success btn-block mt-2">
                       <i class="fas fa-file-excel"></i> Export Excel
                     </a>
@@ -58,7 +59,7 @@
               </div>
             </form>
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-striped" id="pendaftarTable">
                 <thead>
                   <tr>
                     <th>No</th>
@@ -102,7 +103,6 @@
                 </tbody>
               </table>
             </div>
-            {{ $applicants->links() }}
           </div>
         </div>
       </div>
@@ -110,3 +110,27 @@
   </div>
 </section>
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+  $('#pendaftarTable').DataTable({
+    order: [],
+    language: {
+      search: "Cari:",
+      lengthMenu: "Tampilkan _MENU_ data",
+      info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+      infoEmpty: "Tidak ada data",
+      infoFiltered: "(disaring dari _MAX_ total data)",
+      zeroRecords: "Tidak ada data yang cocok",
+      paginate: {
+        first: "Pertama",
+        last: "Terakhir",
+        next: "Selanjutnya",
+        previous: "Sebelumnya"
+      }
+    }
+  });
+});
+</script>
+@endpush

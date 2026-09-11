@@ -14,9 +14,6 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // $this->call(KampusSeeder::class);
-        // $this->call(ScholarshipSeeder::class);
-
         // Buat roles
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
         $admin = Role::firstOrCreate(['name' => 'admin']);
@@ -57,6 +54,8 @@ class DatabaseSeeder extends Seeder
         $adminUser->assignRole('admin');
 
         // Buat 3 user demo dengan profil lengkap + pendaftar contoh
-        // $this->call(UserSeeder::class);
+        $this->call(KampusSeeder::class);
+        $this->call(ScholarshipSeeder::class);
+        $this->call(UserSeeder::class);
     }
 }

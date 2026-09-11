@@ -16,6 +16,7 @@
   <!-- Template CSS -->
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/components.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/css/custom.css').'?v='.filemtime(public_path('assets/css/custom.css')) }}">
 
   <style>
     html {
@@ -115,6 +116,7 @@
 </head>
 
 <body>
+  @include('layouts.partials.skeleton', ['skeleton' => 'landing'])
   @yield('content')
   <script src="{{ asset('assets/modules/jquery.min.js') }}"></script>
   <script src="{{ asset('assets/modules/bootstrap/js/bootstrap.min.js') }}"></script>

@@ -12,17 +12,17 @@
 
   @media (max-width: 575.98px) {
     #otp-inputs .otp-digit {
-      width: 40px !important;
-      height: 48px !important;
-      font-size: 1.25rem !important;
+      width: 44px !important;
+      height: 54px !important;
+      font-size: 1.3rem !important;
     }
   }
 
   @media (max-width: 380px) {
     #otp-inputs .otp-digit {
-      width: 35px !important;
-      height: 44px !important;
-      font-size: 1.1rem !important;
+      width: 40px !important;
+      height: 48px !important;
+      font-size: 1.15rem !important;
     }
   }
 
@@ -75,7 +75,7 @@
                            name="otp_digit_{{ $i }}"
                            class="form-control text-center otp-digit mx-1"
                            maxlength="1"
-                           style="width: 48px; height: 56px; font-size: 1.5rem;"
+                           style="width: 52px; height: 62px; font-size: 1.65rem; padding: 0;"
                            autocomplete="one-time-code"
                            inputmode="numeric"
                            @if ($i === 1) autofocus @endif>
@@ -97,7 +97,7 @@
             <div class="text-center mt-3">
               <small class="text-muted">
                 Tidak menerima email?
-                <a href="{{ route('settings') }}" class="text-primary ms-1">Coba lagi</a>
+                <a href="{{ route('settings') }}" class="text-primary ml-1">Coba lagi</a>
               </small>
             </div>
           </div>

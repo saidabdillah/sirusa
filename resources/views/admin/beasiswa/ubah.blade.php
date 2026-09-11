@@ -12,15 +12,29 @@
     </div>
 
     <div class="section-body">
+      @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ session('success') }}
+          <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+      @endif
+
+      @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          {{ session('error') }}
+          <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+      @endif
+
       <div class="row">
-        <div class="col-12">
+        <div class="col-lg-8">
           <form action="{{ route('admin.beasiswa.perbarui', $scholarship) }}" method="POST">
             @csrf
             @method('PUT')
 
             {{-- Section: Informasi Utama --}}
             <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
+              <div class="card-header">
                 <h4 class="mb-0"><i class="fas fa-info-circle mr-2"></i>Informasi Utama</h4>
               </div>
               <div class="card-body">
@@ -54,7 +68,7 @@
                 </div>
 
                 <div class="form-row">
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="kuota">Kuota <span class="text-danger">*</span></label>
                     <div class="input-group @error('kuota') is-invalid @enderror">
                       <div class="input-group-prepend">
@@ -64,7 +78,7 @@
                     </div>
                     @error('kuota')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="cakupan">Tunjangan <span class="text-danger">*</span></label>
                     <select class="form-control @error('cakupan') is-invalid @enderror" id="cakupan" name="cakupan">
                       <option value="penuh" {{ old('cakupan', $scholarship->cakupan) === 'penuh' ? 'selected' : '' }}>Penuh</option>
@@ -72,7 +86,7 @@
                     </select>
                     @error('cakupan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="batas_waktu">Batas Waktu <span class="text-danger">*</span></label>
                     <div class="input-group @error('batas_waktu') is-invalid @enderror">
                       <div class="input-group-prepend">
@@ -82,19 +96,22 @@
                     </div>
                     @error('batas_waktu')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-4">
                     <label for="ipk_minimal">IPK Minimal <span class="text-danger">*</span></label>
                     <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk_minimal') is-invalid @enderror"
                       id="ipk_minimal" name="ipk_minimal" value="{{ old('ipk_minimal', $scholarship->ipk_minimal) }}" placeholder="contoh 3.00">
                     @error('ipk_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="semester_minimal">Semester Minimal <span class="text-danger">*</span></label>
                     <input type="number" min="1" max="14" class="form-control @error('semester_minimal') is-invalid @enderror"
                       id="semester_minimal" name="semester_minimal" value="{{ old('semester_minimal', $scholarship->semester_minimal) }}" placeholder="contoh 3">
                     @error('semester_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="status">Status <span class="text-danger">*</span></label>
                     <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
                       <option value="aktif" {{ old('status', $scholarship->status) === 'aktif' ? 'selected' : '' }}>Aktif</option>
@@ -108,7 +125,7 @@
 
             {{-- Section: Deskripsi & Persyaratan --}}
             <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
+              <div class="card-header">
                 <h4 class="mb-0"><i class="fas fa-file-alt mr-2"></i>Deskripsi & Persyaratan</h4>
               </div>
               <div class="card-body">
@@ -129,7 +146,7 @@
 
             {{-- Section: Fakultas & Program Studi --}}
             <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
+              <div class="card-header">
                 <h4 class="mb-0"><i class="fas fa-graduation-cap mr-2"></i>Fakultas & Program Studi</h4>
               </div>
               <div class="card-body">

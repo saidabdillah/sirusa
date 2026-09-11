@@ -58,7 +58,7 @@
               <div class="form-group">
                 <div class="custom-control custom-checkbox">
                   <input type="checkbox" name="remember" class="custom-control-input" tabindex="3" id="remember-me">
-                  <label class="custom-control-label" for="remember-me">ingat saya</label>
+                  <label class="custom-control-label" for="remember-me">Ingat Saya</label>
                 </div>
               </div>
 
@@ -75,7 +75,7 @@
           Belum punya akun? <a href="{{ route('register') }}">Daftar Sekarang</a>
         </div>
         <div class="simple-footer">
-          Hak Cipta &copy; SIRUSA 2026
+          Hak Cipta &copy; SIRUSA {{ date('Y') }}
         </div>
       </div>
     </div>

@@ -25,7 +25,10 @@ test('pendaftar index page renders with filter form', function () {
         ->assertOk()
         ->assertSee('Daftar Pendaftar')
         ->assertSee('-- Semua Status --')
-        ->assertSee('-- Semua Beasiswa --');
+        ->assertSee('-- Semua Beasiswa --')
+        ->assertSee('id="pendaftarTable"', false)
+        ->assertDontSee('colspan', false)
+        ->assertSee('Reset');
 });
 
 test('pendaftar index filters applicants by status', function () {

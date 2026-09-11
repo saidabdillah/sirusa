@@ -90,6 +90,7 @@
         </div>
 
         {{-- Card 1b: Data Orang Tua --}}
+        @php $statusOrtu = $profile->status_orang_tua ?? ''; @endphp
         <div class="card">
           <div class="card-header">
             <h4>Data Orang Tua / Wali</h4>
@@ -98,9 +99,10 @@
             <div class="row mb-3">
               <div class="col-md-6">
                 <strong>Status Orang Tua</strong>
-                <p class="mb-0">{{ $profile->status_orang_tua ?? '-' }}</p>
+                <p class="mb-0">{{ $statusOrtu ?: '-' }}</p>
               </div>
             </div>
+            @if(in_array($statusOrtu, ['Lengkap', 'Piatu'], true))
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Ayah</h6>
@@ -120,23 +122,8 @@
                 <p class="mb-0">{{ $profile->penghasilan_ayah ?? '-' }}</p>
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <strong>KTP Ayah:</strong>
-                @if($applicant->ktp_ayah)
-                  <div class="mt-1">
-                    <a href="{{ asset('storage/' . $applicant->ktp_ayah) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
-                      <i class="fas fa-eye"></i> Lihat
-                    </a>
-                    <a href="{{ asset('storage/' . $applicant->ktp_ayah) }}" download class="btn btn-sm btn-outline-secondary">
-                      <i class="fas fa-download"></i> Download
-                    </a>
-                  </div>
-                @else
-                  <span class="badge badge-warning ml-2">KTP belum diupload</span>
-                @endif
-              </div>
-            </div>
+            @endif
+            @if(in_array($statusOrtu, ['Lengkap', 'Yatim'], true))
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Ibu</h6>
@@ -156,24 +143,8 @@
                 <p class="mb-0">{{ $profile->penghasilan_ibu ?? '-' }}</p>
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <strong>KTP Ibu:</strong>
-                @if($applicant->ktp_ibu)
-                  <div class="mt-1">
-                    <a href="{{ asset('storage/' . $applicant->ktp_ibu) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
-                      <i class="fas fa-eye"></i> Lihat
-                    </a>
-                    <a href="{{ asset('storage/' . $applicant->ktp_ibu) }}" download class="btn btn-sm btn-outline-secondary">
-                      <i class="fas fa-download"></i> Download
-                    </a>
-                  </div>
-                @else
-                  <span class="badge badge-warning ml-2">KTP belum diupload</span>
-                @endif
-              </div>
-            </div>
-            @if(($profile->status_orang_tua ?? '') === 'Yatim Piatu' || $profile->nama_wali)
+            @endif
+            @if($statusOrtu === 'Yatim Piatu')
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Wali</h6>
@@ -195,40 +166,6 @@
               <div class="col-md-3">
                 <strong>Penghasilan</strong>
                 <p class="mb-0">{{ $profile->penghasilan_wali ?? '-' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <strong>KTP Wali:</strong>
-                @if($applicant->ktp_wali)
-                  <div class="mt-1">
-                    <a href="{{ asset('storage/' . $applicant->ktp_wali) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
-                      <i class="fas fa-eye"></i> Lihat
-                    </a>
-                    <a href="{{ asset('storage/' . $applicant->ktp_wali) }}" download class="btn btn-sm btn-outline-secondary">
-                      <i class="fas fa-download"></i> Download
-                    </a>
-                  </div>
-                @else
-                  <span class="badge badge-warning ml-2">KTP belum diupload</span>
-                @endif
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <strong>Kartu Keluarga Wali:</strong>
-                @if($applicant->kk_wali)
-                  <div class="mt-1">
-                    <a href="{{ asset('storage/' . $applicant->kk_wali) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
-                      <i class="fas fa-eye"></i> Lihat
-                    </a>
-                    <a href="{{ asset('storage/' . $applicant->kk_wali) }}" download class="btn btn-sm btn-outline-secondary">
-                      <i class="fas fa-download"></i> Download
-                    </a>
-                  </div>
-                @else
-                  <span class="badge badge-warning ml-2">KK belum diupload</span>
-                @endif
               </div>
             </div>
             @endif
@@ -309,7 +246,9 @@
                 @endif
               </div>
             </div>
+            @if(!$loop->last)
             <hr>
+            @endif
             @endforeach
 
             {{-- Sertifikat Prestasi --}}
@@ -340,7 +279,7 @@
       </div>
 
       {{-- RIGHT COLUMN --}}
-      <div class="col-lg-4">
+      <div class="col-lg-4 sticky-sidebar">
         {{-- Card 1: Beasiswa --}}
         <div class="card">
           <div class="card-header">
@@ -389,7 +328,7 @@
             </ul>
             @endif
             <hr>
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
               <span class="text-muted">IPK Pendaftar</span>
               <span class="badge badge-primary">{{ $applicant->ipk ?? '-' }}</span>
             </div>

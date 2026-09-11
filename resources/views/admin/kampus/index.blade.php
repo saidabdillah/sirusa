@@ -29,7 +29,7 @@
       <div class="col-12">
         <div class="card">
           @if(auth()->user()->hasRole('admin'))
-          <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <a href="{{ route('admin.kampus.buat') }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Kampus
             </a>
@@ -66,19 +66,19 @@
                     <td>{{ $data->nama_kampus }}</td>
                     <td>{{ $data->fakultas_count }}</td>
                     <td>
-                      <a href="{{ route('admin.kampus.fakultas.index', $data) }}" class="btn btn-info btn-sm mr-1" title="Kelola Fakultas">
+                      <a href="{{ route('admin.kampus.fakultas.index', $data) }}" class="btn btn-info btn-sm mr-1 mb-1" title="Kelola Fakultas">
                         <i class="fas fa-building"></i>
                       </a>
                       @if(auth()->user()->hasRole('admin'))
-                      <a href="{{ route('admin.kampus.ubah', $data) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
+                      <a href="{{ route('admin.kampus.ubah', $data) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
                         <i class="fas fa-edit"></i>
                       </a>
-                      <form action="{{ route('admin.kampus.hapus', $data) }}" method="POST" class="d-inline"
-                        id="delete-form-{{ $data->id }}">
+                      <form action="{{ route('admin.kampus.hapus', $data) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-sm" title="Hapus"
-                          onclick="confirmDelete({{ $data->id }}, '{{ $data->nama_kampus }}')">
+                        <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
+                          data-confirm-title="Hapus Kampus?"
+                          data-confirm-text="Apakah Anda yakin ingin menghapus '{{ $data->nama_kampus }}' beserta seluruh fakultas dan program studinya? Tindakan ini tidak dapat dibatalkan.">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -130,23 +130,5 @@
     });
   }
 });
-
-function confirmDelete(id, namaKampus) {
-  Swal.fire({
-    title: 'Hapus Kampus?',
-    text: "Apakah Anda yakin ingin menghapus '" + namaKampus + "' beserta seluruh fakultas dan program studinya? Tindakan ini tidak dapat dibatalkan.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#e74c3c',
-    cancelButtonColor: '#6c757d',
-    confirmButtonText: 'Ya, Hapus!',
-    cancelButtonText: 'Batal'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      showSubmitLoading('Menghapus...');
-      document.getElementById('delete-form-' + id).submit();
-    }
-  });
-}
 </script>
 @endpush

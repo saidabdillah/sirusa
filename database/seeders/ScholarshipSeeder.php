@@ -2,33 +2,39 @@
 
 namespace Database\Seeders;
 
+use App\Models\Fakultas;
 use App\Models\Kampus;
 use App\Models\Scholarship;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
 class ScholarshipSeeder extends Seeder
 {
     public function run(): void
     {
-        $scholarships = [
+        $this->seedActiveWithPengumuman();
+        $this->seedActiveWithoutPengumuman();
+        $this->seedInactive();
+    }
+
+    private function seedActiveWithPengumuman(): void
+    {
+        $data = [
             [
                 'nama' => 'Beasiswa Pendidikan Kab. Balangan',
                 'kampus' => 'Universitas Lambung Mangkurat',
                 'kuota' => 50,
                 'tingkat_gelar' => 'S1',
                 'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(3),
-                'deskripsi' => 'Beasiswa penuh dari Pemerintah Kabupaten Balangan untuk studi S1 di Universitas Lambung Mangkurat. Termasuk biaya kuliah, biaya hidup, dan asrama.',
-                'persyaratan' => '1. Warga Kabupaten Balangan
-2. Lulus SNBP/SNBT
-3. IPK minimal 3.0
-4. Belum menikah',
+                'batas_waktu' => now()->subMonth(),
+                'ipk_minimal' => 3.00,
+                'semester_minimal' => 3,
+                'deskripsi' => 'Beasiswa penuh dari Pemerintah Kabupaten Balangan untuk studi S1. Termasuk biaya kuliah, biaya hidup, dan asrama.',
+                'persyaratan' => "1. Warga Kabupaten Balangan\n2. Lulus SNBP/SNBT\n3. IPK minimal 3.0\n4. Belum menikah",
                 'status' => 'aktif',
-                'fakultas' => [
-                    'Fakultas Teknik' => ['Teknik Informatika', 'Teknik Elektro', 'Teknik Sipil'],
-                    'Fakultas Ekonomi' => ['Manajemen', 'Akuntansi'],
-                    'Fakultas Ilmu Sosial dan Ilmu Politik' => ['Ilmu Administrasi Publik', 'Ilmu Komunikasi'],
-                ],
+                'prodi' => ['Teknik Informatika', 'Manajemen', 'Akuntansi', 'Ilmu Administrasi Publik'],
+                'pengumuman_mulai' => now()->subDay(),
+                'pengumuman_selesai' => now()->addDays(6),
             ],
             [
                 'nama' => 'Beasiswa Prestasi Kab. Balangan',
@@ -36,32 +42,39 @@ class ScholarshipSeeder extends Seeder
                 'kuota' => 30,
                 'tingkat_gelar' => 'S1',
                 'cakupan' => 'sebagian',
-                'batas_waktu' => now()->addMonths(2),
-                'deskripsi' => 'Beasiswa sebagian untuk pelajar berprestasi dari Kabupaten Balangan. Tunjangan biaya kuliah bulanan.',
-                'persyaratan' => '1. Warga Kabupaten Balangan
-2. Lulus seleksi masuk
-3. IPK minimal 3.0',
+                'batas_waktu' => now()->subWeek(),
+                'ipk_minimal' => 3.50,
+                'semester_minimal' => 4,
+                'deskripsi' => 'Beasiswa sebagian untuk pelajar berprestasi dari Kabupaten Balangan.',
+                'persyaratan' => "1. Warga Kabupaten Balangan\n2. Lulus seleksi masuk\n3. IPK minimal 3.5",
                 'status' => 'aktif',
-                'fakultas' => [
-                    'Fakultas Tarbiyah' => ['Pendidikan Agama Islam', 'Pendidikan Bahasa Arab'],
-                    'Fakultas Ekonomi dan Bisnis Islam' => ['Ekonomi Syariah', 'Perbankan Syariah'],
-                ],
+                'prodi' => ['Ekonomi Syariah', 'Pendidikan Agama Islam'],
+                'pengumuman_mulai' => now()->subDays(3),
+                'pengumuman_selesai' => now()->addDays(4),
             ],
+        ];
+
+        foreach ($data as $item) {
+            $this->createScholarship($item);
+        }
+    }
+
+    private function seedActiveWithoutPengumuman(): void
+    {
+        $data = [
             [
                 'nama' => 'Beasiswa Teknologi Informasi',
                 'kampus' => 'Politeknik Negeri Banjarmasin',
                 'kuota' => 20,
                 'tingkat_gelar' => 'S1',
                 'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(4),
-                'deskripsi' => 'Beasiswa penuh untuk studi di program studi teknologi informasi. Termasuk biaya kuliah dan sertifikasi.',
-                'persyaratan' => '1. Warga Kabupaten Balangan
-2. Jurusan IT atau sejenisnya
-3. IPK minimal 3.0',
+                'batas_waktu' => now()->addMonths(3),
+                'ipk_minimal' => 3.00,
+                'semester_minimal' => 3,
+                'deskripsi' => 'Beasiswa penuh untuk studi di bidang teknologi informasi.',
+                'persyaratan' => "1. Warga Kabupaten Balangan\n2. Jurusan IT\n3. IPK minimal 3.0",
                 'status' => 'aktif',
-                'fakultas' => [
-                    'Teknologi Informasi' => ['Teknik Informatika', 'Sistem Informasi', 'Teknik Komputer'],
-                ],
+                'prodi' => ['Teknik Informatika', 'Sistem Informasi', 'Teknik Komputer'],
             ],
             [
                 'nama' => 'Beasiswa Kesehatan',
@@ -69,34 +82,151 @@ class ScholarshipSeeder extends Seeder
                 'kuota' => 15,
                 'tingkat_gelar' => 'S1',
                 'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(1),
-                'deskripsi' => 'Beasiswa penuh untuk studi kedokteran dan keperawatan. Termasuk biaya kuliah, asrama, dan praktikum.',
-                'persyaratan' => '1. Warga Kabupaten Balangan
-2. Lulus seleksi masuk
-3. IPK minimal 3.5
-4. Surat kesehatan',
+                'batas_waktu' => now()->addMonths(2),
+                'ipk_minimal' => 3.50,
+                'semester_minimal' => 4,
+                'deskripsi' => 'Beasiswa penuh untuk studi kedokteran dan keperawatan.',
+                'persyaratan' => "1. Warga Kabupaten Balangan\n2. Lulus seleksi masuk\n3. IPK minimal 3.5",
                 'status' => 'aktif',
-                'fakultas' => [
-                    'Fakultas Kedokteran' => ['Kedokteran Umum'],
-                    'Fakultas Kesehatan Masyarakat' => ['Kesehatan Masyarakat', 'Gizi'],
-                ],
+                'prodi' => ['Kedokteran Umum', 'Kesehatan Masyarakat', 'Gizi'],
+            ],
+            [
+                'nama' => 'Beasiswa Unggulan Teknik',
+                'kampus' => 'Universitas Lambung Mangkurat',
+                'kuota' => 25,
+                'tingkat_gelar' => 'S1',
+                'cakupan' => 'penuh',
+                'batas_waktu' => now()->addMonth(),
+                'ipk_minimal' => 3.25,
+                'semester_minimal' => 3,
+                'deskripsi' => 'Beasiswa penuh untuk mahasiswa berprestasi di bidang teknik.',
+                'persyaratan' => "1. Warga Kalimantan\n2. IPK minimal 3.25\n3. Aktif di kegiatan kampus",
+                'status' => 'aktif',
+                'prodi' => ['Teknik Informatika', 'Teknik Elektro', 'Teknik Sipil'],
+            ],
+            [
+                'nama' => 'Beasiswa Sosial Ekonomi',
+                'kampus' => 'Universitas Lambung Mangkurat',
+                'kuota' => 40,
+                'tingkat_gelar' => 'S1',
+                'cakupan' => 'sebagian',
+                'batas_waktu' => now()->addMonths(4),
+                'ipk_minimal' => 2.50,
+                'semester_minimal' => 2,
+                'deskripsi' => 'Beasiswa sebagian untuk mahasiswa kurang mampu.',
+                'persyaratan' => "1. Warga Kabupaten Balangan\n2. Surat tidak mampu\n3. IPK minimal 2.5",
+                'status' => 'aktif',
+                'prodi' => ['Manajemen', 'Akuntansi', 'Ilmu Administrasi Publik', 'Ilmu Komunikasi'],
+            ],
+            [
+                'nama' => 'Beasiswa Komunikasi & Media',
+                'kampus' => 'Universitas Lambung Mangkurat',
+                'kuota' => 15,
+                'tingkat_gelar' => 'S1',
+                'cakupan' => 'penuh',
+                'batas_waktu' => now()->addMonths(2),
+                'ipk_minimal' => 3.00,
+                'semester_minimal' => 3,
+                'deskripsi' => 'Beasiswa untuk mahasiswa fakultas ilmu sosial dan politik.',
+                'persyaratan' => "1. IPK minimal 3.0\n2. Aktif di organisasi",
+                'status' => 'aktif',
+                'prodi' => ['Ilmu Administrasi Publik', 'Ilmu Komunikasi'],
+            ],
+            [
+                'nama' => 'Beasiswa Keagamaan',
+                'kampus' => 'Universitas Islam Negeri Antasari',
+                'kuota' => 20,
+                'tingkat_gelar' => 'S1',
+                'cakupan' => 'penuh',
+                'batas_waktu' => now()->addMonths(3),
+                'ipk_minimal' => 3.00,
+                'semester_minimal' => 3,
+                'deskripsi' => 'Beasiswa penuh untuk studi di bidang keagamaan.',
+                'persyaratan' => "1. IPK minimal 3.0\n2. Aktif di kegiatan keagamaan",
+                'status' => 'aktif',
+                'prodi' => ['Pendidikan Agama Islam', 'Pendidikan Bahasa Arab', 'Perbankan Syariah'],
             ],
         ];
 
-        foreach ($scholarships as $data) {
-            $fakultasData = $data['fakultas'] ?? [];
-            unset($data['fakultas']);
-
-            $data['kampus_id'] = Kampus::where('nama_kampus', $data['kampus'])->value('id');
-
-            $scholarship = Scholarship::create($data);
-
-            foreach ($fakultasData as $fakultasNama => $prodiList) {
-                $fakultas = $scholarship->fakultas()->create(['nama' => $fakultasNama]);
-                foreach ($prodiList as $prodiNama) {
-                    $fakultas->prodi()->create(['nama' => $prodiNama]);
-                }
-            }
+        foreach ($data as $item) {
+            $this->createScholarship($item);
         }
+    }
+
+    private function seedInactive(): void
+    {
+        $this->createScholarship([
+            'nama' => 'Beasiswa non-Aktif',
+            'kampus' => 'Politeknik Negeri Banjarmasin',
+            'kuota' => 10,
+            'tingkat_gelar' => 'S1',
+            'cakupan' => 'penuh',
+            'batas_waktu' => now()->subMonths(2),
+            'ipk_minimal' => 3.00,
+            'semester_minimal' => 3,
+            'deskripsi' => 'Beasiswa yang sudah tidak aktif.',
+            'persyaratan' => 'Sudah tidak menerima pendaftaran.',
+            'status' => 'non-aktif',
+            'prodi' => ['Sistem Informasi'],
+        ]);
+    }
+
+    private function createScholarship(array $data): void
+    {
+        $prodiNames = $data['prodi'] ?? [];
+        $pengumumanMulai = $data['pengumuman_mulai'] ?? null;
+        $pengumumanSelesai = $data['pengumuman_selesai'] ?? null;
+        unset($data['prodi'], $data['pengumuman_mulai'], $data['pengumuman_selesai']);
+
+        $kampus = Kampus::where('nama_kampus', $data['kampus'])->first();
+
+        if (! $kampus) {
+            return;
+        }
+
+        $data['kampus_id'] = $kampus->id;
+
+        $scholarship = Scholarship::firstOrCreate(
+            ['nama' => $data['nama']],
+            $data,
+        );
+
+        if ($pengumumanMulai && $pengumumanSelesai && ! $scholarship->tanggal_pengumuman) {
+            $scholarship->update([
+                'tanggal_pengumuman' => $pengumumanMulai,
+                'tanggal_pengumuman_selesai' => $pengumumanSelesai,
+            ]);
+        }
+
+        $this->syncSnapshot($scholarship, $prodiNames);
+    }
+
+    private function syncSnapshot(Scholarship $scholarship, array $prodiNames): void
+    {
+        if ($scholarship->fakultas()->count() > 0) {
+            return;
+        }
+
+        $masterProdis = $this->getMasterProdis($scholarship->kampus_id, $prodiNames);
+
+        $grouped = $masterProdis->groupBy('fakultas_id');
+
+        foreach ($grouped as $items) {
+            $fakultas = $items->first()->fakultas;
+            $record = $scholarship->fakultas()->create(['nama' => $fakultas->nama]);
+            $record->prodi()->createMany(
+                $items->map(fn ($prodi) => ['nama' => $prodi->nama])->all()
+            );
+        }
+    }
+
+    private function getMasterProdis(?int $kampusId, array $prodiNames): Collection
+    {
+        return Fakultas::where('kampus_id', $kampusId)
+            ->with('prodi')
+            ->get()
+            ->flatMap(fn (Fakultas $fak) => $fak->prodi)
+            ->filter(fn ($prodi) => in_array($prodi->nama, $prodiNames))
+            ->values();
     }
 }

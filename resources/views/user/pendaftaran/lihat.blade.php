@@ -97,6 +97,7 @@
         </div>
 
         {{-- Card 1b: Data Orang Tua --}}
+        @php $statusOrtu = $profile->status_orang_tua ?? ''; @endphp
         <div class="card">
           <div class="card-header">
             <h4>Data Orang Tua / Wali</h4>
@@ -105,9 +106,10 @@
             <div class="row mb-3">
               <div class="col-md-6">
                 <strong>Status Orang Tua</strong>
-                <p class="mb-0">{{ $profile->status_orang_tua ?? '-' }}</p>
+                <p class="mb-0">{{ $statusOrtu ?: '-' }}</p>
               </div>
             </div>
+            @if(in_array($statusOrtu, ['Lengkap', 'Piatu'], true))
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Ayah</h6>
@@ -127,6 +129,8 @@
                 <p class="mb-0">{{ $profile->penghasilan_ayah ?? '-' }}</p>
               </div>
             </div>
+            @endif
+            @if(in_array($statusOrtu, ['Lengkap', 'Yatim'], true))
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Ibu</h6>
@@ -146,7 +150,8 @@
                 <p class="mb-0">{{ $profile->penghasilan_ibu ?? '-' }}</p>
               </div>
             </div>
-            @if($profile->nama_wali)
+            @endif
+            @if($statusOrtu === 'Yatim Piatu')
             <div class="row mb-3">
               <div class="col-md-12">
                 <h6 class="text-muted">Wali</h6>

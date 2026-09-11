@@ -44,7 +44,7 @@
                 <small class="text-muted">Kode verifikasi akan dikirim ke email baru Anda.</small>
               </div>
             </div>
-            <div class="card-footer">
+            <div class="card-footer text-right">
               <button type="submit" class="btn btn-primary">Kirim Kode Verifikasi</button>
             </div>
           </form>
@@ -75,7 +75,8 @@
                 @enderror
               </div>
             </div>
-            <div class="card-footer">
+            <div class="card-footer text-right">
+              <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mr-2"><i class="fas fa-arrow-left mr-1"></i> Batal</a>
               <button type="submit" class="btn btn-primary">Simpan Kata Sandi</button>
             </div>
           </form>

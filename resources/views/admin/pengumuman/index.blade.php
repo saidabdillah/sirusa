@@ -21,6 +21,9 @@
     <div class="row">
       <div class="col-12">
         <div class="card">
+          <div class="card-header">
+            <h4>Jadwal Pengumuman</h4>
+          </div>
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-striped" id="pengumumanTable">
@@ -43,9 +46,9 @@
                       <td>{{ $scholarship->kampus }}</td>
                       <td>
                         @if($scholarship->tanggal_pengumuman && $scholarship->tanggal_pengumuman_selesai)
-                          {{ $scholarship->tanggal_pengumuman->translatedFormat('d F Y') }}
+                          {{ $scholarship->tanggal_pengumuman->translatedFormat('d M Y') }}
                           s/d
-                          {{ $scholarship->tanggal_pengumuman_selesai->translatedFormat('d F Y') }}
+                          {{ $scholarship->tanggal_pengumuman_selesai->translatedFormat('d M Y') }}
                         @else
                           <span class="text-muted">Belum diatur</span>
                         @endif
@@ -64,20 +67,25 @@
                       <td>{{ $scholarship->penerima_count }}</td>
                       <td>
                         <div class="d-flex">
-                          <a href="{{ route('admin.pengumuman.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1">
-                            <i class="fas fa-edit"></i> Ubah
+                          <a href="{{ route('admin.pengumuman.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
+                            <i class="fas fa-edit"></i>
                           </a>
+                          @if($scholarship->penerima_count > 0)
+                            <a href="{{ route('admin.pengumuman.export-pdf', $scholarship) }}" class="btn btn-danger btn-sm mr-1 mb-1" title="Export PDF">
+                              <i class="fas fa-file-pdf"></i>
+                            </a>
+                          @endif
                           @if($scholarship->hasPengumuman())
-                            <a href="{{ route('pengumuman.show', $scholarship) }}" target="_blank" class="btn btn-info btn-sm mr-1 mb-1">
-                              <i class="fas fa-external-link-alt"></i> Publik
+                            <a href="{{ route('pengumuman.show', $scholarship) }}" target="_blank" class="btn btn-info btn-sm mr-1 mb-1" title="Lihat Publik">
+                              <i class="fas fa-external-link-alt"></i>
                             </a>
                           @endif
                           @if($scholarship->tanggal_pengumuman)
                             <form action="{{ route('admin.pengumuman.hapus', $scholarship) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                               @csrf
                               @method('DELETE')
-                              <button type="button" class="btn btn-danger btn-sm btn-delete">
-                                <i class="fas fa-trash"></i> Hapus
+                              <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus">
+                                <i class="fas fa-trash"></i>
                               </button>
                             </form>
                           @endif

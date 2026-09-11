@@ -12,14 +12,28 @@
   </div>
 
   <div class="section-body">
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+      </div>
+    @endif
+
+    @if(session('error'))
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+      </div>
+    @endif
+
     <div class="row">
-      <div class="col-12">
+      <div class="col-lg-8">
         <form action="{{ route('admin.pengumuman.perbarui', $scholarship) }}" method="POST">
           @csrf
           @method('PUT')
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header">
               <h4 class="mb-0"><i class="fas fa-bullhorn mr-2"></i>Informasi Beasiswa</h4>
             </div>
             <div class="card-body">
@@ -43,7 +57,7 @@
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header">
               <h4 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Jadwal Pengumuman</h4>
             </div>
             <div class="card-body">

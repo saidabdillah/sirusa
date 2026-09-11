@@ -21,6 +21,9 @@
     <div class="row">
       <div class="col-12">
         <div class="card">
+          <div class="card-header">
+            <h4>Riwayat Pendaftaran</h4>
+          </div>
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-striped" id="myApplicantTable">
@@ -53,7 +56,7 @@
                           <span class="badge badge-danger">Ditolak</span>
                         @endif
                       </td>
-                      <td>{{ $applicant->created_at->translatedFormat('d F Y H:i') }}</td>
+                      <td>{{ $applicant->created_at->translatedFormat('d M Y H:i') }}</td>
                       <td>
                         <a href="{{ route('user.pendaftaran.lihat', $applicant) }}" class="btn btn-info btn-sm">
                           <i class="fas fa-eye"></i>

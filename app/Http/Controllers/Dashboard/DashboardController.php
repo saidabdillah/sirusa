@@ -79,6 +79,10 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $activeAvailableCount = Scholarship::where('status', 'aktif')
+            ->where('batas_waktu', '>=', now())
+            ->count();
+
         return view('dasbor', [
             'totalApplications' => $totalApplications,
             'pendingApplications' => $pendingApplications,
@@ -87,6 +91,7 @@ class DashboardController extends Controller
             'revisionApplications' => $revisionApplications,
             'recentApplications' => $recentApplications,
             'availableScholarships' => $availableScholarships,
+            'activeAvailableCount' => $activeAvailableCount,
         ]);
     }
 }

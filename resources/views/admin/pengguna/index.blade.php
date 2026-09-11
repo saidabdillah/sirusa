@@ -63,6 +63,10 @@
                       @else
                       <span class="badge badge-info">User</span>
                       @endif
+                      @if($loop->iteration === 1 && !$loop->last)
+                      <span class="badge badge-light">+{{ $loop->remaining }}</span>
+                      @endif
+                      @break
                       @endforeach
                     </td>
                     <td>
@@ -74,12 +78,12 @@
                     </td>
                     <td>
                       @if(auth()->user()->hasRole('super_admin'))
-                      <a href="{{ route('admin.pengguna.ubah', $user) }}" class="btn btn-warning btn-sm mr-1" title="Edit">
+                      <a href="{{ route('admin.pengguna.ubah', $user) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
                         <i class="fas fa-edit"></i>
                       </a>
                       @endif
                       @if(! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline mr-1">
+                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline mr-1 mb-1">
                         @csrf
                         @method('PATCH')
                         @if($user->status === 'aktif')
@@ -106,7 +110,7 @@
                       </form>
                       @endif
                       @if(auth()->user()->hasRole('super_admin') && ! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="d-inline">
+                      <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
                         <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"

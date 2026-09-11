@@ -177,7 +177,7 @@
               @endif
             </div>
             <div class="card-footer text-right">
-              <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-secondary mr-2">Batal</a>
+              <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-outline-secondary mr-2"><i class="fas fa-arrow-left mr-1"></i> Batal</a>
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-paper-plane"></i> Kirim Pendaftaran
               </button>
@@ -238,96 +238,4 @@
   </div>
 </section>
 
-@push('script')
-<script>
-  $(function () {
-    var MAX_BYTES = 2 * 1024 * 1024;
-    var allowedExt = ['pdf', 'jpg', 'jpeg', 'png'];
-    var imageOnly = ['dokumen_pas_foto'];
-    var labelMap = {
-      dokumen_ktp: 'KTP',
-      dokumen_kk: 'Kartu Keluarga',
-      dokumen_akta: 'Akta Kelahiran',
-      dokumen_surat_permohonan: 'Surat Permohonan',
-      dokumen_transkrip: 'Transkrip Nilai / KHS',
-      dokumen_surat_aktif: 'Surat Aktif Kuliah / KTM',
-      dokumen_pas_foto: 'Pas Foto 3x4',
-      dokumen_prestasi: 'Sertifikat Prestasi',
-      dokumen_surat_pernyataan: 'Surat Pernyataan',
-      dokumen_sktm: 'SKTM',
-      dokumen_bukti_ukt: 'Bukti UKT/SPP',
-      ktp_ayah: 'KTP Ayah',
-      ktp_ibu: 'KTP Ibu',
-      ktp_wali: 'KTP Wali',
-      kk_wali: 'KK Wali'
-    };
-
-    function fileExt(name) {
-      return (name.split('.').pop() || '').toLowerCase();
-    }
-
-    function validateFiles($input) {
-      var name = ($input.attr('name') || '').replace(/\[\]$/, '');
-      var files = $input[0].files || [];
-      var errors = [];
-      for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        var label = labelMap[name] || 'File';
-        if (file.size > MAX_BYTES) {
-          errors.push(label + ': ukuran file melebihi 2MB.');
-        } else if (imageOnly.indexOf(name) !== -1 && allowedExt.indexOf(fileExt(file.name)) === -1) {
-          errors.push(label + ': format harus JPG, JPEG, atau PNG.');
-        } else if (allowedExt.indexOf(fileExt(file.name)) === -1) {
-          errors.push(label + ': format harus PDF, JPG, JPEG, atau PNG.');
-        }
-      }
-      return errors;
-    }
-
-    var $form = $('#formAjukan');
-    var $submitBtn = $form.find('button[type="submit"]').first();
-    var originalBtnHtml = $submitBtn.html();
-
-    $form.on('submit', function (e) {
-      var errors = [];
-      var firstInvalid = null;
-
-      $form.find('input[type="file"]').each(function () {
-        var $input = $(this);
-        var inputErrors = validateFiles($input);
-        if (inputErrors.length) {
-          $input.addClass('is-invalid');
-          if (!firstInvalid) firstInvalid = $input;
-          errors = errors.concat(inputErrors);
-        } else {
-          $input.removeClass('is-invalid');
-        }
-      });
-
-      if (errors.length) {
-        e.preventDefault();
-        $submitBtn.prop('disabled', false).html(originalBtnHtml);
-        $form.find('a.btn.disabled').removeClass('disabled');
-        var list = errors.map(function (msg) { return '- ' + msg; }).join('<br>');
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            title: 'Ada file yang belum sesuai',
-            html: list + '<br><br>Periksa kembali file sebelum mengirim.',
-            icon: 'error',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#3085d6'
-          });
-        } else {
-          alert('Ada file yang belum sesuai:\n' + errors.join('\n'));
-        }
-        if (firstInvalid) firstInvalid.focus();
-      }
-    });
-
-    $form.on('change', 'input[type="file"]', function () {
-      $(this).removeClass('is-invalid');
-    });
-  });
-</script>
-@endpush
 @endsection

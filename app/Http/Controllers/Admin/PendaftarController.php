@@ -32,8 +32,7 @@ class PendaftarController extends Controller
                 $query->where('beasiswa_id', $request->integer('beasiswa_id'));
             })
             ->latest()
-            ->paginate(10)
-            ->withQueryString();
+            ->get();
 
         $beasiswas = Scholarship::orderBy('nama')->get(['id', 'nama']);
 

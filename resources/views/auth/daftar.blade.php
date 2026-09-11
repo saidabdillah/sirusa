@@ -26,12 +26,12 @@
               </div>
 
               <div class="row">
-                <div class="form-group col-6">
+                <div class="form-group col-12">
                   <label for="password" class="d-block">Kata Sandi</label>
                   <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" tabindex="2">
                   @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group col-6">
+                <div class="form-group col-12">
                   <label for="password_confirmation" class="d-block">Konfirmasi Kata Sandi</label>
                   <input id="password_confirmation" type="password" class="form-control @error('password_confirmation') is-invalid @enderror" name="password_confirmation" tabindex="3">
                   @error('password_confirmation')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -58,7 +58,7 @@
           Sudah punya akun? <a href="{{ route('login') }}">Masuk Sekarang</a>
         </div>
         <div class="simple-footer">
-          Hak Cipta &copy; SIRUSA 2026
+          Hak Cipta &copy; SIRUSA {{ date('Y') }}
         </div>
       </div>
     </div>

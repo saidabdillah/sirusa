@@ -48,6 +48,7 @@
     <div class="main-wrapper main-wrapper-1">
       @auth
       <div class="navbar-bg"></div>
+      @include('layouts.partials.skeleton', ['skeleton' => 'app'])
       @include('layouts.partials.navbar')
       @include('layouts.partials.sidebar')
       @endauth

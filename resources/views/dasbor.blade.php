@@ -17,7 +17,7 @@
       {{-- ADMIN / SUPER ADMIN DASHBOARD --}}
       {{-- Row 1: Main Statistics --}}
       <div class="row">
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
               <i class="fas fa-users"></i>
@@ -32,7 +32,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-warning">
               <i class="fas fa-clock"></i>
@@ -47,7 +47,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-success">
               <i class="fas fa-check-circle"></i>
@@ -62,7 +62,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-danger">
               <i class="fas fa-times-circle"></i>
@@ -77,8 +77,23 @@
             </div>
           </div>
         </div>
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-info">
+              <i class="fas fa-edit"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Revisi</h4>
+              </div>
+              <div class="card-body">
+                {{ $revisionApplicants }}
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
               <i class="fas fa-award"></i>
@@ -93,10 +108,10 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
-            <div class="card-icon bg-success">
-              <i class="fas fa-check-circle"></i>
+            <div class="card-icon bg-info">
+              <i class="fas fa-bolt"></i>
             </div>
             <div class="card-wrap">
               <div class="card-header">
@@ -108,7 +123,7 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-secondary">
               <i class="fas fa-pause-circle"></i>
@@ -127,14 +142,14 @@
 
       {{-- Row 2: Status Progress & Upcoming Deadlines --}}
       <div class="row">
-        <div class="col-12">
+        <div class="col-lg-6">
           <div class="card">
             <div class="card-header">
               <h4>Status Pendaftar</h4>
             </div>
             <div class="card-body">
               <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex justify-content-between flex-wrap mb-1">
                   <span>Verifikasi</span>
                   <span>{{ $pendingApplicants }}</span>
                 </div>
@@ -143,7 +158,7 @@
                 </div>
               </div>
               <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex justify-content-between flex-wrap mb-1">
                   <span>Diterima</span>
                   <span>{{ $acceptedApplicants }}</span>
                 </div>
@@ -152,7 +167,7 @@
                 </div>
               </div>
               <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex justify-content-between flex-wrap mb-1">
                   <span>Revisi</span>
                   <span>{{ $revisionApplicants }}</span>
                 </div>
@@ -161,7 +176,7 @@
                 </div>
               </div>
               <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1">
+                <div class="d-flex justify-content-between flex-wrap mb-1">
                   <span>Ditolak</span>
                   <span>{{ $rejectedApplicants }}</span>
                 </div>
@@ -176,7 +191,7 @@
           </div>
         </div>
 
-        <div class="col-12">
+        <div class="col-lg-6">
           <div class="card">
             <div class="card-header">
               <h4>Batas Waktu Mendatang</h4>
@@ -332,6 +347,21 @@
               </div>
               <div class="card-body">
                 {{ $revisionApplications }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+          <div class="card card-statistic-1">
+            <div class="card-icon bg-primary">
+              <i class="fas fa-university"></i>
+            </div>
+            <div class="card-wrap">
+              <div class="card-header">
+                <h4>Beasiswa Tersedia</h4>
+              </div>
+              <div class="card-body">
+                {{ $activeAvailableCount }}
               </div>
             </div>
           </div>

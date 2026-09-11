@@ -56,7 +56,7 @@
           </div>
         </div>
         <div class="simple-footer">
-          Hak Cipta &copy; SIRUSA 2026
+          Hak Cipta &copy; SIRUSA {{ date('Y') }}
         </div>
       </div>
     </div>

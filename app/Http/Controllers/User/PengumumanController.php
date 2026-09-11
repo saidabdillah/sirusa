@@ -11,9 +11,15 @@ use Illuminate\View\View;
 
 class PengumumanController extends Controller
 {
-    public function show(Scholarship $scholarship): View
+    public function show(Request $request, Scholarship $scholarship): View
     {
         abort_unless($scholarship->hasPengumuman(), 404);
+
+        $user = $request->user();
+        $isAdmin = $user->hasRole(['admin', 'super_admin']);
+        $isApplicant = $scholarship->pendaftar()->where('user_id', $user->id)->exists();
+
+        abort_unless($isAdmin || $isApplicant, 404);
 
         $penerima = $scholarship->penerima()->get();
 

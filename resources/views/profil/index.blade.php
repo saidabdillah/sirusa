@@ -203,19 +203,19 @@
                   </div>
                 </div>
                 <div class="form-row">
-                  <div class="form-group col-md-6">
+                  <div class="form-group col-md-4">
                     <label for="prodi">Program Studi <span class="text-danger">*</span></label>
                     <select class="form-control @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id">
                       <option value="">Pilih Fakultas terlebih dahulu</option>
                     </select>
                     @error('prodi_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="ipk">IPK <span class="text-danger">*</span></label>
                     <input type="number" step="0.01" min="0" max="4" class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk" value="{{ old('ipk', $profile->ipk ?? '') }}">
                     @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-4">
                     <label for="semester">Semester <span class="text-danger">*</span></label>
                     <input type="number" min="1" max="14" class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester" value="{{ old('semester', $profile->semester ?? '') }}">
                     @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -369,6 +369,7 @@
 
               </div>
               <div class="card-footer text-right">
+                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mr-2"><i class="fas fa-arrow-left mr-1"></i> Batal</a>
                 <button type="submit" class="btn btn-primary">Simpan Profil</button>
               </div>
             </form>

@@ -12,7 +12,7 @@
 
         <div class="card card-primary">
           <div class="card-header">
-            <h4>Lupa kata sandi</h4>
+            <h4>Lupa Kata Sandi</h4>
           </div>
 
           <div class="card-body">
@@ -34,7 +34,7 @@
           </div>
         </div>
         <div class="simple-footer">
-          Hak Cipta &copy; SIRUSA 2026
+          Hak Cipta &copy; SIRUSA {{ date('Y') }}
         </div>
       </div>
     </div>

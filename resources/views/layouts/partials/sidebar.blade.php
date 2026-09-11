@@ -65,6 +65,7 @@
       </li>
       @php
         $pengumumanAktif = \App\Models\Scholarship::with('pendaftar')
+          ->whereHas('pendaftar', fn ($q) => $q->where('user_id', auth()->id()))
           ->get()
           ->filter(fn ($s) => $s->hasPengumuman())
           ->take(5);

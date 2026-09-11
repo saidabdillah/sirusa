@@ -23,7 +23,7 @@
           <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100">
               <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
                   <h5 class="card-title mb-0">{{ $scholarship->nama }}</h5>
                   @if(isset($applications[$scholarship->id]))
                     @if($applications[$scholarship->id] === 'verifikasi')
@@ -51,23 +51,29 @@
                     <small class="text-muted">IPK Minimal</small><br>
                     <strong>{{ number_format($scholarship->ipk_minimal, 2) }}</strong>
                   </div>
+                </div>
+                <div class="row mb-2">
                   <div class="col-6">
                     <small class="text-muted">Semester Minimal</small><br>
                     <strong>{{ $scholarship->semester_minimal }}</strong>
                   </div>
-                </div>
-                <div class="row mb-2">
                   <div class="col-6">
                     <small class="text-muted">Tunjangan</small><br>
                     <span class="badge badge-{{ $scholarship->cakupan === 'penuh' ? 'success' : 'warning' }}">
                       {{ ucfirst($scholarship->cakupan) }}
                     </span>
                   </div>
+                </div>
+                <div class="row">
                   <div class="col-6">
                     <small class="text-muted">Batas Waktu</small><br>
                     <strong class="{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
                       {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
                     </strong>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Kuota</small><br>
+                    <strong>{{ $scholarship->kuota }}</strong>
                   </div>
                 </div>
               </div>

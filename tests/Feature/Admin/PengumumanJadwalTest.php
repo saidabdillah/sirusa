@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Applicant;
 use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
@@ -157,4 +158,21 @@ test('update resets pengumuman_notified_at for rescheduling', function () {
 
     $this->scholarship->refresh();
     expect($this->scholarship->pengumuman_notified_at)->toBeNull();
+});
+
+test('export pdf button shown on jadwal index when scholarship has approved applicants', function () {
+    Applicant::factory()->create([
+        'beasiswa_id' => $this->scholarship->id,
+        'status' => 'diterima',
+    ]);
+
+    actingAs($this->admin)
+        ->get(route('admin.pengumuman.index'))
+        ->assertSee(route('admin.pengumuman.export-pdf', $this->scholarship), false);
+});
+
+test('export pdf button hidden on jadwal index when scholarship has no approved applicants', function () {
+    actingAs($this->admin)
+        ->get(route('admin.pengumuman.index'))
+        ->assertDontSee(route('admin.pengumuman.export-pdf', $this->scholarship), false);
 });

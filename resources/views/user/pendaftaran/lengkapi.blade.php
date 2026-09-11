@@ -12,6 +12,20 @@
     </div>
 
     <div class="section-body">
+      @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ session('success') }}
+          <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+      @endif
+
+      @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          {{ session('error') }}
+          <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+      @endif
+
       @if($applicant->catatan)
         <div class="alert alert-warning">
           <strong><i class="fas fa-exclamation-triangle"></i> Catatan dari Admin:</strong><br>
@@ -183,7 +197,7 @@
                 @endphp
                 @if(in_array($profile?->status_orang_tua, ['Lengkap', 'Piatu']))
                 <div class="form-group">
-                  <label for="ktp_ayah">KTP Ayah <span class="text-danger">*</span></label>
+                  <label for="ktp_ayah">KTP Ayah <span class="text-muted">(opsional)</span></label>
                   @if($applicant->ktp_ayah)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->ktp_ayah) }}</small>
@@ -203,7 +217,7 @@
 
                 @if(in_array($profile?->status_orang_tua, ['Lengkap', 'Yatim']))
                 <div class="form-group">
-                  <label for="ktp_ibu">KTP Ibu <span class="text-danger">*</span></label>
+                  <label for="ktp_ibu">KTP Ibu <span class="text-muted">(opsional)</span></label>
                   @if($applicant->ktp_ibu)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->ktp_ibu) }}</small>
@@ -223,7 +237,7 @@
 
                 @if(($profile?->status_orang_tua ?? '') === 'Yatim Piatu')
                 <div class="form-group">
-                  <label for="ktp_wali">KTP Wali <span class="text-danger">*</span></label>
+                  <label for="ktp_wali">KTP Wali <span class="text-muted">(opsional)</span></label>
                   @if($applicant->ktp_wali)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->ktp_wali) }}</small>
@@ -243,7 +257,7 @@
 
                 @if(($profile?->status_orang_tua ?? '') === 'Yatim Piatu')
                 <div class="form-group">
-                  <label for="kk_wali">Kartu Keluarga Wali <span class="text-danger">*</span></label>
+                  <label for="kk_wali">Kartu Keluarga Wali <span class="text-muted">(opsional)</span></label>
                   @if($applicant->kk_wali)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->kk_wali) }}</small>
@@ -262,7 +276,7 @@
                 @endif
               </div>
               <div class="card-footer text-right">
-                <a href="{{ route('user.pendaftaran.lihat', $applicant) }}" class="btn btn-secondary mr-2">Batal</a>
+                <a href="{{ route('user.pendaftaran.lihat', $applicant) }}" class="btn btn-outline-secondary mr-2"><i class="fas fa-arrow-left mr-1"></i> Batal</a>
                 <button type="submit" class="btn btn-primary">Perbarui Pendaftaran</button>
               </div>
             </form>
