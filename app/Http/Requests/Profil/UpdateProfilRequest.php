@@ -23,6 +23,11 @@ class UpdateProfilRequest extends FormRequest
                 'required',
                 'digits:16',
             ],
+            'nim' => [
+                'required',
+                'string',
+                'max:30',
+            ],
             'tempat_lahir' => [
                 'required',
                 'string',
@@ -181,6 +186,8 @@ class UpdateProfilRequest extends FormRequest
             'nama_lengkap.required' => 'Nama lengkap harus diisi.',
             'nik.required' => 'NIK harus diisi.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
+            'nim.required' => 'NIM harus diisi.',
+            'nim.max' => 'NIM maksimal 30 karakter.',
             'tempat_lahir.required' => 'Tempat lahir harus diisi.',
             'tempat_lahir.max' => 'Tempat lahir maksimal 255 karakter.',
             'tanggal_lahir.required' => 'Tanggal lahir harus diisi.',

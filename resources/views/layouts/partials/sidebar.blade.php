@@ -40,14 +40,28 @@
           </li>
         </ul>
       </li>
-      @endif
-
       @if(auth()->user()->hasRole('admin'))
       <li class="menu-header">Pengaturan</li>
       <li class="{{ request()->routeIs('admin.template.*') ? 'active' : '' }}">
         <a href="{{ route('admin.template.index') }}" class="nav-link"><i class="fas fa-file-word"></i><span>Template
             Surat</span></a>
       </li>
+      @endif
+      @php
+        $pengumumanAdmin = \App\Models\Scholarship::with('pendaftar')
+          ->get()
+          ->filter(fn ($s) => $s->hasPengumuman())
+          ->take(5);
+      @endphp
+      @if($pengumumanAdmin->count() > 0)
+      <li class="menu-header">Pengumuman</li>
+      @foreach($pengumumanAdmin as $beasiswa)
+      <li class="{{ request()->routeIs('pengumuman.show') && request()->route('scholarship')?->id == $beasiswa->id ? 'active' : '' }}">
+        <a href="{{ route('pengumuman.show', $beasiswa) }}" class="nav-link"><i
+            class="fas fa-bullhorn"></i><span>{{ $beasiswa->nama }}</span></a>
+      </li>
+      @endforeach
+      @endif
       @endif
 
       @if(auth()->user()->hasRole('user'))

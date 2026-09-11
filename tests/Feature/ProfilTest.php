@@ -16,6 +16,7 @@ function completeProfilePayload($prodi): array
     return [
         'nama_lengkap' => 'Budi',
         'nik' => '6302000000000001',
+        'nim' => '2010123456',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -77,6 +78,9 @@ test('user can open profil form with region and campus fields', function () {
         ->assertSee('Universitas Lambung Mangkurat')
         ->assertSee('IPK')
         ->assertSee('Semester')
+        ->assertSee('name="nim"', false)
+        ->assertSeeInOrder(['Data Kampus', 'name="nim"'], false)
+        ->assertSee('sk-form-row')
         ->assertSee('Anda harus melengkapi data berikut sebelum bisa mendaftar beasiswa.')
         ->assertDontSee('<li>Status Orang Tua</li>', false)
         ->assertDontSee(' required>', false);
@@ -88,6 +92,7 @@ test('user can update profile with campus data and parent nik', function () {
     $payload = [
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
+        'nim' => '2010998877',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -120,6 +125,7 @@ test('user can update profile with campus data and parent nik', function () {
     $this->assertDatabaseHas('profil_pengguna', [
         'user_id' => $user->id,
         'nama_lengkap' => 'Ahmad Fauzi',
+        'nim' => '2010998877',
         'nik_ayah' => '6302000000000002',
         'nik_ibu' => '6302000000000003',
         'provinsi' => 'Kalimantan Selatan',
@@ -199,6 +205,16 @@ test('profil update requires campus data ipk and semester', function () {
             'desa_kelurahan' => 'Ambakiang',
         ])
         ->assertSessionHasErrors(['prodi_id', 'ipk', 'semester']);
+});
+
+test('profil update requires NIM', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    $payload = array_merge(completeProfilePayload($this->prodi), ['nim' => '']);
+
+    actingAs($user)
+        ->put(route('profile.update'), $payload)
+        ->assertSessionHasErrors(['nim']);
 });
 
 test('profil update validates parent nik to 16 digits', function () {

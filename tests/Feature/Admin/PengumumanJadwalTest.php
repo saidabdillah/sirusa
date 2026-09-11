@@ -168,11 +168,11 @@ test('export pdf button shown on jadwal index when scholarship has approved appl
 
     actingAs($this->admin)
         ->get(route('admin.pengumuman.index'))
-        ->assertSee(route('admin.pengumuman.export-pdf', $this->scholarship), false);
+        ->assertSee(route('pengumuman.export-pdf', $this->scholarship), false);
 });
 
 test('export pdf button hidden on jadwal index when scholarship has no approved applicants', function () {
     actingAs($this->admin)
         ->get(route('admin.pengumuman.index'))
-        ->assertDontSee(route('admin.pengumuman.export-pdf', $this->scholarship), false);
+        ->assertDontSee(route('pengumuman.export-pdf', $this->scholarship), false);
 });

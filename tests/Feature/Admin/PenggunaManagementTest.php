@@ -44,6 +44,18 @@ test('super admin can view user list', function () {
     $response->assertViewIs('admin.pengguna.index');
 });
 
+test('user list shows admin and super_admin users', function () {
+    $this->actingAs($this->superAdmin);
+
+    $response = get(route('admin.pengguna.index'));
+
+    $response->assertOk();
+    $response->assertSee('superadmin@test.com');
+    $response->assertSee('admin@test.com');
+    $response->assertSee('Super Admin');
+    $response->assertSee('Admin');
+});
+
 test('user list buttons use delegated confirm handlers instead of inline onclick', function () {
     $this->actingAs($this->superAdmin);
 

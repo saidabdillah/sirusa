@@ -36,6 +36,42 @@ test('authenticated user sees dashbor button instead of masuk and daftar on land
         ->assertDontSee(route('login'));
 });
 
+test('admin sees lihat beasiswa linking to admin daftar beasiswa on landing', function () {
+    $user = User::factory()->admin()->create();
+    $scholarship = Scholarship::factory()->create(['status' => 'aktif']);
+
+    actingAs($user)
+        ->get(route('landing'))
+        ->assertOk()
+        ->assertSee('Lihat Beasiswa')
+        ->assertSee(route('admin.beasiswa.index'))
+        ->assertDontSee(route('user.beasiswa.lihat', $scholarship));
+});
+
+test('super admin sees lihat beasiswa linking to admin daftar beasiswa on landing', function () {
+    $user = User::factory()->superAdmin()->create();
+    $scholarship = Scholarship::factory()->create(['status' => 'aktif']);
+
+    actingAs($user)
+        ->get(route('landing'))
+        ->assertOk()
+        ->assertSee('Lihat Beasiswa')
+        ->assertSee(route('admin.beasiswa.index'))
+        ->assertDontSee(route('user.beasiswa.lihat', $scholarship));
+});
+
+test('user sees lihat beasiswa linking to the scholarship detail on landing', function () {
+    $user = User::factory()->standardUser()->create();
+    $scholarship = Scholarship::factory()->create(['status' => 'aktif']);
+
+    actingAs($user)
+        ->get(route('landing'))
+        ->assertOk()
+        ->assertSee('Lihat Beasiswa')
+        ->assertSee(route('user.beasiswa.lihat', $scholarship))
+        ->assertDontSee(route('admin.beasiswa.index'));
+});
+
 test('single campus is shown statically on landing', function () {
     Scholarship::factory()->create(['kampus' => 'Universitas Tunggal']);
 

@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@section('skeleton')
+@include('layouts.partials.skeleton.shell', [
+    'content' => view('layouts.partials.skeleton.form', [
+        'avatar' => true,
+        'sections' => [
+            ['label' => 'Data Diri', 'rows' => [1, 2, 2, 2]],
+            ['label' => 'Data Kampus', 'rows' => [2, 3, 1]],
+            ['label' => 'Data Orang Tua', 'rows' => [1, 2, 2, 2, 2]],
+        ],
+    ])->render(),
+])
+@endsection
+
 @section('content')
 <section class="section">
     <div class="section-header">
@@ -98,7 +111,7 @@
                     <input type="text" class="form-control @error('telepon') is-invalid @enderror" id="telepon" name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}">
                     @error('telepon')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
-                </div>
+</div>
 
                 <div class="form-row">
                   <div class="form-group col-md-6">
@@ -220,6 +233,12 @@
                     <input type="number" min="1" max="14" class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester" value="{{ old('semester', $profile->semester ?? '') }}">
                     @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="nim">NIM <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('nim') is-invalid @enderror" id="nim" name="nim" value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30">
+                  @error('nim')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <hr>

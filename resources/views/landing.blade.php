@@ -162,7 +162,11 @@
           </div>
           <div class="card-footer bg-white text-center">
             @auth
+            @if(auth()->user()->hasRole(['admin', 'super_admin']))
+            <a href="{{ route('admin.beasiswa.index') }}" class="btn btn-sm btn-primary btn-block">Lihat Beasiswa</a>
+            @else
             <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-primary btn-block">Lihat Beasiswa</a>
+            @endif
             @else
             <a href="{{ route('register') }}" class="btn btn-sm btn-primary btn-block">Daftar Sekarang</a>
             @endauth

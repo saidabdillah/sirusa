@@ -16,6 +16,7 @@ class UserProfile extends Model
         'user_id',
         'nama_lengkap',
         'nik',
+        'nim',
         'tempat_lahir',
         'tanggal_lahir',
         'jenis_kelamin',

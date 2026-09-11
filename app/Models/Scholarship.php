@@ -93,7 +93,7 @@ class Scholarship extends Model
     {
         return $this->pendaftar()
             ->where('status', 'diterima')
-            ->with('user.profile');
+            ->with('user.profile.prodi.fakultas.kampus');
     }
 
     public function allowsProdi(UserProfile $profile): bool

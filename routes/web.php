@@ -101,6 +101,7 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
 
     // Pengumuman publik (akses semua role yang login)
     Route::get('/pengumuman/{scholarship}', [PengumumanController::class, 'show'])->name('pengumuman.show');
+    Route::get('/pengumuman/{scholarship}/export-pdf', [PengumumanController::class, 'exportPdf'])->name('pengumuman.export-pdf');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
 
     // Admin + Super Admin routes
@@ -114,8 +115,6 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::get('/pendaftar/export', [PendaftarController::class, 'export'])->name('pendaftar.export');
         Route::get('/pendaftar', [PendaftarController::class, 'index'])->name('pendaftar.index');
         Route::get('/pendaftar/{applicant}/lihat', [PendaftarController::class, 'show'])->name('pendaftar.lihat');
-
-        Route::get('/pengumuman/{scholarship}/export-pdf', [PengumumanController::class, 'exportPdf'])->name('pengumuman.export-pdf');
 
         Route::get('/pengumuman', [PengumumanJadwalController::class, 'index'])->name('pengumuman.index');
     });

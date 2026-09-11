@@ -120,8 +120,8 @@
               <i class="fas fa-external-link-alt"></i> Lihat Halaman Publik
             </a>
             @if(auth()->user()->hasRole(['admin','super_admin']))
-            <a href="{{ route('admin.pengumuman.export-pdf', $scholarship) }}" class="btn btn-danger btn-block">
-              <i class="fas fa-file-pdf"></i> Export PDF Penerima
+            <a href="{{ route('pengumuman.export-pdf', $scholarship) }}" target="_blank" rel="noopener" class="btn btn-danger btn-block">
+              <i class="fas fa-file-pdf"></i> Preview PDF Penerima
             </a>
             @endif
             @else

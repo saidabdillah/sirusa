@@ -40,7 +40,7 @@ test('admin can export penerima as pdf', function () {
     createAcceptedApplicant($this->scholarship, $this->user);
 
     actingAs($this->admin)
-        ->get(route('admin.pengumuman.export-pdf', $this->scholarship))
+        ->get(route('pengumuman.export-pdf', $this->scholarship))
         ->assertStatus(200)
         ->assertHeader('content-type', 'application/pdf');
 });
@@ -49,21 +49,67 @@ test('super admin can export penerima as pdf', function () {
     createAcceptedApplicant($this->scholarship, $this->user);
 
     actingAs($this->superAdmin)
-        ->get(route('admin.pengumuman.export-pdf', $this->scholarship))
+        ->get(route('pengumuman.export-pdf', $this->scholarship))
         ->assertStatus(200)
         ->assertHeader('content-type', 'application/pdf');
 });
 
-test('regular user cannot export penerima as pdf', function () {
+test('pdf export returns 404 when no penerima', function () {
+    actingAs($this->admin)
+        ->get(route('pengumuman.export-pdf', $this->scholarship))
+        ->assertNotFound();
+});
+
+test('applicant can export penerima as pdf during active window', function () {
+    $this->scholarship->update([
+        'tanggal_pengumuman' => now()->subDay()->toDateString(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5)->toDateString(),
+    ]);
     createAcceptedApplicant($this->scholarship, $this->user);
 
     actingAs($this->user)
-        ->get(route('admin.pengumuman.export-pdf', $this->scholarship))
-        ->assertForbidden();
+        ->get(route('pengumuman.export-pdf', $this->scholarship))
+        ->assertStatus(200)
+        ->assertHeader('content-type', 'application/pdf');
 });
 
-test('pdf export returns 404 when no penerima', function () {
-    actingAs($this->admin)
-        ->get(route('admin.pengumuman.export-pdf', $this->scholarship))
+test('non-applicant user cannot export penerima as pdf during active window', function () {
+    $this->scholarship->update([
+        'tanggal_pengumuman' => now()->subDay()->toDateString(),
+        'tanggal_pengumuman_selesai' => now()->addDays(5)->toDateString(),
+    ]);
+    $stranger = User::factory()->standardUser()->create(['email' => 'stranger@test.com']);
+    createAcceptedApplicant($this->scholarship, $this->user);
+
+    actingAs($stranger)
+        ->get(route('pengumuman.export-pdf', $this->scholarship))
         ->assertNotFound();
+});
+
+test('penerima pdf view renders kop surat and daftar penerima title', function () {
+    createAcceptedApplicant($this->scholarship, $this->user);
+
+    $penerima = $this->scholarship->penerima()->get();
+    $html = view('admin.exports.penerima_pdf', [
+        'scholarship' => $this->scholarship,
+        'penerima' => $penerima,
+    ])->render();
+
+    expect($html)
+        ->toContain('PEMERINTAH KABUPATEN BALANGAN')
+        ->toContain('SEKRETARIAT DAERAH')
+        ->toContain('Jl. Jenderal Ahmad Yani No. 1')
+        ->toContain('71662')
+        ->toContain('Daftar Penerima Beasiswa')
+        ->toContain(strtoupper($this->scholarship->nama))
+        ->toContain('<th>NIM</th>')
+        ->toContain('<th>Jenis Kelamin</th>')
+        ->toContain('<th>Kampus</th>')
+        ->toContain('<th>Fakultas</th>')
+        ->toContain('<th>Program Studi</th>')
+        ->not->toContain('<strong>Kampus:</strong>')
+        ->not->toContain('<th>IPK</th>')
+        ->not->toContain('Total Penerima')
+        ->not->toContain('Periode Pengumuman')
+        ->not->toContain('Dicetak pada');
 });

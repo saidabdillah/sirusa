@@ -15,6 +15,33 @@ class UserSeeder extends Seeder
 
     private array $penghasilan = ['< 1jt', '1-3jt', '3-5jt', '5-10jt', '> 10jt'];
 
+    private const TARGET_PENERIMA = 50;
+
+    private const PENDIDIKAN_BEASISWA = 'Beasiswa Pendidikan Kab. Balangan';
+
+    private const KAMPUS_ULM = 'Universitas Lambung Mangkurat';
+
+    private const PRODI_PENDIDIKAN = ['Teknik Informatika', 'Manajemen', 'Akuntansi', 'Ilmu Administrasi Publik'];
+
+    private array $namaLaki = ['Muhammad', 'Ahmad', 'Rizky', 'Budi', 'Andi', 'Sandi', 'Donny', 'Fajar', 'Hendra', 'Ilham', 'Joko', 'Kevin', 'Lukman', 'Nanda', 'Oki', 'Putra', 'Rahmat', 'Surya', 'Taufik', 'Yoga', 'Zainal', 'Arif', 'Bayu', 'Dimas', 'Eko'];
+
+    private array $namaPerempuan = ['Siti', 'Nurul', 'Aisyah', 'Dewi', 'Rina', 'Fitri', 'Indah', 'Jasmine', 'Kartika', 'Laila', 'Mega', 'Nabila', 'Putri', 'Ratna', 'Sri', 'Tuti', 'Utami', 'Wulan', 'Yuni', 'Zahra', 'Anisa', 'Bunga', 'Citra', 'Dian', 'Elvira'];
+
+    private array $namaBelakang = ['Pratama', 'Saputra', 'Ramadhan', 'Santoso', 'Wijaya', 'Marlina', 'Maharani', 'Putri', 'Kurniawan', 'Nugroho', 'Firmansyah', 'Hidayat', 'Permata', 'Anggraini', 'Lestari', 'Sulistyo', 'Wibowo', 'Prasetyo', 'Rahmawati', 'Haryanti', 'Gunawan', 'Siregar', 'Napitupulu', 'Saragih', 'Halim'];
+
+    private array $tempatLahir = ['Paringin', 'Barabai', 'Banjarmasin', 'Amuntai', 'Kandangan', 'Tanjung', 'Marabahan', 'Batulicin', 'Kotabaru', 'Banjarbaru'];
+
+    private array $kecamatanDesa = [
+        ['kecamatan' => 'Awayan', 'desa' => 'Pulantan'],
+        ['kecamatan' => 'Paringin', 'desa' => 'Batumapai'],
+        ['kecamatan' => 'Awayan', 'desa' => 'Lok Batu'],
+        ['kecamatan' => 'Halong', 'desa' => 'Muara Halayung'],
+        ['kecamatan' => 'Paringin Selatan', 'desa' => 'Kayu Batu'],
+        ['kecamatan' => 'Paringin', 'desa' => 'Bungaraya'],
+        ['kecamatan' => 'Tebing Tinggi', 'desa' => 'Sungai Kupang'],
+        ['kecamatan' => 'Awayan', 'desa' => 'Ambakiang'],
+    ];
+
     public function run(): void
     {
         $scholarships = Scholarship::with(['fakultas.prodi', 'kampus'])->where('status', 'aktif')->get();
@@ -43,6 +70,7 @@ class UserSeeder extends Seeder
                 [
                     'nama_lengkap' => $data['nama_lengkap'],
                     'nik' => $nik,
+                    'nim' => $data['nim'] ?? null,
                     'tempat_lahir' => $data['tempat_lahir'],
                     'tanggal_lahir' => $data['tanggal_lahir'],
                     'jenis_kelamin' => $data['jenis_kelamin'],
@@ -94,11 +122,109 @@ class UserSeeder extends Seeder
                 );
             }
         }
+
+        $this->seedManyPenerima();
     }
 
     private function nik(string $number): string
     {
         return '6303'.str_pad($number, 12, '0', STR_PAD_LEFT);
+    }
+
+    private function seedManyPenerima(): void
+    {
+        $kampus = Kampus::with('fakultas.prodi')
+            ->where('nama_kampus', self::KAMPUS_ULM)
+            ->first();
+
+        if (! $kampus) {
+            return;
+        }
+
+        $allowedProdis = $kampus->fakultas->flatMap->prodi
+            ->filter(fn ($prodi) => in_array($prodi->nama, self::PRODI_PENDIDIKAN))
+            ->values();
+
+        if ($allowedProdis->isEmpty()) {
+            return;
+        }
+
+        $scholarship = Scholarship::where('nama', self::PENDIDIKAN_BEASISWA)->first();
+
+        if (! $scholarship) {
+            return;
+        }
+
+        $existing = $scholarship->penerima()->count();
+
+        for ($n = 1; $n <= self::TARGET_PENERIMA - $existing; $n++) {
+            $user = User::firstOrCreate(
+                ['email' => "penerima{$n}@sirusa.test"],
+                [
+                    'username' => "penerima{$n}",
+                    'password' => 'password',
+                    'email_verified_at' => now(),
+                    'status' => 'aktif',
+                ],
+            );
+            $user->assignRole('user');
+
+            $prodi = $allowedProdis[$n % $allowedProdis->count()];
+            $fakultas = $prodi->fakultas;
+            $gender = $n % 2 === 0 ? 'Laki-laki' : 'Perempuan';
+            $nameIndex = (int) floor($n / 2);
+            $firstName = $gender === 'Laki-laki'
+                ? $this->namaLaki[$nameIndex % count($this->namaLaki)]
+                : $this->namaPerempuan[$nameIndex % count($this->namaPerempuan)];
+            $fullName = $firstName.' '.$this->namaBelakang[$n % count($this->namaBelakang)];
+            $location = $this->kecamatanDesa[$n % count($this->kecamatanDesa)];
+            $ipk = round(3 + (($n % 10) / 10), 2);
+            $semester = 3 + ($n % 6);
+
+            UserProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nama_lengkap' => $fullName,
+                    'nik' => '6303'.str_pad((string) (1000 + $n), 12, '0', STR_PAD_LEFT),
+                    'nim' => '2310'.str_pad((string) $n, 6, '0', STR_PAD_LEFT),
+                    'tempat_lahir' => $this->tempatLahir[$n % count($this->tempatLahir)],
+                    'tanggal_lahir' => now()->subYears(21)->subDays($n)->toDateString(),
+                    'jenis_kelamin' => $gender,
+                    'agama' => 'Islam',
+                    'telepon' => '0813'.str_pad((string) $n, 8, '0', STR_PAD_LEFT),
+                    'alamat' => 'Jl. Pahlawan No. '.$n,
+                    'provinsi' => 'Kalimantan Selatan',
+                    'kabupaten_kota' => 'Balangan',
+                    'kecamatan' => $location['kecamatan'],
+                    'desa_kelurahan' => $location['desa'],
+                    'prodi_id' => $prodi->id,
+                    'ipk' => $ipk,
+                    'semester' => $semester,
+                    'status_orang_tua' => 'Lengkap',
+                    'nama_ayah' => 'Ayah '.$fullName,
+                    'nik_ayah' => '6303'.str_pad((string) (4000 + $n), 12, '0', STR_PAD_LEFT),
+                    'status_ayah' => 'Hidup',
+                    'pekerjaan_ayah' => $this->pekerjaan[$n % count($this->pekerjaan)],
+                    'penghasilan_ayah' => $this->penghasilan[$n % count($this->penghasilan)],
+                    'nama_ibu' => 'Ibu '.$fullName,
+                    'nik_ibu' => '6303'.str_pad((string) (5000 + $n), 12, '0', STR_PAD_LEFT),
+                    'status_ibu' => 'Hidup',
+                    'pekerjaan_ibu' => $this->pekerjaan[($n + 2) % count($this->pekerjaan)],
+                    'penghasilan_ibu' => $this->penghasilan[($n + 2) % count($this->penghasilan)],
+                ],
+            );
+
+            Applicant::updateOrCreate(
+                ['user_id' => $user->id, 'beasiswa_id' => $scholarship->id],
+                [
+                    'fakultas' => $fakultas->nama,
+                    'prodi' => $prodi->nama,
+                    'ipk' => $ipk,
+                    'semester' => $semester,
+                    'status' => 'diterima',
+                ],
+            );
+        }
     }
 
     private function ayah(array $data): array
@@ -177,7 +303,7 @@ class UserSeeder extends Seeder
             ['nama_lengkap' => 'Andi Prasetyo', 'tempat_lahir' => 'Batulicin', 'tanggal_lahir' => '2000-10-25', 'jenis_kelamin' => 'Laki-laki', 'kabupaten' => 'Tanah Bumbu', 'kecamatan' => 'Paringin Selatan', 'desa' => 'Kayu Batu', 'alamat' => 'Jl. Veteran No. 22', 'kampus' => 'Universitas Lambung Mangkurat', 'prodi' => 'Teknik Sipil', 'ipk' => 3.40, 'semester' => 6, 'status' => 'ayah', 'applicants' => ['Beasiswa Unggulan Teknik' => 'verifikasi']],
         ];
 
-        return array_map(function ($row) use ($prodi) {
+        return array_map(function ($row, $i) use ($prodi) {
             $statusData = match ($row['status']) {
                 'yatim' => $this->yatim($row),
                 'piatu' => $this->piatu($row),
@@ -186,8 +312,9 @@ class UserSeeder extends Seeder
             };
 
             return array_merge($row, $statusData, [
+                'nim' => '2010'.str_pad((string) ($i + 1), 6, '0', STR_PAD_LEFT),
                 'prodi' => $prodi($row['kampus'], $row['prodi']),
             ]);
-        }, $rows);
+        }, $rows, array_keys($rows));
     }
 }

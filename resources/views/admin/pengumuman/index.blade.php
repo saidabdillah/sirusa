@@ -71,7 +71,7 @@
                             <i class="fas fa-edit"></i>
                           </a>
                           @if($scholarship->penerima_count > 0)
-                            <a href="{{ route('admin.pengumuman.export-pdf', $scholarship) }}" class="btn btn-danger btn-sm mr-1 mb-1" title="Export PDF">
+                            <a href="{{ route('pengumuman.export-pdf', $scholarship) }}" target="_blank" rel="noopener" class="btn btn-danger btn-sm mr-1 mb-1" title="Preview PDF">
                               <i class="fas fa-file-pdf"></i>
                             </a>
                           @endif
