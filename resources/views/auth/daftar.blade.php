@@ -21,28 +21,32 @@
 
               <div class="form-group">
                 <label for="email">Email</label>
-                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" tabindex="1" autofocus>
+                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email"
+                  value="{{ old('email') }}" tabindex="1" autofocus>
                 @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
 
               <div class="row">
                 <div class="form-group col-12">
                   <label for="password" class="d-block">Kata Sandi</label>
-                  <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" tabindex="2">
+                  <input id="password" type="password" class="form-control @error('password') is-invalid @enderror"
+                    name="password" tabindex="2">
                   @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-12">
                   <label for="password_confirmation" class="d-block">Konfirmasi Kata Sandi</label>
-                  <input id="password_confirmation" type="password" class="form-control @error('password_confirmation') is-invalid @enderror" name="password_confirmation" tabindex="3">
+                  <input id="password_confirmation" type="password"
+                    class="form-control @error('password_confirmation') is-invalid @enderror"
+                    name="password_confirmation" tabindex="3">
                   @error('password_confirmation')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 
               <div class="form-group">
                 <div class="custom-control custom-checkbox">
-                  <input type="checkbox" name="agree" class="custom-control-input @error('agree') is-invalid @enderror" id="agree" tabindex="4" {{ old('agree') ? 'checked' : '' }}>
+                  <input type="checkbox" name="agree" class="custom-control-input @error('agree') is-invalid @enderror"
+                    id="agree" tabindex="4" {{ old('agree') ? 'checked' : '' }}>
                   <label class="custom-control-label" for="agree">Saya menyetujui syarat dan ketentuan</label>
-                  @error('agree')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 

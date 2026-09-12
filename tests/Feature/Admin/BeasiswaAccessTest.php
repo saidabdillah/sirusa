@@ -96,6 +96,8 @@ test('scholarship index action buttons have spacing', function () {
         ->assertOk()
         ->assertSee('btn btn-info btn-sm mr-1 mb-1', false)
         ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
+        ->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false)
+        ->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false)
         ->assertDontSee('d-flex gap-1', false);
 });
 

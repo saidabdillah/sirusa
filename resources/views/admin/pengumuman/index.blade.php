@@ -81,7 +81,7 @@
                             </a>
                           @endif
                           @if($scholarship->tanggal_pengumuman)
-                            <form action="{{ route('admin.pengumuman.hapus', $scholarship) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
+                            <form action="{{ route('admin.pengumuman.hapus', $scholarship) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                               @csrf
                               @method('DELETE')
                               <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus">

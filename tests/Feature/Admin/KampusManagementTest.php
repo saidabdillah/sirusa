@@ -432,6 +432,8 @@ test('kampus index uses standardised action buttons with global delete handler',
         ->assertSee('btn btn-info btn-sm mr-1 mb-1', false)
         ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
         ->assertSee('btn btn-danger btn-sm btn-delete', false)
+        ->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false)
+        ->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false)
         ->assertDontSee('confirmDelete(');
 });
 
@@ -443,6 +445,8 @@ test('fakultas index uses standardised action buttons with global delete handler
         ->assertOk()
         ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
         ->assertSee('btn btn-danger btn-sm btn-delete', false)
+        ->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false)
+        ->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false)
         ->assertDontSee('confirmDelete(');
 });
 
@@ -454,6 +458,8 @@ test('prodi index uses standardised action buttons with global delete handler', 
         ->assertOk()
         ->assertSee('btn btn-primary btn-sm mr-1 mb-1', false)
         ->assertSee('btn btn-danger btn-sm btn-delete', false)
+        ->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false)
+        ->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false)
         ->assertDontSee('confirmDelete(');
 });
 

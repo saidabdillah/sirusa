@@ -42,6 +42,8 @@ test('super admin can view user list', function () {
 
     $response->assertOk();
     $response->assertViewIs('admin.pengguna.index');
+    $response->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false);
+    $response->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false);
 });
 
 test('user list shows admin and super_admin users', function () {

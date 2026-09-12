@@ -377,6 +377,8 @@ test('notification index shows delete buttons', function () {
     $response->assertSee(route('notifications.destroy', $notification), false);
     $response->assertSee(route('notifications.destroy-all'), false);
     $response->assertSee(route('notifications.destroy-read'), false);
+    $response->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false);
+    $response->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false);
 });
 
 test('notification index uses DataTables without colspan on empty state', function () {

@@ -76,7 +76,7 @@
                               <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
                                 <i class="fas fa-edit"></i>
                               </a>
-                              <form action="{{ route('admin.beasiswa.hapus', $scholarship) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
+                              <form action="{{ route('admin.beasiswa.hapus', $scholarship) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                                 @csrf
                                 @method('DELETE')
                                 <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus">

@@ -176,3 +176,16 @@ test('export pdf button hidden on jadwal index when scholarship has no approved 
         ->get(route('admin.pengumuman.index'))
         ->assertDontSee(route('pengumuman.export-pdf', $this->scholarship), false);
 });
+
+test('pengumuman index delete form is aligned with adjacent action buttons', function () {
+    $this->scholarship->update([
+        'tanggal_pengumuman' => now()->addMonth(),
+        'tanggal_pengumuman_selesai' => now()->addMonth()->addDays(7),
+    ]);
+
+    actingAs($this->admin)
+        ->get(route('admin.pengumuman.index'))
+        ->assertOk()
+        ->assertSee('d-inline-block align-middle mr-1 mb-1 btn-delete-form', false)
+        ->assertDontSee('d-inline mr-1 mb-1 btn-delete-form', false);
+});

@@ -7,7 +7,8 @@
     <div class="section-header-breadcrumb">
       <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dashboard</a></div>
       <div class="breadcrumb-item active"><a href="{{ route('admin.kampus.index') }}">Kampus</a></div>
-      <div class="breadcrumb-item active"><a href="{{ route('admin.kampus.fakultas.index', $kampus) }}">{{ $kampus->nama_kampus }}</a></div>
+      <div class="breadcrumb-item active"><a href="{{ route('admin.kampus.fakultas.index', $kampus) }}">{{
+          $kampus->nama_kampus }}</a></div>
       <div class="breadcrumb-item">Program Studi</div>
     </div>
   </div>
@@ -35,7 +36,8 @@
             <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Program Studi
             </a>
-            <form action="{{ route('admin.kampus.prodi.massDestroy', [$kampus, $fakultas]) }}" method="POST" id="form-mass-delete">
+            <form action="{{ route('admin.kampus.prodi.massDestroy', [$kampus, $fakultas]) }}" method="POST"
+              id="form-mass-delete">
               @csrf
               @method('DELETE')
               <button type="button" class="btn btn-danger" id="btn-mass-delete" disabled>
@@ -69,10 +71,12 @@
                     <td>{{ $data->nama }}</td>
                     @if(auth()->user()->hasRole('admin'))
                     <td>
-                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
+                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}"
+                        class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
                         <i class="fas fa-edit"></i>
                       </a>
-                      <form action="{{ route('admin.kampus.prodi.hapus', [$kampus, $fakultas, $data]) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
+                      <form action="{{ route('admin.kampus.prodi.hapus', [$kampus, $fakultas, $data]) }}" method="POST"
+                        class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
                         <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
@@ -100,6 +104,9 @@
 <script>
   $(document).ready(function() {
   $('#prodiTable').DataTable({
+    "columnDefs": [
+        { "orderable": false, "targets": 0 }
+    ],
     order: [],
     language: {
       search: "Cari:",

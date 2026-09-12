@@ -81,7 +81,7 @@
                       @endif
                     </td>
                     <td>
-                      <form action="{{ route('notifications.destroy', $notification) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
+                      <form action="{{ route('notifications.destroy', $notification) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
                         <button type="button" class="btn btn-sm btn-delete" title="Hapus notifikasi"

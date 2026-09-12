@@ -74,7 +74,7 @@
                       <a href="{{ route('admin.kampus.fakultas.ubah', [$kampus, $data]) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
                         <i class="fas fa-edit"></i>
                       </a>
-                      <form action="{{ route('admin.kampus.fakultas.hapus', [$kampus, $data]) }}" method="POST" class="d-inline mr-1 mb-1 btn-delete-form">
+                      <form action="{{ route('admin.kampus.fakultas.hapus', [$kampus, $data]) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
                         <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
@@ -102,6 +102,9 @@
 <script>
   $(document).ready(function() {
   $('#fakultasTable').DataTable({
+    "columnDefs": [
+        { "orderable": false, "targets": 0 }
+    ],
     order: [],
     language: {
       search: "Cari:",
