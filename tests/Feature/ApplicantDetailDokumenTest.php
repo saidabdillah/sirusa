@@ -61,13 +61,13 @@ test('user pendaftaran detail shows semua berkas sesuai yang diupload', function
     foreach (dokumenPaths() as $key => $path) {
         if ($key === 'dokumen_prestasi') {
             foreach ($path as $prestasiPath) {
-                $response->assertSee(asset('storage/'.$prestasiPath), false);
+                $response->assertSee(route('dokumen.show', $prestasiPath), false);
             }
 
             continue;
         }
 
-        $response->assertSee(asset('storage/'.$path), false);
+        $response->assertSee(route('dokumen.show', $path), false);
     }
 });
 
@@ -88,12 +88,12 @@ test('admin pendaftar detail shows berkas sesuai yang diupload user', function (
     foreach (dokumenPaths() as $key => $path) {
         if ($key === 'dokumen_prestasi') {
             foreach ($path as $prestasiPath) {
-                $response->assertSee(asset('storage/'.$prestasiPath), false);
+                $response->assertSee(route('dokumen.show', $prestasiPath), false);
             }
 
             continue;
         }
 
-        $response->assertSee(asset('storage/'.$path), false);
+        $response->assertSee(route('dokumen.show', $path), false);
     }
 });

@@ -247,11 +247,11 @@
               <div class="mt-2">
                 @if($applicant->{$doc['key']})
                 <div class="d-flex flex-wrap">
-                  <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" target="_blank"
+                  <a href="{{ route('dokumen.show', $applicant->{$doc['key']}) }}" target="_blank"
                     class="btn btn-sm btn-primary mr-2">
                     <i class="fas fa-eye"></i> Lihat
                   </a>
-                  <a href="{{ asset('storage/' . $applicant->{$doc['key']}) }}" download
+                  <a href="{{ route('dokumen.show', $applicant->{$doc['key']}) }}" download
                     class="btn btn-sm btn-outline-secondary mr-2">
                     <i class="fas fa-download"></i> Download
                   </a>
@@ -275,10 +275,10 @@
                 <div class="mb-3">
                   <small class="text-muted">Prestasi {{ $index + 1 }}</small>
                   <div class="d-flex flex-wrap">
-                    <a href="{{ asset('storage/' . $dokumen) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
+                    <a href="{{ route('dokumen.show', $dokumen) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
                       <i class="fas fa-eye"></i> Lihat
                     </a>
-                    <a href="{{ asset('storage/' . $dokumen) }}" download class="btn btn-sm btn-outline-secondary mr-2">
+                    <a href="{{ route('dokumen.show', $dokumen) }}" download class="btn btn-sm btn-outline-secondary mr-2">
                       <i class="fas fa-download"></i> Download
                     </a>
                   </div>

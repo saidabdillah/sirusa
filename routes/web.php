@@ -85,6 +85,21 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         abort(404);
     })->name('profile.photo')->where('path', '.*');
 
+    // Dokumen upload (surat permohonan, KTP, KK, dll)
+    Route::get('/dokumen/{path}', function ($path) {
+        $disk = Storage::disk('public');
+        if ($disk->exists($path)) {
+            $file = $disk->path($path);
+            $mimeType = mime_content_type($file);
+
+            return response()->file($file, [
+                'Content-Type' => $mimeType,
+                'Cache-Control' => 'public, max-age=86400',
+            ]);
+        }
+        abort(404);
+    })->name('dokumen.show')->where('path', '.*');
+
     // Pengaturan akun
     Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');
     Route::put('/pengaturan', [SettingsController::class, 'updateAccount'])->name('settings.update');

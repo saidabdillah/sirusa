@@ -60,7 +60,7 @@
                   @if($applicant->dokumen_ktp)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_ktp) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_ktp) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_ktp) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -77,7 +77,7 @@
                   @if($applicant->dokumen_kk)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_kk) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_kk) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_kk) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -94,7 +94,7 @@
                   @if($applicant->dokumen_akta)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_akta) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_akta) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_akta) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -111,7 +111,7 @@
                   @if($applicant->dokumen_pas_foto)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_pas_foto) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_pas_foto) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_pas_foto) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -128,7 +128,7 @@
                   @if($applicant->dokumen_sktm)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_sktm) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_sktm) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_sktm) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -159,7 +159,7 @@
                   @if($applicant->dokumen_surat_permohonan)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_surat_permohonan) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_surat_permohonan) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_surat_permohonan) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -177,7 +177,7 @@
                   @if($applicant->dokumen_transkrip)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_transkrip) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_transkrip) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_transkrip) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -194,7 +194,7 @@
                   @if($applicant->dokumen_surat_aktif)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_surat_aktif) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_surat_aktif) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_surat_aktif) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -211,7 +211,7 @@
                   @if($applicant->dokumen_surat_pernyataan)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_surat_pernyataan) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_surat_pernyataan) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_surat_pernyataan) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -228,7 +228,7 @@
                   @if($applicant->dokumen_bukti_ukt)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_bukti_ukt) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->dokumen_bukti_ukt) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->dokumen_bukti_ukt) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -252,7 +252,7 @@
                   @if($applicant->ktp_ayah)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->ktp_ayah) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->ktp_ayah) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->ktp_ayah) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -272,7 +272,7 @@
                   @if($applicant->ktp_ibu)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->ktp_ibu) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->ktp_ibu) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->ktp_ibu) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -292,7 +292,7 @@
                   @if($applicant->ktp_wali)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->ktp_wali) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->ktp_wali) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->ktp_wali) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
@@ -312,7 +312,7 @@
                   @if($applicant->kk_wali)
                     <div class="mb-1">
                       <small class="text-muted">File saat ini: {{ basename($applicant->kk_wali) }}</small>
-                      <a href="{{ asset('storage/' . $applicant->kk_wali) }}" target="_blank"
+                      <a href="{{ route('dokumen.show',$applicant->kk_wali) }}" target="_blank"
                         class="btn btn-sm btn-outline-secondary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>
