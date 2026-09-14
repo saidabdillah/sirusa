@@ -124,6 +124,23 @@
                   @error('dokumen_pas_foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group">
+                  <label for="dokumen_sktm">Surat Keterangan Tidak Mampu (SKTM) <span class="text-danger">*</span></label>
+                  @if($applicant->dokumen_sktm)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_sktm) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_sktm) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_sktm') is-invalid @enderror" id="dokumen_sktm"
+                    name="dokumen_sktm" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_sktm')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
                   <label for="dokumen_prestasi">Sertifikat Prestasi (opsional)</label>
                   @if($applicant->dokumen_prestasi && count($applicant->dokumen_prestasi) > 0)
                     <div class="mb-1">
@@ -188,6 +205,40 @@
                   <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
                     mengganti.</small>
                   @error('dokumen_surat_aktif')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_surat_pernyataan">Surat Pernyataan Tidak Menerima Beasiswa Lain <span class="text-danger">*</span></label>
+                  @if($applicant->dokumen_surat_pernyataan)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_surat_pernyataan) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_surat_pernyataan) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_surat_pernyataan') is-invalid @enderror"
+                    id="dokumen_surat_pernyataan" name="dokumen_surat_pernyataan" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_surat_pernyataan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group">
+                  <label for="dokumen_bukti_ukt">Bukti Pembayaran UKT/SPP <span class="text-danger">*</span></label>
+                  @if($applicant->dokumen_bukti_ukt)
+                    <div class="mb-1">
+                      <small class="text-muted">File saat ini: {{ basename($applicant->dokumen_bukti_ukt) }}</small>
+                      <a href="{{ asset('storage/' . $applicant->dokumen_bukti_ukt) }}" target="_blank"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                    </div>
+                  @endif
+                  <input type="file" class="form-control @error('dokumen_bukti_ukt') is-invalid @enderror"
+                    id="dokumen_bukti_ukt" name="dokumen_bukti_ukt" accept=".pdf,.jpg,.jpeg,.png">
+                  <small class="text-muted">Format: PDF, JPG, JPEG, PNG. Maksimal 2MB. Kosongkan jika tidak ingin
+                    mengganti.</small>
+                  @error('dokumen_bukti_ukt')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <hr>

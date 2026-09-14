@@ -58,7 +58,7 @@ class PendaftaranController extends Controller
         $data['semester'] = $profile?->semester;
 
         $uploadPath = 'pendaftaran/'.auth()->id().'/'.$data['beasiswa_id'];
-        $disk = Storage::disk('local');
+        $disk = Storage::disk('public');
 
         if (! $disk->exists($uploadPath)) {
             $disk->makeDirectory($uploadPath);
@@ -81,6 +81,13 @@ class PendaftaranController extends Controller
                 $filename = str_replace('dokumen_', '', $field).'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    if ($path === false) {
+                        Log::error('Upload gagal untuk '.$field.': file tidak dapat ditulis ke penyimpanan');
+
+                        return back()->withInput()->withErrors([
+                            $field => 'Gagal upload '.$field.': file tidak dapat ditulis ke penyimpanan.',
+                        ]);
+                    }
                     $data[$field] = $path;
                 } catch (\Throwable $e) {
                     Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
@@ -97,6 +104,13 @@ class PendaftaranController extends Controller
             $filename = 'pas_foto.'.$file->getClientOriginalExtension();
             try {
                 $path = $disk->putFileAs($uploadPath, $file, $filename);
+                if ($path === false) {
+                    Log::error('Upload gagal untuk dokumen_pas_foto: file tidak dapat ditulis ke penyimpanan');
+
+                    return back()->withInput()->withErrors([
+                        'dokumen_pas_foto' => 'Gagal upload pas foto: file tidak dapat ditulis ke penyimpanan.',
+                    ]);
+                }
                 $data['dokumen_pas_foto'] = $path;
             } catch (\Throwable $e) {
                 Log::error('Upload gagal untuk dokumen_pas_foto: '.$e->getMessage());
@@ -113,6 +127,13 @@ class PendaftaranController extends Controller
                 $filename = 'prestasi_'.($i + 1).'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    if ($path === false) {
+                        Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: file tidak dapat ditulis ke penyimpanan');
+
+                        return back()->withInput()->withErrors([
+                            'dokumen_prestasi' => 'Gagal upload prestasi ke-'.($i + 1).': file tidak dapat ditulis ke penyimpanan.',
+                        ]);
+                    }
                     $prestasi[] = $path;
                 } catch (\Throwable $e) {
                     Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: '.$e->getMessage());
@@ -131,6 +152,13 @@ class PendaftaranController extends Controller
                 $filename = $field.'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    if ($path === false) {
+                        Log::error('Upload gagal untuk '.$field.': file tidak dapat ditulis ke penyimpanan');
+
+                        return back()->withInput()->withErrors([
+                            $field => 'Gagal upload '.$field.': file tidak dapat ditulis ke penyimpanan.',
+                        ]);
+                    }
                     $data[$field] = $path;
                 } catch (\Throwable $e) {
                     Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
@@ -227,7 +255,7 @@ class PendaftaranController extends Controller
         ];
 
         $uploadPath = 'pendaftaran/'.auth()->id().'/'.$applicant->beasiswa_id;
-        $disk = Storage::disk('local');
+        $disk = Storage::disk('public');
 
         if (! $disk->exists($uploadPath)) {
             $disk->makeDirectory($uploadPath);
@@ -253,6 +281,13 @@ class PendaftaranController extends Controller
                         $disk->delete($applicant->$field);
                     }
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    if ($path === false) {
+                        Log::error('Upload gagal untuk '.$field.': file tidak dapat ditulis ke penyimpanan');
+
+                        return back()->withInput()->withErrors([
+                            $field => 'Gagal upload '.$field.': file tidak dapat ditulis ke penyimpanan.',
+                        ]);
+                    }
                     $data[$field] = $path;
                 } catch (\Throwable $e) {
                     Log::error('Upload gagal untuk '.$field.': '.$e->getMessage());
@@ -272,6 +307,13 @@ class PendaftaranController extends Controller
                     $disk->delete($applicant->dokumen_pas_foto);
                 }
                 $path = $disk->putFileAs($uploadPath, $file, $filename);
+                if ($path === false) {
+                    Log::error('Upload gagal untuk dokumen_pas_foto: file tidak dapat ditulis ke penyimpanan');
+
+                    return back()->withInput()->withErrors([
+                        'dokumen_pas_foto' => 'Gagal upload pas foto: file tidak dapat ditulis ke penyimpanan.',
+                    ]);
+                }
                 $data['dokumen_pas_foto'] = $path;
             } catch (\Throwable $e) {
                 Log::error('Upload gagal untuk dokumen_pas_foto: '.$e->getMessage());
@@ -288,6 +330,13 @@ class PendaftaranController extends Controller
                 $filename = 'prestasi_'.(count($prestasi) + $i + 1).'.'.$file->getClientOriginalExtension();
                 try {
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    if ($path === false) {
+                        Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: file tidak dapat ditulis ke penyimpanan');
+
+                        return back()->withInput()->withErrors([
+                            'dokumen_prestasi' => 'Gagal upload prestasi ke-'.($i + 1).': file tidak dapat ditulis ke penyimpanan.',
+                        ]);
+                    }
                     $prestasi[] = $path;
                 } catch (\Throwable $e) {
                     Log::error('Upload gagal untuk dokumen_prestasi['.$i.']: '.$e->getMessage());
@@ -307,6 +356,13 @@ class PendaftaranController extends Controller
                 try {
                     $old = $applicant->{$field};
                     $path = $disk->putFileAs($uploadPath, $file, $filename);
+                    if ($path === false) {
+                        Log::error('Upload gagal untuk '.$field.': file tidak dapat ditulis ke penyimpanan');
+
+                        return back()->withInput()->withErrors([
+                            $field => 'Gagal upload '.$field.': file tidak dapat ditulis ke penyimpanan.',
+                        ]);
+                    }
 
                     if ($old && $disk->exists($old)) {
                         $disk->delete($old);

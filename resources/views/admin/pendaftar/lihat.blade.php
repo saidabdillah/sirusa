@@ -208,24 +208,36 @@
           </div>
           <div class="card-body">
             @php
-            $docs = [
+            $sections = [
+            'Dokumen Diri Sendiri' => [
             ['key' => 'dokumen_ktp', 'label' => 'Kartu Tanda Penduduk (KTP)'],
             ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga (KK)'],
             ['key' => 'dokumen_akta', 'label' => 'Akta Kelahiran'],
+            ['key' => 'dokumen_pas_foto', 'label' => 'Pas Foto 3x4'],
+            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
+            ],
+            'Dokumen untuk Kampus' => [
             ['key' => 'dokumen_surat_permohonan', 'label' => 'Surat Permohonan'],
             ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
             ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],
-            ['key' => 'dokumen_pas_foto', 'label' => 'Pas Foto 3x4'],
             ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
-            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
             ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
+            ],
+            'Dokumen Orang Tua / Wali' => [
             ['key' => 'ktp_ayah', 'label' => 'KTP Ayah'],
             ['key' => 'ktp_ibu', 'label' => 'KTP Ibu'],
             ['key' => 'ktp_wali', 'label' => 'KTP Wali'],
             ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali'],
+            ],
             ];
             @endphp
 
+            @php $isFirstSection = true; @endphp
+            @foreach($sections as $sectionName => $docs)
+            @if(! $isFirstSection)
+            <hr>
+            @endif
+            <h5 class="mb-3">{{ $sectionName }}</h5>
             @foreach($docs as $doc)
             <div class="mb-4">
               <strong>{{ $doc['label'] }}</strong>
@@ -246,11 +258,11 @@
                 @endif
               </div>
             </div>
-            @if(!$loop->last)
-            <hr>
-            @endif
+            @endforeach
+            @php $isFirstSection = false; @endphp
             @endforeach
 
+            <hr>
             {{-- Sertifikat Prestasi --}}
             <div class="mb-4">
               <strong>Sertifikat Prestasi</strong>
