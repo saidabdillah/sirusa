@@ -2,27 +2,25 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exports\PendaftarExport;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Applicant\UpdateApplicantRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
-use App\Notifications\ApplicantStatusChanged;
+use App\Support\DataTablesProcessor;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PendaftarController extends Controller
 {
     public function index(Request $request): View
     {
         $request->validate([
-            'status' => 'nullable|in:verifikasi,diterima,revisi,ditolak',
+            'status' => 'nullable|in:verifikasi,diterima,ditolak',
             'beasiswa_id' => 'nullable|integer|exists:beasiswa,id',
         ]);
+
+        $kampusId = $this->scopedKampusId();
 
         $applicants = Applicant::with(['user', 'beasiswa'])
             ->when($request->filled('status'), function ($query) use ($request) {
@@ -31,7 +29,11 @@ class PendaftarController extends Controller
             ->when($request->filled('beasiswa_id'), function ($query) use ($request) {
                 $query->where('beasiswa_id', $request->integer('beasiswa_id'));
             })
-            ->latest()
+            ->when($kampusId, function ($query) use ($kampusId) {
+                $query->whereHas('beasiswa', fn ($q) => $q->where('kampus_id', $kampusId));
+            })
+            ->latest('id')
+            ->limit(25)
             ->get();
 
         $beasiswas = Scholarship::orderBy('nama')->get(['id', 'nama']);
@@ -39,54 +41,70 @@ class PendaftarController extends Controller
         return view('admin.pendaftar.index', compact('applicants', 'beasiswas'));
     }
 
-    public function export(Request $request): BinaryFileResponse
+    public function data(Request $request): JsonResponse
     {
-        $request->validate([
-            'status' => 'nullable|in:verifikasi,diterima,revisi,ditolak',
-            'beasiswa_id' => 'nullable|integer|exists:beasiswa,id',
-        ]);
+        $kampusId = $this->scopedKampusId();
 
-        return Excel::download(new PendaftarExport($request), 'daftar-pendaftar.xlsx');
-    }
+        $query = Applicant::query()->with(['user.profile', 'beasiswa'])->latest('id');
 
-    public function show(Applicant $applicant): View
-    {
-        $applicant->load(['user.profile', 'beasiswa']);
-
-        return view('admin.pendaftar.lihat', compact('applicant'));
-    }
-
-    public function update(UpdateApplicantRequest $request, Applicant $applicant): RedirectResponse
-    {
-        $oldStatus = $applicant->status;
-        $data = $request->safe()->only(['status', 'catatan']);
-
-        $applicant->update($data);
-
-        if (isset($data['status']) && $data['status'] !== $oldStatus) {
-            $applicant->user->notify(new ApplicantStatusChanged($applicant, $applicant->getStatusLabelAttribute()));
+        if ($kampusId) {
+            $query->whereHas('beasiswa', fn ($q) => $q->where('kampus_id', $kampusId));
         }
 
-        return redirect()->route('admin.pendaftar.lihat', $applicant)->with('success', 'Status pendaftar berhasil diperbarui');
+        $processor = new DataTablesProcessor(
+            $request,
+            $query,
+            [
+                'filter' => function (Builder $query, Request $request) {
+                    if (in_array((string) $request->string('status'), ['verifikasi', 'diterima', 'ditolak'], true)) {
+                        $query->where('status', (string) $request->string('status'));
+                    }
+
+                    if ($request->filled('beasiswa_id')) {
+                        $query->where('beasiswa_id', $request->integer('beasiswa_id'));
+                    }
+                },
+                'searchable' => [
+                    'fakultas',
+                    'prodi',
+                    fn ($q, $term) => $q->orWhereRelation('user.profile', 'nama_lengkap', 'like', "%{$term}%"),
+                    fn ($q, $term) => $q->orWhereRelation('beasiswa', 'nama', 'like', "%{$term}%"),
+                ],
+                'orderable' => [],
+            ],
+            fn (Applicant $applicant, int $no) => [
+                'no' => $no,
+                'nama' => e($applicant->user->profile?->nama_lengkap ?? '-'),
+                'beasiswa' => e($applicant->beasiswa->nama),
+                'fakultas' => e($applicant->fakultas ?? '-'),
+                'prodi' => e($applicant->prodi ?? '-'),
+                'ipk' => e((string) $applicant->ipk),
+                'status' => $this->renderStatus($applicant),
+            ]
+        );
+
+        return response()->json($processor->respond());
     }
 
-    public function deleteInfo(Applicant $applicant): JsonResponse
+    private function scopedKampusId(): ?int
     {
-        $name = $applicant->user->profile->nama_lengkap ?? $applicant->user->username;
+        $user = auth()->user();
 
-        return response()->json([
-            'title' => 'Hapus Data Pendaftar?',
-            'text' => 'Data pendaftar atas nama "'.$name.'" beserta seluruh dokumennya akan dihapus permanen.',
-            'icon' => 'warning',
-            'confirmButtonText' => 'Ya, Hapus',
-            'confirmButtonColor' => '#d33',
-        ]);
+        if (! $user->hasRole('kampus')) {
+            return null;
+        }
+
+        return $user->kampus_id;
     }
 
-    public function destroy(Applicant $applicant): RedirectResponse
+    private function renderStatus(Applicant $applicant): string
     {
-        $applicant->delete();
-
-        return redirect()->route('admin.pendaftar.index')->with('success', 'Data pendaftar berhasil dihapus');
+        return match ($applicant->status) {
+            'verifikasi' => '<span class="badge badge-warning">Verifikasi</span>',
+            'diterima' => '<span class="badge badge-success">Diterima</span>',
+            'revisi' => '<span class="badge badge-warning">Revisi</span>',
+            'ditolak' => '<span class="badge badge-danger">Ditolak</span>',
+            default => '',
+        };
     }
 }

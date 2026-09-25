@@ -30,8 +30,6 @@
                       <span class="badge badge-warning">Verifikasi</span>
                     @elseif($applications[$scholarship->id] === 'diterima')
                       <span class="badge badge-success">Diterima</span>
-                    @elseif($applications[$scholarship->id] === 'revisi')
-                      <span class="badge badge-secondary">Revisi</span>
                     @elseif($applications[$scholarship->id] === 'ditolak')
                       <span class="badge badge-danger">Ditolak</span>
                     @endif
@@ -58,22 +56,16 @@
                     <strong>{{ $scholarship->semester_minimal }}</strong>
                   </div>
                   <div class="col-6">
-                    <small class="text-muted">Tunjangan</small><br>
-                    <span class="badge badge-{{ $scholarship->cakupan === 'penuh' ? 'success' : 'warning' }}">
-                      {{ ucfirst($scholarship->cakupan) }}
-                    </span>
+                    <small class="text-muted">Kuota</small><br>
+                    <strong>{{ $scholarship->kuota }}</strong>
                   </div>
                 </div>
                 <div class="row">
-                  <div class="col-6">
-                    <small class="text-muted">Batas Waktu</small><br>
-                    <strong class="{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
-                      {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
+                  <div class="col-12">
+                    <small class="text-muted">Periode Pendaftaran</small><br>
+                    <strong class="{{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
+                      {{ $scholarship->tanggal_mulai?->translatedFormat('d M Y') }} – {{ $scholarship->tanggal_selesai?->translatedFormat('d M Y') }}
                     </strong>
-                  </div>
-                  <div class="col-6">
-                    <small class="text-muted">Kuota</small><br>
-                    <strong>{{ $scholarship->kuota }}</strong>
                   </div>
                 </div>
               </div>

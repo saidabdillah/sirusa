@@ -35,22 +35,25 @@
                   {{ $scholarship->tingkat_gelar }}
                 </div>
                 <div class="col-md-6">
-                  <strong>Tunjangan:</strong><br>
-                  <span class="badge badge-{{ $scholarship->cakupan === 'penuh' ? 'success' : 'warning' }}">
-                    {{ ucfirst($scholarship->cakupan) }}
-                  </span>
+                  <strong>IPK Minimal:</strong><br>
+                  {{ number_format($scholarship->ipk_minimal, 2) }}
                 </div>
               </div>
               <div class="row mb-3">
                 <div class="col-md-6">
-                  <strong>Batas Waktu:</strong><br>
-                  <span class="{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
-                    {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
-                  </span>
+                  <strong>Semester Minimal:</strong><br>
+                  {{ $scholarship->semester_minimal }}
                 </div>
-                <div class="col-md-6">
-                  <strong>Tingkat Gelar:</strong><br>
-                  {{ $scholarship->tingkat_gelar }}
+              </div>
+              <div class="row mb-3">
+                <div class="col-12">
+                  <strong>Periode Pendaftaran:</strong><br>
+                  <span class="{{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
+                    {{ $scholarship->tanggal_mulai?->translatedFormat('d F Y') }} s.d. {{ $scholarship->tanggal_selesai?->translatedFormat('d F Y') }}
+                  </span>
+                  @if($scholarship->isExpired())
+                  <span class="badge badge-danger ml-2">Telah Berakhir</span>
+                  @endif
                 </div>
               </div>
               <hr>
@@ -88,9 +91,9 @@
               @elseif($application)
                 @if($application->status === 'verifikasi')
                   <div class="mb-3">
-                    <div class="text-muted">Batas waktu pendaftaran</div>
-                    <div class="font-weight-bold {{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
-                      {{ $scholarship->batas_waktu?->diffForHumans() }}
+                    <div class="text-muted">Periode pendaftaran</div>
+                    <div class="font-weight-bold {{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
+                      {{ $scholarship->tanggal_mulai?->translatedFormat('d M Y') }} s.d. {{ $scholarship->tanggal_selesai?->translatedFormat('d M Y') }}
                     </div>
                   </div>
                   <button type="button" class="btn btn-secondary btn-lg btn-block" disabled>
@@ -102,15 +105,6 @@
                     <strong>Selamat! Anda Diterima.</strong><br>
                     Pendaftaran Anda telah disetujui dan Anda berhak menerima beasiswa ini.
                   </div>
-                @elseif($application->status === 'revisi')
-                  <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i><br>
-                    <strong>Revisi.</strong><br>
-                    Silakan perbaiki data Anda.
-                  </div>
-                  <a href="{{ route('user.pendaftaran.lengkapi', $application) }}" class="btn btn-warning btn-lg btn-block">
-                    <i class="fas fa-edit"></i> Revisi Pendaftaran
-                  </a>
                 @elseif($application->status === 'ditolak')
                   <div class="alert alert-danger">
                     <i class="fas fa-times-circle"></i><br>
@@ -127,6 +121,15 @@
                 <a href="{{ route('profile') }}" class="btn btn-warning btn-lg btn-block">
                   <i class="fas fa-user-edit"></i> Lengkapi Profil
                 </a>
+              @elseif(! $profileVerified)
+                <div class="alert alert-warning">
+                  <i class="fas fa-shield-alt"></i><br>
+                  <strong>Profil belum terverifikasi.</strong><br>
+                  Anda dapat mendaftar setelah data profil diverifikasi oleh pihak terkait.
+                </div>
+                <a href="{{ route('profile') }}" class="btn btn-info btn-lg btn-block">
+                  <i class="fas fa-user-check"></i> Lihat Status Verifikasi
+                </a>
               @elseif($eligibilityError)
                 <div class="alert alert-warning">
                   <i class="fas fa-exclamation-triangle"></i><br>
@@ -134,9 +137,9 @@
                 </div>
               @else
                 <div class="mb-3">
-                  <div class="text-muted">Batas waktu pendaftaran</div>
-                  <div class="font-weight-bold {{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
-                    {{ $scholarship->batas_waktu?->diffForHumans() }}
+                  <div class="text-muted">Periode pendaftaran</div>
+                  <div class="font-weight-bold {{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
+                    {{ $scholarship->tanggal_mulai?->translatedFormat('d M Y') }} s.d. {{ $scholarship->tanggal_selesai?->translatedFormat('d M Y') }}
                   </div>
                 </div>
                 <a href="{{ route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]) }}" class="btn btn-primary btn-lg btn-block">
@@ -167,15 +170,6 @@
         icon: 'success',
         title: 'Pendaftaran Diterima!',
         text: 'Selamat! Pendaftaran Anda telah diterima.',
-        confirmButtonText: 'Mengerti'
-      });
-    </script>
-  @elseif($application && $application->status === 'revisi')
-    <script>
-      Swal.fire({
-        icon: 'warning',
-        title: 'Revisi',
-        text: 'Pendaftaran Anda perlu diperbaiki. Silakan revisi data Anda.',
         confirmButtonText: 'Mengerti'
       });
     </script>

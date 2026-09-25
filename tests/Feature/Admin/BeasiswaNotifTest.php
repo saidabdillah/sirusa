@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Notifications\NewScholarship;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
@@ -20,8 +19,8 @@ function beasiswaPayload(int $kampusId, array $prodiIds, array $overrides = []):
         'prodi_ids' => $prodiIds,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->addMonth()->toDateString(),
+        'tanggal_mulai' => now()->addDay()->toDateString(),
+        'tanggal_selesai' => now()->addMonth()->toDateString(),
         'ipk_minimal' => 3.0,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
@@ -31,9 +30,7 @@ function beasiswaPayload(int $kampusId, array $prodiIds, array $overrides = []):
 }
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->admin = User::factory()->admin()->create(['email' => 'admin@notif.test']);
     $this->users = User::factory()->count(3)->standardUser()->create();
@@ -66,11 +63,11 @@ test('admin creating a scholarship sends NewScholarship to every user and stores
     $this->assertDatabaseHas('beasiswa_prodi', ['nama' => 'Teknik Mesin']);
 });
 
-test('NewScholarship is delivered via both email and database channels', function () {
+test('NewScholarship is delivered via the database channel only', function () {
     $scholarship = Scholarship::factory()->create();
     $notification = new NewScholarship($scholarship);
 
-    expect($notification->via($this->users->first()))->toContain('mail')->toContain('database');
+    expect($notification->via($this->users->first()))->toEqual(['database']);
 });
 
 test('prodi from another campus is rejected when creating a scholarship', function () {

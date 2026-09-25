@@ -1,5 +1,16 @@
 @extends('layouts.app')
 
+@push('style')
+<style>
+  /* pendaftar-table-scroll-fix: DataTables menghitung lebar kolom dalam px sehingga
+     tabel melebar beberapa px melebihi kontainer (.table-responsive) dan timbul
+     scroll horizontal tipis. Paksa lebar tabel = 100% kontainer. */
+  #pendaftarTable.dataTable {
+    width: 100% !important;
+  }
+</style>
+@endpush
+
 @section('content')
 <section class="section">
   <div class="section-header">
@@ -29,32 +40,31 @@
               <div class="form-row align-items-end">
                 <div class="col-md-4 mb-2 mb-md-0">
                   <label for="status">Status</label>
-                  <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                  <select name="status" id="status" class="form-control">
                     <option value="">-- Semua Status --</option>
                     <option value="verifikasi" {{ request('status') === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
                     <option value="diterima" {{ request('status') === 'diterima' ? 'selected' : '' }}>Diterima</option>
-                    <option value="revisi" {{ request('status') === 'revisi' ? 'selected' : '' }}>Revisi</option>
                     <option value="ditolak" {{ request('status') === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
                   </select>
                 </div>
                 <div class="col-md-4 mb-2 mb-md-0">
                   <label for="beasiswa_id">Beasiswa</label>
-                  <select name="beasiswa_id" id="beasiswa_id" class="form-control" onchange="this.form.submit()">
+                  <select name="beasiswa_id" id="beasiswa_id" class="form-control">
                     <option value="">-- Semua Beasiswa --</option>
                     @foreach($beasiswas as $b)
                       <option value="{{ $b->id }}" {{ request('beasiswa_id') == $b->id ? 'selected' : '' }}>{{ $b->nama }}</option>
                     @endforeach
                   </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2 mb-2 mb-md-0">
+                  <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-search"></i> Cari
+                  </button>
+                </div>
+                <div class="col-md-2">
                   <a href="{{ route('admin.pendaftar.index') }}" class="btn btn-secondary btn-block">
                     <i class="fas fa-redo"></i> Reset
                   </a>
-                  @if($applicants->isNotEmpty())
-                    <a href="{{ route('admin.pendaftar.export', request()->only(['status', 'beasiswa_id'])) }}" class="btn btn-success btn-block mt-2">
-                      <i class="fas fa-file-excel"></i> Export Excel
-                    </a>
-                  @endif
                 </div>
               </div>
             </form>
@@ -69,7 +79,6 @@
                     <th>Prodi</th>
                     <th>IPK</th>
                     <th>Status</th>
-                    <th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -88,15 +97,10 @@
                         @elseif($applicant->status === 'diterima')
                           <span class="badge badge-success">Diterima</span>
                         @elseif($applicant->status === 'revisi')
-                          <span class="badge badge-secondary">Revisi</span>
+                          <span class="badge badge-warning">Revisi</span>
                         @elseif($applicant->status === 'ditolak')
                           <span class="badge badge-danger">Ditolak</span>
                         @endif
-                      </td>
-                      <td>
-                        <a href="{{ route('admin.pendaftar.lihat', $applicant) }}" class="btn btn-info btn-sm">
-                          <i class="fas fa-eye"></i>
-                        </a>
                       </td>
                     </tr>
                   @endforeach
@@ -115,7 +119,28 @@
 <script>
 $(document).ready(function() {
   $('#pendaftarTable').DataTable({
+    serverSide: true,
+    processing: true,
+    ajax: {
+      url: "{{ route('admin.pendaftar.data') }}",
+      data: function (d) {
+        d.status = $('#status').val();
+        d.beasiswa_id = $('#beasiswa_id').val();
+      }
+    },
     order: [],
+    columnDefs: [
+        { "orderable": false, "searchable": false, "targets": [0] }
+    ],
+    columns: [
+        { data: 'no' },
+        { data: 'nama' },
+        { data: 'beasiswa' },
+        { data: 'fakultas' },
+        { data: 'prodi' },
+        { data: 'ipk' },
+        { data: 'status' }
+    ],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",

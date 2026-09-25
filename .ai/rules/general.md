@@ -5,5 +5,5 @@ paths:
 
 # General
 
-## Mailer is Mailtrap SMTP (not Resend)
-Outbound mail uses Mailtrap SMTP: MAIL_MAILER=smtp, host sandbox.smtp.mailtrap.io, port 2525, with MAIL_USERNAME/MAIL_PASSWORD tokens and MAIL_FROM_ADDRESS=noreply@sirusa.test. Not Resend. For production, switch host to live.smtp.mailtrap.io with a sending-domain verified in Mailtrap. OTP notification is synchronous (no ShouldQueue).
+## No outbound email is required
+All notifications are database-only; no mail driver, mailtrap, or OTP infrastructure is used. MAIL_* env vars are not load-bearing for the app's features. If the project outputs any email at all it is optional, and nothing in the code depends on it.

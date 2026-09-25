@@ -31,7 +31,7 @@
     <div class="row">
       <div class="col-12">
         <div class="card">
-          @if(auth()->user()->hasRole('admin'))
+          @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
           <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Program Studi
@@ -51,12 +51,12 @@
               <table class="table table-striped" id="prodiTable">
                 <thead>
                   <tr>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
                     <th style="width: 40px;"><input type="checkbox" id="checkAll"></th>
                     @endif
                     <th>No</th>
                     <th>Program Studi</th>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
                     <th>Aksi</th>
                     @endif
                   </tr>
@@ -64,27 +64,14 @@
                 <tbody>
                   @foreach($prodi as $data)
                   <tr>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
                     <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
                     @endif
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $data->nama }}</td>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
                     <td>
-                      <a href="{{ route('admin.kampus.prodi.ubah', [$kampus, $fakultas, $data]) }}"
-                        class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
-                        <i class="fas fa-edit"></i>
-                      </a>
-                      <form action="{{ route('admin.kampus.prodi.hapus', [$kampus, $fakultas, $data]) }}" method="POST"
-                        class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
-                        @csrf
-                        @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
-                          data-confirm-title="Hapus Program Studi?"
-                          data-confirm-text="Apakah Anda yakin ingin menghapus program studi '{{ $data->nama }}'? Tindakan ini tidak dapat dibatalkan.">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </form>
+                      @include('admin.kampus.prodi._aksi', ['kampus' => $kampus, 'fakultas' => $fakultas, 'data' => $data])
                     </td>
                     @endif
                   </tr>
@@ -104,10 +91,19 @@
 <script>
   $(document).ready(function() {
   $('#prodiTable').DataTable({
-    "columnDefs": [
-        { "orderable": false, "targets": 0 }
-    ],
+    serverSide: true,
+    processing: true,
+    ajax: { url: "{{ route('admin.kampus.prodi.data', [$kampus, $fakultas]) }}" },
     order: [],
+    columnDefs: [
+        { "orderable": false, "searchable": false, "targets": [0, 1, 3] }
+    ],
+    columns: [
+        { data: 'checkbox' },
+        { data: 'no' },
+        { data: 'nama' },
+        { data: 'aksi' }
+    ],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",

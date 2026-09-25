@@ -1,21 +1,15 @@
 <?php
 
 use App\Models\User;
-use App\Notifications\VerifyEmailChange;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('settings');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->user = User::factory()->standardUser()->create([
         'email' => 'user@test.com',
@@ -27,22 +21,14 @@ test('user can access settings page', function () {
     actingAs($this->user)->get(route('settings'))->assertOk()->assertViewIs('settings.index');
 });
 
-test('user can change email', function () {
+test('user can change password', function () {
     actingAs($this->user)->put(route('settings.update'), [
-        'email' => 'userbaru@gmail.com',
-    ])->assertRedirect(route('settings'));
+        'password' => 'rahasia123',
+        'password_confirmation' => 'rahasia123',
+    ])->assertRedirect(route('settings'))
+        ->assertSessionHas('success');
 
-    $this->assertDatabaseHas('users', ['id' => $this->user->id, 'email' => 'userbaru@gmail.com']);
-});
-
-test('email duplicate is rejected', function () {
-    User::factory()->create(['email' => 'ambil@gmail.com']);
-
-    actingAs($this->user)->put(route('settings.update'), [
-        'email' => 'ambil@gmail.com',
-    ])->assertSessionHasErrors('email');
-
-    $this->assertDatabaseHas('users', ['id' => $this->user->id, 'email' => 'user@test.com']);
+    expect(Hash::check('rahasia123', $this->user->fresh()->password))->toBeTrue();
 });
 
 test('password must be at least 8 characters', function () {
@@ -63,36 +49,19 @@ test('password confirmation must match', function () {
     expect(Hash::check('rahasia123', $this->user->fresh()->password))->toBeFalse();
 });
 
-test('user can change password', function () {
-    actingAs($this->user)->put(route('settings.update'), [
-        'password' => 'rahasia123',
-        'password_confirmation' => 'rahasia123',
-    ])->assertRedirect(route('settings'));
+test('password field is optional and leaves the current password unchanged', function () {
+    actingAs($this->user)->put(route('settings.update'), [])->assertRedirect(route('settings'));
 
-    expect(Hash::check('rahasia123', $this->user->fresh()->password))->toBeTrue();
+    expect(Hash::check('password', $this->user->fresh()->password))->toBeTrue();
 });
 
-test('OTP for email change is sent to the new email', function () {
-    Notification::fake();
+test('settings page shows account info without an email change form', function () {
+    $response = actingAs($this->user)->get(route('settings'));
 
-    actingAs($this->user)->post(route('settings.email.otp.send'), [
-        'email' => 'emailbaru@gmail.com',
-    ])->assertRedirect(route('settings.email.verify'));
-
-    Notification::assertSentOnDemand(VerifyEmailChange::class, function ($notification, $channels, $notifiable) {
-        return $notifiable->routes['mail'] === 'emailbaru@gmail.com';
-    });
-});
-
-test('email otp verification form has no html5 required attribute and renders six otp inputs', function () {
-    Cache::put('otp-email-change:'.$this->user->id, '123456', now()->addMinutes(5));
-
-    $response = actingAs($this->user)
-        ->withSession(['pending_email_change' => 'emailbaru@gmail.com'])
-        ->get(route('settings.email.verify'))
-        ->assertOk()
+    $response->assertOk()
+        ->assertSee('NIK')
+        ->assertSee('NIM')
+        ->assertSee('Ganti Kata Sandi')
+        ->assertDontSee('name="email"', false)
         ->assertDontSee(' required>', false);
-
-    $expectedCount = preg_match_all('/<input\b[^>]*\bname="otp_digit_\d+"[^>]*>/', $response->getContent(), $matches);
-    expect($expectedCount)->toBe(6);
 });

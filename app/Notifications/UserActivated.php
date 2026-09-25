@@ -2,32 +2,26 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class UserActivated extends Notification implements ShouldQueue
+class UserActivated extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public string $username,
     ) {}
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['database'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toDatabase(object $notifiable): array
     {
-        return (new MailMessage)
-            ->subject('Akun Anda Telah Diaktifkan - SIRUSA')
-            ->greeting('Halo '.$this->username.',')
-            ->line('Akun Anda telah diaktifkan oleh admin.')
-            ->line('Anda sekarang dapat masuk menggunakan email dan kata sandi yang terdaftar.')
-            ->action('Masuk Sekarang', route('login'))
-            ->salutation('Salam, Tim SIRUSA');
+        return [
+            'title' => 'Akun Telah Diaktifkan',
+            'message' => 'Akun Anda telah diaktifkan oleh admin. Silakan masuk menggunakan NIK dan kata sandi awal (NIM) Anda.',
+            'icon' => 'fa-user-check',
+            'url' => route('login'),
+        ];
     }
 }

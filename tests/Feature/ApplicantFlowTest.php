@@ -1,25 +1,23 @@
 <?php
 
-use App\Models\Applicant;
 use App\Models\Kampus;
 use App\Models\Prodi;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('applicant', 'flow');
 
-function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $semester = 5): UserProfile
+function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $semester = 5, bool $verified = true): UserProfile
 {
     return UserProfile::create([
         'user_id' => $user->id,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
+        'no_kk' => '6302000000000002',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -28,18 +26,30 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
         'alamat' => 'RT 01 RW 02',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
-        'status_orang_tua' => 'Lengkap',
-        'nama_ayah' => 'Ayah Ahmad',
-        'nik_ayah' => '6302000000000002',
-        'pekerjaan_ayah' => 'Petani',
-        'penghasilan_ayah' => '< 1jt',
-        'nama_ibu' => 'Ibu Ahmad',
-        'nik_ibu' => '6302000000000003',
-        'pekerjaan_ibu' => 'Petani',
-        'penghasilan_ibu' => '< 1jt',
         'prodi_id' => $prodi->id,
         'ipk' => $ipk,
         'semester' => $semester,
+        'ukt' => 2500000,
+        'desil' => 3,
+        'nama_ayah' => 'Ayah Ahmad',
+        'nik_ayah' => '6302000000000003',
+        'pekerjaan_ayah' => 'Petani',
+        'nama_ibu' => 'Ibu Ahmad',
+        'nik_ibu' => '6302000000000004',
+        'pekerjaan_ibu' => 'Petani',
+        'foto_profil' => 'profil/1/foto.jpg',
+        'dokumen_ktp' => 'profil/1/ktp.pdf',
+        'dokumen_kk' => 'profil/1/kk.pdf',
+        'dokumen_desil' => 'profil/1/desil.pdf',
+        'dokumen_sktm' => 'profil/1/sktm.pdf',
+        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
+        'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
+        'ktp_ayah' => 'profil/1/ktp_ayah.pdf',
+        'ktp_ibu' => 'profil/1/ktp_ibu.pdf',
+        'verif_capil' => $verified ? 'setuju' : 'menunggu',
+        'verif_kampus' => $verified ? 'setuju' : 'menunggu',
+        'verif_kesra' => $verified ? 'setuju' : 'menunggu',
     ]);
 }
 
@@ -52,32 +62,14 @@ function createEligibleScholarship(int $kampusId, array $overrides = []): Schola
     ], $overrides));
 }
 
-function applicantPayload(Scholarship $scholarship): array
+function applicationPayload(Scholarship $scholarship): array
 {
-    return [
-        'beasiswa_id' => $scholarship->id,
-        'status_orang_tua' => 'Lengkap',
-        'ktp_ayah' => UploadedFile::fake()->create('ktp_ayah.pdf', 10),
-        'ktp_ibu' => UploadedFile::fake()->create('ktp_ibu.pdf', 10),
-        'dokumen_ktp' => UploadedFile::fake()->create('ktp.pdf', 10),
-        'dokumen_kk' => UploadedFile::fake()->create('kk.pdf', 10),
-        'dokumen_akta' => UploadedFile::fake()->create('akta.pdf', 10),
-        'dokumen_surat_permohonan' => UploadedFile::fake()->create('permohonan.pdf', 10),
-        'dokumen_transkrip' => UploadedFile::fake()->create('transkrip.pdf', 10),
-        'dokumen_surat_aktif' => UploadedFile::fake()->create('aktif.pdf', 10),
-        'dokumen_pas_foto' => UploadedFile::fake()->image('foto.jpg'),
-        'dokumen_surat_pernyataan' => UploadedFile::fake()->create('pernyataan.pdf', 10),
-        'dokumen_sktm' => UploadedFile::fake()->create('sktm.pdf', 10),
-        'dokumen_bukti_ukt' => UploadedFile::fake()->create('ukt.pdf', 10),
-    ];
+    return ['beasiswa_id' => $scholarship->id];
 }
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
-    $this->admin = User::factory()->admin()->create(['email' => 'admin@test.com']);
     $this->user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     $this->kampus = Kampus::create(['nama_kampus' => 'Universitas Lambung Mangkurat']);
@@ -85,13 +77,13 @@ beforeEach(function () {
     $this->prodi = $this->fakultas->prodi()->create(['nama' => 'Teknik Informatika']);
 });
 
-test('resmi can submit application when ipk meets minimum', function () {
+test('user can submit application when profile complete and verified', function () {
     createCompleteProfile($this->user, $this->prodi, 3.2, 5);
     $scholarship = createEligibleScholarship($this->kampus->id, ['ipk_minimal' => 3.0]);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertRedirect();
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.pendaftaran.index'));
 
     $this->assertDatabaseHas('pendaftar', [
         'user_id' => $this->user->id,
@@ -102,10 +94,6 @@ test('resmi can submit application when ipk meets minimum', function () {
         'semester' => 5,
         'status' => 'verifikasi',
     ]);
-
-    $applicant = Applicant::where('user_id', $this->user->id)->where('beasiswa_id', $scholarship->id)->first();
-    expect($applicant->ktp_ayah)->not->toBeNull();
-    expect($applicant->ktp_ibu)->not->toBeNull();
 });
 
 test('application rejected when ipk below minimum', function () {
@@ -113,8 +101,9 @@ test('application rejected when ipk below minimum', function () {
     $scholarship = createEligibleScholarship($this->kampus->id, ['ipk_minimal' => 3.5]);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertSessionHasErrors('ipk');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
+        ->assertSessionHas('error', 'IPK minimal untuk beasiswa ini adalah 3.5.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
@@ -124,8 +113,9 @@ test('application rejected when semester below minimum', function () {
     $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 6]);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertSessionHasErrors('semester');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
+        ->assertSessionHas('error', 'Semester minimal untuk beasiswa ini adalah 6.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
@@ -135,8 +125,8 @@ test('application accepted when semester meets minimum', function () {
     $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 4]);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertRedirect();
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.pendaftaran.index'));
 
     $this->assertDatabaseHas('pendaftar', [
         'user_id' => $this->user->id,
@@ -147,11 +137,12 @@ test('application accepted when semester meets minimum', function () {
 
 test('application rejected when beasiswa has expired', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['batas_waktu' => now()->subDay()]);
+    $scholarship = createEligibleScholarship($this->kampus->id, ['tanggal_selesai' => now()->subDay()]);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertSessionHasErrors('beasiswa_id');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
+        ->assertSessionHas('error', 'Pendaftaran beasiswa sudah ditutup.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
@@ -159,11 +150,12 @@ test('application rejected when beasiswa has expired', function () {
 test('application rejected when prodi not included in scholarship', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
     $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Gadjah Mada']);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['kampus_id' => $kampusLain->id]);
+    $scholarship = createEligibleScholarship($kampusLain->id);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertSessionHasErrors('beasiswa_id');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
+        ->assertSessionHas('error', 'Program Studi Anda tidak termasuk dalam beasiswa ini.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
@@ -173,12 +165,13 @@ test('application rejected when already applied', function () {
     $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertRedirect();
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.pendaftaran.index'));
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertSessionHasErrors('beasiswa_id');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
+        ->assertSessionHas('error', 'Anda sudah mendaftar beasiswa ini.');
 
     $this->assertDatabaseCount('pendaftar', 1);
 });
@@ -188,169 +181,77 @@ test('application rejected when profile has no prodi', function () {
         'user_id' => $this->user->id,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
-        'ipk' => 3.5,
-        'semester' => 5,
+        'verif_capil' => 'setuju',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'setuju',
     ]);
     $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertSessionHasErrors('beasiswa_id');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('profile'))
+        ->assertSessionHas('error');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
 
-test('diterima can be set from verifikasi', function () {
-    $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('diterima');
-});
-
-test('diterima can be set from revisi', function () {
-    $applicant = Applicant::factory()->create(['status' => 'revisi']);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('diterima');
-});
-
-test('diterima rejected when quota is full', function () {
-    $scholarship = createEligibleScholarship($this->kampus->id, ['kuota' => 1]);
-    Applicant::factory()->create([
-        'beasiswa_id' => $scholarship->id,
-        'status' => 'diterima',
+test('application rejected when profile incomplete', function () {
+    UserProfile::create([
+        'user_id' => $this->user->id,
+        'nama_lengkap' => 'Ahmad Fauzi',
+        'prodi_id' => $this->prodi->id,
     ]);
-    $applicant = Applicant::factory()->create([
-        'beasiswa_id' => $scholarship->id,
-        'status' => 'verifikasi',
-    ]);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertSessionHasErrors('status');
-
-    expect($applicant->refresh()->status)->toBe('verifikasi');
-});
-
-test('diterima accepted when quota still available', function () {
-    $scholarship = createEligibleScholarship($this->kampus->id, ['kuota' => 2]);
-    Applicant::factory()->create([
-        'beasiswa_id' => $scholarship->id,
-        'status' => 'diterima',
-    ]);
-    $applicant = Applicant::factory()->create([
-        'beasiswa_id' => $scholarship->id,
-        'status' => 'verifikasi',
-    ]);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('diterima');
-});
-
-test('diterima rejected from ditolak (dead-end status)', function () {
-    $applicant = Applicant::factory()->create(['status' => 'ditolak']);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertSessionHasErrors('status');
-
-    expect($applicant->refresh()->status)->toBe('ditolak');
-});
-
-test('revisi can be set from verifikasi', function () {
-    $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'revisi'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('revisi');
-});
-
-test('ditolak can be set from verifikasi', function () {
-    $applicant = Applicant::factory()->create(['status' => 'verifikasi']);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'ditolak'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('ditolak');
-});
-
-test('full flow from submission to diterima', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.2, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['ipk_minimal' => 3.0]);
+    $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicantPayload($scholarship))
-        ->assertRedirect();
-
-    $applicant = Applicant::where('user_id', $this->user->id)->first();
-    expect($applicant->status)->toBe('verifikasi');
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), ['status' => 'diterima'])
-        ->assertRedirect();
-
-    expect($applicant->refresh()->status)->toBe('diterima');
-});
-
-test('application with yatim piatu status requires kartu keluarga wali', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $user = $this->user;
-    $user->profile->update(['status_orang_tua' => 'Yatim Piatu']);
-
-    $scholarship = createEligibleScholarship($this->kampus->id);
-    $payload = applicantPayload($scholarship);
-    $payload['status_orang_tua'] = 'Yatim Piatu';
-    unset($payload['ktp_ayah'], $payload['ktp_ibu']);
-
-    actingAs($user)
-        ->post(route('user.pendaftaran.simpan'), $payload)
-        ->assertSessionHasErrors('kk_wali');
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('profile'))
+        ->assertSessionHas('error', 'Profil belum lengkap. Silakan lengkapi profil terlebih dahulu.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
 
-test('application with yatim piatu status stores kartu keluarga wali', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $user = $this->user;
-    $user->profile->update(['status_orang_tua' => 'Yatim Piatu']);
-
+test('application rejected when profile not yet verified', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
     $scholarship = createEligibleScholarship($this->kampus->id);
-    $payload = applicantPayload($scholarship);
-    $payload['status_orang_tua'] = 'Yatim Piatu';
-    $payload['ktp_wali'] = UploadedFile::fake()->create('ktp_wali.pdf', 10);
-    $payload['kk_wali'] = UploadedFile::fake()->create('kk_wali.pdf', 10);
-    unset($payload['ktp_ayah'], $payload['ktp_ibu']);
-
-    actingAs($user)
-        ->post(route('user.pendaftaran.simpan'), $payload)
-        ->assertRedirect();
-
-    $applicant = Applicant::where('user_id', $user->id)->where('beasiswa_id', $scholarship->id)->first();
-    expect($applicant->ktp_wali)->not->toBeNull();
-    expect($applicant->kk_wali)->not->toBeNull();
-});
-
-test('application accepted for semester one without surat aktif', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 1);
-    $scholarship = createEligibleScholarship($this->kampus->id);
-    $payload = applicantPayload($scholarship);
-    unset($payload['dokumen_surat_aktif']);
 
     actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), $payload)
-        ->assertRedirect();
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('profile'))
+        ->assertSessionHas('error', 'Profil belum terverifikasi. Silakan tunggu verifikasi dari pihak kami terlebih dahulu.');
+
+    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
+});
+
+test('application rejected when wali data incomplete and kk ikut wali', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $this->user->profile->update(['kk_ikut_wali' => true]);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('profile'))
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
+});
+
+test('application accepted when kk ikut wali and wali data complete', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    $this->user->profile->update([
+        'kk_ikut_wali' => true,
+        'nama_wali' => 'Wali Ahmad',
+        'nik_wali' => '6302000000000005',
+        'pekerjaan_wali' => 'Swasta',
+        'hubungan_wali' => 'Paman',
+        'ktp_wali' => 'profil/1/ktp_wali.pdf',
+        'kk_wali' => 'profil/1/kk_wali.pdf',
+    ]);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.pendaftaran.index'));
 
     $this->assertDatabaseHas('pendaftar', [
         'user_id' => $this->user->id,
@@ -359,126 +260,42 @@ test('application accepted for semester one without surat aktif', function () {
     ]);
 });
 
-test('application rejected when surat aktif missing for scholarship requiring semester two or above', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 2]);
-    $payload = applicantPayload($scholarship);
-    unset($payload['dokumen_surat_aktif']);
+// ─── Confirmation page (user.pendaftaran.buat) ──────────────────
 
-    actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), $payload)
-        ->assertSessionHasErrors('dokumen_surat_aktif');
-
-    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
-});
-
-test('application accepted without surat aktif for scholarship requiring only semester one', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 1]);
-    $payload = applicantPayload($scholarship);
-    unset($payload['dokumen_surat_aktif']);
-
-    actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), $payload)
-        ->assertRedirect();
-
-    $this->assertDatabaseHas('pendaftar', [
-        'user_id' => $this->user->id,
-        'beasiswa_id' => $scholarship->id,
-        'status' => 'verifikasi',
-    ]);
-});
-
-test('application rejected when a document exceeds 2mb', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id);
-    $payload = applicantPayload($scholarship);
-    $payload['dokumen_ktp'] = UploadedFile::fake()->create('ktp.pdf', 3000);
-
-    actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), $payload)
-        ->assertSessionHasErrors('dokumen_ktp');
-
-    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
-});
-
-test('application form shows akta upload field and 2mb limit', function () {
+test('confirmation page shows profile summary without upload fields', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
     $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
         ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
         ->assertOk()
-        ->assertSee('dokumen_akta')
-        ->assertSee('Maksimal 2MB')
-        ->assertDontSee('Maksimal 20MB');
+        ->assertSee('Konfirmasi Pendaftaran', false)
+        ->assertSee($scholarship->nama, false)
+        ->assertSee('Fakultas Teknik', false)
+        ->assertSee('Teknik Informatika', false)
+        ->assertSee('Kirim Pendaftaran')
+        ->assertSee(route('user.pendaftaran.simpan'), false)
+        ->assertDontSee('dokumen_akta', false)
+        ->assertDontSee('Upload', false);
 });
 
-test('application form marks surat aktif required only for scholarships with semester minimal two or above', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 2]);
-
-    actingAs($this->user)
-        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
-        ->assertOk()
-        ->assertSee('Surat Aktif Kuliah / KTM <span class="text-danger">*</span>', false);
-
-    $firstYear = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 1]);
-
-    actingAs($this->user)
-        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $firstYear->id]))
-        ->assertOk()
-        ->assertDontSee('Surat Aktif Kuliah / KTM <span class="text-danger">*</span>', false);
-});
-
-test('application form groups documents into categories', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+test('confirmation page redirects to profile when profile unverified', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
     $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
         ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
-        ->assertOk()
-        ->assertSee('Dokumen Diri Sendiri', false)
-        ->assertSee('Dokumen untuk Kampus', false)
-        ->assertSee('Dokumen Orang Tua / Wali', false)
-        ->assertSee(route('download.application-letter'), false)
-        ->assertSee('Unduh Template', false);
+        ->assertRedirect(route('profile'))
+        ->assertSessionHas('error');
 });
 
-test('application form shows adaptive surat aktif hint per scholarship semester minimal', function () {
+test('confirmation page redirects when application already submitted', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 2]);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+    actingAs($this->user)->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship));
 
     actingAs($this->user)
         ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
-        ->assertOk()
-        ->assertSee('Wajib untuk beasiswa ini.', false)
-        ->assertDontSee('Tidak wajib untuk beasiswa ini.', false);
-
-    $firstYear = createEligibleScholarship($this->kampus->id, ['semester_minimal' => 1]);
-
-    actingAs($this->user)
-        ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $firstYear->id]))
-        ->assertOk()
-        ->assertSee('Tidak wajib untuk beasiswa ini.', false)
-        ->assertDontSee('Wajib untuk beasiswa ini.', false);
-});
-
-test('lengkapi page groups documents and shows template download link', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $scholarship = createEligibleScholarship($this->kampus->id);
-    $applicant = Applicant::factory()->create([
-        'user_id' => $this->user->id,
-        'beasiswa_id' => $scholarship->id,
-        'status' => 'revisi',
-    ]);
-
-    actingAs($this->user)
-        ->get(route('user.pendaftaran.lengkapi', $applicant))
-        ->assertOk()
-        ->assertSee('Dokumen Diri Sendiri', false)
-        ->assertSee('Dokumen untuk Kampus', false)
-        ->assertSee('Dokumen Orang Tua / Wali', false)
-        ->assertSee(route('download.application-letter'), false)
-        ->assertSee('Unduh Template', false);
+        ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
+        ->assertSessionHas('error', 'Anda sudah mendaftar beasiswa ini.');
 });

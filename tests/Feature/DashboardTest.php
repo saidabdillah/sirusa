@@ -4,16 +4,13 @@ use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('dashboard', 'admin');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->admin = User::factory()->admin()->create(['email' => 'admin@test.com']);
 });
@@ -24,7 +21,7 @@ test('admin dashboard shows all applicant status counts', function () {
 
     Applicant::factory()->create(['status' => 'verifikasi']);
     Applicant::factory()->create(['status' => 'diterima']);
-    Applicant::factory()->create(['status' => 'revisi']);
+    Applicant::factory()->create(['status' => 'ditolak']);
     Applicant::factory()->create(['status' => 'ditolak']);
     Applicant::factory()->create(['status' => 'diterima']);
 
@@ -34,7 +31,6 @@ test('admin dashboard shows all applicant status counts', function () {
         ->assertSee('Total Pendaftar')
         ->assertSee('Verifikasi')
         ->assertSee('Diterima')
-        ->assertSee('Revisi')
         ->assertSee('Ditolak')
         ->assertSee('Total Beasiswa');
 });

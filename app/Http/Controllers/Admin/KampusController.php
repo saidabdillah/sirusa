@@ -15,7 +15,10 @@ use App\Http\Requests\Kampus\UpdateProdiRequest;
 use App\Models\Fakultas;
 use App\Models\Kampus;
 use App\Models\Prodi;
+use App\Support\DataTablesProcessor;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class KampusController extends Controller
@@ -24,9 +27,32 @@ class KampusController extends Controller
 
     public function index(): View
     {
-        $kampus = Kampus::withCount('fakultas')->orderBy('nama_kampus')->get();
+        $kampus = Kampus::withCount('fakultas')->orderBy('nama_kampus')->limit(25)->get();
 
         return view('admin.kampus.index', compact('kampus'));
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $canManage = auth()->user()->hasMenuAccess('admin.kampus.index');
+
+        $processor = new DataTablesProcessor(
+            $request,
+            Kampus::withCount('fakultas')->orderBy('nama_kampus'),
+            [
+                'searchable' => ['nama_kampus'],
+                'orderable' => [2 => 'nama_kampus'],
+            ],
+            fn (Kampus $kampus, int $no) => [
+                'checkbox' => $canManage ? '<input type="checkbox" class="row-check" value="'.$kampus->id.'">' : '',
+                'no' => $no,
+                'kampus' => e($kampus->nama_kampus),
+                'fakultas_count' => $kampus->fakultas_count,
+                'aksi' => $canManage ? view('admin.kampus._aksi', ['data' => $kampus])->render() : '',
+            ]
+        );
+
+        return response()->json($processor->respond());
     }
 
     public function create(): View
@@ -74,9 +100,32 @@ class KampusController extends Controller
 
     public function fakultasIndex(Kampus $kampus): View
     {
-        $fakultas = $kampus->fakultas()->withCount('prodi')->orderBy('nama')->get();
+        $fakultas = $kampus->fakultas()->withCount('prodi')->orderBy('nama')->limit(25)->get();
 
         return view('admin.kampus.fakultas.index', compact('kampus', 'fakultas'));
+    }
+
+    public function fakultasData(Request $request, Kampus $kampus): JsonResponse
+    {
+        $canManage = auth()->user()->hasMenuAccess('admin.kampus.index');
+
+        $processor = new DataTablesProcessor(
+            $request,
+            $kampus->fakultas()->withCount('prodi')->orderBy('nama'),
+            [
+                'searchable' => ['nama'],
+                'orderable' => [2 => 'nama'],
+            ],
+            fn (Fakultas $fakultas, int $no) => [
+                'checkbox' => $canManage ? '<input type="checkbox" class="row-check" value="'.$fakultas->id.'">' : '',
+                'no' => $no,
+                'nama' => e($fakultas->nama),
+                'prodi_count' => $fakultas->prodi_count,
+                'aksi' => $canManage ? view('admin.kampus.fakultas._aksi', ['kampus' => $kampus, 'data' => $fakultas])->render() : '',
+            ]
+        );
+
+        return response()->json($processor->respond());
     }
 
     public function fakultasCreate(Kampus $kampus): View
@@ -137,9 +186,33 @@ class KampusController extends Controller
     {
         abort_unless($fakultas->kampus_id === $kampus->id, 404);
 
-        $prodi = $fakultas->prodi()->orderBy('nama')->get();
+        $prodi = $fakultas->prodi()->orderBy('nama')->limit(25)->get();
 
         return view('admin.kampus.prodi.index', compact('kampus', 'fakultas', 'prodi'));
+    }
+
+    public function prodiData(Request $request, Kampus $kampus, Fakultas $fakultas): JsonResponse
+    {
+        abort_unless($fakultas->kampus_id === $kampus->id, 404);
+
+        $canManage = auth()->user()->hasMenuAccess('admin.kampus.index');
+
+        $processor = new DataTablesProcessor(
+            $request,
+            $fakultas->prodi()->orderBy('nama'),
+            [
+                'searchable' => ['nama'],
+                'orderable' => [2 => 'nama'],
+            ],
+            fn (Prodi $prodi, int $no) => [
+                'checkbox' => $canManage ? '<input type="checkbox" class="row-check" value="'.$prodi->id.'">' : '',
+                'no' => $no,
+                'nama' => e($prodi->nama),
+                'aksi' => $canManage ? view('admin.kampus.prodi._aksi', ['kampus' => $kampus, 'fakultas' => $fakultas, 'data' => $prodi])->render() : '',
+            ]
+        );
+
+        return response()->json($processor->respond());
     }
 
     public function prodiCreate(Kampus $kampus, Fakultas $fakultas): View

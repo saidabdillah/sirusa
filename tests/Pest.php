@@ -1,6 +1,8 @@
 <?php
 
+use Database\Seeders\MenuSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -43,6 +45,17 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+function seedAkses()
+{
+    Role::firstOrCreate(['name' => 'super_admin']);
+    Role::firstOrCreate(['name' => 'capil']);
+    Role::firstOrCreate(['name' => 'kampus']);
+    Role::firstOrCreate(['name' => 'kesra']);
+    Role::firstOrCreate(['name' => 'user']);
+
+    (new MenuSeeder)->run();
+}
 
 function something()
 {

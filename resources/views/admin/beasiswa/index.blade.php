@@ -22,7 +22,7 @@
         <div class="col-12">
           <div class="card">
             <div class="card-header">
-              @if(auth()->user()->hasRole('admin'))
+              @if(auth()->user()->hasMenuAccess('admin.beasiswa.index'))
                 <a href="{{ route('admin.beasiswa.buat') }}" class="btn btn-primary">
                   <i class="fas fa-plus"></i> Tambah Beasiswa
                 </a>
@@ -55,7 +55,8 @@
                         <td>{{ $scholarship->tingkat_gelar }}</td>
                         <td>
                           <span class="{{ $scholarship->isExpired() ? 'text-danger' : '' }}">
-                            {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
+                            {{ $scholarship->tanggal_mulai?->translatedFormat('d M Y') }}
+                            - {{ $scholarship->tanggal_selesai?->translatedFormat('d M Y') }}
                           </span>
                         </td>
                         <td>{{ number_format($scholarship->ipk_minimal, 2) }}</td>
@@ -68,27 +69,7 @@
                           @endif
                         </td>
                         <td>
-                          @if(auth()->user()->hasRole('admin'))
-                            <div class="d-flex">
-                              <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm mr-1 mb-1" title="Lihat">
-                                <i class="fas fa-eye"></i>
-                              </a>
-                              <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
-                                <i class="fas fa-edit"></i>
-                              </a>
-                              <form action="{{ route('admin.beasiswa.hapus', $scholarship) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus">
-                                  <i class="fas fa-trash"></i>
-                                </button>
-                              </form>
-                            </div>
-                          @else
-                            <a href="{{ route('admin.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm">
-                              <i class="fas fa-eye"></i> Detail
-                            </a>
-                          @endif
+                          @include('admin.beasiswa._aksi', ['data' => $scholarship])
                         </td>
                       </tr>
                     @endforeach
@@ -107,6 +88,25 @@
 <script>
 $(document).ready(function() {
   $('#scholarshipTable').DataTable({
+    serverSide: true,
+    processing: true,
+    ajax: { url: "{{ route('admin.beasiswa.data') }}" },
+    order: [],
+    columnDefs: [
+        { "orderable": false, "searchable": false, "targets": [0, 4, 5, 6, 7, 8, 9] }
+    ],
+    columns: [
+        { data: 'no' },
+        { data: 'nama' },
+        { data: 'kampus' },
+        { data: 'kuota' },
+        { data: 'gelar' },
+        { data: 'batas' },
+        { data: 'ipk' },
+        { data: 'semester' },
+        { data: 'status' },
+        { data: 'aksi' }
+    ],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",

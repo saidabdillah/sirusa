@@ -1,22 +1,15 @@
 <?php
 
-use App\Models\Applicant;
 use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
-use App\Notifications\ApplicantStatusChanged;
 use App\Notifications\NewApplication;
 use App\Notifications\NewScholarship;
-use App\Notifications\NewUserRegistered;
-use App\Notifications\OtpPasswordReset;
 use App\Notifications\UserActivated;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Mail\Markdown;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -26,27 +19,11 @@ use function Pest\Laravel\post;
 uses(RefreshDatabase::class)->group('notification');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->superAdmin = User::factory()->superAdmin()->create(['email' => 'sa@test.com']);
     $this->admin = User::factory()->admin()->create(['email' => 'admin@test.com']);
     $this->standardUser = User::factory()->standardUser()->create(['email' => 'user@test.com']);
-});
-
-// ─── Mail branding: published header replaces the Laravel logo ────
-
-test('notification emails use SIRUSA branding instead of the Laravel logo', function () {
-    $message = (new OtpPasswordReset('123456'))->toMail($this->standardUser);
-
-    $html = (string) app(Markdown::class)->render('notifications::email', $message->toArray());
-
-    expect($html)
-        ->toContain('SIRUSA')
-        ->not->toContain('stisla-fill.svg')
-        ->not->toContain('laravel.com/img/notification-logo')
-        ->not->toContain('<img');
 });
 
 // ─── NewScholarship: admin creates scholarship → all users ──────
@@ -64,8 +41,8 @@ test('admin creating scholarship notifies all standard users', function () {
         'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
         'ipk_minimal' => 3.0,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
@@ -84,9 +61,9 @@ test('admin creating scholarship notifies all standard users', function () {
     Notification::assertNotSentTo($this->superAdmin, NewScholarship::class);
 });
 
-// ─── NewApplication: user registers scholarship → admins ────────
+// ─── NewApplication: user registers → users granted admin.pendaftar ──
 
-test('user registering scholarship notifies all admins and super admins', function () {
+test('user registering scholarship notifies users granted admin.pendaftar', function () {
     Notification::fake();
 
     $kampus = Kampus::create(['nama_kampus' => 'Universitas']);
@@ -97,74 +74,58 @@ test('user registering scholarship notifies all admins and super admins', functi
         'user_id' => $this->standardUser->id,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
+        'no_kk' => '6302000000000002',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
         'agama' => 'Islam',
         'telepon' => '081234567890',
-        'alamat' => 'RT 01',
+        'alamat' => 'RT 01 RW 02',
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
-        'status_orang_tua' => 'Yatim Piatu',
-        'nama_wali' => 'Paman',
-        'nik_wali' => '6302000000000004',
-        'hubungan_wali' => 'Paman',
-        'pekerjaan_wali' => 'Petani',
-        'penghasilan_wali' => '< 1jt',
         'prodi_id' => $prodi->id,
         'ipk' => 3.5,
         'semester' => 4,
+        'ukt' => 2500000,
+        'desil' => 3,
+        'nama_ayah' => 'Ayah Ahmad',
+        'nik_ayah' => '6302000000000003',
+        'pekerjaan_ayah' => 'Petani',
+        'nama_ibu' => 'Ibu Ahmad',
+        'nik_ibu' => '6302000000000004',
+        'pekerjaan_ibu' => 'Petani',
+        'foto_profil' => 'profil/1/foto.jpg',
+        'dokumen_ktp' => 'profil/1/ktp.pdf',
+        'dokumen_kk' => 'profil/1/kk.pdf',
+        'dokumen_desil' => 'profil/1/desil.pdf',
+        'dokumen_sktm' => 'profil/1/sktm.pdf',
+        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
+        'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
+        'ktp_ayah' => 'profil/1/ktp_ayah.pdf',
+        'ktp_ibu' => 'profil/1/ktp_ibu.pdf',
+        'verif_capil' => 'setuju',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'setuju',
     ]);
 
-    $scholarship = Scholarship::factory()->create(['status' => 'aktif', 'kampus_id' => $kampus->id]);
+    $scholarship = Scholarship::factory()->create([
+        'status' => 'aktif',
+        'kampus_id' => $kampus->id,
+        'ipk_minimal' => 0,
+        'semester_minimal' => 0,
+    ]);
 
     actingAs($this->standardUser);
 
     post(route('user.pendaftaran.simpan'), [
         'beasiswa_id' => $scholarship->id,
-        'status_orang_tua' => 'Yatim Piatu',
-        'ktp_wali' => UploadedFile::fake()->create('ktp_wali.pdf', 100, 'application/pdf'),
-        'kk_wali' => UploadedFile::fake()->create('kk_wali.pdf', 100, 'application/pdf'),
-        'dokumen_ktp' => UploadedFile::fake()->create('ktp.pdf', 100, 'application/pdf'),
-        'dokumen_kk' => UploadedFile::fake()->create('kk.pdf', 100, 'application/pdf'),
-        'dokumen_akta' => UploadedFile::fake()->create('akta.pdf', 100, 'application/pdf'),
-        'dokumen_surat_permohonan' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
-        'dokumen_transkrip' => UploadedFile::fake()->create('transkrip.pdf', 100, 'application/pdf'),
-        'dokumen_surat_aktif' => UploadedFile::fake()->create('aktif.pdf', 100, 'application/pdf'),
-        'dokumen_pas_foto' => UploadedFile::fake()->image('foto.jpg'),
-        'dokumen_surat_pernyataan' => UploadedFile::fake()->create('pernyataan.pdf', 100, 'application/pdf'),
-        'dokumen_sktm' => UploadedFile::fake()->create('sktm.pdf', 100, 'application/pdf'),
-        'dokumen_bukti_ukt' => UploadedFile::fake()->create('ukt.pdf', 100, 'application/pdf'),
     ])->assertRedirect(route('user.pendaftaran.index'));
 
     Notification::assertSentTo($this->admin, NewApplication::class);
     Notification::assertSentTo($this->superAdmin, NewApplication::class);
 
     Notification::assertNotSentTo($this->standardUser, NewApplication::class);
-});
-
-// ─── ApplicantStatusChanged: admin changes status → owner ───────
-
-test('admin changing applicant status notifies the owner user', function () {
-    Notification::fake();
-
-    $applicant = Applicant::factory()->create([
-        'user_id' => $this->standardUser->id,
-        'status' => 'verifikasi',
-    ]);
-
-    actingAs($this->admin)
-        ->put(route('admin.pendaftar.perbarui', $applicant), [
-            'status' => 'revisi',
-            'catatan' => 'Perbaiki dokumen',
-        ])
-        ->assertRedirect();
-
-    Notification::assertSentTo($this->standardUser, ApplicantStatusChanged::class, function ($notification) {
-        return $notification->newStatus === 'Revisi';
-    });
-
-    Notification::assertNotSentTo($this->admin, ApplicantStatusChanged::class);
 });
 
 // ─── NotificationController page ────────────────────────────────
@@ -174,7 +135,7 @@ test('user can view notifications page', function () {
 });
 
 test('unread notifications are marked as read when opened', function () {
-    $notification = $this->standardUser->notifyNow(new NewScholarship(Scholarship::factory()->create()));
+    $this->standardUser->notifyNow(new NewScholarship(Scholarship::factory()->create()));
 
     $latest = $this->standardUser->notifications()->first();
 
@@ -272,46 +233,30 @@ test('navbar dropdown is empty after marking all as read', function () {
     expect($this->admin->unreadNotifications()->count())->toBe(0);
 });
 
-// ─── UserActivated: admin/super_admin activates user → email ────
+// ─── UserActivated: admin toggles user to aktif → owner ─────────
 
-test('activating a user sends UserActivated email', function () {
+test('activating a user sends UserActivated notification', function () {
     Notification::fake();
 
     $user = User::factory()->standardUser()->create(['status' => 'non-aktif']);
 
-    actingAs($this->admin)
+    actingAs($this->superAdmin)
         ->patch(route('admin.pengguna.toggle-status', $user))
         ->assertRedirect();
 
     Notification::assertSentTo($user, UserActivated::class);
 });
 
-test('deactivating a user does not send UserActivated email', function () {
+test('deactivating a user does not send UserActivated notification', function () {
     Notification::fake();
 
     $user = User::factory()->standardUser()->create(['status' => 'aktif']);
 
-    actingAs($this->admin)
+    actingAs($this->superAdmin)
         ->patch(route('admin.pengguna.toggle-status', $user))
         ->assertRedirect();
 
     Notification::assertNotSentTo($user, UserActivated::class);
-});
-
-// ─── NewUserRegistered: user registers → admins & super admins ──
-
-test('registering a new user notifies all admins and super admins', function () {
-    Notification::fake();
-
-    post(route('register.store'), [
-        'email' => 'newuser.sirusa@gmail.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-        'agree' => '1',
-    ])->assertRedirect(route('login'));
-
-    Notification::assertSentTo($this->admin, NewUserRegistered::class);
-    Notification::assertSentTo($this->superAdmin, NewUserRegistered::class);
 });
 
 // ─── Delete notifications (A: per item, B: all, C: read only) ──
@@ -340,7 +285,7 @@ test('user cannot delete another users notification', function () {
 
 test('user can delete all notifications', function () {
     $this->admin->notifyNow(new NewScholarship(Scholarship::factory()->create()));
-    $this->admin->notifyNow(new NewUserRegistered('test@test.com'));
+    $this->admin->notifyNow(new NewScholarship(Scholarship::factory()->create()));
 
     actingAs($this->admin)
         ->delete(route('notifications.destroy-all'))
@@ -356,7 +301,7 @@ test('user can delete only read notifications', function () {
     $readNotification = $this->admin->notifications()->first();
     $readNotification->markAsRead();
 
-    $this->admin->notifyNow(new NewUserRegistered('test@test.com'));
+    $this->admin->notifyNow(new NewScholarship(Scholarship::factory()->create()));
     $unreadNotification = $this->admin->notifications()->whereNull('read_at')->first();
 
     actingAs($this->admin)

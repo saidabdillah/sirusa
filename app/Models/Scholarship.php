@@ -20,25 +20,20 @@ class Scholarship extends Model
         'kampus_id',
         'kuota',
         'tingkat_gelar',
-        'cakupan',
-        'batas_waktu',
+        'tanggal_mulai',
+        'tanggal_selesai',
         'ipk_minimal',
         'semester_minimal',
         'deskripsi',
         'persyaratan',
         'status',
-        'tanggal_pengumuman',
-        'tanggal_pengumuman_selesai',
-        'pengumuman_notified_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'batas_waktu' => 'date',
-            'tanggal_pengumuman' => 'date',
-            'tanggal_pengumuman_selesai' => 'date',
-            'pengumuman_notified_at' => 'datetime',
+            'tanggal_mulai' => 'date',
+            'tanggal_selesai' => 'date',
         ];
     }
 
@@ -59,7 +54,7 @@ class Scholarship extends Model
 
     public function isExpired(): bool
     {
-        return $this->batas_waktu?->isPast() ?? true;
+        return $this->tanggal_selesai?->isPast() ?? true;
     }
 
     public function sisaKuota(): int
@@ -67,26 +62,6 @@ class Scholarship extends Model
         $diterima = $this->pendaftar()->where('status', 'diterima')->count();
 
         return max((int) $this->kuota - $diterima, 0);
-    }
-
-    public function isPengumumanAktif(): bool
-    {
-        if (! $this->tanggal_pengumuman || ! $this->tanggal_pengumuman_selesai) {
-            return false;
-        }
-
-        $today = now()->startOfDay();
-
-        return $today->between(
-            $this->tanggal_pengumuman->copy()->startOfDay(),
-            $this->tanggal_pengumuman_selesai->copy()->endOfDay(),
-        );
-    }
-
-    public function hasPengumuman(): bool
-    {
-        return $this->isPengumumanAktif()
-            && $this->pendaftar()->where('status', 'diterima')->exists();
     }
 
     public function penerima()

@@ -25,32 +25,28 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Universitas Lambung Mangkurat',
                 'kuota' => 50,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'penuh',
-                'batas_waktu' => now()->subMonth(),
+                'tanggal_mulai' => now()->subMonths(2),
+                'tanggal_selesai' => now()->subMonth(),
                 'ipk_minimal' => 3.00,
                 'semester_minimal' => 3,
                 'deskripsi' => 'Beasiswa penuh dari Pemerintah Kabupaten Balangan untuk studi S1. Termasuk biaya kuliah, biaya hidup, dan asrama.',
                 'persyaratan' => "1. Warga Kabupaten Balangan\n2. Lulus SNBP/SNBT\n3. IPK minimal 3.0\n4. Belum menikah",
                 'status' => 'aktif',
                 'prodi' => ['Teknik Informatika', 'Manajemen', 'Akuntansi', 'Ilmu Administrasi Publik'],
-                'pengumuman_mulai' => now()->subDay(),
-                'pengumuman_selesai' => now()->addDays(6),
             ],
             [
                 'nama' => 'Beasiswa Prestasi Kab. Balangan',
                 'kampus' => 'Universitas Islam Negeri Antasari',
                 'kuota' => 30,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'sebagian',
-                'batas_waktu' => now()->subWeek(),
+                'tanggal_mulai' => now()->subMonths(2),
+                'tanggal_selesai' => now()->subWeek(),
                 'ipk_minimal' => 3.50,
                 'semester_minimal' => 4,
                 'deskripsi' => 'Beasiswa sebagian untuk pelajar berprestasi dari Kabupaten Balangan.',
                 'persyaratan' => "1. Warga Kabupaten Balangan\n2. Lulus seleksi masuk\n3. IPK minimal 3.5",
                 'status' => 'aktif',
                 'prodi' => ['Ekonomi Syariah', 'Pendidikan Agama Islam'],
-                'pengumuman_mulai' => now()->subDays(3),
-                'pengumuman_selesai' => now()->addDays(4),
             ],
         ];
 
@@ -67,8 +63,8 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Politeknik Negeri Banjarmasin',
                 'kuota' => 20,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(3),
+                'tanggal_mulai' => now()->subWeek(),
+                'tanggal_selesai' => now()->addMonths(3),
                 'ipk_minimal' => 3.00,
                 'semester_minimal' => 3,
                 'deskripsi' => 'Beasiswa penuh untuk studi di bidang teknologi informasi.',
@@ -81,8 +77,8 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Universitas Muhammadiyah Banjarmasin',
                 'kuota' => 15,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(2),
+                'tanggal_mulai' => now()->subWeek(),
+                'tanggal_selesai' => now()->addMonths(2),
                 'ipk_minimal' => 3.50,
                 'semester_minimal' => 4,
                 'deskripsi' => 'Beasiswa penuh untuk studi kedokteran dan keperawatan.',
@@ -95,8 +91,8 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Universitas Lambung Mangkurat',
                 'kuota' => 25,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonth(),
+                'tanggal_mulai' => now()->subWeek(),
+                'tanggal_selesai' => now()->addMonth(),
                 'ipk_minimal' => 3.25,
                 'semester_minimal' => 3,
                 'deskripsi' => 'Beasiswa penuh untuk mahasiswa berprestasi di bidang teknik.',
@@ -109,8 +105,8 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Universitas Lambung Mangkurat',
                 'kuota' => 40,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'sebagian',
-                'batas_waktu' => now()->addMonths(4),
+                'tanggal_mulai' => now()->subWeek(),
+                'tanggal_selesai' => now()->addMonths(4),
                 'ipk_minimal' => 2.50,
                 'semester_minimal' => 2,
                 'deskripsi' => 'Beasiswa sebagian untuk mahasiswa kurang mampu.',
@@ -123,8 +119,8 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Universitas Lambung Mangkurat',
                 'kuota' => 15,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(2),
+                'tanggal_mulai' => now()->subWeek(),
+                'tanggal_selesai' => now()->addMonths(2),
                 'ipk_minimal' => 3.00,
                 'semester_minimal' => 3,
                 'deskripsi' => 'Beasiswa untuk mahasiswa fakultas ilmu sosial dan politik.',
@@ -137,8 +133,8 @@ class ScholarshipSeeder extends Seeder
                 'kampus' => 'Universitas Islam Negeri Antasari',
                 'kuota' => 20,
                 'tingkat_gelar' => 'S1',
-                'cakupan' => 'penuh',
-                'batas_waktu' => now()->addMonths(3),
+                'tanggal_mulai' => now()->subWeek(),
+                'tanggal_selesai' => now()->addMonths(3),
                 'ipk_minimal' => 3.00,
                 'semester_minimal' => 3,
                 'deskripsi' => 'Beasiswa penuh untuk studi di bidang keagamaan.',
@@ -160,8 +156,8 @@ class ScholarshipSeeder extends Seeder
             'kampus' => 'Politeknik Negeri Banjarmasin',
             'kuota' => 10,
             'tingkat_gelar' => 'S1',
-            'cakupan' => 'penuh',
-            'batas_waktu' => now()->subMonths(2),
+            'tanggal_mulai' => now()->subMonths(4),
+            'tanggal_selesai' => now()->subMonths(2),
             'ipk_minimal' => 3.00,
             'semester_minimal' => 3,
             'deskripsi' => 'Beasiswa yang sudah tidak aktif.',
@@ -174,9 +170,7 @@ class ScholarshipSeeder extends Seeder
     private function createScholarship(array $data): void
     {
         $prodiNames = $data['prodi'] ?? [];
-        $pengumumanMulai = $data['pengumuman_mulai'] ?? null;
-        $pengumumanSelesai = $data['pengumuman_selesai'] ?? null;
-        unset($data['prodi'], $data['pengumuman_mulai'], $data['pengumuman_selesai']);
+        unset($data['prodi']);
 
         $kampus = Kampus::where('nama_kampus', $data['kampus'])->first();
 
@@ -190,13 +184,6 @@ class ScholarshipSeeder extends Seeder
             ['nama' => $data['nama']],
             $data,
         );
-
-        if ($pengumumanMulai && $pengumumanSelesai && ! $scholarship->tanggal_pengumuman) {
-            $scholarship->update([
-                'tanggal_pengumuman' => $pengumumanMulai,
-                'tanggal_pengumuman_selesai' => $pengumumanSelesai,
-            ]);
-        }
 
         $this->syncSnapshot($scholarship, $prodiNames);
     }

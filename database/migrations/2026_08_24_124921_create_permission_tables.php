@@ -114,6 +114,32 @@ return new class extends Migration
             $table->primary([$pivotPermission, $pivotRole], 'role_has_permissions_permission_id_role_id_primary');
         });
 
+        Schema::create('menus', static function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->string('label');
+            $table->string('icon')->nullable();
+            $table->string('route')->nullable();
+            $table->string('scope')->nullable();
+            $table->string('section')->nullable();
+            $table->unsignedInteger('urutan')->default(0);
+            $table->boolean('aktif')->default(true);
+            $table->boolean('wajib')->default(false);
+            $table->timestamps();
+
+            $table->foreign('parent_id')->references('id')->on('menus')->nullOnDelete();
+        });
+
+        Schema::create('role_menu', static function (Blueprint $table) use ($tableNames) {
+            $table->unsignedBigInteger('role_id');
+            $table->unsignedBigInteger('menu_id');
+
+            $table->foreign('role_id')->references('id')->on($tableNames['roles'])->cascadeOnDelete();
+            $table->foreign('menu_id')->references('id')->on('menus')->cascadeOnDelete();
+
+            $table->primary(['role_id', 'menu_id'], 'role_menu_role_id_menu_id_primary');
+        });
+
         app('cache')
             ->store(config('permission.cache.store') != 'default' ? config('permission.cache.store') : null)
             ->forget(config('permission.cache.key'));
@@ -128,6 +154,8 @@ return new class extends Migration
 
         throw_if(empty($tableNames), 'Error: config/permission.php not found and defaults could not be merged. Please publish the package configuration before proceeding, or drop the tables manually.');
 
+        Schema::dropIfExists('role_menu');
+        Schema::dropIfExists('menus');
         Schema::dropIfExists($tableNames['role_has_permissions']);
         Schema::dropIfExists($tableNames['model_has_roles']);
         Schema::dropIfExists($tableNames['model_has_permissions']);

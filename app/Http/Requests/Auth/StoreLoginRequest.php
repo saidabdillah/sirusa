@@ -22,8 +22,8 @@ class StoreLoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'login.required' => 'Email atau username harus diisi',
-            'login.max' => 'Email atau username terlalu panjang',
+            'login.required' => 'NIK atau username harus diisi',
+            'login.max' => 'NIK atau username terlalu panjang',
             'password.required' => 'Kata sandi harus diisi',
             'password.min' => 'Kata sandi minimal 8 karakter',
         ];

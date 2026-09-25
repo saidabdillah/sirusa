@@ -1,11 +1,9 @@
 <?php
 
-use App\Models\Applicant;
 use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
@@ -13,9 +11,7 @@ use function Pest\Laravel\post;
 uses(RefreshDatabase::class)->group('admin', 'beasiswa');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->superAdmin = User::factory()->superAdmin()->create(['email' => 'sa@test.com']);
     $this->admin = User::factory()->admin()->create(['email' => 'admin@test.com']);
@@ -37,7 +33,7 @@ test('admin can view scholarship index and detail', function () {
     actingAs($this->admin)->get(route('admin.beasiswa.lihat', $scholarship))->assertOk();
 });
 
-// ─── Scholarship: only admin can manage ─────────────────────────
+// ─── Scholarship: menu-granted roles manage ─────────────────────
 
 test('admin can access scholarship create form and create one', function () {
     $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
@@ -60,8 +56,8 @@ test('admin can access scholarship create form and create one', function () {
         'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
         'ipk_minimal' => 3.0,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
@@ -110,15 +106,15 @@ test('password batas waktu validation fails for past dates', function () {
         'kampus_id' => $kampus->id,
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->subDay()->format('Y-m-d'),
+        'tanggal_mulai' => now()->subDay()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
         'ipk_minimal' => 3,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
         'status' => 'aktif',
         'prodi_ids' => [],
-    ])->assertSessionHasErrors('batas_waktu');
+    ])->assertSessionHasErrors('tanggal_mulai');
 });
 
 test('scholarship store rejects zero kuota and zero ipk', function () {
@@ -130,8 +126,8 @@ test('scholarship store rejects zero kuota and zero ipk', function () {
         'kampus_id' => $kampus->id,
         'kuota' => 0,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
         'ipk_minimal' => 0,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
@@ -153,8 +149,8 @@ test('scholarship update rejects zero kuota and zero ipk', function () {
         'kampus_id' => $kampus->id,
         'kuota' => 0,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
         'ipk_minimal' => 0,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
@@ -178,109 +174,36 @@ test('create scholarship form links to add fakultas and prodi when empty', funct
         ->assertSee(route('admin.kampus.prodi.buat', [$kampus, $fakultas]), false);
 });
 
-test('super admin cannot access scholarship create form', function () {
-    actingAs($this->superAdmin)->get(route('admin.beasiswa.buat'))->assertForbidden();
-});
-
-test('super admin cannot create scholarship', function () {
+test('super admin can access scholarship create form and create one', function () {
     $kampus = Kampus::create(['nama_kampus' => 'Kampus']);
     $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+    $this->actingAs($this->superAdmin);
 
-    actingAs($this->superAdmin)->post(route('admin.beasiswa.simpan'), [
-        'nama' => 'Beasiswa Terlarang',
+    $this->get(route('admin.beasiswa.buat'))->assertOk();
+
+    post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Super Admin',
         'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
-        'cakupan' => 'penuh',
-        'batas_waktu' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
         'ipk_minimal' => 3.0,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
         'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
-    ])->assertForbidden();
+    ])->assertRedirect(route('admin.beasiswa.index'));
 
-    $this->assertDatabaseMissing('beasiswa', ['nama' => 'Beasiswa Terlarang']);
+    $this->assertDatabaseHas('beasiswa', ['nama' => 'Beasiswa Super Admin']);
 });
 
-test('super admin cannot edit or delete scholarship', function () {
+test('super admin can edit and delete scholarship', function () {
     $scholarship = Scholarship::factory()->create();
 
-    actingAs($this->superAdmin)->get(route('admin.beasiswa.ubah', $scholarship))->assertForbidden();
-    actingAs($this->superAdmin)->put(route('admin.beasiswa.perbarui', $scholarship), ['nama' => 'X'])->assertForbidden();
-    actingAs($this->superAdmin)->delete(route('admin.beasiswa.hapus', $scholarship))->assertForbidden();
+    actingAs($this->superAdmin)->get(route('admin.beasiswa.ubah', $scholarship))->assertOk();
+    actingAs($this->superAdmin)->delete(route('admin.beasiswa.hapus', $scholarship))->assertRedirect();
 
-    $this->assertDatabaseHas('beasiswa', ['id' => $scholarship->id]);
-});
-
-// ─── Applicant: only admin deletes ──────────────────────────────
-
-test('admin can delete applicant', function () {
-    $applicant = Applicant::factory()->create();
-
-    actingAs($this->admin)->delete(route('admin.pendaftar.hapus', $applicant))->assertRedirect();
-
-    $this->assertDatabaseMissing('pendaftar', ['id' => $applicant->id]);
-});
-
-test('super admin cannot delete applicant', function () {
-    $applicant = Applicant::factory()->create();
-
-    actingAs($this->superAdmin)->delete(route('admin.pendaftar.hapus', $applicant))->assertForbidden();
-
-    $this->assertDatabaseHas('pendaftar', ['id' => $applicant->id]);
-});
-
-// ─── Applicant: only admin verifies status ──────────────────────
-
-test('admin updating applicant only changes status and catatan', function () {
-    $applicant = Applicant::factory()->create([
-        'fakultas' => 'Fakultas Awal',
-        'prodi' => 'Prodi Awal',
-        'status' => 'verifikasi',
-    ]);
-
-    actingAs($this->admin)->put(route('admin.pendaftar.perbarui', $applicant), [
-        'status' => 'revisi',
-        'catatan' => 'Lengkapi IPK',
-        'fakultas' => 'Fakultas Baru',
-        'prodi' => 'Prodi Baru',
-        'ipk' => 3.9,
-    ])->assertRedirect();
-
-    $applicant->refresh();
-    expect($applicant->status)->toBe('revisi');
-    expect($applicant->catatan)->toBe('Lengkapi IPK');
-    expect($applicant->fakultas)->toBe('Fakultas Awal');
-    expect($applicant->prodi)->toBe('Prodi Awal');
-});
-
-test('super admin cannot verify or change applicant status', function () {
-    $applicant = Applicant::factory()->create([
-        'fakultas' => 'Fakultas Awal',
-        'prodi' => 'Prodi Awal',
-    ]);
-
-    actingAs($this->superAdmin)->put(route('admin.pendaftar.perbarui', $applicant), [
-        'status' => 'diterima',
-        'fakultas' => 'Fakultas Baru',
-        'prodi' => 'Prodi Baru',
-        'ipk' => 3.8,
-        'semester' => 6,
-    ])->assertForbidden();
-
-    $applicant->refresh();
-    expect($applicant->status)->toBe('verifikasi');
-    expect($applicant->fakultas)->toBe('Fakultas Awal');
-});
-
-// ─── Template: only admin ───────────────────────────────────────
-
-test('admin can access template page', function () {
-    actingAs($this->admin)->get(route('admin.template.index'))->assertOk();
-});
-
-test('super admin cannot access template page', function () {
-    actingAs($this->superAdmin)->get(route('admin.template.index'))->assertForbidden();
+    $this->assertDatabaseMissing('beasiswa', ['id' => $scholarship->id]);
 });

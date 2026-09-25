@@ -3,7 +3,6 @@
 use App\Models\Kampus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
@@ -13,10 +12,9 @@ use function Pest\Laravel\put;
 uses(RefreshDatabase::class)->group('admin', 'kampus');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
+    // Halaman Kampus (Master Data) dikelola role kesra, bukan role kampus.
     $this->admin = User::factory()->admin()->create([
         'email' => 'admin@test.com',
     ]);
@@ -393,18 +391,22 @@ test('mass delete only removes prodi belonging to the fakultas', function () {
     $this->assertDatabaseHas('prodi', ['id' => $prodi2->id]);
 });
 
-test('super admin cannot mass delete', function () {
-    [$kampus] = createKampusHierarchy();
+test('super admin can mass delete', function () {
+    [$kampus, $fakultas, $prodi] = createKampusHierarchy();
     $this->actingAs($this->superAdmin);
 
-    delete(route('admin.kampus.massDestroy'), ['ids' => [$kampus->id]])->assertForbidden();
+    delete(route('admin.kampus.massDestroy'), ['ids' => [$kampus->id]])
+        ->assertRedirect(route('admin.kampus.index'))
+        ->assertSessionHas('success');
 
-    $this->assertDatabaseCount('kampus', 1);
+    $this->assertDatabaseCount('kampus', 0);
+    $this->assertDatabaseMissing('fakultas', ['id' => $fakultas->id]);
+    $this->assertDatabaseMissing('prodi', ['id' => $prodi->id]);
 });
 
-// ─── Super Admin: View Only ──────────────────────────────────────
+// ─── Super Admin: Manageable (menu-granted) ──────────────────────
 
-test('super admin can view structure but cannot manage', function () {
+test('super admin can view and manage kampus structure', function () {
     [$kampus, $fakultas, $prodi] = createKampusHierarchy();
     $this->actingAs($this->superAdmin);
 
@@ -412,15 +414,21 @@ test('super admin can view structure but cannot manage', function () {
     get(route('admin.kampus.fakultas.index', $kampus))->assertOk();
     get(route('admin.kampus.prodi.index', [$kampus, $fakultas]))->assertOk();
 
-    post(route('admin.kampus.simpan'), ['nama_kampus' => ['Universitas Baru']])->assertForbidden();
-    get(route('admin.kampus.buat'))->assertForbidden();
-    put(route('admin.kampus.perbarui', $kampus), ['nama_kampus' => 'Universitas Baru'])->assertForbidden();
-    delete(route('admin.kampus.hapus', $kampus))->assertForbidden();
-    post(route('admin.kampus.fakultas.simpan', $kampus), ['nama' => ['Fakultas Hukum']])->assertForbidden();
-    post(route('admin.kampus.prodi.simpan', [$kampus, $fakultas]), ['nama' => ['Teknik Mesin']])->assertForbidden();
+    post(route('admin.kampus.simpan'), ['nama_kampus' => ['Universitas Baru']])
+        ->assertRedirect(route('admin.kampus.index'));
+    $this->assertDatabaseHas('kampus', ['nama_kampus' => 'Universitas Baru']);
 
-    $this->assertDatabaseMissing('kampus', ['nama_kampus' => 'Universitas Baru']);
-    $this->assertDatabaseCount('prodi', 1);
+    put(route('admin.kampus.perbarui', $kampus), ['nama_kampus' => 'Universitas Diganti'])
+        ->assertRedirect(route('admin.kampus.index'));
+    $this->assertDatabaseHas('kampus', ['id' => $kampus->id, 'nama_kampus' => 'Universitas Diganti']);
+
+    post(route('admin.kampus.fakultas.simpan', $kampus), ['nama' => ['Fakultas Hukum']])
+        ->assertRedirect(route('admin.kampus.fakultas.index', $kampus));
+    $this->assertDatabaseHas('fakultas', ['kampus_id' => $kampus->id, 'nama' => 'Fakultas Hukum']);
+
+    post(route('admin.kampus.prodi.simpan', [$kampus, $fakultas]), ['nama' => ['Teknik Mesin']])
+        ->assertRedirect(route('admin.kampus.prodi.index', [$kampus, $fakultas]));
+    $this->assertDatabaseHas('prodi', ['fakultas_id' => $fakultas->id, 'nama' => 'Teknik Mesin']);
 });
 
 test('kampus index uses standardised action buttons with global delete handler', function () {
@@ -472,6 +480,20 @@ test('regular user cannot access kampus management', function () {
     get(route('admin.kampus.index'))->assertForbidden();
     get(route('admin.kampus.fakultas.index', $kampus))->assertForbidden();
     get(route('admin.kampus.buat'))->assertForbidden();
+});
+
+test('kampus role cannot access kampus management but kesra role can', function () {
+    // Menu Kampus (Master Data) adalah halaman untuk role kesra, bukan role kampus.
+    $kampusRole = User::factory()->kampusAdmin()->create(['email' => 'rolekampus@test.com']);
+    $kesraRole = User::factory()->admin()->create(['email' => 'rolekesra@test.com']);
+
+    $this->actingAs($kampusRole)
+        ->get(route('admin.kampus.index'))
+        ->assertForbidden();
+
+    $this->actingAs($kesraRole)
+        ->get(route('admin.kampus.index'))
+        ->assertOk();
 });
 
 test('unauthenticated user cannot access kampus management', function () {

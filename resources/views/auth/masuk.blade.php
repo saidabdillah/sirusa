@@ -37,22 +37,19 @@
             <form action="{{ route('login.store') }}" method="POST">
               @csrf
               <div class="form-group">
-                <label for="login">Email atau Username</label>
+                <label for="login">NIK atau Username</label>
                 <input id="login" type="text" class="form-control @error('login') is-invalid @enderror" name="login" value="{{ old('login') }}" tabindex="1" autofocus>
                 @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <small class="text-muted">Mahasiswa masuk menggunakan NIK. Admin masuk menggunakan username.</small>
               </div>
 
               <div class="form-group">
                 <div class="d-block">
                   <label for="password" class="control-label">Kata Sandi</label>
-                  <div class="float-right">
-                    <a href="{{ route('password.request') }}" class="text-small">
-                      Lupa kata sandi?
-                    </a>
-                  </div>
                 </div>
                 <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" tabindex="2">
                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <small class="text-muted">Lupa kata sandi? Hubungi admin untuk reset.</small>
               </div>
 
               <div class="form-group">
@@ -72,7 +69,7 @@
           </div>
         </div>
         <div class="mt-5 text-muted text-center">
-          Belum punya akun? <a href="{{ route('register') }}">Daftar Sekarang</a>
+          Belum punya akun? Silakan hubungi admin agar didaftarkan.
         </div>
         <div class="simple-footer">
           Hak Cipta &copy; SIRUSA {{ date('Y') }}

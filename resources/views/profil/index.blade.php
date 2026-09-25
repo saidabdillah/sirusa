@@ -1,12 +1,38 @@
 @extends('layouts.app')
 
+@php
+  $documentGroups = [
+    'Berkas Data Diri' => [
+      'foto_profil' => 'Pas Foto 3x4',
+      'dokumen_ktp' => 'KTP',
+      'dokumen_kk' => 'Kartu Keluarga',
+      'dokumen_desil' => 'Dokumen Desil',
+      'dokumen_sktm' => 'SKTM',
+    ],
+    'Berkas Kampus' => [
+      'dokumen_transkrip' => 'Transkrip',
+      'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
+      'dokumen_surat_pernyataan' => 'Surat Pernyataan',
+      'dokumen_bukti_ukt' => 'Bukti UKT',
+    ],
+    'Berkas Orang Tua/Wali' => [
+      'ktp_ayah' => 'KTP Ayah',
+      'ktp_ibu' => 'KTP Ibu',
+      'ktp_wali' => 'KTP Wali',
+      'kk_wali' => 'KK Wali',
+    ],
+  ];
+  $waliDocFields = ['ktp_wali', 'kk_wali'];
+  $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'];
+@endphp
+
 @section('skeleton')
 @include('layouts.partials.skeleton.shell', [
 'content' => view('layouts.partials.skeleton.form', [
-'avatar' => true,
+'avatar' => false,
 'sections' => [
 ['label' => 'Data Diri', 'rows' => [1, 2, 2, 2]],
-['label' => 'Data Kampus', 'rows' => [2, 3, 1]],
+['label' => 'Data Kampus', 'rows' => [2, 3, 2]],
 ['label' => 'Data Orang Tua', 'rows' => [1, 2, 2, 2, 2]],
 ],
 ])->render(),
@@ -41,7 +67,7 @@
     @if(! $profileComplete)
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
       <strong><i class="fas fa-exclamation-triangle"></i> Profil belum lengkap!</strong><br>
-      Anda harus melengkapi data berikut sebelum bisa mendaftar beasiswa.
+      Anda harus melengkapi data dan dokumen berikut sebelum bisa mendaftar beasiswa.
       <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
     </div>
     @endif
@@ -50,6 +76,40 @@
     <div class="alert alert-success">
       <i class="fas fa-check-circle"></i> Profil Anda sudah lengkap. Anda bisa mendaftar beasiswa.
     </div>
+    @endif
+
+    @if($profile)
+      @switch($profile->verifStatus())
+        @case('terverifikasi')
+          <div class="alert alert-success">
+            <i class="fas fa-shield-alt"></i> Data profil Anda telah <strong>terverifikasi</strong> oleh seluruh verifikator.
+          </div>
+          @break
+        @case('revisi')
+          <div class="alert alert-danger">
+            <i class="fas fa-times-circle"></i> Data profil Anda <strong>perlu perbaikan</strong>. Silakan periksa catatan verifikator lalu simpan kembali profil Anda.
+            @foreach($profile->verifStageLabels() as $stage => $label)
+              @if($profile->{'verif_'.$stage} === 'revisi' && $profile->{'catatan_'.$stage})
+                <div class="mt-2"><strong>{{ $label }}:</strong> {{ $profile->{'catatan_'.$stage} }}</div>
+              @endif
+            @endforeach
+          </div>
+          @break
+        @case('tolak')
+          <div class="alert alert-danger">
+            <i class="fas fa-times-circle"></i> Data profil Anda <strong>ditolak</strong>. Silakan periksa catatan verifikator lalu simpan kembali profil Anda.
+            @foreach($profile->verifStageLabels() as $stage => $label)
+              @if($profile->{'verif_'.$stage} === 'tolak' && $profile->{'catatan_'.$stage})
+                <div class="mt-2"><strong>{{ $label }}:</strong> {{ $profile->{'catatan_'.$stage} }}</div>
+              @endif
+            @endforeach
+          </div>
+          @break
+        @default
+          <div class="alert alert-info">
+            <i class="fas fa-clock"></i> Data profil Anda sedang dalam <strong>proses verifikasi</strong>. Data yang disimpan saat ini akan direset untuk diverifikasi ulang.
+          </div>
+      @endswitch
     @endif
 
     <div class="row">
@@ -62,37 +122,6 @@
             @csrf
             @method('PUT')
             <div class="card-body">
-
-              {{-- FOTO PROFIL --}}
-              <div class="form-group">
-                <label>Foto Profil</label>
-                <div class="d-flex align-items-center">
-                  <div class="mr-3">
-                    @if($profile && $profile->foto_profil)
-                    <img src="{{ route('profile.photo', $profile->foto_profil) }}" alt="Foto Profil"
-                      class="rounded-circle" width="100" height="100" id="previewImg" style="object-fit:cover;">
-                    @else
-                    <img src="{{ asset('assets/img/avatar/avatar-1.png') }}" alt="Avatar" class="rounded-circle"
-                      width="100" height="100" id="previewImg">
-                    @endif
-                  </div>
-                  <div>
-                    <input type="file" class="form-control @error('foto_profil') is-invalid @enderror"
-                      name="foto_profil" id="foto_profil" accept="image/*">
-                    @error('foto_profil')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <small class="text-muted">Format: JPG, JPEG, PNG. Maks 2MB.</small>
-                    @if($profile && $profile->foto_profil)
-                    <div class="mt-2">
-                      <button type="button" class="btn btn-sm btn-danger" id="hapusFotoBtn"
-                        data-info-url="{{ route('profile.photo.info') }}"
-                        data-action="{{ route('profile.photo.delete') }}">
-                        <i class="fas fa-trash"></i> Hapus Foto
-                      </button>
-                    </div>
-                    @endif
-                  </div>
-                </div>
-              </div>
 
               {{-- DATA DIRI --}}
               <h5 class="mb-3">Data Diri</h5>
@@ -111,10 +140,29 @@
                   @error('nik')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
+                  <label for="no_kk">No. Kartu Keluarga <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('no_kk') is-invalid @enderror" id="no_kk" name="no_kk"
+                    value="{{ old('no_kk', $profile->no_kk ?? '') }}" maxlength="16">
+                  @error('no_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-md-6">
                   <label for="telepon">Telepon <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('telepon') is-invalid @enderror" id="telepon"
                     name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}">
                   @error('telepon')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="desil">Desil Kesejahteraan <span class="text-danger">*</span></label>
+                  <select class="form-control @error('desil') is-invalid @enderror" id="desil" name="desil">
+                    <option value="">Pilih Desil (1-10)</option>
+                    @foreach(range(1, 10) as $d)
+                    <option value="{{ $d }}" {{ old('desil', $profile->desil ?? '') == $d ? 'selected' : '' }}>Desil {{ $d }}</option>
+                    @endforeach
+                  </select>
+                  @error('desil')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 
@@ -138,33 +186,26 @@
 
               <div class="form-row">
                 <div class="form-group col-md-6">
-                  <label for="jenis_kelamin">Jenis Kelamin <span class="text-danger">*</span></label>
-                  <select class="form-control @error('jenis_kelamin') is-invalid @enderror" id="jenis_kelamin"
-                    name="jenis_kelamin">
-                    <option value="">Pilih Jenis Kelamin</option>
-                    <option value="Laki-laki" {{ old('jenis_kelamin', $profile->jenis_kelamin ?? '') === 'Laki-laki' ?
-                      'selected' : '' }}>Laki-laki</option>
-                    <option value="Perempuan" {{ old('jenis_kelamin', $profile->jenis_kelamin ?? '') === 'Perempuan' ?
-                      'selected' : '' }}>Perempuan</option>
-                  </select>
+                  <label>Jenis Kelamin <span class="text-danger">*</span></label>
+                  <div class="d-flex align-items-center">
+                    @foreach(['Laki-laki' => 'laki_laki', 'Perempuan' => 'perempuan'] as $label => $key)
+                    <div class="custom-control custom-radio mr-4">
+                      <input type="radio" class="custom-control-input @error('jenis_kelamin') is-invalid @enderror"
+                        id="jenis_kelamin_{{ $key }}" name="jenis_kelamin" value="{{ $label }}"
+                        {{ old('jenis_kelamin', $profile->jenis_kelamin ?? '') === $label ? 'checked' : '' }}>
+                      <label class="custom-control-label" for="jenis_kelamin_{{ $key }}">{{ $label }}</label>
+                    </div>
+                    @endforeach
+                  </div>
                   @error('jenis_kelamin')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
                   <label for="agama">Agama <span class="text-danger">*</span></label>
                   <select class="form-control @error('agama') is-invalid @enderror" id="agama" name="agama">
                     <option value="">Pilih Agama</option>
-                    <option value="Islam" {{ old('agama', $profile->agama ?? '') === 'Islam' ? 'selected' : '' }}>Islam
-                    </option>
-                    <option value="Kristen" {{ old('agama', $profile->agama ?? '') === 'Kristen' ? 'selected' : ''
-                      }}>Kristen</option>
-                    <option value="Katholik" {{ old('agama', $profile->agama ?? '') === 'Katholik' ? 'selected' : ''
-                      }}>Katholik</option>
-                    <option value="Hindu" {{ old('agama', $profile->agama ?? '') === 'Hindu' ? 'selected' : '' }}>Hindu
-                    </option>
-                    <option value="Buddha" {{ old('agama', $profile->agama ?? '') === 'Buddha' ? 'selected' : ''
-                      }}>Buddha</option>
-                    <option value="Konghucu" {{ old('agama', $profile->agama ?? '') === 'Konghucu' ? 'selected' : ''
-                      }}>Konghucu</option>
+                    @foreach(['Islam', 'Kristen', 'Katholik', 'Hindu', 'Buddha', 'Konghucu'] as $agama)
+                    <option value="{{ $agama }}" {{ old('agama', $profile->agama ?? '') === $agama ? 'selected' : '' }}>{{ $agama }}</option>
+                    @endforeach
                   </select>
                   @error('agama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -202,8 +243,7 @@
                   <label for="desa_kelurahan">Desa/Kelurahan <span class="text-danger">*</span></label>
                   <select class="form-control @error('desa_kelurahan') is-invalid @enderror" id="desa_kelurahan"
                     name="desa_kelurahan">
-                    <option value="">{{ ($profile->desa_kelurahan ?? '') ? 'Pilih Desa/Kelurahan' : 'Pilih Kecamatan
-                      terlebih dahulu' }}</option>
+                    <option value="">{{ ($profile->desa_kelurahan ?? '') ? 'Pilih Desa/Kelurahan' : 'Pilih Kecamatan terlebih dahulu' }}</option>
                   </select>
                   @error('desa_kelurahan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -266,131 +306,104 @@
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="nim">NIM <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('nim') is-invalid @enderror" id="nim" name="nim"
-                  value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30">
-                @error('nim')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="nim">NIM</label>
+                  <input type="text" class="form-control @error('nim') is-invalid @enderror" id="nim" name="nim"
+                    value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30">
+                  @error('nim')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="ukt">UKT/SPP <span class="text-danger">*</span></label>
+                  <div class="input-group @error('ukt') is-invalid @enderror">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text">Rp</span>
+                    </div>
+                    <input type="text" inputmode="numeric"
+                      class="form-control @error('ukt') is-invalid @enderror" id="ukt" name="ukt"
+                      value="{{ old('ukt', $profile->ukt ?? '') }}" placeholder="contoh 2.500.000">
+                  </div>
+                  @error('ukt')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
               </div>
 
               <hr>
 
-              {{-- DATA ORANG TUA --}}
-              <h5 class="mb-3">Data Orang Tua</h5>
-              <div class="form-group">
-                <label for="status_orang_tua">Status Orang Tua <span class="text-danger">*</span></label>
-                <select class="form-control @error('status_orang_tua') is-invalid @enderror" id="status_orang_tua"
-                  name="status_orang_tua">
-                  <option value="">Pilih Status</option>
-                  <option value="Lengkap" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Lengkap' ?
-                    'selected' : '' }}>Lengkap (Ayah & Ibu)</option>
-                  <option value="Yatim" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim' ?
-                    'selected' : '' }}>Yatim (Ayah Meninggal)</option>
-                  <option value="Piatu" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Piatu' ?
-                    'selected' : '' }}>Piatu (Ibu Meninggal)</option>
-                  <option value="Yatim Piatu" {{ old('status_orang_tua', $profile->status_orang_tua ?? '') === 'Yatim
-                    Piatu' ? 'selected' : '' }}>Yatim Piatu (Tinggal dengan Wali)</option>
-                </select>
-                @error('status_orang_tua')<div class="invalid-feedback">{{ $message }}</div>@enderror
-              </div>
-
-              <div id="section-ayah"
-                style="{{ in_array($profile->status_orang_tua ?? null, ['Lengkap', 'Piatu']) ? '' : 'display:none;' }}">
-                <h6 class="text-muted mb-2">Ayah</h6>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="nama_ayah">Nama Ayah <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nama_ayah') is-invalid @enderror" id="nama_ayah"
-                      name="nama_ayah" value="{{ old('nama_ayah', $profile->nama_ayah ?? '') }}">
-                    @error('nama_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              {{-- DATA ORANG TUA & WALI --}}
+              <h5 class="mb-3">Data Orang Tua &amp; Wali</h5>
+              <div class="form-row">
+                <div class="form-group col-md-12">
+                  <label>Ikut KK <span class="text-danger">*</span></label>
+                  <div class="d-flex align-items-center">
+                    @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'wali' => 'Wali'] as $value => $label)
+                    <div class="custom-control custom-radio mr-4">
+                      <input type="radio" class="custom-control-input" id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}"
+                        {{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
+                      <label class="custom-control-label" for="ikut_kk_{{ $value }}">{{ $label }}</label>
+                    </div>
+                    @endforeach
                   </div>
-                  <div class="form-group col-md-6">
-                    <label for="nik_ayah">NIK Ayah <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah"
-                      name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
-                    @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="pekerjaan_ayah">Pekerjaan Ayah <span class="text-danger">*</span></label>
-                    <select class="form-control @error('pekerjaan_ayah') is-invalid @enderror" id="pekerjaan_ayah"
-                      name="pekerjaan_ayah">
-                      <option value="">Pilih Pekerjaan</option>
-                      @foreach(['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya']
-                      as $pekerjaan)
-                      <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ayah', $profile->pekerjaan_ayah ?? '') ===
-                        $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
-                      @endforeach
-                    </select>
-                    @error('pekerjaan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="penghasilan_ayah">Penghasilan Ayah <span class="text-danger">*</span></label>
-                    <select class="form-control @error('penghasilan_ayah') is-invalid @enderror" id="penghasilan_ayah"
-                      name="penghasilan_ayah">
-                      <option value="">Pilih Penghasilan</option>
-                      @foreach(['< 1jt', '1-3jt' , '3-5jt' , '5-10jt' , '> 10jt' ] as $penghasilan) <option
-                        value="{{ $penghasilan }}" {{ old('penghasilan_ayah', $profile->penghasilan_ayah ?? '') ===
-                        $penghasilan ? 'selected' : '' }}>{{ $penghasilan }}</option>
-                        @endforeach
-                    </select>
-                    @error('penghasilan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
+                  <small class="text-muted d-block">KK terdaftar mengikuti orang tua/wali yang diikuti. Data orang tua/wali yang diikuti wajib diisi.</small>
+                  @error('ikut_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 
-              <div id="section-ibu"
-                style="{{ in_array($profile->status_orang_tua ?? null, ['Lengkap', 'Yatim']) ? '' : 'display:none;' }}">
-                <h6 class="text-muted mb-2 mt-3">Ibu</h6>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="nama_ibu">Nama Ibu <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nama_ibu') is-invalid @enderror" id="nama_ibu"
-                      name="nama_ibu" value="{{ old('nama_ibu', $profile->nama_ibu ?? '') }}">
-                    @error('nama_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="nik_ibu">NIK Ibu <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu"
-                      name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
-                    @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
+              <h6 class="text-muted mt-3 mb-2">Ayah</h6>
+              <div class="form-row">
+                <div class="form-group col-md-4">
+                  <label for="nama_ayah">Nama Ayah <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('nama_ayah') is-invalid @enderror" id="nama_ayah"
+                    name="nama_ayah" value="{{ old('nama_ayah', $profile->nama_ayah ?? '') }}">
+                  @error('nama_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="pekerjaan_ibu">Pekerjaan Ibu <span class="text-danger">*</span></label>
-                    <select class="form-control @error('pekerjaan_ibu') is-invalid @enderror" id="pekerjaan_ibu"
-                      name="pekerjaan_ibu">
-                      <option value="">Pilih Pekerjaan</option>
-                      @foreach(['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya']
-                      as $pekerjaan)
-                      <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ibu', $profile->pekerjaan_ibu ?? '') ===
-                        $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
-                      @endforeach
-                    </select>
-                    @error('pekerjaan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="penghasilan_ibu">Penghasilan Ibu <span class="text-danger">*</span></label>
-                    <select class="form-control @error('penghasilan_ibu') is-invalid @enderror" id="penghasilan_ibu"
-                      name="penghasilan_ibu">
-                      <option value="">Pilih Penghasilan</option>
-                      @foreach(['< 1jt', '1-3jt' , '3-5jt' , '5-10jt' , '> 10jt' ] as $penghasilan) <option
-                        value="{{ $penghasilan }}" {{ old('penghasilan_ibu', $profile->penghasilan_ibu ?? '') ===
-                        $penghasilan ? 'selected' : '' }}>{{ $penghasilan }}</option>
-                        @endforeach
-                    </select>
-                    @error('penghasilan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
+                <div class="form-group col-md-4">
+                  <label for="nik_ayah">NIK Ayah <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah"
+                    name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
+                  @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="pekerjaan_ayah">Pekerjaan Ayah <span class="text-danger">*</span></label>
+                  <select class="form-control @error('pekerjaan_ayah') is-invalid @enderror" id="pekerjaan_ayah"
+                    name="pekerjaan_ayah">
+                    <option value="">Pilih Pekerjaan</option>
+                    @foreach($pekerjaanList as $pekerjaan)
+                    <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ayah', $profile->pekerjaan_ayah ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
+                    @endforeach
+                  </select>
+                  @error('pekerjaan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 
-              <div id="section-wali"
-                style="{{ ($profile->status_orang_tua ?? null) === 'Yatim Piatu' ? '' : 'display:none;' }}">
+              <h6 class="text-muted mt-3 mb-2">Ibu</h6>
+              <div class="form-row">
+                <div class="form-group col-md-4">
+                  <label for="nama_ibu">Nama Ibu <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('nama_ibu') is-invalid @enderror" id="nama_ibu"
+                    name="nama_ibu" value="{{ old('nama_ibu', $profile->nama_ibu ?? '') }}">
+                  @error('nama_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="nik_ibu">NIK Ibu <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu"
+                    name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
+                  @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-4">
+                  <label for="pekerjaan_ibu">Pekerjaan Ibu <span class="text-danger">*</span></label>
+                  <select class="form-control @error('pekerjaan_ibu') is-invalid @enderror" id="pekerjaan_ibu"
+                    name="pekerjaan_ibu">
+                    <option value="">Pilih Pekerjaan</option>
+                    @foreach($pekerjaanList as $pekerjaan)
+                    <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ibu', $profile->pekerjaan_ibu ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
+                    @endforeach
+                  </select>
+                  @error('pekerjaan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+              </div>
+
+              <div id="section-wali" style="{{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === 'wali' ? '' : 'display:none;' }}">
                 <hr>
-
-                {{-- DATA WALI (hanya jika yatim piatu) --}}
                 <h6 class="text-muted mb-2">Wali</h6>
                 <div class="form-row">
                   <div class="form-group col-md-6">
@@ -413,8 +426,7 @@
                       name="hubungan_wali">
                       <option value="">Pilih Hubungan</option>
                       @foreach(['Paman', 'Bibi', 'Kakek', 'Nenek', 'Lainnya'] as $hubungan)
-                      <option value="{{ $hubungan }}" {{ old('hubungan_wali', $profile->hubungan_wali ?? '') ===
-                        $hubungan ? 'selected' : '' }}>{{ $hubungan }}</option>
+                      <option value="{{ $hubungan }}" {{ old('hubungan_wali', $profile->hubungan_wali ?? '') === $hubungan ? 'selected' : '' }}>{{ $hubungan }}</option>
                       @endforeach
                     </select>
                     @error('hubungan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -424,29 +436,57 @@
                     <select class="form-control @error('pekerjaan_wali') is-invalid @enderror" id="pekerjaan_wali"
                       name="pekerjaan_wali">
                       <option value="">Pilih Pekerjaan</option>
-                      @foreach(['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya']
-                      as $pekerjaan)
-                      <option value="{{ $pekerjaan }}" {{ old('pekerjaan_wali', $profile->pekerjaan_wali ?? '') ===
-                        $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
+                      @foreach($pekerjaanList as $pekerjaan)
+                      <option value="{{ $pekerjaan }}" {{ old('pekerjaan_wali', $profile->pekerjaan_wali ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
                       @endforeach
                     </select>
                     @error('pekerjaan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="penghasilan_wali">Penghasilan Wali <span class="text-danger">*</span></label>
-                    <select class="form-control @error('penghasilan_wali') is-invalid @enderror" id="penghasilan_wali"
-                      name="penghasilan_wali">
-                      <option value="">Pilih Penghasilan</option>
-                      @foreach(['< 1jt', '1-3jt' , '3-5jt' , '5-10jt' , '> 10jt' ] as $penghasilan) <option
-                        value="{{ $penghasilan }}" {{ old('penghasilan_wali', $profile->penghasilan_wali ?? '') ===
-                        $penghasilan ? 'selected' : '' }}>{{ $penghasilan }}</option>
-                        @endforeach
-                    </select>
-                    @error('penghasilan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              </div>
+
+              <hr>
+
+              {{-- DOKUMEN --}}
+              <h5 class="mb-3">Dokumen</h5>
+              <small class="text-muted d-block mb-3">Unggah dokumen sekali di profil. Dokumen akan diverifikasi oleh pihak terkait.</small>
+              @foreach($documentGroups as $groupName => $documents)
+                <h6 class="mt-3 mb-2"><i class="fas fa-folder text-primary mr-1"></i>{{ $groupName }}</h6>
+                @foreach($documents as $field => $label)
+                  @php $isWaliDoc = in_array($field, $waliDocFields, true); @endphp
+                  <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}" style="{{ $isWaliDoc && ($profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
+                    <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                      <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"
+                        name="{{ $field }}" accept=".pdf,.jpg,.jpeg,.png">
+                      @if($profile && $profile->{$field})
+                      <div class="input-group-append">
+                        <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank" class="btn btn-outline-secondary" title="Lihat dokumen">
+                          <i class="fas fa-eye"></i>
+                        </a>
+                      </div>
+                      @endif
+                      @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    @if($profile && $profile->{$field})
+                    <small class="text-muted">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
+                    @endif
                   </div>
+                @endforeach
+              @endforeach
+
+              <div class="form-group">
+                <label for="dokumen_prestasi">Dokumen Prestasi (Pilihan, bisa lebih dari satu)</label>
+                <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror"
+                  id="dokumen_prestasi" name="dokumen_prestasi[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @if($profile && $profile->dokumen_prestasi)
+                <div class="mt-2">
+                  @foreach($profile->dokumen_prestasi as $path)
+                  <a href="{{ route('dokumen.show', $path) }}" target="_blank" class="btn btn-sm btn-outline-secondary mr-1 mb-1"><i class="fas fa-file mr-1"></i>Prestasi</a>
+                  @endforeach
                 </div>
+                @endif
               </div>
 
             </div>
@@ -483,7 +523,7 @@
             </div>
             <hr>
             <div class="text-muted small">
-              Lengkapi profil Anda untuk mempermudah proses pendaftaran beasiswa.
+              Lengkapi profil beserta dokumen pendukung untuk mempermudah proses verifikasi dan pendaftaran beasiswa.
             </div>
           </div>
         </div>
@@ -494,65 +534,23 @@
 @endsection
 
 @push('script')
+<script src="{{ asset('assets/modules/cleave-js/dist/cleave.min.js') }}"></script>
 <script>
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('#hapusFotoBtn');
-    if (!btn) return;
-
-    e.preventDefault();
-
-    fetch(btn.dataset.infoUrl, {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-      },
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        Swal.fire({
-          title: data.title,
-          text: data.text,
-          icon: data.icon,
-          showCancelButton: true,
-          confirmButtonColor: data.confirmButtonColor,
-          cancelButtonColor: '#6c757d',
-          confirmButtonText: data.confirmButtonText,
-          cancelButtonText: 'Batal',
-        }).then(function (result) {
-          if (result.isConfirmed) {
-            fetch(btn.dataset.action, {
-              method: 'DELETE',
-              headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-              },
-            }).then(function () {
-              window.location.reload();
-            });
-          }
-        });
-      })
-      .catch(function () {
-        Swal.fire('Error', 'Gagal memuat data. Silakan coba lagi.', 'error');
-      });
-  });
-
-  document.getElementById('foto_profil').addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (file) {
-      var reader = new FileReader();
-      reader.onload = function(event) {
-        document.getElementById('previewImg').src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
   flatpickr(".flatpickr", {
     dateFormat: "Y-m-d",
     disableMobile: true
   });
+
+  if (typeof Cleave !== 'undefined' && document.getElementById('ukt')) {
+    new Cleave('#ukt', {
+      numeral: true,
+      numeralThousandsGroupStyle: 'thousand',
+      delimiter: '.',
+      numeralDecimalMark: ',',
+      numeralDecimalScale: 0,
+      numeralPositiveOnly: true,
+    });
+  }
 
   var desaUrlBase = "{{ url('/api/wilayah/desa') }}";
 
@@ -635,18 +633,14 @@
     loadFakultas(selectedKampus, selectedFakultas);
   }
 
-  var $status = $('#status_orang_tua');
-
-  function applyParentSections(status) {
-    $('#section-ayah').toggle(status === 'Lengkap' || status === 'Piatu');
-    $('#section-ibu').toggle(status === 'Lengkap' || status === 'Yatim');
-    $('#section-wali').toggle(status === 'Yatim Piatu');
+  function updateWaliVisibility() {
+    var showWali = $('input[name="ikut_kk"]:checked').val() === 'wali';
+    $('#section-wali').toggle(showWali);
+    $('.wali-doc').toggle(showWali);
   }
 
-  applyParentSections($status.val());
+  $('input[name="ikut_kk"]').on('change', updateWaliVisibility);
 
-  $status.on('change', function() {
-    applyParentSections($(this).val());
-  });
+  updateWaliVisibility();
 </script>
 @endpush

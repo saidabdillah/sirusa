@@ -35,14 +35,9 @@
           </a>
         </li>
         @else
-        <li class="nav-item mr-lg-2 mb-2 mb-lg-0">
-          <a class="btn btn-outline-primary btn-block" href="{{ route('login') }}">
-            <i class="fas fa-sign-in-alt mr-1"></i>Masuk
-          </a>
-        </li>
         <li class="nav-item">
-          <a class="btn btn-primary btn-block" href="{{ route('register') }}">
-            <i class="fas fa-user-plus mr-1"></i>Daftar
+          <a class="btn btn-primary btn-block" href="{{ route('login') }}">
+            <i class="fas fa-sign-in-alt mr-1"></i>Masuk
           </a>
         </li>
         @endauth
@@ -67,11 +62,8 @@
             Dasbor
           </a>
           @else
-          <a href="{{ route('register') }}" class="btn btn-light btn-lg mr-3 mb-2">
-            <i class="fas fa-rocket mr-2"></i>Daftar Sekarang
-          </a>
-          <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg mb-2">
-            <i class="fas fa-sign-in-alt mr-2"></i>Masuk
+          <a href="{{ route('login') }}" class="btn btn-light btn-lg mb-2">
+            <i class="fas fa-sign-in-alt mr-2"></i>Masuk Sekarang
           </a>
           @endauth
         </div>
@@ -157,18 +149,18 @@
           <div class="card-body">
             <p class="mb-1"><i class="fas fa-university text-primary mr-1"></i>{{ $beasiswa->kampus }}</p>
             <p class="mb-1"><i class="fas fa-layer-group text-primary mr-1"></i>{{ $beasiswa->tingkat_gelar }}</p>
-            <p class="mb-0"><i class="fas fa-calendar-alt text-primary mr-1"></i>Batas: {{ $beasiswa->batas_waktu ?
-              $beasiswa->batas_waktu->translatedFormat('d F Y') : '-' }}</p>
+            <p class="mb-0"><i class="fas fa-calendar-alt text-primary mr-1"></i>Periode: {{ $beasiswa->tanggal_mulai && $beasiswa->tanggal_selesai ?
+              $beasiswa->tanggal_mulai->translatedFormat('d M Y').' – '.$beasiswa->tanggal_selesai->translatedFormat('d M Y') : '-' }}</p>
           </div>
           <div class="card-footer bg-white text-center">
             @auth
-            @if(auth()->user()->hasRole(['admin', 'super_admin']))
+            @if(auth()->user()->hasMenuAccess('admin.beasiswa.index'))
             <a href="{{ route('admin.beasiswa.index') }}" class="btn btn-sm btn-primary btn-block">Lihat Beasiswa</a>
             @else
             <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-primary btn-block">Lihat Beasiswa</a>
             @endif
             @else
-            <a href="{{ route('register') }}" class="btn btn-sm btn-primary btn-block">Daftar Sekarang</a>
+            <a href="{{ route('login') }}" class="btn btn-sm btn-primary btn-block">Masuk untuk Mendaftar</a>
             @endauth
           </div>
         </div>
@@ -216,9 +208,9 @@
       </a>
       @else
       <h2 class="font-weight-bold mb-3">Siap Mendapatkan Beasiswa?</h2>
-      <p class="lead mb-4">Daftar sekarang, gratis dan prosesnya mudah.</p>
-      <a href="{{ route('register') }}" class="btn btn-light btn-lg">
-        <i class="fas fa-rocket mr-2"></i>Daftar Sekarang
+      <p class="lead mb-4">Belum punya akun? Silakan hubungi admin agar didaftarkan.</p>
+      <a href="{{ route('login') }}" class="btn btn-light btn-lg">
+        <i class="fas fa-sign-in-alt mr-2"></i>Masuk Sekarang
       </a>
       @endauth
     </div>
@@ -245,7 +237,6 @@
           <li><a class="text-white-50" href="{{ route('dashboard') }}">Dasbor</a></li>
           @else
           <li><a class="text-white-50" href="{{ route('login') }}"><i class="fas fa-chevron-right mr-1"></i>Masuk</a></li>
-          <li><a class="text-white-50" href="{{ route('register') }}"><i class="fas fa-chevron-right mr-1"></i>Daftar</a></li>
           @endauth
         </ul>
       </div>

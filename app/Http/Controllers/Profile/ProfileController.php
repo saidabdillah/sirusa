@@ -10,7 +10,6 @@ use App\Services\WilayahService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -20,6 +19,21 @@ class ProfileController extends Controller
     private const KABUPATEN = 'Balangan';
 
     private const KABUPATEN_CODE = '6311';
+
+    private array $documentFields = [
+        'dokumen_ktp',
+        'dokumen_kk',
+        'dokumen_desil',
+        'dokumen_sktm',
+        'dokumen_transkrip',
+        'dokumen_surat_aktif',
+        'dokumen_surat_pernyataan',
+        'dokumen_bukti_ukt',
+        'ktp_ayah',
+        'ktp_ibu',
+        'ktp_wali',
+        'kk_wali',
+    ];
 
     public function __construct(
         private WilayahService $wilayah
@@ -52,18 +66,10 @@ class ProfileController extends Controller
             ];
         });
 
-        $selectedDistrict = null;
-        if ($profile?->kecamatan) {
-            $selectedDistrict = collect($districts)->first(
-                fn ($district) => strtolower($district['district'] ?? '') === strtolower($profile->kecamatan)
-            );
-        }
-
         return view('profil.index', compact(
             'profile',
             'profileComplete',
             'districts',
-            'selectedDistrict',
             'kampusList',
             'kampusJson'
         ));
@@ -75,27 +81,58 @@ class ProfileController extends Controller
         $data['provinsi'] = self::PROVINSI;
         $data['kabupaten_kota'] = self::KABUPATEN;
 
-        unset($data['foto_profil']);
+        $ikutKk = $request->input('ikut_kk', 'ayah');
+
+        $data['ikut_kk'] = $ikutKk;
+        $data['kk_ikut_wali'] = $ikutKk === 'wali';
+
+        if (! $data['kk_ikut_wali']) {
+            $data['nama_wali'] = null;
+            $data['nik_wali'] = null;
+            $data['pekerjaan_wali'] = null;
+            $data['hubungan_wali'] = null;
+            $data['ktp_wali'] = null;
+            $data['kk_wali'] = null;
+        }
 
         $profile = auth()->user()->profile;
+        $uploadDisk = Storage::disk('public');
 
         try {
-            if ($request->hasFile('foto_profil')) {
-                $file = $request->file('foto_profil');
-                $old = $profile?->foto_profil;
-                $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-                $data['foto_profil'] = Storage::disk('local')->putFileAs('profil', $file, $filename);
-                if ($old && Storage::disk('local')->exists($old)) {
-                    Storage::disk('local')->delete($old);
+            foreach (['foto_profil'] as $field) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $old = $profile?->{$field};
+                    $data[$field] = $uploadDisk->putFile('profil/'.auth()->id(), $file, 'public');
+                    $this->deleteIfExists($uploadDisk, $old);
                 }
             }
 
-            $data = array_merge($data, []);
+            foreach ($this->documentFields as $field) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $old = $profile?->{$field};
+                    $data[$field] = $uploadDisk->putFile('profil/'.auth()->id(), $file, 'public');
+                    $this->deleteIfExists($uploadDisk, $old);
+                }
+            }
 
-            UserProfile::updateOrCreate(
+            if ($request->hasFile('dokumen_prestasi')) {
+                $prestasi = $profile?->dokumen_prestasi ?? [];
+                foreach ($request->file('dokumen_prestasi') as $file) {
+                    $path = $uploadDisk->putFile('profil/'.auth()->id(), $file, 'public');
+                    $prestasi[] = $path;
+                }
+                $data['dokumen_prestasi'] = $prestasi;
+            }
+
+            $profile = UserProfile::updateOrCreate(
                 ['user_id' => auth()->id()],
                 $data
             );
+
+            $profile->resetVerification();
+            $profile->save();
 
             return redirect()->route('profile')->with('success', 'Profil berhasil diperbarui');
         } catch (\Throwable $e) {
@@ -105,23 +142,10 @@ class ProfileController extends Controller
         }
     }
 
-    public function destroyPhoto(): RedirectResponse
+    private function deleteIfExists($disk, ?string $path): void
     {
-        $profile = auth()->user()->profile;
-
-        if (! $profile?->foto_profil) {
-            return back()->with('error', 'Anda belum memiliki foto profil.');
-        }
-
-        try {
-            Storage::disk('local')->delete($profile->foto_profil);
-            $profile->update(['foto_profil' => null]);
-
-            return back()->with('success', 'Foto profil berhasil dihapus');
-        } catch (\Throwable $e) {
-            Log::error('Gagal hapus foto profil: '.$e->getMessage());
-
-            return back()->with('error', 'Terjadi kesalahan saat menghapus foto profil: '.$e->getMessage());
+        if ($path && $disk->exists($path)) {
+            $disk->delete($path);
         }
     }
 }

@@ -1,9 +1,9 @@
 ---
 paths:
-  - 'app/Http/Requests/Applicant/**'
+  - 'app/Models/Applicant.php'
+  - 'app/Http/Controllers/Admin/PendaftarController.php'
 ---
+# Applicant (pendaftar)
 
-# Applicant
-
-## KTM (surat aktif) wajib berbasis semester_minimal beasiswa
-dokumen_surat_aktif wajib (Rule::requiredIf) bila scholarship->semester_minimal >= 2, BUKAN dari profil user. View buat.blade.php memakai kondisi yang sama untuk tanda * dan hint ("Wajib/Tidak wajib untuk beasiswa ini."). Alur revisi (update) tetap nullable. Tambahkan rute input beasiswa_id lewat $this->input() saat resolve Scholarship.
+## The pendaftar module is fully READ-ONLY
+Admins can only list `pendaftar` (`admin.pendaftar.index`) and consume its DataTables JSON (`admin.pendaftar.data`). The scholarship decision is NOT managed here — the verifikasi profil module (`admin.verifikasi.*`) is the only approval surface. All admin mutation flows were REMOVED: `admin.pendaftar.lihat/perbarui/info/hapus` routes, `PendaftarController::show/update/deleteInfo/destroy`, views `admin/pendaftar/{lihat,_aksi}`, `app/Http/Requests/Applicant/UpdateApplicantRequest.php`, and `app/Notifications/ApplicantStatusChanged.php`. `Applicant::getStatusLabelAttribute()` is gone (it existed only for those flows). `Applicant` still maps to table `pendaftar` with relations `user`/`beasiswa`.

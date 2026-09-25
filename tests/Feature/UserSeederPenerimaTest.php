@@ -5,16 +5,13 @@ use Database\Seeders\KampusSeeder;
 use Database\Seeders\ScholarshipSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\seed;
 
 uses(RefreshDatabase::class)->group('seeder', 'penerima');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 });
 
 test('user seeder creates 50 accepted applicants for Pendidikan scholarship', function () {

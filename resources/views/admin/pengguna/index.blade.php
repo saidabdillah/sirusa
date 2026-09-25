@@ -50,24 +50,24 @@
                 </thead>
                 <tbody>
                   @foreach($users as $user)
+                  @php
+                    $roleLabels = [
+                        'super_admin' => 'Super Admin',
+                        'kesra' => 'Kesra',
+                        'kampus' => 'Kampus',
+                        'capil' => 'Capil',
+                        'user' => 'User',
+                    ];
+                    $roleName = $user->getRoleNames()->first();
+                  @endphp
                   <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $user->username }}</td>
                     <td>{{ $user->email }}</td>
                     <td>
-                      @foreach($user->roles as $role)
-                      @if($role->name === 'super_admin')
-                      <span class="badge badge-danger">Super Admin</span>
-                      @elseif($role->name === 'admin')
-                      <span class="badge badge-warning">Admin</span>
-                      @else
-                      <span class="badge badge-info">User</span>
-                      @endif
-                      @if($loop->iteration === 1 && !$loop->last)
-                      <span class="badge badge-light">+{{ $loop->remaining }}</span>
-                      @endif
-                      @break
-                      @endforeach
+                      <span class="badge {{ $roleName === 'super_admin' ? 'badge-danger' : 'badge-info' }}">
+                        {{ $roleLabels[$roleName] ?? $roleName }}
+                      </span>
                     </td>
                     <td>
                       @if($user->status === 'aktif')
@@ -78,48 +78,69 @@
                     </td>
                     <td>
                       @if(auth()->user()->hasRole('super_admin'))
-                      <a href="{{ route('admin.pengguna.ubah', $user) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
-                        <i class="fas fa-edit"></i>
-                      </a>
-                      @endif
-                      @if(! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="d-inline mr-1 mb-1">
-                        @csrf
-                        @method('PATCH')
-                        @if($user->status === 'aktif')
-                        <button type="button" class="btn btn-danger btn-sm btn-confirm-toggle" title="Nonaktifkan"
-                          data-confirm-title="Nonaktifkan Pengguna?"
-                          data-confirm-text="Apakah Anda yakin ingin menonaktifkan '{{ $user->username }}'?"
-                          data-confirm-icon="warning"
-                          data-confirm-color="#e74c3c"
-                          data-confirm-button="Ya, Nonaktifkan!"
-                          data-loading-text="Menonaktifkan...">
-                          <i class="fas fa-ban"></i>
+                      <div class="btn-group">
+                        <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          <i class="fas fa-cog"></i> Aksi
                         </button>
-                        @else
-                        <button type="button" class="btn btn-success btn-sm btn-confirm-toggle" title="Aktifkan"
-                          data-confirm-title="Aktifkan Pengguna?"
-                          data-confirm-text="Apakah Anda yakin ingin mengaktifkan '{{ $user->username }}'?"
-                          data-confirm-icon="question"
-                          data-confirm-color="#47c363"
-                          data-confirm-button="Ya, Aktifkan!"
-                          data-loading-text="Mengaktifkan...">
-                          <i class="fas fa-check"></i>
-                        </button>
-                        @endif
-                      </form>
-                      @endif
-                      @if(auth()->user()->hasRole('super_admin') && ! $user->hasRole('super_admin'))
-                      <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
-                        @csrf
-                        @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
-                          data-confirm-title="Hapus Pengguna?"
-                          data-confirm-text="Apakah Anda yakin ingin menghapus '{{ $user->username }}'? Tindakan ini tidak dapat dibatalkan."
-                          data-confirm-button="Ya, Hapus!">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </form>
+                        <div class="dropdown-menu dropdown-menu-right">
+                          <a class="dropdown-item" href="{{ route('admin.pengguna.ubah', $user) }}">
+                            <i class="fas fa-user-tag mr-1"></i> Ubah
+                          </a>
+
+                          <div class="dropdown-divider"></div>
+
+                          <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="m-0">
+                            @csrf
+                            @method('PATCH')
+                            @if($user->status === 'aktif')
+                            <button type="button" class="dropdown-item btn-confirm-toggle"
+                              data-confirm-title="Nonaktifkan Pengguna?"
+                              data-confirm-text="Apakah Anda yakin ingin menonaktifkan '{{ $user->username }}'?"
+                              data-confirm-icon="warning"
+                              data-confirm-color="#e74c3c"
+                              data-confirm-button="Ya, Nonaktifkan!">
+                              <i class="fas fa-ban mr-1"></i> Nonaktifkan
+                            </button>
+                            @else
+                            <button type="button" class="dropdown-item btn-confirm-toggle"
+                              data-confirm-title="Aktifkan Pengguna?"
+                              data-confirm-text="Apakah Anda yakin ingin mengaktifkan '{{ $user->username }}'?"
+                              data-confirm-icon="question"
+                              data-confirm-color="#47c363"
+                              data-confirm-button="Ya, Aktifkan!">
+                              <i class="fas fa-check mr-1"></i> Aktifkan
+                            </button>
+                            @endif
+                          </form>
+
+                          <form action="{{ route('admin.pengguna.reset-password', $user) }}" method="POST" class="m-0">
+                            @csrf
+                            <button type="button" class="dropdown-item btn-confirm-toggle"
+                              data-confirm-title="Reset Password?"
+                              data-confirm-text="Kata sandi '{{ $user->username }}' akan direset menjadi 12345678. Lanjutkan?"
+                              data-confirm-icon="question"
+                              data-confirm-color="#6777ef"
+                              data-confirm-button="Ya, Reset!">
+                              <i class="fas fa-key mr-1"></i> Reset Password
+                            </button>
+                          </form>
+
+                          <div class="dropdown-divider"></div>
+
+                          <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="m-0">
+                            @csrf
+                            @method('DELETE')
+                            <button type="button" class="dropdown-item text-danger btn-delete"
+                              data-confirm-title="Hapus Pengguna?"
+                              data-confirm-text="Apakah Anda yakin ingin menghapus '{{ $user->username }}'? Tindakan ini tidak dapat dibatalkan."
+                              data-confirm-icon="warning"
+                              data-confirm-color="#e74c3c"
+                              data-confirm-button="Ya, Hapus!">
+                              <i class="fas fa-trash mr-1"></i> Hapus User
+                            </button>
+                          </form>
+                        </div>
+                      </div>
                       @endif
                     </td>
                   </tr>
@@ -138,22 +159,62 @@
 @push('script')
 <script>
   $(document).ready(function() {
-  $('#userTable').DataTable({
-    language: {
-      search: "Cari:",
-      lengthMenu: "Tampilkan _MENU_ data",
-      info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-      infoEmpty: "Tidak ada data",
-      infoFiltered: "(disaring dari _MAX_ total data)",
-      zeroRecords: "Tidak ada data yang cocok",
-      paginate: {
-        first: "Pertama",
-        last: "Terakhir",
-        next: "Selanjutnya",
-        previous: "Sebelumnya"
+    $('#userTable').DataTable({
+      language: {
+        search: "Cari:",
+        lengthMenu: "Tampilkan _MENU_ data",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        infoEmpty: "Tidak ada data",
+        infoFiltered: "(disaring dari _MAX_ total data)",
+        zeroRecords: "Tidak ada data yang cocok",
+        paginate: {
+          first: "Pertama",
+          last: "Terakhir",
+          next: "Selanjutnya",
+          previous: "Sebelumnya"
+        }
       }
-    }
+    });
+
+    const btnConfirmToggle = document.querySelectorAll('.btn-confirm-toggle');
+    btnConfirmToggle.forEach(function(button) {
+      button.addEventListener('click', function() {
+        Swal.fire({
+          title: button.getAttribute('data-confirm-title'),
+          text: button.getAttribute('data-confirm-text'),
+          icon: button.getAttribute('data-confirm-icon') || 'question',
+          showCancelButton: true,
+          confirmButtonColor: button.getAttribute('data-confirm-color') || '#6777ef',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: button.getAttribute('data-confirm-button') || 'Ya',
+          cancelButtonText: 'Batal',
+        }).then(function(result) {
+          if (result.isConfirmed) {
+            button.closest('form').submit();
+          }
+        });
+      });
+    });
+
+    const btnDelete = document.querySelectorAll('.btn-delete');
+    btnDelete.forEach(function(button) {
+      button.addEventListener('click', function() {
+        Swal.fire({
+          title: button.getAttribute('data-confirm-title'),
+          text: button.getAttribute('data-confirm-text'),
+          icon: button.getAttribute('data-confirm-icon') || 'warning',
+          showCancelButton: true,
+          confirmButtonColor: button.getAttribute('data-confirm-color') || '#e74c3c',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: button.getAttribute('data-confirm-button') || 'Ya, Hapus!',
+          cancelButtonText: 'Batal',
+        }).then(function(result) {
+          if (result.isConfirmed) {
+            button.closest('form').submit();
+          }
+        });
+      });
+    });
   });
-});
 </script>
 @endpush

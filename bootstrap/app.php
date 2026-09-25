@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckUserStatus;
-use Illuminate\Console\Scheduling\Schedule;
+use App\Http\Middleware\EnsureMenuAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,11 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'status.aktif' => CheckUserStatus::class,
+            'akses.menu' => EnsureMenuAccess::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('login'));
-    })
-    ->withSchedule(function (Schedule $schedule): void {
-        $schedule->command('announcements:send')->daily();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -5,8 +5,11 @@ paths:
 
 # Auth
 
-## New registrations default to non-active
-AuthController::simpanDaftar creates users with status 'non-aktif' (they must be activated by an admin before they can log in). Login (simpanMasuk) rejects accounts where status !== 'aktif'. Always seed roles/permissions before tests that use Spatie roles, since RefreshDatabase wipes them.
+## No self-registration; accounts are created by admins only
+There is no register flow, no OTP, and no public activation. `AuthController` exposes only `masuk` (GET login) and `simpanMasuk` (POST login). Users are created exclusively by admins in `Admin\PenggunaController::store` (peran `user` gets an auto-generated username like `usr<8 random>` and initial password = `12345678`). New statuses default to `aktif`.
 
-## Login accepts email OR username
-`StoreLoginRequest` exposes a single `login` field (`required|string|max:255`, NO `exists:users,email` rule so username works). `simpanMasuk` picks the credential column: `filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username'`, then `Auth::attempt([$field => $login, 'password' => ...])`. Error key and `withInput` use `login`. Login view `auth/masuk` uses `name="login"` type="text" labelled "Email atau Username". Both username and email columns are unique, so detection is unambiguous.
+## Login accepts NIK, username, then email
+`StoreLoginRequest` exposes a single `login` field (`required|string|max:255`). `simpanMasuk` resolves the user in order: (1) by `profil_pengguna.nik`, (2) by `users.username`, (3) by `users.email`. It then `Hash::check`es the password, rejects accounts where `status !== 'aktif'`, and logs in with `Auth::login()` (not `Auth::attempt` with a dynamic column, since NIK lives on another table). Error key and `withInput` use `login`. The view `auth/masuk` labels the field "NIK atau Username" (hint: mahasiswa = NIK, admin = username). On success redirect to `dashboard`.
+## Initial password is 12345678, changeable later
+
+Users seeded/created with peran `user` have password = `12345678`. Users change it themselves in `settings/index` (password update); admins can reset any account to `12345678` from the Pengguna list via `admin.pengguna.reset-password` (POST `/pengguna/{user}/reset-password`).

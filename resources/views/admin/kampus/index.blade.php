@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+  #kampusTable.dataTable {
+    width: 100% !important;
+  }
+</style>
 <section class="section">
   <div class="section-header">
     <h1>Daftar Kampus</h1>
@@ -28,7 +33,7 @@
     <div class="row">
       <div class="col-12">
         <div class="card">
-          @if(auth()->user()->hasRole('admin'))
+          @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
           <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <a href="{{ route('admin.kampus.buat') }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Kampus
@@ -47,7 +52,7 @@
               <table class="table table-striped" id="kampusTable">
                 <thead>
                   <tr>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
                     <th style="width: 40px;"><input type="checkbox" id="checkAll"></th>
                     @endif
                     <th>No</th>
@@ -59,30 +64,14 @@
                 <tbody>
                   @foreach($kampus as $data)
                   <tr>
-                    @if(auth()->user()->hasRole('admin'))
+                    @if(auth()->user()->hasMenuAccess('admin.kampus.index'))
                     <td><input type="checkbox" class="row-check" value="{{ $data->id }}"></td>
                     @endif
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $data->nama_kampus }}</td>
                     <td>{{ $data->fakultas_count }}</td>
                     <td>
-                      <a href="{{ route('admin.kampus.fakultas.index', $data) }}" class="btn btn-info btn-sm mr-1 mb-1" title="Kelola Fakultas">
-                        <i class="fas fa-building"></i>
-                      </a>
-                      @if(auth()->user()->hasRole('admin'))
-                      <a href="{{ route('admin.kampus.ubah', $data) }}" class="btn btn-primary btn-sm mr-1 mb-1" title="Ubah">
-                        <i class="fas fa-edit"></i>
-                      </a>
-                      <form action="{{ route('admin.kampus.hapus', $data) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
-                        @csrf
-                        @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
-                          data-confirm-title="Hapus Kampus?"
-                          data-confirm-text="Apakah Anda yakin ingin menghapus '{{ $data->nama_kampus }}' beserta seluruh fakultas dan program studinya? Tindakan ini tidak dapat dibatalkan.">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </form>
-                      @endif
+                      @include('admin.kampus._aksi', ['data' => $data])
                     </td>
                   </tr>
                   @endforeach
@@ -101,10 +90,20 @@
 <script>
   $(document).ready(function() {
   $('#kampusTable').DataTable({
-  "columnDefs": [
-        { "orderable": false, "targets": 0 }
-    ],
+    serverSide: true,
+    processing: true,
+    ajax: { url: "{{ route('admin.kampus.data') }}" },
     order: [],
+    columnDefs: [
+        { "orderable": false, "searchable": false, "targets": [0, 1, 4] }
+    ],
+    columns: [
+        { data: 'checkbox' },
+        { data: 'no' },
+        { data: 'kampus' },
+        { data: 'fakultas_count' },
+        { data: 'aksi' }
+    ],
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",

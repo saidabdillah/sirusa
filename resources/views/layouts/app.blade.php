@@ -28,17 +28,6 @@
   <link rel="stylesheet" href="{{ asset('assets/css/components.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/custom.css').'?v='.filemtime(public_path('assets/css/custom.css')) }}">
 
-  <!-- Start GA -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-94034622-3"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'UA-94034622-3');
-  </script>
-  <!-- /END GA -->
-
   @stack('style')
 
 </head>
@@ -90,6 +79,8 @@
   <script src="{{ asset('assets/js/custom.js').'?v='.filemtime(public_path('assets/js/custom.js')) }}"></script>
 
   @stack('script')
+
+  @stack('modal')
 </body>
 
 </html>

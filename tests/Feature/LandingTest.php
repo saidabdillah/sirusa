@@ -3,27 +3,23 @@
 use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('landing');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 });
 
-test('guest sees masuk and daftar buttons on landing', function () {
+test('guest sees masuk button on landing', function () {
     $this->get(route('landing'))
         ->assertOk()
         ->assertSee('Masuk')
-        ->assertSee('Daftar')
         ->assertDontSee('Dasbor');
 });
 
-test('authenticated user sees dashbor button instead of masuk and daftar on landing', function () {
+test('authenticated user sees dasbor button instead of masuk on landing', function () {
     $user = User::factory()->standardUser()->create();
 
     actingAs($user)
@@ -31,9 +27,7 @@ test('authenticated user sees dashbor button instead of masuk and daftar on land
         ->assertOk()
         ->assertSee('Dasbor')
         ->assertSee('Ke Dasbor')
-        ->assertDontSee('Masuk')
-        ->assertDontSee(route('register'))
-        ->assertDontSee(route('login'));
+        ->assertDontSee('Masuk');
 });
 
 test('admin sees lihat beasiswa linking to admin daftar beasiswa on landing', function () {

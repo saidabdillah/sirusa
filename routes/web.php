@@ -2,10 +2,11 @@
 
 use App\Http\Controllers\Admin\BeasiswaController;
 use App\Http\Controllers\Admin\KampusController;
+use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PendaftarController;
 use App\Http\Controllers\Admin\PenggunaController;
-use App\Http\Controllers\Admin\PengumumanJadwalController;
-use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Notifications\NotificationController;
@@ -13,28 +14,17 @@ use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\User\BeasiswaController as UserBeasiswaController;
 use App\Http\Controllers\User\PendaftaranController;
-use App\Http\Controllers\User\PengumumanController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 Route::get('/', fn () => view('landing'))->name('landing');
 
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest'])->group(function () {
     Route::get('/masuk', [AuthController::class, 'masuk'])->name('login');
     Route::post('/masuk', [AuthController::class, 'simpanMasuk'])->name('login.store');
-    Route::get('/daftar', [AuthController::class, 'daftar'])->name('register');
-    Route::post('/daftar', [AuthController::class, 'simpanDaftar'])->name('register.store');
-
-    // Forgot password with OTP
-    Route::get('/lupa-kata-sandi', [AuthController::class, 'lupaKataSandi'])->name('password.request');
-    Route::post('/lupa-kata-sandi', [AuthController::class, 'kirimOtp'])->name('password.otp.send');
-    Route::get('/lupa-kata-sandi/verifikasi', [AuthController::class, 'verifikasiOtp'])->name('password.otp.verify');
-    Route::post('/lupa-kata-sandi/verifikasi', [AuthController::class, 'cekOtp'])->name('password.otp.check');
-    Route::get('/lupa-kata-sandi/reset', [AuthController::class, 'resetKataSandi'])->name('password.reset.form');
-    Route::post('/lupa-kata-sandi/reset', [AuthController::class, 'simpanKataSandiBaru'])->name('password.reset.store');
 });
 
-Route::middleware(['auth', 'status.aktif'])->group(function () {
+Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'keluar'])->name('logout');
     Route::get('/keluar/info', function () {
         return response()->json([
@@ -50,42 +40,8 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
     // Profil
     Route::get('/profil', [ProfileController::class, 'index'])->name('profile');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profil/foto', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.delete');
-    Route::get('/profil/foto/info', function () {
-        $profile = auth()->user()->profile;
-        if (! $profile?->foto_profil) {
-            return response()->json([
-                'title' => 'Tidak Ada Foto',
-                'text' => 'Anda belum mengunggah foto profil.',
-                'icon' => 'info',
-                'confirmButtonText' => 'OK',
-                'confirmButtonColor' => '#3085d6',
-            ]);
-        }
 
-        return response()->json([
-            'title' => 'Hapus Foto Profil?',
-            'text' => 'Foto profil Anda akan dihapus permanen.',
-            'icon' => 'warning',
-            'confirmButtonText' => 'Ya, Hapus',
-            'confirmButtonColor' => '#d33',
-        ]);
-    })->name('profile.photo.info');
-    Route::get('/profil/foto/{path}', function ($path) {
-        $disk = Storage::disk('local');
-        if ($disk->exists($path)) {
-            $file = $disk->path($path);
-            $mimeType = mime_content_type($file);
-
-            return response()->file($file, [
-                'Content-Type' => $mimeType,
-                'Cache-Control' => 'public, max-age=86400',
-            ]);
-        }
-        abort(404);
-    })->name('profile.photo')->where('path', '.*');
-
-    // Dokumen upload (surat permohonan, KTP, KK, dll)
+    // Dokumen upload (pas foto, KTP, KK, dll)
     Route::get('/dokumen/{path}', function ($path) {
         $disk = Storage::disk('public');
         if ($disk->exists($path)) {
@@ -103,9 +59,6 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
     // Pengaturan akun
     Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');
     Route::put('/pengaturan', [SettingsController::class, 'updateAccount'])->name('settings.update');
-    Route::post('/pengaturan/email/otp', [SettingsController::class, 'sendEmailOtp'])->name('settings.email.otp.send');
-    Route::get('/pengaturan/email/verifikasi', [SettingsController::class, 'showEmailOtpVerify'])->name('settings.email.verify');
-    Route::post('/pengaturan/email/verifikasi', [SettingsController::class, 'verifyEmailChange'])->name('settings.email.verify.store');
 
     // Notifikasi
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
@@ -113,29 +66,17 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
     Route::delete('/notifikasi', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
     Route::delete('/notifikasi/sudah-dibaca', [NotificationController::class, 'destroyRead'])->name('notifications.destroy-read');
     Route::delete('/notifikasi/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-
-    // Pengumuman publik (akses semua role yang login)
-    Route::get('/pengumuman/{scholarship}', [PengumumanController::class, 'show'])->name('pengumuman.show');
-    Route::get('/pengumuman/{scholarship}/export-pdf', [PengumumanController::class, 'exportPdf'])->name('pengumuman.export-pdf');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
 
-    // Admin + Super Admin routes
-    Route::middleware('role:super_admin|admin')->prefix('admin')->name('admin.')->group(function () {
+    // Admin routes (akses via menu, bukan role)
+    Route::prefix('admin')->name('admin.')->group(function () {
+        // Kampus (termasuk fakultas & prodi)
         Route::get('/kampus', [KampusController::class, 'index'])->name('kampus.index');
+        Route::get('/kampus/data', [KampusController::class, 'data'])->name('kampus.data');
         Route::get('/kampus/{kampus}/fakultas', [KampusController::class, 'fakultasIndex'])->name('kampus.fakultas.index');
+        Route::get('/kampus/{kampus}/fakultas/data', [KampusController::class, 'fakultasData'])->name('kampus.fakultas.data');
         Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi', [KampusController::class, 'prodiIndex'])->name('kampus.prodi.index');
-        Route::get('/beasiswa', [BeasiswaController::class, 'index'])->name('beasiswa.index');
-        Route::get('/beasiswa/{scholarship}/lihat', [BeasiswaController::class, 'show'])->name('beasiswa.lihat');
-
-        Route::get('/pendaftar/export', [PendaftarController::class, 'export'])->name('pendaftar.export');
-        Route::get('/pendaftar', [PendaftarController::class, 'index'])->name('pendaftar.index');
-        Route::get('/pendaftar/{applicant}/lihat', [PendaftarController::class, 'show'])->name('pendaftar.lihat');
-
-        Route::get('/pengumuman', [PengumumanJadwalController::class, 'index'])->name('pengumuman.index');
-    });
-
-    // Admin routes (only admin manages scholarships)
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/kampus/{kampus}/fakultas/{fakultas}/prodi/data', [KampusController::class, 'prodiData'])->name('kampus.prodi.data');
         Route::get('/kampus/buat', [KampusController::class, 'create'])->name('kampus.buat');
         Route::post('/kampus', [KampusController::class, 'store'])->name('kampus.simpan');
         Route::get('/kampus/{kampus}/ubah', [KampusController::class, 'edit'])->name('kampus.ubah');
@@ -157,88 +98,64 @@ Route::middleware(['auth', 'status.aktif'])->group(function () {
         Route::delete('/kampus/{kampus}/fakultas/{fakultas}/prodi/hapus-massal', [KampusController::class, 'prodiMassDestroy'])->name('kampus.prodi.massDestroy');
         Route::delete('/kampus/{kampus}/fakultas/{fakultas}/prodi/{prodi}', [KampusController::class, 'prodiDestroy'])->name('kampus.prodi.hapus');
 
+        // Beasiswa
+        Route::get('/beasiswa', [BeasiswaController::class, 'index'])->name('beasiswa.index');
+        Route::get('/beasiswa/data', [BeasiswaController::class, 'data'])->name('beasiswa.data');
         Route::get('/beasiswa/buat', [BeasiswaController::class, 'create'])->name('beasiswa.buat');
         Route::post('/beasiswa', [BeasiswaController::class, 'store'])->name('beasiswa.simpan');
+        Route::get('/beasiswa/{scholarship}/lihat', [BeasiswaController::class, 'show'])->name('beasiswa.lihat');
         Route::get('/beasiswa/{scholarship}/ubah', [BeasiswaController::class, 'edit'])->name('beasiswa.ubah');
         Route::put('/beasiswa/{scholarship}', [BeasiswaController::class, 'update'])->name('beasiswa.perbarui');
         Route::delete('/beasiswa/{scholarship}', [BeasiswaController::class, 'destroy'])->name('beasiswa.hapus');
 
-        Route::put('/pendaftar/{applicant}', [PendaftarController::class, 'update'])->name('pendaftar.perbarui');
-        Route::get('/pendaftar/{applicant}/info', [PendaftarController::class, 'deleteInfo'])->name('pendaftar.info');
-        Route::delete('/pendaftar/{applicant}', [PendaftarController::class, 'destroy'])->name('pendaftar.hapus');
+        // Pendaftar
+        Route::get('/pendaftar', [PendaftarController::class, 'index'])->name('pendaftar.index');
+        Route::get('/pendaftar/data', [PendaftarController::class, 'data'])->name('pendaftar.data');
 
-        Route::get('/pengumuman/{scholarship}/ubah', [PengumumanJadwalController::class, 'edit'])->name('pengumuman.ubah');
-        Route::put('/pengumuman/{scholarship}', [PengumumanJadwalController::class, 'update'])->name('pengumuman.perbarui');
-        Route::delete('/pengumuman/{scholarship}', [PengumumanJadwalController::class, 'destroy'])->name('pengumuman.hapus');
+        // Verifikasi data profil
+        Route::get('/verifikasi/capil', [VerifikasiController::class, 'index'])->defaults('stage', 'capil')->name('capil.index');
+        Route::get('/verifikasi/capil/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'capil')->name('capil.lihat');
+        Route::put('/verifikasi/capil/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'capil')->name('capil.verifikasi');
+        Route::get('/verifikasi/kampus', [VerifikasiController::class, 'index'])->defaults('stage', 'kampus')->name('kampusverif.index');
+        Route::get('/verifikasi/kampus/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kampus')->name('kampusverif.lihat');
+        Route::put('/verifikasi/kampus/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kampus')->name('kampusverif.verifikasi');
+        Route::get('/verifikasi/kesra', [VerifikasiController::class, 'index'])->defaults('stage', 'kesra')->name('kesra.index');
+        Route::get('/verifikasi/kesra/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kesra')->name('kesra.lihat');
+        Route::put('/verifikasi/kesra/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kesra')->name('kesra.verifikasi');
 
-        Route::get('/template', [TemplateController::class, 'index'])->name('template.index');
-        Route::put('/template', [TemplateController::class, 'update'])->name('template.perbarui');
-        Route::delete('/template', [TemplateController::class, 'destroy'])->name('template.hapus');
-        Route::get('/template/info', [TemplateController::class, 'deleteInfo'])->name('template.info');
-    });
-
-    // Admin + Super Admin routes
-    Route::middleware('role:super_admin|admin')->prefix('admin')->name('admin.')->group(function () {
+        // Pengguna
         Route::get('/pengguna', [PenggunaController::class, 'index'])->name('pengguna.index');
         Route::patch('/pengguna/{user}/status', [PenggunaController::class, 'toggleStatus'])->name('pengguna.toggle-status');
-    });
-
-    // Super Admin routes
-    Route::middleware('role:super_admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/pengguna/buat', [PenggunaController::class, 'create'])->name('pengguna.buat');
         Route::post('/pengguna', [PenggunaController::class, 'store'])->name('pengguna.simpan');
         Route::get('/pengguna/{user}/ubah', [PenggunaController::class, 'edit'])->name('pengguna.ubah');
         Route::put('/pengguna/{user}', [PenggunaController::class, 'update'])->name('pengguna.perbarui');
+        Route::post('/pengguna/{user}/reset-password', [PenggunaController::class, 'resetPassword'])->name('pengguna.reset-password');
         Route::delete('/pengguna/{user}', [PenggunaController::class, 'destroy'])->name('pengguna.hapus');
+
+        // Role & Akses Menu
+        Route::get('/role', [RoleController::class, 'index'])->name('role.index');
+        Route::post('/role', [RoleController::class, 'store'])->name('role.simpan');
+        Route::put('/role/{role}', [RoleController::class, 'update'])->name('role.perbarui');
+        Route::delete('/role/{role}', [RoleController::class, 'destroy'])->name('role.hapus');
+
+        // Akses Menu (matriks role × menu)
+        Route::get('/menu', [MenuController::class, 'index'])->name('menu.index');
+        Route::put('/menu', [MenuController::class, 'perbarui'])->name('menu.grants');
+
+        // Kelola Menu (CRUD menu sidebar)
+        Route::get('/menu/kelola', [MenuController::class, 'kelola'])->name('menuKelola.index');
+        Route::post('/menu/kelola', [MenuController::class, 'store'])->name('menuKelola.simpan');
+        Route::put('/menu/kelola/{menu}', [MenuController::class, 'update'])->name('menuKelola.perbarui');
+        Route::delete('/menu/kelola/{menu}', [MenuController::class, 'destroy'])->name('menuKelola.hapus');
     });
 
-    // Preview surat permohonan template (inline view)
-    Route::get('/preview/surat-permohonan', function () {
-        $dir = Storage::disk('local')->path('templates');
-        $files = ['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'];
-
-        foreach ($files as $file) {
-            $path = $dir.'/'.$file;
-            if (file_exists($path)) {
-                $mimeType = mime_content_type($path);
-                $extension = pathinfo($path, PATHINFO_EXTENSION);
-
-                return response()->file($path, [
-                    'Content-Type' => $mimeType,
-                    'Content-Disposition' => 'inline; filename="Surat_Permohonan_Beasiswa.'.$extension.'"',
-                ]);
-            }
-        }
-
-        abort(404, 'Template surat permohonan tidak ditemukan');
-    })->name('preview.application-letter');
-
-    // Download surat permohonan template
-    Route::get('/download/surat-permohonan', function () {
-        $dir = Storage::disk('local')->path('templates');
-        $files = ['surat_permohonan.docx', 'surat_permohonan.doc', 'surat_permohonan.pdf'];
-
-        foreach ($files as $file) {
-            $path = $dir.'/'.$file;
-            if (file_exists($path)) {
-                $mimeType = mime_content_type($path);
-                $extension = pathinfo($path, PATHINFO_EXTENSION);
-
-                return response()->download($path, 'Surat_Permohonan_Beasiswa.'.$extension);
-            }
-        }
-
-        abort(404, 'Template surat permohonan tidak ditemukan');
-    })->name('download.application-letter');
-
-    // User routes
-    Route::middleware('role:user')->prefix('pengguna')->name('user.')->group(function () {
+    // User routes (akses via menu, bukan role)
+    Route::prefix('pengguna')->name('user.')->group(function () {
         Route::get('/beasiswa', [UserBeasiswaController::class, 'index'])->name('beasiswa.index');
         Route::get('/beasiswa/{scholarship}', [UserBeasiswaController::class, 'show'])->name('beasiswa.lihat');
         Route::get('/pendaftaran', [PendaftaranController::class, 'index'])->name('pendaftaran.index');
         Route::get('/pendaftaran/{applicant}', [PendaftaranController::class, 'show'])->name('pendaftaran.lihat');
-        Route::get('/pendaftaran/{applicant}/lengkapi', [PendaftaranController::class, 'edit'])->name('pendaftaran.lengkapi');
-        Route::put('/pendaftaran/{applicant}', [PendaftaranController::class, 'update'])->name('pendaftaran.perbarui');
         Route::get('/daftar-beasiswa', [PendaftaranController::class, 'create'])->name('pendaftaran.buat');
         Route::post('/pendaftaran', [PendaftaranController::class, 'store'])->name('pendaftaran.simpan');
     });

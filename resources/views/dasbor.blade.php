@@ -13,7 +13,7 @@
       </div>
     @endif
 
-    @if(auth()->user()->hasRole(['super_admin', 'admin']))
+    @if(auth()->user()->hasMenuAccess('admin.beasiswa.index'))
       {{-- ADMIN / SUPER ADMIN DASHBOARD --}}
       {{-- Row 1: Main Statistics --}}
       <div class="row">
@@ -77,22 +77,6 @@
             </div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-          <div class="card card-statistic-1">
-            <div class="card-icon bg-info">
-              <i class="fas fa-edit"></i>
-            </div>
-            <div class="card-wrap">
-              <div class="card-header">
-                <h4>Revisi</h4>
-              </div>
-              <div class="card-body">
-                {{ $revisionApplicants }}
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
@@ -168,15 +152,6 @@
               </div>
               <div class="mb-3">
                 <div class="d-flex justify-content-between flex-wrap mb-1">
-                  <span>Revisi</span>
-                  <span>{{ $revisionApplicants }}</span>
-                </div>
-                <div class="progress" data-height="6">
-                  <div class="progress-bar bg-secondary" data-width="{{ $totalApplicants > 0 ? round($revisionApplicants / $totalApplicants * 100) : 0 }}%"></div>
-                </div>
-              </div>
-              <div class="mb-3">
-                <div class="d-flex justify-content-between flex-wrap mb-1">
                   <span>Ditolak</span>
                   <span>{{ $rejectedApplicants }}</span>
                 </div>
@@ -200,8 +175,8 @@
               @forelse($upcomingDeadlines as $scholarship)
                 <div class="d-flex align-items-center mb-3">
                   <div class="mr-3">
-                    <div class="badge badge-{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
-                      {{ $scholarship->batas_waktu?->diffForHumans() }}
+                    <div class="badge badge-{{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
+                      {{ $scholarship->tanggal_selesai?->diffForHumans() }}
                     </div>
                   </div>
                   <div class="flex-grow-1">
@@ -243,7 +218,7 @@
                     @forelse($recentApplicants as $applicant)
                       <tr>
                         <td>
-                          <a href="{{ route('admin.pendaftar.lihat', $applicant) }}">{{ $applicant->user->profile->nama_lengkap ?? '-' }}</a>
+                          {{ $applicant->user->profile->nama_lengkap ?? '-' }}
                         </td>
                         <td>{{ $applicant->beasiswa->nama }}</td>
                         <td>{{ $applicant->fakultas ?? '-' }}</td>
@@ -252,8 +227,6 @@
                             <span class="badge badge-warning">Verifikasi</span>
                           @elseif($applicant->status === 'diterima')
                             <span class="badge badge-success">Diterima</span>
-                          @elseif($applicant->status === 'revisi')
-                            <span class="badge badge-secondary">Revisi</span>
                           @elseif($applicant->status === 'ditolak')
                             <span class="badge badge-danger">Ditolak</span>
                           @endif
@@ -338,21 +311,6 @@
         </div>
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
           <div class="card card-statistic-1">
-            <div class="card-icon bg-secondary">
-              <i class="fas fa-edit"></i>
-            </div>
-            <div class="card-wrap">
-              <div class="card-header">
-                <h4>Revisi</h4>
-              </div>
-              <div class="card-body">
-                {{ $revisionApplications }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
-          <div class="card card-statistic-1">
             <div class="card-icon bg-primary">
               <i class="fas fa-university"></i>
             </div>
@@ -397,8 +355,6 @@
                             <span class="badge badge-warning">Verifikasi</span>
                           @elseif($applicant->status === 'diterima')
                             <span class="badge badge-success">Diterima</span>
-                          @elseif($applicant->status === 'revisi')
-                            <span class="badge badge-secondary">Revisi</span>
                           @elseif($applicant->status === 'ditolak')
                             <span class="badge badge-danger">Ditolak</span>
                           @endif
@@ -434,8 +390,8 @@
               @forelse($availableScholarships as $scholarship)
                 <div class="d-flex align-items-center mb-3">
                   <div class="mr-3">
-                    <div class="badge badge-{{ $scholarship->batas_waktu?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
-                      {{ $scholarship->batas_waktu?->diffForHumans() }}
+                    <div class="badge badge-{{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
+                      {{ $scholarship->tanggal_selesai?->diffForHumans() }}
                     </div>
                   </div>
                   <div class="flex-grow-1">

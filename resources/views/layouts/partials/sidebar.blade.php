@@ -7,93 +7,51 @@
       <a href="{{ route('dashboard') }}">SR</a>
     </div>
     <ul class="sidebar-menu">
-      <li class="menu-header">Menu Utama</li>
-      <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
-        <a href="{{ route('dashboard') }}" class="nav-link"><i class="fas fa-fire"></i><span>Dasbor</span></a>
-      </li>
-
-      @if(auth()->user()->hasRole(['super_admin', 'admin']))
-      <li class="menu-header">Manajemen</li>
-      <li class="dropdown {{ request()->routeIs('admin.beasiswa.*') || request()->routeIs('admin.pengumuman.*') ? 'active' : '' }}">
-        <a href="#" class="nav-link has-dropdown"><i class="fas fa-award"></i><span>Beasiswa</span></a>
-        <ul class="dropdown-menu">
-          <li class="{{ request()->routeIs('admin.beasiswa.*') ? 'active' : '' }}">
-            <a href="{{ route('admin.beasiswa.index') }}" class="nav-link"><span>Daftar Beasiswa</span></a>
-          </li>
-          <li class="{{ request()->routeIs('admin.pengumuman.*') ? 'active' : '' }}">
-            <a href="{{ route('admin.pengumuman.index') }}" class="nav-link"><span>Jadwal Pengumuman</span></a>
-          </li>
-        </ul>
-      </li>
-      <li class="{{ request()->routeIs('admin.pendaftar.*') ? 'active' : '' }}">
-        <a href="{{ route('admin.pendaftar.index') }}" class="nav-link"><i
-            class="fas fa-users"></i><span>Pendaftar</span></a>
-      </li>
-      <li class="dropdown {{ request()->routeIs('admin.kampus.*') || request()->routeIs('admin.pengguna.*') ? 'active' : '' }}">
-        <a href="#" class="nav-link has-dropdown"><i class="fas fa-university"></i><span>Master Data</span></a>
-        <ul class="dropdown-menu">
-          <li class="{{ request()->routeIs('admin.kampus.*') ? 'active' : '' }}">
-            <a href="{{ route('admin.kampus.index') }}" class="nav-link"><span>Kampus</span></a>
-          </li>
-          <li class="{{ request()->routeIs('admin.pengguna.*') ? 'active' : '' }}">
-            <a href="{{ route('admin.pengguna.index') }}" class="nav-link"><span>Pengguna</span></a>
-          </li>
-        </ul>
-      </li>
-      @if(auth()->user()->hasRole('admin'))
-      <li class="menu-header">Pengaturan</li>
-      <li class="{{ request()->routeIs('admin.template.*') ? 'active' : '' }}">
-        <a href="{{ route('admin.template.index') }}" class="nav-link"><i class="fas fa-file-word"></i><span>Template
-            Surat</span></a>
-      </li>
-      @endif
       @php
-        $pengumumanAdmin = \App\Models\Scholarship::with('pendaftar')
-          ->get()
-          ->filter(fn ($s) => $s->hasPengumuman())
-          ->take(5);
+        $userMenus = auth()->user()->sidebarMenus();
+        $sectionOrder = \App\Models\Menu::sections();
       @endphp
-      @if($pengumumanAdmin->count() > 0)
-      <li class="menu-header">Pengumuman</li>
-      @foreach($pengumumanAdmin as $beasiswa)
-      <li class="{{ request()->routeIs('pengumuman.show') && request()->route('scholarship')?->id == $beasiswa->id ? 'active' : '' }}">
-        <a href="{{ route('pengumuman.show', $beasiswa) }}" class="nav-link"><i
-            class="fas fa-bullhorn"></i><span>{{ $beasiswa->nama }}</span></a>
-      </li>
-      @endforeach
-      @endif
-      @endif
 
-      @if(auth()->user()->hasRole('user'))
-      <li class="menu-header">Beasiswa</li>
-      <li class="dropdown {{ request()->routeIs('user.beasiswa.*') || request()->routeIs('user.pendaftaran.*') ? 'active' : '' }}">
-        <a href="#" class="nav-link has-dropdown"><i class="fas fa-award"></i><span>Menu Beasiswa</span></a>
-        <ul class="dropdown-menu">
-          <li class="{{ request()->routeIs('user.beasiswa.*') ? 'active' : '' }}">
-            <a href="{{ route('user.beasiswa.index') }}" class="nav-link"><span>Daftar Beasiswa</span></a>
-          </li>
-          <li class="{{ request()->routeIs('user.pendaftaran.*') ? 'active' : '' }}">
-            <a href="{{ route('user.pendaftaran.index') }}" class="nav-link"><span>Pendaftaran Saya</span></a>
-          </li>
-        </ul>
-      </li>
-      @php
-        $pengumumanAktif = \App\Models\Scholarship::with('pendaftar')
-          ->whereHas('pendaftar', fn ($q) => $q->where('user_id', auth()->id()))
-          ->get()
-          ->filter(fn ($s) => $s->hasPengumuman())
-          ->take(5);
-      @endphp
-      @if($pengumumanAktif->count() > 0)
-      <li class="menu-header">Pengumuman</li>
-      @foreach($pengumumanAktif as $beasiswa)
-      <li class="{{ request()->routeIs('pengumuman.show') && request()->route('scholarship')?->id == $beasiswa->id ? 'active' : '' }}">
-        <a href="{{ route('pengumuman.show', $beasiswa) }}" class="nav-link"><i
-            class="fas fa-bullhorn"></i><span>{{ $beasiswa->nama }}</span></a>
-      </li>
+      @foreach($sectionOrder as $section)
+        @php
+          $items = $userMenus->where('section', $section);
+        @endphp
+        @if($items->count() > 0)
+          <li class="menu-header">{{ $section }}</li>
+        @endif
+        @foreach($items as $menu)
+          @if($menu->children->isEmpty())
+            @php
+              $activePatterns = array_values(array_filter([$menu->route, $menu->scope ? $menu->scope.'.*' : null]));
+            @endphp
+            @if($menu->route && \Illuminate\Support\Facades\Route::has($menu->route))
+            <li class="{{ $activePatterns && request()->routeIs($activePatterns) ? 'active' : '' }}">
+              <a href="{{ route($menu->route) }}" class="nav-link"><i
+                  class="{{ $menu->icon }}"></i><span>{{ $menu->label }}</span></a>
+            </li>
+            @else
+            <li>
+              <span class="nav-link"><i class="{{ $menu->icon }}"></i><span>{{ $menu->label }}</span></span>
+            </li>
+            @endif
+          @else
+            <li class="dropdown {{ $menu->children->contains(fn ($child) => request()->routeIs($child->route) || ($child->scope && request()->routeIs($child->scope.'.*'))) ? 'active' : '' }}">
+              <a href="#" class="nav-link has-dropdown"><i class="{{ $menu->icon }}"></i><span>{{ $menu->label }}</span></a>
+              <ul class="dropdown-menu">
+                @foreach($menu->children as $child)
+                  @if($child->route && \Illuminate\Support\Facades\Route::has($child->route))
+                  <li class="{{ request()->routeIs($child->route) || ($child->scope && request()->routeIs($child->scope.'.*')) ? 'active' : '' }}">
+                    <a href="{{ route($child->route) }}" class="nav-link"><span>{{ $child->label }}</span></a>
+                  </li>
+                  @else
+                  <li><span class="nav-link"><span>{{ $child->label }}</span></span></li>
+                  @endif
+                @endforeach
+              </ul>
+            </li>
+          @endif
+        @endforeach
       @endforeach
-      @endif
-      @endif
     </ul>
   </aside>
 </div>

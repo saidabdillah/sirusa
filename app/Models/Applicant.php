@@ -19,30 +19,13 @@ class Applicant extends Model
         'prodi',
         'ipk',
         'semester',
-        'dokumen_ktp',
-        'dokumen_kk',
-        'dokumen_akta',
-        'dokumen_surat_aktif',
-        'dokumen_transkrip',
-        'dokumen_surat_permohonan',
-        'dokumen_pas_foto',
-        'dokumen_prestasi',
-        'dokumen_surat_pernyataan',
-        'dokumen_sktm',
-        'dokumen_bukti_ukt',
-        'ktp_ayah',
-        'ktp_ibu',
-        'ktp_wali',
-        'kk_wali',
         'status',
         'catatan',
     ];
 
     protected function casts(): array
     {
-        return [
-            'dokumen_prestasi' => 'array',
-        ];
+        return [];
     }
 
     public function user(): BelongsTo
@@ -53,16 +36,5 @@ class Applicant extends Model
     public function beasiswa(): BelongsTo
     {
         return $this->belongsTo(Scholarship::class, 'beasiswa_id');
-    }
-
-    public function getStatusLabelAttribute(): string
-    {
-        return match ($this->status) {
-            'verifikasi' => 'Verifikasi',
-            'diterima' => 'Diterima',
-            'revisi' => 'Revisi',
-            'ditolak' => 'Ditolak',
-            default => '-',
-        };
     }
 }

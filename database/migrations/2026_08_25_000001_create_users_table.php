@@ -11,10 +11,15 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('username')->unique();
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
+            // Kampus yang dikelola akun peran "kampus"; men-scope Pendaftar & Verifikasi Kampus.
+            $table->foreignId('kampus_id')
+                ->nullable()
+                ->constrained('kampus')
+                ->nullOnDelete();
             $table->rememberToken();
             $table->timestamps();
         });

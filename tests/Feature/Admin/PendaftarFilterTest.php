@@ -4,16 +4,13 @@ use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('filter', 'pendaftar');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->admin = User::factory()->admin()->create(['email' => 'admin@filter.test']);
     $this->user = User::factory()->standardUser()->create(['email' => 'user@filter.test']);
@@ -28,6 +25,10 @@ test('pendaftar index page renders with filter form', function () {
         ->assertSee('-- Semua Beasiswa --')
         ->assertSee('id="pendaftarTable"', false)
         ->assertDontSee('colspan', false)
+        ->assertSee('type="submit"', false)
+        ->assertSee('pendaftar-table-scroll-fix', false)
+        ->assertSee('<i class="fas fa-search"></i> Cari', false)
+        ->assertDontSee('onchange="this.form.submit()"', false)
         ->assertSee('Reset');
 });
 
@@ -105,6 +106,23 @@ test('pendaftar index combines status and beasiswa filter', function () {
     expect($applicants)->count()->toBe(1);
     expect($applicants->first()->beasiswa_id)->toBe($scholarshipA->id);
     expect($applicants->first()->status)->toBe('diterima');
+});
+
+test('pendaftar index has no detail action or admin status form', function () {
+    $scholarship = Scholarship::factory()->create();
+    Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $this->user->id,
+        'status' => 'verifikasi',
+    ]);
+
+    $response = actingAs($this->admin)
+        ->get(route('admin.pendaftar.index'))
+        ->assertOk();
+
+    $response->assertDontSee('fa-eye', false);
+    $response->assertDontSee('Detail');
+    $response->assertDontSee('/lihat', false);
 });
 
 test('pendaftar index rejects invalid status filter', function () {

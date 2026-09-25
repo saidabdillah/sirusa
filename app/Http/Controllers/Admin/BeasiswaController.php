@@ -10,7 +10,10 @@ use App\Models\Prodi;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Notifications\NewScholarship;
+use App\Support\DataTablesProcessor;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class BeasiswaController extends Controller
@@ -20,6 +23,50 @@ class BeasiswaController extends Controller
         $scholarships = Scholarship::latest()->paginate(10);
 
         return view('admin.beasiswa.index', compact('scholarships'));
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $canManage = auth()->user()->hasMenuAccess('admin.beasiswa.index');
+
+        $processor = new DataTablesProcessor(
+            $request,
+            Scholarship::latest(),
+            [
+                'searchable' => ['nama', 'kampus'],
+                'orderable' => [1 => 'nama', 2 => 'kampus', 3 => 'kuota'],
+            ],
+            fn (Scholarship $scholarship, int $no) => [
+                'no' => $no,
+                'nama' => e($scholarship->nama),
+                'kampus' => e($scholarship->kampus),
+                'kuota' => $scholarship->kuota,
+                'gelar' => e((string) $scholarship->tingkat_gelar),
+                'batas' => $this->renderBatasWaktu($scholarship),
+                'ipk' => number_format($scholarship->ipk_minimal, 2),
+                'semester' => $scholarship->semester_minimal,
+                'status' => $scholarship->status === 'aktif'
+                    ? '<span class="badge badge-success">Aktif</span>'
+                    : '<span class="badge badge-secondary">Non-aktif</span>',
+                'aksi' => $canManage ? view('admin.beasiswa._aksi', ['data' => $scholarship])->render() : '',
+            ]
+        );
+
+        return response()->json($processor->respond());
+    }
+
+    private function renderBatasWaktu(Scholarship $scholarship): string
+    {
+        $mulai = $scholarship->tanggal_mulai?->translatedFormat('d M Y');
+        $selesai = $scholarship->tanggal_selesai?->translatedFormat('d M Y');
+
+        $periode = ($mulai && $selesai) ? $mulai.' - '.$selesai : '-';
+
+        if ($scholarship->isExpired()) {
+            return '<span class="text-danger">'.e($periode).'</span>';
+        }
+
+        return e($periode);
     }
 
     public function create(): View

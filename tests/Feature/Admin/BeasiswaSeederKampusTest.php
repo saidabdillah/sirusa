@@ -6,7 +6,6 @@ use App\Models\User;
 use Database\Seeders\KampusSeeder;
 use Database\Seeders\ScholarshipSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\seed;
@@ -36,7 +35,7 @@ test('edit form preselects kampus and checks matching prodi when kampus_id is nu
     $snapshot = $scholarship->fakultas()->create(['nama' => 'Fakultas Teknik']);
     $snapshot->prodi()->create(['nama' => 'Informatika']);
 
-    Role::create(['name' => 'admin']);
+    seedAkses();
     $admin = User::factory()->admin()->create();
 
     actingAs($admin)

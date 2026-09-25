@@ -25,7 +25,7 @@
           <div class="card-header">
             <h4>{{ $scholarship->nama }}</h4>
             <div class="card-header-action">
-              @if(auth()->user()->hasRole('admin'))
+              @if(auth()->user()->hasMenuAccess('admin.beasiswa.index'))
               <a href="{{ route('admin.beasiswa.ubah', $scholarship) }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-edit"></i> Ubah
               </a>
@@ -45,14 +45,16 @@
             </div>
             <div class="row mb-3">
               <div class="col-md-6">
-                <strong>Tunjangan:</strong><br>
-                <span class="badge badge-{{ $scholarship->cakupan === 'penuh' ? 'success' : 'warning' }}">
-                  {{ ucfirst($scholarship->cakupan) }}
-                </span>
-              </div>
-              <div class="col-md-6">
                 <strong>Kuota:</strong><br>
                 {{ $scholarship->kuota }} orang
+              </div>
+              <div class="col-md-6">
+                <strong>Status:</strong><br>
+                @if($scholarship->status === 'aktif')
+                <span class="badge badge-success">Aktif</span>
+                @else
+                <span class="badge badge-secondary">Non-aktif</span>
+                @endif
               </div>
             </div>
             <div class="row mb-3">
@@ -65,24 +67,15 @@
                 {{ $scholarship->semester_minimal }}
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <strong>Batas Waktu:</strong><br>
-                <span class="{{ $scholarship->isExpired() ? 'text-danger' : '' }}">
-                  {{ $scholarship->batas_waktu?->translatedFormat('d F Y') }}
-                </span>
-                @if($scholarship->isExpired())
-                <span class="badge badge-danger ml-2">Telah Berakhir</span>
-                @endif
-              </div>
-              <div class="col-md-6">
-                <strong>Status:</strong><br>
-                @if($scholarship->status === 'aktif')
-                <span class="badge badge-success">Aktif</span>
-                @else
-                <span class="badge badge-secondary">Non-aktif</span>
-                @endif
-              </div>
+            <div class="mb-3">
+              <strong>Periode Pendaftaran:</strong><br>
+              <span class="{{ $scholarship->isExpired() ? 'text-danger' : '' }}">
+                {{ $scholarship->tanggal_mulai?->translatedFormat('d F Y') }} s.d.
+                {{ $scholarship->tanggal_selesai?->translatedFormat('d F Y') }}
+              </span>
+              @if($scholarship->isExpired())
+              <span class="badge badge-danger ml-2">Telah Berakhir</span>
+              @endif
             </div>
             <hr>
             <div class="mb-3">
@@ -102,53 +95,6 @@
 <div class="col-lg-4 sticky-sidebar">
         <div class="card">
           <div class="card-header">
-            <h4>Pengumuman Penerima</h4>
-          </div>
-          <div class="card-body">
-            @if($scholarship->tanggal_pengumuman && $scholarship->tanggal_pengumuman_selesai)
-            <div class="mb-2">
-              <strong>Periode:</strong><br>
-              {{ $scholarship->tanggal_pengumuman->translatedFormat('d F Y') }} s/d
-              {{ $scholarship->tanggal_pengumuman_selesai->translatedFormat('d F Y') }}
-            </div>
-            @if($scholarship->isPengumumanAktif())
-            <div class="alert alert-success mb-2">
-              <i class="fas fa-bullhorn"></i> Pengumuman sedang tampil.
-            </div>
-            @if($scholarship->hasPengumuman())
-            <a href="{{ route('pengumuman.show', $scholarship) }}" target="_blank" class="btn btn-info btn-block mb-2">
-              <i class="fas fa-external-link-alt"></i> Lihat Halaman Publik
-            </a>
-            @if(auth()->user()->hasRole(['admin','super_admin']))
-            <a href="{{ route('pengumuman.export-pdf', $scholarship) }}" target="_blank" rel="noopener" class="btn btn-danger btn-block">
-              <i class="fas fa-file-pdf"></i> Preview PDF Penerima
-            </a>
-            @endif
-            @else
-            <div class="alert alert-warning mb-0">Belum ada pendaftar berstatus Diterima, sehingga halaman belum tampil.</div>
-            @endif
-            @else
-            <div class="alert alert-secondary mb-0">Pengumuman belum/tidak sedang tampil (di luar tanggal yang diatur).</div>
-            @endif
-            @if(auth()->user()->hasRole('admin'))
-            <div class="mt-2">
-              <a href="{{ route('admin.pengumuman.ubah', $scholarship) }}" class="btn btn-outline-primary btn-sm btn-block">
-                <i class="fas fa-edit"></i> Kelola Jadwal
-              </a>
-            </div>
-            @endif
-            @else
-            <div class="alert alert-secondary mb-0">Tidak ada jadwal pengumuman untuk beasiswa ini.
-              @if(auth()->user()->hasRole('admin'))
-              <br><a href="{{ route('admin.pengumuman.ubah', $scholarship) }}" class="small">Atur Jadwal &rarr;</a>
-              @endif
-            </div>
-            @endif
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
             <h4>Pendaftar</h4>
           </div>
           <div class="card-body">
@@ -158,7 +104,7 @@
             </div>
             <div class="list-group list-group-flush">
               @forelse($applicants as $applicant)
-              <a href="{{ route('admin.pendaftar.lihat', $applicant) }}" class="list-group-item list-group-item-action">
+              <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
                   <div>
                     <div class="font-weight-bold">{{ $applicant->user->profile->nama_lengkap ?? '-' }}</div>
@@ -169,14 +115,12 @@
                     <span class="badge badge-warning">Verifikasi</span>
                     @elseif($applicant->status === 'diterima')
                     <span class="badge badge-success">Diterima</span>
-                    @elseif($applicant->status === 'revisi')
-                    <span class="badge badge-secondary">Revisi</span>
                     @elseif($applicant->status === 'ditolak')
                     <span class="badge badge-danger">Ditolak</span>
                     @endif
                   </div>
                 </div>
-              </a>
+              </div>
               @empty
               <div class="text-center text-muted py-3">Belum ada pendaftar</div>
               @endforelse

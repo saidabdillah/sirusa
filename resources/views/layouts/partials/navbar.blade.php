@@ -43,7 +43,7 @@
     </li>
     <li class="dropdown"><a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
         @if(Auth::user()->profile?->foto_profil)
-          <img alt="image" src="{{ route('profile.photo', Auth::user()->profile->foto_profil) }}" class="rounded-circle mr-1" width="30" height="30" style="object-fit:cover;">
+          <img alt="image" src="{{ route('dokumen.show', Auth::user()->profile->foto_profil) }}" class="rounded-circle mr-1" width="30" height="30" style="object-fit:cover;">
         @else
           <img alt="image" src="{{ asset('assets/img/avatar/avatar-1.png') }}" class="rounded-circle mr-1">
         @endif

@@ -79,22 +79,24 @@
                     @error('kuota')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="cakupan">Tunjangan <span class="text-danger">*</span></label>
-                    <select class="form-control @error('cakupan') is-invalid @enderror" id="cakupan" name="cakupan">
-                      <option value="penuh" {{ old('cakupan', $scholarship->cakupan) === 'penuh' ? 'selected' : '' }}>Penuh</option>
-                      <option value="sebagian" {{ old('cakupan', $scholarship->cakupan) === 'sebagian' ? 'selected' : '' }}>Sebagian</option>
-                    </select>
-                    @error('cakupan')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  </div>
-                  <div class="form-group col-md-4">
-                    <label for="batas_waktu">Batas Waktu <span class="text-danger">*</span></label>
-                    <div class="input-group @error('batas_waktu') is-invalid @enderror">
+                    <label for="tanggal_mulai">Tanggal Mulai <span class="text-danger">*</span></label>
+                    <div class="input-group @error('tanggal_mulai') is-invalid @enderror">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                       </div>
-                      <input type="text" class="form-control flatpickr bg-white @error('batas_waktu') is-invalid @enderror" id="batas_waktu" name="batas_waktu" value="{{ old('batas_waktu', $scholarship->batas_waktu?->format('Y-m-d')) }}" placeholder="Pilih tanggal">
+                      <input type="text" class="form-control flatpickr bg-white @error('tanggal_mulai') is-invalid @enderror" id="tanggal_mulai" name="tanggal_mulai" value="{{ old('tanggal_mulai', $scholarship->tanggal_mulai?->format('Y-m-d')) }}" placeholder="Pilih tanggal">
                     </div>
-                    @error('batas_waktu')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    @error('tanggal_mulai')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="tanggal_selesai">Tanggal Selesai <span class="text-danger">*</span></label>
+                    <div class="input-group @error('tanggal_selesai') is-invalid @enderror">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                      </div>
+                      <input type="text" class="form-control flatpickr bg-white @error('tanggal_selesai') is-invalid @enderror" id="tanggal_selesai" name="tanggal_selesai" value="{{ old('tanggal_selesai', $scholarship->tanggal_selesai?->format('Y-m-d')) }}" placeholder="Pilih tanggal">
+                    </div>
+                    @error('tanggal_selesai')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   </div>
                 </div>
 

@@ -10,7 +10,7 @@ class StoreScholarshipRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->hasRole('admin');
+        return true;
     }
 
     public function rules(): array
@@ -20,8 +20,8 @@ class StoreScholarshipRequest extends FormRequest
             'kampus_id' => 'required|integer|exists:kampus,id',
             'kuota' => 'required|integer|min:1',
             'tingkat_gelar' => 'required|in:S1,S2,S3',
-            'cakupan' => 'required|in:penuh,sebagian',
-            'batas_waktu' => 'required|date|after:today',
+            'tanggal_mulai' => 'required|date|after:today',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'ipk_minimal' => 'required|numeric|gt:0|max:4',
             'semester_minimal' => 'required|integer|between:1,14',
             'deskripsi' => 'required|string',
@@ -60,10 +60,10 @@ class StoreScholarshipRequest extends FormRequest
             'kuota.min' => 'Kuota minimal 1',
             'tingkat_gelar.required' => 'Tingkat gelar harus dipilih',
             'tingkat_gelar.in' => 'Tingkat gelar tidak valid',
-            'cakupan.required' => 'Cakupan harus dipilih',
-            'cakupan.in' => 'Cakupan tidak valid',
-            'batas_waktu.required' => 'Batas waktu harus diisi',
-            'batas_waktu.after' => 'Batas waktu harus setelah hari ini',
+            'tanggal_mulai.required' => 'Tanggal mulai harus diisi',
+            'tanggal_mulai.after' => 'Tanggal mulai harus setelah hari ini',
+            'tanggal_selesai.required' => 'Tanggal selesai harus diisi',
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai',
             'ipk_minimal.required' => 'IPK minimal harus diisi',
             'ipk_minimal.numeric' => 'IPK minimal harus berupa angka',
             'ipk_minimal.gt' => 'IPK minimal harus lebih dari 0',

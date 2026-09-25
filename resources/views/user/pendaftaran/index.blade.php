@@ -50,8 +50,6 @@
                           <span class="badge badge-warning">Verifikasi</span>
                         @elseif($applicant->status === 'diterima')
                           <span class="badge badge-success">Diterima</span>
-                        @elseif($applicant->status === 'revisi')
-                          <span class="badge badge-secondary">Revisi</span>
                         @elseif($applicant->status === 'ditolak')
                           <span class="badge badge-danger">Ditolak</span>
                         @endif

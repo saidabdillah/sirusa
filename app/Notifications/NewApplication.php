@@ -27,7 +27,7 @@ class NewApplication extends Notification implements ShouldQueue
             'title' => 'Pendaftaran Beasiswa Baru',
             'message' => $this->applicantName.' mendaftar beasiswa "'.$this->applicant->beasiswa->nama.'".',
             'icon' => 'fa-user-plus',
-            'url' => route('admin.pendaftar.lihat', $this->applicant),
+            'url' => route('admin.pendaftar.index'),
         ];
     }
 }

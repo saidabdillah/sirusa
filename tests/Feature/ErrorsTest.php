@@ -3,7 +3,6 @@
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
-use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -11,9 +10,7 @@ use function Pest\Laravel\get;
 uses(RefreshDatabase::class)->group('errors');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 });
 
 test('404 page uses stisla error view', function () {
@@ -24,10 +21,10 @@ test('404 page uses stisla error view', function () {
 });
 
 test('403 page uses stisla error view', function () {
-    $superAdmin = User::factory()->superAdmin()->create(['email' => 'sa@test.com']);
+    $user = User::factory()->standardUser()->create(['email' => 'user403@test.com']);
 
-    actingAs($superAdmin)
-        ->get(route('admin.beasiswa.buat'))
+    actingAs($user)
+        ->get(route('admin.pendaftar.index'))
         ->assertForbidden()
         ->assertSee('403')
         ->assertSee('Anda tidak memiliki akses ke halaman ini');

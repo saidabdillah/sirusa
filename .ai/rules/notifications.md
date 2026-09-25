@@ -5,16 +5,15 @@ paths:
 
 # Notifications
 
-## Channel policy by notification type
-- `NewScholarship` -> `['mail', 'database']` (email + in-app, to all user role when admin creates a scholarship).
-- `NewApplication` -> `database` (to all admin+super_admin).
-- `ApplicantStatusChanged` -> `['mail', 'database']` (mail + in-app) to the owner user.
-- `UserActivated` -> `['mail']` only (sent when admin/super_admin activates a user via toggle-status).
-- `NewUserRegistered` -> `['database']` only (sent to all admin+super_admin when a new user registers).
-- `OtpPasswordReset` -> `['mail']` only, synchronous (not ShouldQueue).
-- `PengumumanBeasiswa` -> `['mail','database']`, `ShouldQueue`, sent by the scheduled `announcements:send` command to ALL applicants of a scholarship (accepted or not) when that scholarship's announcement window starts (`isPengumumanAktif` true and `pengumuman_notified_at` null). The command sets `pengumuman_notified_at` to prevent duplicate sends.
+## Channel policy: database-only (no email)
+Every notification is database-only (via() = ['database']). There is no more email/OTP flow. Notifications:
+- `NewScholarship` -> database, to all users with role `user` when admin creates a scholarship.
+- `NewApplication` -> database, to all users with access to `admin.pendaftar` (kesra/super_admin by default; resolved via `User::usersGrantedMenu('admin.pendaftar')`). Its stored URL points to `admin.pendaftar.index` (the pendaftar module is read-only; the old `admin.pendaftar.lihat` link was removed).
+- `UserActivated` -> database, to the owner user when admin toggles their status to aktif.
+- `DataVerificationChanged` -> database, to the profil owner when a verifikasi stage (capil/kampus/kesra) sets setuju/revisi/tolak.
 
 ## Queue
-All email/database notifications implement `ShouldQueue` except `OtpPasswordReset`. They are queued and require a running worker (`php artisan queue:work`) to be delivered. The scheduled `announcements:send` command (runs daily via `withSchedule` in `bootstrap/app.php`) dispatches `PengumumanBeasiswa`.
+All notifications send synchronously with `notify()` (no `ShouldQueue`, no scheduled announcement command — `SendScholarshipAnnouncement` and `PengumumanBeasiswa` were removed with the announcement feature).
 
-Recipients: user registers scholarship -> NewApplication to all admin+super_admin; admin creates scholarship -> NewScholarship to all user role; applicant status changes -> ApplicantStatusChanged to the owner user; announcement window starts -> PengumumanBeasiswa to all applicants of that scholarship. NO notifications on scholarship edit/delete or applicant delete. Notification data payload uses keys title/message/icon/url with a named route URL; navbar (View::composer) + NotificationController read these. Tests: in Pest, bare class names passed to Notification::assertSentTo must use `::class` (e.g. NewApplication::class) because the file-level `use` import does not resolve a bare identifier inside the test closure namespace.
+## Payload & assertions
+Notification data payload uses keys title/message/icon/url with a named route URL; navbar + NotificationController read these. Recipients for NewScholarship/NewApplication/UserActivated are resolved via the user relation `menus()`/`menuScopes()` or `role('user')` — see admin.md. Tests: in Pest, bare class names passed to Notification::assertSentTo must use `::class` (e.g. NewApplication::class) because the file-level `use` import does not resolve a bare identifier inside the test closure namespace.

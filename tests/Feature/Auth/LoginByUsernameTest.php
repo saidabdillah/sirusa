@@ -1,15 +1,13 @@
 <?php
 
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class)->group('auth', 'login');
 
 beforeEach(function () {
-    Role::create(['name' => 'super_admin']);
-    Role::create(['name' => 'admin']);
-    Role::create(['name' => 'user']);
+    seedAkses();
 
     $this->user = User::factory()->create([
         'username' => 'testuser',
@@ -31,6 +29,41 @@ test('user can login using username', function () {
         'login' => 'testuser',
         'password' => 'password123',
     ])->assertRedirect(route('dashboard'));
+});
+
+test('user can login using nik', function () {
+    UserProfile::create([
+        'user_id' => $this->user->id,
+        'nik' => '6302000000000001',
+        'nama_lengkap' => 'Test User',
+    ]);
+
+    $this->post(route('login.store'), [
+        'login' => '6302000000000001',
+        'password' => 'password123',
+    ])->assertRedirect(route('dashboard'));
+});
+
+test('login prefers nik match over identical username', function () {
+    $other = User::factory()->create([
+        'username' => '6302000000000001',
+        'email' => 'other@example.com',
+        'password' => bcrypt('otherpass123'),
+        'status' => 'aktif',
+    ]);
+    UserProfile::create([
+        'user_id' => $this->user->id,
+        'nik' => '6302000000000001',
+        'nama_lengkap' => 'Test User',
+    ]);
+
+    $this->post(route('login.store'), [
+        'login' => '6302000000000001',
+        'password' => 'password123',
+    ])->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($this->user);
+    expect($other->username)->toBe('6302000000000001');
 });
 
 test('login fails with wrong credentials', function () {

@@ -29,25 +29,23 @@
       <div class="col-lg-6">
         <div class="card">
           <div class="card-header">
-            <h4>Ganti Email</h4>
+            <h4>Informasi Akun</h4>
           </div>
-          <form action="{{ route('settings.email.otp.send') }}" method="POST">
-            @csrf
-            <div class="card-body">
-              <div class="form-group">
-                <label>Email Baru</label>
-                <input type="email" name="email" value="{{ old('email') }}"
-                  class="form-control @error('email') is-invalid @enderror">
-                @error('email')
-                  <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-                <small class="text-muted">Kode verifikasi akan dikirim ke email baru Anda.</small>
-              </div>
+          <div class="card-body">
+            <dl class="row mb-0">
+              <dt class="col-sm-4">NIK</dt>
+              <dd class="col-sm-8">{{ auth()->user()->profile?->nik ?? '-' }}</dd>
+              <dt class="col-sm-4">NIM</dt>
+              <dd class="col-sm-8">{{ auth()->user()->profile?->nim ?? '-' }}</dd>
+              <dt class="col-sm-4">Email</dt>
+              <dd class="col-sm-8">{{ auth()->user()->email ?? '-' }}</dd>
+              <dt class="col-sm-4">Username</dt>
+              <dd class="col-sm-8">{{ auth()->user()->username }}</dd>
+            </dl>
+            <div class="alert alert-info mt-3 mb-0">
+              <i class="fas fa-info-circle mr-1"></i> Login menggunakan NIK Anda. Kata sandi awal akun adalah NIM, lalu dapat Anda ganti di bawah.
             </div>
-            <div class="card-footer text-right">
-              <button type="submit" class="btn btn-primary">Kirim Kode Verifikasi</button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
 
@@ -61,14 +59,14 @@
             @method('PUT')
             <div class="card-body">
               <div class="form-group">
-                <label>Kata Sandi Baru</label>
+                <label>Kata Sandi Baru <span class="text-danger">*</span></label>
                 <input type="password" name="password" class="form-control @error('password') is-invalid @enderror">
                 @error('password')
                   <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>
               <div class="form-group">
-                <label>Konfirmasi Kata Sandi</label>
+                <label>Konfirmasi Kata Sandi <span class="text-danger">*</span></label>
                 <input type="password" name="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror">
                 @error('password_confirmation')
                   <div class="invalid-feedback">{{ $message }}</div>

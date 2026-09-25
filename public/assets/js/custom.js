@@ -96,12 +96,16 @@ $(function () {
   window.initMassDelete = function (options) {
     var $table = $(options.tableSelector);
     var $all = $(options.allSelector);
-    var $items = $table.find(options.itemSelector);
     var $btn = $(options.buttonSelector);
     var $form = $(options.formSelector);
     var label = options.entityLabel || "data";
 
+    function getItems() {
+      return $table.find(options.itemSelector);
+    }
+
     function updateButton() {
+      var $items = getItems();
       $btn.prop("disabled", $items.filter(":checked").length === 0);
       $all.prop("checked", $items.length > 0 && $items.filter(":checked").length === $items.length);
     }
@@ -111,12 +115,12 @@ $(function () {
     });
 
     $all.on("change", function () {
-      $items.prop("checked", $all.prop("checked"));
+      getItems().prop("checked", $all.prop("checked"));
       updateButton();
     });
 
     $btn.on("click", function () {
-      var ids = $items
+      var ids = getItems()
         .filter(":checked")
         .map(function () {
           return $(this).val();

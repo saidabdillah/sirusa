@@ -14,7 +14,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasMenuAccess('admin.beasiswa.index')) {
             return $this->adminDashboard();
         }
 
@@ -29,7 +29,6 @@ class DashboardController extends Controller
         $totalApplicants = Applicant::count();
         $pendingApplicants = Applicant::where('status', 'verifikasi')->count();
         $acceptedApplicants = Applicant::where('status', 'diterima')->count();
-        $revisionApplicants = Applicant::where('status', 'revisi')->count();
         $rejectedApplicants = Applicant::where('status', 'ditolak')->count();
 
         $recentApplicants = Applicant::with(['user', 'beasiswa'])
@@ -38,8 +37,8 @@ class DashboardController extends Controller
             ->get();
 
         $upcomingDeadlines = Scholarship::where('status', 'aktif')
-            ->where('batas_waktu', '>=', now())
-            ->orderBy('batas_waktu')
+            ->where('tanggal_selesai', '>=', now())
+            ->orderBy('tanggal_selesai')
             ->take(5)
             ->get();
 
@@ -50,7 +49,6 @@ class DashboardController extends Controller
             'totalApplicants',
             'pendingApplicants',
             'acceptedApplicants',
-            'revisionApplicants',
             'rejectedApplicants',
             'recentApplicants',
             'upcomingDeadlines',
@@ -65,7 +63,6 @@ class DashboardController extends Controller
         $pendingApplications = Applicant::where('user_id', $userId)->where('status', 'verifikasi')->count();
         $acceptedApplications = Applicant::where('user_id', $userId)->where('status', 'diterima')->count();
         $rejectedApplications = Applicant::where('user_id', $userId)->where('status', 'ditolak')->count();
-        $revisionApplications = Applicant::where('user_id', $userId)->where('status', 'revisi')->count();
 
         $recentApplications = Applicant::where('user_id', $userId)
             ->with('beasiswa')
@@ -74,13 +71,13 @@ class DashboardController extends Controller
             ->get();
 
         $availableScholarships = Scholarship::where('status', 'aktif')
-            ->where('batas_waktu', '>=', now())
-            ->orderBy('batas_waktu')
+            ->where('tanggal_selesai', '>=', now())
+            ->orderBy('tanggal_selesai')
             ->take(5)
             ->get();
 
         $activeAvailableCount = Scholarship::where('status', 'aktif')
-            ->where('batas_waktu', '>=', now())
+            ->where('tanggal_selesai', '>=', now())
             ->count();
 
         return view('dasbor', [
@@ -88,7 +85,6 @@ class DashboardController extends Controller
             'pendingApplications' => $pendingApplications,
             'acceptedApplications' => $acceptedApplications,
             'rejectedApplications' => $rejectedApplications,
-            'revisionApplications' => $revisionApplications,
             'recentApplications' => $recentApplications,
             'availableScholarships' => $availableScholarships,
             'activeAvailableCount' => $activeAvailableCount,

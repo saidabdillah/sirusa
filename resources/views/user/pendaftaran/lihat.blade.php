@@ -29,273 +29,12 @@
     <div class="row">
       {{-- LEFT COLUMN --}}
       <div class="col-lg-8">
-        {{-- Card 1: Data Diri --}}
-        @php $profile = optional($applicant->user->profile); @endphp
-        <div class="card">
-          <div class="card-header">
-            <h4>Data Diri Pendaftar</h4>
-          </div>
-          <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Nama Lengkap</strong>
-                <p class="mb-0">{{ $profile->nama_lengkap ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Username</strong>
-                <p class="mb-0">{{ $applicant->user->username ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>NIK</strong>
-                <p class="mb-0">{{ $profile->nik ?? '-' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Tempat, Tanggal Lahir</strong>
-                <p class="mb-0">{{ $profile->tempat_lahir ?? '-' }}, {{ $profile->tanggal_lahir ?
-                  $profile->tanggal_lahir->translatedFormat('d F Y') : '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Jenis Kelamin</strong>
-                <p class="mb-0">{{ $profile->jenis_kelamin ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Email</strong>
-                <p class="mb-0">{{ $applicant->user->email ?? '-' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Agama</strong>
-                <p class="mb-0">{{ $profile->agama ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Telepon</strong>
-                <p class="mb-0">{{ $profile->telepon ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Kabupaten</strong>
-                <p class="mb-0">{{ $profile->kabupaten_kota ?: 'Balangan' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Kecamatan</strong>
-                <p class="mb-0">{{ $profile->kecamatan ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Desa/Kelurahan</strong>
-                <p class="mb-0">{{ $profile->desa_kelurahan ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Alamat Detail</strong>
-                <p class="mb-0">{{ $profile->alamat ?? '-' }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {{-- Card 1b: Data Orang Tua --}}
-        @php $statusOrtu = $profile->status_orang_tua ?? ''; @endphp
-        <div class="card">
-          <div class="card-header">
-            <h4>Data Orang Tua / Wali</h4>
-          </div>
-          <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <strong>Status Orang Tua</strong>
-                <p class="mb-0">{{ $statusOrtu ?: '-' }}</p>
-              </div>
-            </div>
-            @if(in_array($statusOrtu, ['Lengkap', 'Piatu'], true))
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <h6 class="text-muted">Ayah</h6>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Nama</strong>
-                <p class="mb-0">{{ $profile->nama_ayah ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Pekerjaan</strong>
-                <p class="mb-0">{{ $profile->pekerjaan_ayah ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Penghasilan</strong>
-                <p class="mb-0">{{ $profile->penghasilan_ayah ?? '-' }}</p>
-              </div>
-            </div>
-            @endif
-            @if(in_array($statusOrtu, ['Lengkap', 'Yatim'], true))
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <h6 class="text-muted">Ibu</h6>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Nama</strong>
-                <p class="mb-0">{{ $profile->nama_ibu ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Pekerjaan</strong>
-                <p class="mb-0">{{ $profile->pekerjaan_ibu ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Penghasilan</strong>
-                <p class="mb-0">{{ $profile->penghasilan_ibu ?? '-' }}</p>
-              </div>
-            </div>
-            @endif
-            @if($statusOrtu === 'Yatim Piatu')
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <h6 class="text-muted">Wali</h6>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <strong>Nama</strong>
-                <p class="mb-0">{{ $profile->nama_wali }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Hubungan</strong>
-                <p class="mb-0">{{ $profile->hubungan_wali ?? '-' }}</p>
-              </div>
-              <div class="col-md-4">
-                <strong>Pekerjaan</strong>
-                <p class="mb-0">{{ $profile->pekerjaan_wali ?? '-' }}</p>
-              </div>
-            </div>
-            @endif
-          </div>
-        </div>
-
-        {{-- Card 2: Data Pendidikan --}}
-        <div class="card">
-          <div class="card-header">
-            <h4>Data Pendidikan</h4>
-          </div>
-          <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <strong>Fakultas</strong>
-                <p class="mb-0">{{ $applicant->fakultas ?? '-' }}</p>
-              </div>
-              <div class="col-md-6">
-                <strong>Program Studi</strong>
-                <p class="mb-0">{{ $applicant->prodi ?? '-' }}</p>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <strong>IPK</strong>
-                <p class="mb-0">{{ $applicant->ipk ?? '-' }}</p>
-              </div>
-              <div class="col-md-6">
-                <strong>Semester</strong>
-                <p class="mb-0">{{ $applicant->semester ?? '-' }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {{-- Card 3: Dokumen Pendukung --}}
-        <div class="card">
-          <div class="card-header">
-            <h4>Dokumen Pendukung</h4>
-          </div>
-          <div class="card-body">
-            @php
-            $sections = [
-            'Dokumen Diri Sendiri' => [
-            ['key' => 'dokumen_ktp', 'label' => 'Kartu Tanda Penduduk (KTP)'],
-            ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga (KK)'],
-            ['key' => 'dokumen_akta', 'label' => 'Akta Kelahiran'],
-            ['key' => 'dokumen_pas_foto', 'label' => 'Pas Foto 3x4'],
-            ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
-            ],
-            'Dokumen untuk Kampus' => [
-            ['key' => 'dokumen_surat_permohonan', 'label' => 'Surat Permohonan'],
-            ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
-            ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],
-            ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
-            ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
-            ],
-            'Dokumen Orang Tua / Wali' => [
-            ['key' => 'ktp_ayah', 'label' => 'KTP Ayah'],
-            ['key' => 'ktp_ibu', 'label' => 'KTP Ibu'],
-            ['key' => 'ktp_wali', 'label' => 'KTP Wali'],
-            ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali'],
-            ],
-            ];
-            @endphp
-
-            @php $isFirstSection = true; @endphp
-            @foreach($sections as $sectionName => $docs)
-            @if(! $isFirstSection)
-            <hr>
-            @endif
-            <h5 class="mb-3">{{ $sectionName }}</h5>
-            @foreach($docs as $doc)
-            <div class="mb-4">
-              <strong>{{ $doc['label'] }}</strong>
-              <div class="mt-2">
-                @if($applicant->{$doc['key']})
-                <div class="d-flex flex-wrap">
-                  <a href="{{ route('dokumen.show', $applicant->{$doc['key']}) }}" target="_blank"
-                    class="btn btn-sm btn-primary mr-2">
-                    <i class="fas fa-eye"></i> Lihat
-                  </a>
-                  <a href="{{ route('dokumen.show', $applicant->{$doc['key']}) }}" download
-                    class="btn btn-sm btn-outline-secondary mr-2">
-                    <i class="fas fa-download"></i> Download
-                  </a>
-                </div>
-                @else
-                <span class="text-muted">Tidak ada</span>
-                @endif
-              </div>
-            </div>
-            @endforeach
-            @php $isFirstSection = false; @endphp
-            @endforeach
-
-            <hr>
-            {{-- Sertifikat Prestasi --}}
-            <div class="mb-4">
-              <strong>Sertifikat Prestasi</strong>
-              <div class="mt-2">
-                @if($applicant->dokumen_prestasi && count($applicant->dokumen_prestasi) > 0)
-                @foreach($applicant->dokumen_prestasi as $index => $dokumen)
-                <div class="mb-3">
-                  <small class="text-muted">Prestasi {{ $index + 1 }}</small>
-                  <div class="d-flex flex-wrap">
-                    <a href="{{ route('dokumen.show', $dokumen) }}" target="_blank" class="btn btn-sm btn-primary mr-2">
-                      <i class="fas fa-eye"></i> Lihat
-                    </a>
-                    <a href="{{ route('dokumen.show', $dokumen) }}" download class="btn btn-sm btn-outline-secondary mr-2">
-                      <i class="fas fa-download"></i> Download
-                    </a>
-                  </div>
-                </div>
-                @endforeach
-                @else
-                <span class="text-muted">Tidak ada</span>
-                @endif
-              </div>
-            </div>
-          </div>
-        </div>
+        @include('partials.profil-detail', ['profile' => $profile, 'showDownloadDocs' => false])
       </div>
 
       {{-- RIGHT COLUMN --}}
       <div class="col-lg-4">
-        {{-- Card 1: Status --}}
+        {{-- Card: Status --}}
         <div class="card">
           <div class="card-header">
             <h4>Status Pendaftaran</h4>
@@ -306,8 +45,6 @@
               <span class="badge badge-warning p-2"><i class="fas fa-clock"></i> Verifikasi</span>
               @elseif($applicant->status === 'diterima')
               <span class="badge badge-success p-2"><i class="fas fa-check-circle"></i> Diterima</span>
-              @elseif($applicant->status === 'revisi')
-              <span class="badge badge-secondary p-2"><i class="fas fa-edit"></i> Revisi</span>
               @elseif($applicant->status === 'ditolak')
               <span class="badge badge-danger p-2"><i class="fas fa-times-circle"></i> Ditolak</span>
               @endif
@@ -321,7 +58,36 @@
           </div>
         </div>
 
-        {{-- Card 2: Beasiswa --}}
+        {{-- Card: Verifikasi Profil --}}
+        <div class="card">
+          <div class="card-header">
+            <h4>Verifikasi Profil</h4>
+          </div>
+          <div class="card-body">
+            @foreach($profile->verifStageLabels() as $stage => $label)
+            @php
+              $status = $profile->{'verif_'.$stage};
+              $badge = match ($status) { 'setuju' => 'success', 'revisi' => 'danger', 'tolak' => 'danger', default => 'warning' };
+              $text = match ($status) { 'setuju' => 'Disetujui', 'revisi' => 'Perlu Perbaikan', 'tolak' => 'Ditolak', default => 'Menunggu' };
+            @endphp
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>{{ $label }}</span>
+              <span class="badge badge-{{ $badge }}">{{ $text }}</span>
+            </div>
+            @endforeach
+            @if($profile->catatan_capil)
+            <small class="text-muted d-block mt-2"><strong>Catatan Capil:</strong> {{ $profile->catatan_capil }}</small>
+            @endif
+            @if($profile->catatan_kampus)
+            <small class="text-muted d-block"><strong>Catatan Kampus:</strong> {{ $profile->catatan_kampus }}</small>
+            @endif
+            @if($profile->catatan_kesra)
+            <small class="text-muted d-block"><strong>Catatan Kesra:</strong> {{ $profile->catatan_kesra }}</small>
+            @endif
+          </div>
+        </div>
+
+        {{-- Card: Beasiswa --}}
         <div class="card">
           <div class="card-header">
             <h4>Beasiswa yang Dilamar</h4>
@@ -339,25 +105,11 @@
                 <div class="font-weight-bold">{{ $applicant->beasiswa->tingkat_gelar }}</div>
               </div>
               <div class="col-6">
-                <div class="text-muted small">Batas Waktu</div>
-                <div class="font-weight-bold">{{ $applicant->beasiswa->batas_waktu ?
-                  $applicant->beasiswa->batas_waktu->translatedFormat('d F Y') : '-' }}</div>
+                <div class="text-muted small">Periode</div>
+                <div class="font-weight-bold">{{ $applicant->beasiswa->tanggal_selesai ?
+                  $applicant->beasiswa->tanggal_mulai->translatedFormat('d/m/Y').' – '.$applicant->beasiswa->tanggal_selesai->translatedFormat('d/m/Y') : '-' }}</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {{-- Card 3: Aksi --}}
-        <div class="card">
-          <div class="card-header">
-            <h4>Aksi</h4>
-          </div>
-          <div class="card-body">
-            @if($applicant->status === 'revisi')
-            <a href="{{ route('user.pendaftaran.lengkapi', $applicant) }}" class="btn btn-warning btn-block mb-2">
-              <i class="fas fa-edit"></i> Revisi Pendaftaran
-            </a>
-            @endif
           </div>
         </div>
       </div>
