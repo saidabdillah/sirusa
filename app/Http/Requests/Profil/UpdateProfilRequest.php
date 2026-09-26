@@ -8,7 +8,11 @@ class UpdateProfilRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        // Hanya mahasiswa yang punya profil isian + dokumen. Akun staf
+        // (super_admin/kesra/kampus/capil) tidak punya baris profil, jadi form
+        // ini tidak boleh bisa disimpan untuk mereka meski formnya disembunyikan
+        // di halaman profil.
+        return $this->user()->isMahasiswa();
     }
 
     protected function prepareForValidation(): void

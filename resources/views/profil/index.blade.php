@@ -4,22 +4,22 @@
   $documentGroups = [
     'Berkas Data Diri' => [
       'foto_profil' => 'Pas Foto 3x4',
-      'dokumen_ktp' => 'KTP',
-      'dokumen_kk' => 'Kartu Keluarga',
+      'dokumen_ktp' => 'KTP (Kartu Tanda Penduduk)',
+      'dokumen_kk' => 'KK (Kartu Keluarga)',
       'dokumen_desil' => 'Dokumen Desil',
-      'dokumen_sktm' => 'SKTM',
+      'dokumen_sktm' => 'SKTM (Surat Keterangan Tidak Mampu)',
     ],
     'Berkas Kampus' => [
       'dokumen_transkrip' => 'Transkrip',
       'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
       'dokumen_surat_pernyataan' => 'Surat Pernyataan',
-      'dokumen_bukti_ukt' => 'Bukti UKT',
+      'dokumen_bukti_ukt' => 'Bukti UKT (Uang Kuliah Tunggal)',
     ],
     'Berkas Orang Tua/Wali' => [
-      'ktp_ayah' => 'KTP Ayah',
-      'ktp_ibu' => 'KTP Ibu',
-      'ktp_wali' => 'KTP Wali',
-      'kk_wali' => 'KK Wali',
+      'ktp_ayah' => 'KTP (Kartu Tanda Penduduk) Ayah',
+      'ktp_ibu' => 'KTP (Kartu Tanda Penduduk) Ibu',
+      'ktp_wali' => 'KTP (Kartu Tanda Penduduk) Wali',
+      'kk_wali' => 'KK (Kartu Keluarga) Wali',
     ],
   ];
   $waliDocFields = ['ktp_wali', 'kk_wali'];
@@ -30,11 +30,11 @@
 @include('layouts.partials.skeleton.shell', [
 'content' => view('layouts.partials.skeleton.form', [
 'avatar' => false,
-'sections' => [
+'sections' => $isMahasiswa ? [
 ['label' => 'Data Diri', 'rows' => [1, 2, 2, 2]],
 ['label' => 'Data Kampus', 'rows' => [2, 3, 2]],
 ['label' => 'Data Orang Tua', 'rows' => [1, 2, 2, 2, 2]],
-],
+] : [],
 ])->render(),
 ])
 @endsection
@@ -64,6 +64,10 @@
     </div>
     @endif
 
+    {{-- Semua blok ini hanya relevan untuk mahasiswa. Akun staf (super_admin,
+         kesra, kampus, capil) tidak punya baris profil, jadi halaman profil
+         mereka berhenti di Informasi Akun. --}}
+    @if ($isMahasiswa)
     @if(! $profileComplete)
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
       <strong><i class="fas fa-exclamation-triangle"></i> Profil belum lengkap!</strong><br>
@@ -111,8 +115,10 @@
           </div>
       @endswitch
     @endif
+    @endif
 
-    <div class="row">
+    <div class="row {{ $isMahasiswa ? '' : 'justify-content-center' }}">
+    @if ($isMahasiswa)
       <div class="col-lg-8">
         <div class="card">
           <div class="card-header">
@@ -134,7 +140,7 @@
 
               <div class="form-row">
                 <div class="form-group col-md-6">
-                  <label for="nik">NIK <span class="text-danger">*</span></label>
+                  <label for="nik">NIK (Nomor Induk Kependudukan) <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik"
                     value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16">
                   @error('nik')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -292,7 +298,7 @@
                   @error('prodi_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-4">
-                  <label for="ipk">IPK <span class="text-danger">*</span></label>
+                  <label for="ipk">IPK (Indeks Prestasi Akademik) <span class="text-danger">*</span></label>
                   <input type="number" step="0.01" min="0" max="4"
                     class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk"
                     value="{{ old('ipk', $profile->ipk ?? '') }}">
@@ -308,13 +314,13 @@
 
               <div class="form-row">
                 <div class="form-group col-md-6">
-                  <label for="nim">NIM</label>
+                  <label for="nim">NIM (Nomor Induk Mahasiswa)</label>
                   <input type="text" class="form-control @error('nim') is-invalid @enderror" id="nim" name="nim"
                     value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30">
                   @error('nim')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
-                  <label for="ukt">UKT/SPP <span class="text-danger">*</span></label>
+                  <label for="ukt">UKT (Uang Kuliah Tunggal) <span class="text-danger">*</span></label>
                   <div class="input-group @error('ukt') is-invalid @enderror">
                     <div class="input-group-prepend">
                       <span class="input-group-text">Rp</span>
@@ -333,7 +339,7 @@
               <h5 class="mb-3">Data Orang Tua &amp; Wali</h5>
               <div class="form-row">
                 <div class="form-group col-md-12">
-                  <label>Ikut KK <span class="text-danger">*</span></label>
+                  <label>Ikut KK (Kartu Keluarga) <span class="text-danger">*</span></label>
                   <div class="d-flex align-items-center">
                     @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'wali' => 'Wali'] as $value => $label)
                     <div class="custom-control custom-radio mr-4">
@@ -343,7 +349,7 @@
                     </div>
                     @endforeach
                   </div>
-                  <small class="text-muted d-block">KK terdaftar mengikuti orang tua/wali yang diikuti. Data orang tua/wali yang diikuti wajib diisi.</small>
+                  <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data orang tua/wali yang dipilih wajib diisi.</small>
                   @error('ikut_kk')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
               </div>
@@ -357,7 +363,7 @@
                   @error('nama_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-4">
-                  <label for="nik_ayah">NIK Ayah <span class="text-danger">*</span></label>
+                  <label for="nik_ayah">NIK (Nomor Induk Kependudukan) Ayah <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah"
                     name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
                   @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -384,7 +390,7 @@
                   @error('nama_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-4">
-                  <label for="nik_ibu">NIK Ibu <span class="text-danger">*</span></label>
+                  <label for="nik_ibu">NIK (Nomor Induk Kependudukan) Ibu <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu"
                     name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
                   @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -413,7 +419,7 @@
                     @error('nama_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
-                    <label for="nik_wali">NIK Wali <span class="text-danger">*</span></label>
+                    <label for="nik_wali">NIK (Nomor Induk Kependudukan) Wali <span class="text-danger">*</span></label>
                     <input type="text" class="form-control @error('nik_wali') is-invalid @enderror" id="nik_wali"
                       name="nik_wali" value="{{ old('nik_wali', $profile->nik_wali ?? '') }}" maxlength="16">
                     @error('nik_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -498,8 +504,9 @@
           </form>
         </div>
       </div>
+    @endif
 
-      <div class="col-lg-4">
+      <div class="col-12 col-lg-{{ $isMahasiswa ? '4' : '6' }}">
         <div class="card">
           <div class="card-header">
             <h4>Informasi Akun</h4>
@@ -522,9 +529,16 @@
               {{ auth()->user()->created_at->translatedFormat('d F Y') }}
             </div>
             <hr>
+            @if ($isMahasiswa)
             <div class="text-muted small">
               Lengkapi profil beserta dokumen pendukung untuk mempermudah proses verifikasi dan pendaftaran beasiswa.
             </div>
+            @else
+            <div class="text-muted small">
+              Akun staf tidak punya data profil. Email dan kata sandi dikelola di
+              <a href="{{ route('settings') }}">Pengaturan</a>.
+            </div>
+            @endif
           </div>
         </div>
       </div>
@@ -533,6 +547,7 @@
 </section>
 @endsection
 
+@if ($isMahasiswa)
 @push('script')
 <script src="{{ asset('assets/modules/cleave-js/dist/cleave.min.js') }}"></script>
 <script>
@@ -644,3 +659,4 @@
   updateWaliVisibility();
 </script>
 @endpush
+@endif

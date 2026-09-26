@@ -49,6 +49,15 @@ select.form-control:not([size]):not([multiple]) {
   line-height: 1.5;
 }
 
+/* iOS Safari mengabaikan line-height pada <select> native, sehingga dengan
+   height:auto dropdown ter-render lebih pendek dari input teks dan
+   min-height: 46px tidak menyelamatkannya. Pin tinggi eksplisit agar sama
+   persis dengan input teks (46px) di semua browser. -sm/-lg dikecualikan
+   agar select kecil di admin/verifikasi/lihat tetap ukurannya. */
+select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not([multiple]) {
+  height: 46px;
+}
+
 /* Small screens: reduce main-content side padding (30px is wasteful below 576px) */
 @media (max-width: 575.98px) {
   .main-content {

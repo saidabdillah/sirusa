@@ -179,6 +179,16 @@ class User extends Authenticatable
             ->get();
     }
 
+    /**
+     * Hanya akun `user` (mahasiswa) yang punya baris profil isian + dokumen.
+     * `super_admin`/`kesra`/`kampus`/`capil` tidak punya profil, jadi halaman
+     * profil untuk mereka hanya menampilkan informasi akun.
+     */
+    public function isMahasiswa(): bool
+    {
+        return $this->hasRole('user');
+    }
+
     public function isProfileComplete(): bool
     {
         $profile = $this->profile;

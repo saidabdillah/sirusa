@@ -25,6 +25,26 @@ class PenggunaController extends Controller
         ]);
     }
 
+    /**
+     * Detail read-only satu pengguna: informasi akun + Data Diri profilnya.
+     *
+     * `akses.menu` sudah menolak role tanpa grant `admin.pengguna`; ini
+     * defense-in-depth yang sama seperti `create()`/`edit()`. Berbeda dari
+     * `abortUnlessMayTouch()` di bawah, membaca akun super_admin tetap
+     * diperbolehkan karena halaman ini tidak mengubah apa pun.
+     */
+    public function show(User $user): View
+    {
+        abort_unless(auth()->user()->canManageUsers(), 403);
+
+        $user->load(['roles', 'kampus', 'profile.user']);
+
+        return view('admin.pengguna.lihat', [
+            'user' => $user,
+            'roleLabels' => User::ROLE_LABELS,
+        ]);
+    }
+
     public function create(): View
     {
         $currentUser = auth()->user();

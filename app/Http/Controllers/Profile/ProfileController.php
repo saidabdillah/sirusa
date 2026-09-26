@@ -43,13 +43,23 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         $profile = $user->profile;
-        $profileComplete = $user->isProfileComplete();
+        $isMahasiswa = $user->isMahasiswa();
 
-        $districts = $this->wilayah->getDistricts(self::KABUPATEN_CODE);
+        // Akun staf tidak punya baris profil, jadi form isian + dokumen dan
+        // pilihan wilayah/kampus tidak perlu dihitung -- `getDistricts()` sampai
+        // ke API luar, dan itu sia-sia untuk halaman yang hanya menampilkan
+        // informasi akun.
+        $profileComplete = $isMahasiswa && $user->isProfileComplete();
 
-        $kampusList = Kampus::with('fakultas.prodi')
-            ->orderBy('nama_kampus')
-            ->get();
+        $districts = $isMahasiswa
+            ? $this->wilayah->getDistricts(self::KABUPATEN_CODE)
+            : [];
+
+        $kampusList = $isMahasiswa
+            ? Kampus::with('fakultas.prodi')
+                ->orderBy('nama_kampus')
+                ->get()
+            : collect();
 
         $kampusJson = $kampusList->map(function (Kampus $kampus) {
             return [
@@ -69,6 +79,7 @@ class ProfileController extends Controller
         return view('profil.index', compact(
             'profile',
             'profileComplete',
+            'isMahasiswa',
             'districts',
             'kampusList',
             'kampusJson'

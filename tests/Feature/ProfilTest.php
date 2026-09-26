@@ -352,3 +352,61 @@ test('alamat_lengkap accessor composes full address', function () {
 
     expect($user->profile->alamat_lengkap)->toBe('RT 01 RW 02, Ambakiang, Kec. Awayan, Balangan, Kalimantan Selatan');
 });
+
+/**
+ * Setiap singkatan di form profil harus ikut membawa artinya, supaya mahasiswa
+ * baru tahu berkas/field mana yang dimaksud tanpa perlu menebak.
+ */
+test('profil expands every abbreviated label with its full meaning', function (string $label) {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    actingAs($user)
+        ->get(route('profile'))
+        ->assertOk()
+        ->assertSee($label);
+})->with([
+    'dokumen ktp' => ['KTP (Kartu Tanda Penduduk)'],
+    'dokumen kk' => ['KK (Kartu Keluarga)'],
+    'dokumen sktm' => ['SKTM (Surat Keterangan Tidak Mampu)'],
+    'dokumen bukti ukt' => ['Bukti UKT (Uang Kuliah Tunggal)'],
+    'ktp ayah' => ['KTP (Kartu Tanda Penduduk) Ayah'],
+    'ktp ibu' => ['KTP (Kartu Tanda Penduduk) Ibu'],
+    'ktp wali' => ['KTP (Kartu Tanda Penduduk) Wali'],
+    'kk wali' => ['KK (Kartu Keluarga) Wali'],
+    'nik' => ['NIK (Nomor Induk Kependudukan)'],
+    'ipk' => ['IPK (Indeks Prestasi Akademik)'],
+    'nim' => ['NIM (Nomor Induk Mahasiswa)'],
+    'ukt' => ['UKT (Uang Kuliah Tunggal)'],
+    'ikut kk' => ['Ikut KK (Kartu Keluarga)'],
+    'nik ayah' => ['NIK (Nomor Induk Kependudukan) Ayah'],
+    'nik ibu' => ['NIK (Nomor Induk Kependudukan) Ibu'],
+    'nik wali' => ['NIK (Nomor Induk Kependudukan) Wali'],
+]);
+
+test('profil no longer labels the ukt field as UKT/SPP', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    actingAs($user)
+        ->get(route('profile'))
+        ->assertOk()
+        ->assertDontSee('UKT/SPP');
+});
+
+test('profil keeps RT/RW abbreviated in the address label', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    actingAs($user)
+        ->get(route('profile'))
+        ->assertOk()
+        ->assertSee('Alamat Detail (RT/RW, Nama Jalan, No. Rumah)', false);
+});
+
+test('profil spells out the ikut kk helper text and fixes its wording', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
+
+    actingAs($user)
+        ->get(route('profile'))
+        ->assertOk()
+        ->assertSee('Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data orang tua/wali yang dipilih wajib diisi.')
+        ->assertDontSee('yang diikuti');
+});

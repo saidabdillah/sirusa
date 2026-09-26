@@ -98,3 +98,12 @@ test('inactive user cannot login', function () {
     ])->assertRedirect()
         ->assertSessionHasErrors('login');
 });
+
+test('login page keeps the combined label but drops the NIK/username explainer', function () {
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('NIK atau Username')
+        ->assertSee('Lupa kata sandi?')
+        ->assertDontSee('Mahasiswa masuk menggunakan NIK')
+        ->assertDontSee('Admin masuk menggunakan username');
+});

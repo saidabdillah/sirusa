@@ -40,7 +40,6 @@
                 <label for="login">NIK atau Username</label>
                 <input id="login" type="text" class="form-control @error('login') is-invalid @enderror" name="login" value="{{ old('login') }}" tabindex="1" autofocus>
                 @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <small class="text-muted">Mahasiswa masuk menggunakan NIK. Admin masuk menggunakan username.</small>
               </div>
 
               <div class="form-group">

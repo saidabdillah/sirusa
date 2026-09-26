@@ -4,13 +4,15 @@
 
   /**
    * Scoping peruntukan data per tahap verifikasi. Null = tampilkan semua
-   * (halaman pendaftar). 'kesra' = tahap akhir, juga semua.
+   * (halaman pendaftar). 'kesra' = tahap akhir, juga semua. 'diri' = hanya
+   * kartu Data Diri (halaman detail pengguna di modul Pengguna).
    */
   $stage = $stage ?? null;
 
   $stageCards = [
       'capil' => ['diri', 'ortu', 'dokumen'],
       'kampus' => ['diri', 'kampus', 'dokumen'],
+      'diri' => ['diri'],
   ];
 
   $stageDocSections = [

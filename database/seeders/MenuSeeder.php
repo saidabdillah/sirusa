@@ -137,11 +137,19 @@ class MenuSeeder extends Seeder
         $grants = [
             'super_admin' => [
                 'dasbor',
-                'beasiswa', 'admin.beasiswa',
+                'beasiswa',
+                'admin.beasiswa',
                 'admin.pendaftar',
-                'admin.capil', 'admin.kampusverif', 'admin.kesra',
-                'master-data', 'admin.kampus',
-                'kelola-akses', 'admin.role', 'admin.pengguna', 'admin.menu', 'admin.menuKelola',
+                'admin.capil',
+                'admin.kampusverif',
+                'admin.kesra',
+                'master-data',
+                'admin.kampus',
+                'kelola-akses',
+                'admin.role',
+                'admin.pengguna',
+                'admin.menu',
+                'admin.menuKelola',
             ],
             'capil' => [
                 'dasbor',
@@ -155,17 +163,22 @@ class MenuSeeder extends Seeder
             ],
             'kesra' => [
                 'dasbor',
-                'beasiswa', 'admin.beasiswa',
+                'beasiswa',
+                'admin.beasiswa',
                 'admin.pendaftar',
                 'admin.kesra',
-                'master-data', 'admin.kampus',
+                'master-data',
+                'admin.kampus',
                 // `kelola-akses` (parent) ikut di-grant supaya item "Pengguna" muncul di
                 // sidebar — sidebarMenus() hanya query menu parent_id null.
-                'kelola-akses', 'admin.pengguna',
+                'kelola-akses',
+                'admin.pengguna',
             ],
             'user' => [
                 'dasbor',
-                'menu-beasiswa', 'user.beasiswa', 'user.pendaftaran',
+                'menu-beasiswa',
+                'user.beasiswa',
+                'user.pendaftaran',
             ],
         ];
 

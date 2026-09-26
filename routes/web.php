@@ -130,6 +130,9 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::patch('/pengguna/{user}/status', [PenggunaController::class, 'toggleStatus'])->name('pengguna.toggle-status');
         Route::get('/pengguna/buat', [PenggunaController::class, 'create'])->name('pengguna.buat');
         Route::post('/pengguna', [PenggunaController::class, 'store'])->name('pengguna.simpan');
+        // Setelah `pengguna.buat` — kalau didaftarkan lebih dulu, `/{user}` akan
+        // menelan `/pengguna/buat`.
+        Route::get('/pengguna/{user}', [PenggunaController::class, 'show'])->name('pengguna.lihat');
         Route::get('/pengguna/{user}/ubah', [PenggunaController::class, 'edit'])->name('pengguna.ubah');
         Route::put('/pengguna/{user}', [PenggunaController::class, 'update'])->name('pengguna.perbarui');
         Route::post('/pengguna/{user}/reset-password', [PenggunaController::class, 'resetPassword'])->name('pengguna.reset-password');

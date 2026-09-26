@@ -14,10 +14,13 @@ Before planning or editing, find the row whose globs match the file's path and r
 | .env | .ai/rules/general.md |
 | database/migrations/** | .ai/rules/migrations.md |
 | app/Notifications/**, app/Notifications/*.php | .ai/rules/notifications.md |
+| routes/web.php, app/Http/Controllers/Admin/PenggunaController.php, resources/views/admin/pengguna/**, resources/views/partials/profil-detail.blade.php | .ai/rules/partials.md |
 | resources/views/user/pendaftaran/** | .ai/rules/pendaftaran.md |
 | app/Http/Requests/Profil/** | .ai/rules/profil.md |
+| resources/views/profil/index.blade.php | .ai/rules/resources-views-profil.md |
 | tests/** | .ai/rules/tests.md |
 | app/Http/Requests/User/*.php, app/Http/Requests/User/** | .ai/rules/user.md |
 | resources/views/admin/verifikasi/** | .ai/rules/verifikasi.md |
 | resources/views/admin/** | .ai/rules/views-admin.md |
+| app/Models/User.php, app/Http/Controllers/Profile/ProfileController.php, app/Http/Requests/Profil/UpdateProfilRequest.php, resources/views/profil/** | .ai/rules/views-profil.md |
 | resources/views/** | .ai/rules/views.md |

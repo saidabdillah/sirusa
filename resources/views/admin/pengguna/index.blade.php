@@ -76,6 +76,12 @@
                       @endif
                     </td>
                     <td>
+                      {{-- "Lihat" itu read-only, jadi aman untuk semua baris termasuk
+                           super_admin; dropdown aksi tetap disembunyikan untuk
+                           baris itu karena seluruh isinya adalah mutasi. --}}
+                      <a class="btn btn-info btn-sm" href="{{ route('admin.pengguna.lihat', $user) }}">
+                        <i class="fas fa-eye mr-1"></i> Lihat
+                      </a>
                       @if(! $rowIsSuperAdmin)
                       <div class="btn-group">
                         <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
