@@ -14,26 +14,31 @@ class VerifikasiController extends Controller
 {
     private const STAGES = ['capil', 'kampus', 'kesra'];
 
+    private const FILTERS = ['menunggu', 'revisi', 'setuju', 'tolak'];
+
     public function index(string $stage): View
     {
         $stage = $this->validStage($stage);
 
         $kampusId = $this->scopedKampusId();
+        $filter = $this->validFilter();
 
         $users = User::role('user')
             ->where('status', 'aktif')
-            ->with(['profile' => fn ($query) => $query->when(
-                $stage === 'kampus',
-                fn ($profile) => $profile->with('prodi')
-            )])
+            ->with(['profile' => fn ($query) => $query->with('prodi.fakultas.kampus')])
             ->when($kampusId && $stage === 'kampus', fn ($query) => $query->whereHas('profile.prodi.fakultas', fn ($q) => $q->where('kampus_id', $kampusId))
             )
             ->get()
             ->filter(fn (User $user) => $user->profile && $user->profile->canVerifStage($stage))
-            ->sortBy(fn (User $user) => $user->profile->verifStatus() === 'revisi' ? 0 : 1)
+            ->filter(fn (User $user) => $filter === null
+                || $user->profile->verifStageDecision($stage)['status'] === $filter)
+            ->sortBy([
+                fn (User $user) => $user->profile->verifQueueRank($stage),
+                fn (User $user) => $user->profile->nama_lengkap,
+            ])
             ->values();
 
-        return view('admin.verifikasi.index', compact('stage', 'users'));
+        return view('admin.verifikasi.index', compact('stage', 'users', 'filter'));
     }
 
     public function show(User $user, string $stage): View
@@ -78,21 +83,22 @@ class VerifikasiController extends Controller
         $stages = UserProfile::verifStages();
         $profile->{$stages[$stage][0]} = $data['status'];
         $profile->{$stages[$stage][1]} = $data['catatan'] ?? null;
+
+        // Keputusan pada tahap ini tidak lagi disetujui, maka urutan ke tahap
+        // berikutnya tidak berlaku dan harus diulang dari awal.
+        if ($data['status'] !== 'setuju') {
+            $profile->resetDownstreamStages($stage);
+        }
+
         $profile->save();
 
-        $user->notify(new DataVerificationChanged($profile, $data['status']));
+        $user->notify(new DataVerificationChanged($profile, $stage, $data['status'], $data['catatan'] ?? null));
 
-        $statusLabel = match ($data['status']) {
-            'setuju' => 'disetujui',
-            'revisi' => 'perlu perbaikan',
-            'tolak' => 'ditolak',
-            default => 'menunggu',
-        };
         $successAction = match ($data['status']) {
             'setuju' => 'setujui',
             'revisi' => 'minta perbaikan',
             'tolak' => 'tolak',
-            default => 'perbarui',
+            default => 'tarik kembali',
         };
 
         return redirect()->route($this->indexRoute($stage))
@@ -106,6 +112,16 @@ class VerifikasiController extends Controller
         }
 
         return $stage;
+    }
+
+    /**
+     * Filter status pada daftar verifikasi. Null berarti tidak difilter.
+     */
+    private function validFilter(): ?string
+    {
+        $filter = request('filter');
+
+        return in_array($filter, self::FILTERS, true) ? $filter : null;
     }
 
     private function indexRoute(string $stage): string

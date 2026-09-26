@@ -145,23 +145,79 @@ class UserProfile extends Model
         ];
     }
 
+    /**
+     * Keputusan pada satu tahap, beserta label dan warna badge siap tampil.
+     *
+     * @return array{status: string, label: string, badge: string, decided: bool}
+     */
+    public function verifStageDecision(string $stage): array
+    {
+        $statusField = self::verifStages()[$stage][0] ?? null;
+        $status = $statusField ? $this->{$statusField} : 'menunggu';
+
+        return [
+            'status' => $status,
+            'label' => match ($status) {
+                'setuju' => 'Disetujui',
+                'revisi' => 'Perlu Perbaikan',
+                'tolak' => 'Ditolak',
+                default => 'Menunggu',
+            },
+            'badge' => match ($status) {
+                'setuju' => 'success',
+                'revisi' => 'warning',
+                'tolak' => 'danger',
+                default => 'secondary',
+            },
+            'decided' => $status !== 'menunggu',
+        ];
+    }
+
+    /**
+     * Urutan antrean: yang paling butuh tindakan mahasiswa dulu, lalu yang
+     * sudah diputuskan dipinda ke bawah agar mudah dibedakan dari yang baru.
+     */
+    public function verifQueueRank(string $stage): int
+    {
+        return match ($this->{self::verifStages()[$stage][0]}) {
+            'revisi' => 0,
+            'menunggu' => 1,
+            'tolak' => 2,
+            default => 3,
+        };
+    }
+
+    /**
+     * Apakah tahap ini masih relevan untuk ditangani oleh admin tahap tersebut.
+     *
+     * Syaratnya hanya urutan — semua tahap sebelumnya harus disetujui lebih dulu.
+     * Keputusan tahap ini sendiri tidak dikunci, sehingga admin masih dapat
+     * mengubah keputusan yang sudah dibuat. Namun, begitu tahap berikutnya sudah
+     * diputuskan, mengubah kembali tahap ini akan membatalkan pekerjaan tahap
+     * tersebut, jadi barisnya disembunyikan.
+     */
     public function canVerifStage(string $stage): bool
     {
         $stages = self::verifStages();
-
-        if (! isset($stages[$stage])) {
-            return false;
-        }
-
-        if ($this->verifStatus() === 'terverifikasi' || $this->{$stages[$stage][0]} === 'setuju') {
-            return false;
-        }
-
         $order = array_keys($stages);
         $index = array_search($stage, $order, true);
 
-        foreach (array_slice($order, 0, $index) as $prev) {
-            if ($this->{$stages[$prev][0]} !== 'setuju') {
+        if ($index === false) {
+            return false;
+        }
+
+        foreach (array_slice($order, 0, $index) as $previous) {
+            if ($this->{$stages[$previous][0]} !== 'setuju') {
+                return false;
+            }
+        }
+
+        if ($this->{$stages[$stage][0]} === 'menunggu') {
+            return true;
+        }
+
+        foreach (array_slice($order, $index + 1) as $downstream) {
+            if ($this->{$stages[$downstream][0]} !== 'menunggu') {
                 return false;
             }
         }
@@ -176,6 +232,27 @@ class UserProfile extends Model
         foreach ($stages as $stage) {
             $this->{$stage[0]} = 'menunggu';
             $this->{$stage[1]} = null;
+        }
+    }
+
+    /**
+     * Reset semua tahap setelah tahap tertentu, karena urutan verifikasinya
+     * jadi tidak berlaku lagi (mis. Capil ditarik kembali saat Kampus sudah
+     * disetujui).
+     */
+    public function resetDownstreamStages(string $stage): void
+    {
+        $stages = self::verifStages();
+        $order = array_keys($stages);
+        $index = array_search($stage, $order, true);
+
+        if ($index === false) {
+            return;
+        }
+
+        foreach (array_slice($order, $index + 1) as $downstream) {
+            $this->{$stages[$downstream][0]} = 'menunggu';
+            $this->{$stages[$downstream][1]} = null;
         }
     }
 

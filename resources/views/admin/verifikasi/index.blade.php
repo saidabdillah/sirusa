@@ -5,7 +5,8 @@ $routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admi
 $stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
 $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
 
-// Kolom peruntukan per tahap verifikasi.
+// Kolom peruntukan per tahap verifikasi. Capil fokus data kependudukan, Kampus
+// fokus data mahasiswa, Kesra (tahap akhir) menampilkan seluruh data.
 $stageColumns = [
 'capil' => [
 ['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
@@ -16,12 +17,31 @@ $stageColumns = [
 ['label' => 'NIM', 'value' => fn ($p) => $p->nim ?? '-'],
 ['label' => 'Program Studi', 'value' => fn ($p) => $p->prodi?->nama ?? '-'],
 ['label' => 'IPK', 'value' => fn ($p) => $p->ipk ?? '-'],
+['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
+['label' => 'Tempat, Tanggal Lahir', 'value' => fn ($p) => ($p->tempat_lahir ?? '-').', '.(! blank($p->tanggal_lahir) ? $p->tanggal_lahir->translatedFormat('d M Y') : '-')],
+['label' => 'Jenis Kelamin', 'value' => fn ($p) => $p->jenis_kelamin ?? '-'],
+['label' => 'Agama', 'value' => fn ($p) => $p->agama ?? '-'],
 ],
 'kesra' => [
 ['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
+['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
 ['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
+['label' => 'NIM', 'value' => fn ($p) => $p->nim ?? '-'],
+['label' => 'Program Studi', 'value' => fn ($p) => $p->prodi?->nama ?? '-'],
+['label' => 'Fakultas', 'value' => fn ($p) => $p->prodi?->fakultas?->nama ?? '-'],
+['label' => 'Kampus', 'value' => fn ($p) => $p->prodi?->fakultas?->kampus?->nama_kampus ?? '-'],
+['label' => 'IPK', 'value' => fn ($p) => $p->ipk ?? '-'],
+['label' => 'Semester', 'value' => fn ($p) => $p->semester ?? '-'],
+['label' => 'UKT/SPP', 'value' => fn ($p) => $p->ukt ? 'Rp '.number_format($p->ukt, 0, ',', '.') : '-'],
 ],
 ][$stage] ?? [];
+
+$filterOptions = [
+'menunggu' => 'Menunggu',
+'revisi' => 'Perlu Perbaikan',
+'setuju' => 'Disetujui',
+'tolak' => 'Ditolak',
+];
 @endphp
 
 @section('content')
@@ -46,15 +66,36 @@ $stageColumns = [
       <div class="col-12">
         <div class="card">
           <div class="card-header">
-            <h4>Daftar Profil Menunggu Verifikasi {{ $stageLabel }}</h4>
+            <h4>Daftar Verifikasi Profil {{ $stageLabel }}</h4>
           </div>
           <div class="card-body">
             <div class="alert alert-primary">
               <i class="fas fa-info-circle mr-1"></i>
               Verifikasi berjalan berurutan: <strong>Capil &rarr; Kampus &rarr; Kesra</strong>.
-              Anda hanya dapat memverifikasi profil yang seluruh tahap sebelumnya sudah disetujui
-              dan tahap Anda sendiri belum disetujui.
+              Anda hanya dapat memverifikasi profil yang seluruh tahap sebelumnya sudah disetujui.
+              Profil yang sudah Anda putuskan tetap ditampilkan agar keputusannya bisa diubah kembali.
             </div>
+            <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
+              <div class="col-md-4 mb-2 mb-md-0">
+                <label for="filter">Status Keputusan</label>
+                <select class="form-control" name="filter" id="filter">
+                  <option value="">-- Semua Status --</option>
+                  @foreach($filterOptions as $value => $label)
+                  <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="col-md-2 mb-2 mb-md-0">
+                <button type="submit" class="btn btn-primary btn-block">
+                  <i class="fas fa-filter mr-1"></i> Terapkan
+                </button>
+              </div>
+              @if($filter)
+              <div class="col-md-2 mb-2 mb-md-0">
+                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary btn-block">Reset</a>
+              </div>
+              @endif
+            </form>
             <div class="table-responsive">
               <table class="table table-striped" id="verifikasiTable">
                 <thead>
@@ -69,38 +110,32 @@ $stageColumns = [
                   </tr>
                 </thead>
                 <tbody>
-                  @forelse($users as $user)
-                  @php $p = $user->profile; @endphp
-                  <tr>
+                  @foreach($users as $user)
+                  @php
+                    $p = $user->profile;
+                    $decision = $p->verifStageDecision($stage);
+                  @endphp
+                  <tr class="{{ $decision['decided'] ? 'table-active' : '' }}">
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $p->nama_lengkap ?? '-' }}</td>
                     @foreach($stageColumns as $column)
                     <td>{{ $column['value']($p) }}</td>
                     @endforeach
                     <td>
-                      @php $status = $p->{'verif_'.$stage}; @endphp
-                      @if($status === 'revisi')
-                      <span class="badge badge-warning">Perlu Perbaikan</span>
-                      @elseif($status === 'setuju')
-                      <span class="badge badge-success">Disetujui</span>
-                      @elseif($status === 'tolak')
-                      <span class="badge badge-danger">Ditolak</span>
-                      @else
-                      <span class="badge badge-warning">Menunggu</span>
+                      <span class="badge badge-{{ $decision['badge'] }}">{{ $decision['label'] }}</span>
+                      @if($p->{'catatan_'.$stage})
+                      <small class="text-muted d-block">{{ Str::limit($p->{'catatan_'.$stage}, 40) }}</small>
                       @endif
                     </td>
                     <td>
-                      <a href="{{ route($routePrefix.'.lihat', $user) }}" class="btn btn-info btn-sm">
-                        <i class="fas fa-eye"></i> Verifikasi
+                      <a href="{{ route($routePrefix.'.lihat', $user) }}"
+                        class="btn btn-sm {{ $decision['decided'] ? 'btn-outline-primary' : 'btn-info' }}">
+                        <i class="fas {{ $decision['decided'] ? 'fa-edit' : 'fa-eye' }}"></i>
+                        {{ $decision['decided'] ? 'Ubah Keputusan' : 'Verifikasi' }}
                       </a>
                     </td>
                   </tr>
-                  @empty
-                  <tr>
-                    <td colspan="{{ count($stageColumns) + 4 }}" class="text-center text-muted">Tidak ada profil yang
-                      menunggu verifikasi {{ $stageLabel }}.</td>
-                  </tr>
-                  @endforelse
+                  @endforeach
                 </tbody>
               </table>
             </div>
@@ -122,6 +157,7 @@ $stageColumns = [
         lengthMenu: "Tampilkan _MENU_ data",
         info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
         infoEmpty: "Tidak ada data",
+        emptyTable: "Tidak ada profil dalam daftar verifikasi {{ $stageLabel }}.",
         infoFiltered: "(disaring dari _MAX_ total data)",
         zeroRecords: "Tidak ada data yang cocok",
         paginate: {

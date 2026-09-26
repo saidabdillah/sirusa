@@ -4,6 +4,7 @@
   $routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
   $stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
   $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
+  $decision = $profile->verifStageDecision($stage);
 @endphp
 
 @section('content')
@@ -54,20 +55,32 @@
             <h4>Verifikasi {{ $stageLabel }}</h4>
           </div>
           <div class="card-body">
+            @if($decision['decided'])
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle mr-1"></i>
+              Keputusan saat ini: <strong>{{ $decision['label'] }}</strong>. Anda masih dapat
+              mengubahnya menjadi Persetujuan, Perbaikan, Penolakan, atau menariknya kembali.
+            </div>
+            @endif
             <form action="{{ route($routePrefix.'.verifikasi', $user) }}" method="POST">
               @csrf
               @method('PUT')
               <div class="form-group">
-                <label for="status">Keputusan</label>
+                <label for="status">Keputusan <span class="text-danger">*</span></label>
                 <select class="form-control @error('status') is-invalid @enderror" name="status" id="status">
                   <option value="" {{ ! old('status') ? 'selected' : '' }}>-- pilih --</option>
-                  <option value="setuju" {{ old('status') === 'setuju' ? 'selected' : '' }}>Setujui</option>
-                  <option value="revisi" {{ old('status') === 'revisi' ? 'selected' : '' }}>Minta Perbaikan</option>
-                  <option value="tolak" {{ old('status') === 'tolak' ? 'selected' : '' }}>Tolak</option>
+                  <option value="setuju" {{ old('status', $decision['status']) === 'setuju' ? 'selected' : '' }}>Setujui</option>
+                  <option value="revisi" {{ old('status', $decision['status']) === 'revisi' ? 'selected' : '' }}>Minta Perbaikan</option>
+                  <option value="tolak" {{ old('status', $decision['status']) === 'tolak' ? 'selected' : '' }}>Tolak</option>
+                  @if($decision['decided'])
+                  <option value="menunggu" {{ old('status', $decision['status']) === 'menunggu' ? 'selected' : '' }}>Tarik Kembali (kembalikan ke Menunggu)</option>
+                  @endif
                 </select>
                 @error('status')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
+                <small class="text-muted">Memilih selain "Setujui" akan mengembalikan verifikasi
+                  pada tahap-tahap berikutnya ke daftar tunggu.</small>
               </div>
               <div class="form-group">
                 <label for="catatan">Catatan</label>
@@ -96,15 +109,19 @@
       var status = $('#status').val();
       var text = status === 'setuju'
         ? 'Setujui data profil ini?'
-        : (status === 'revisi' ? 'Minta perbaikan data profil ini?' : 'Tolak data profil ini?');
+        : (status === 'revisi'
+          ? 'Minta perbaikan data profil ini?'
+          : (status === 'tolak'
+            ? 'Tolak data profil ini?'
+            : 'Tarik kembali keputusan ini ke daftar tunggu?'));
       Swal.fire({
         title: 'Konfirmasi',
         text: text,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: status === 'setuju' ? '#47c363' : '#e74c3c',
+        confirmButtonColor: status === 'setuju' || status === 'menunggu' ? '#47c363' : '#e74c3c',
         cancelButtonColor: '#6c757d',
-        confirmButtonText: status === 'setuju' ? 'Ya, Setujui!' : (status === 'revisi' ? 'Ya, Minta Perbaikan!' : 'Ya, Tolak!'),
+        confirmButtonText: status === 'setuju' ? 'Ya, Setujui!' : (status === 'revisi' ? 'Ya, Minta Perbaikan!' : (status === 'tolak' ? 'Ya, Tolak!' : 'Ya, Tarik Kembali!')),
         cancelButtonText: 'Batal'
       }).then((result) => {
         if (result.isConfirmed) {

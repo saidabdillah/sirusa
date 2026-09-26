@@ -2,6 +2,7 @@
 paths:
   - 'app/Http/Controllers/Admin/**'
   - app/Http/Controllers/Admin/PenggunaController.php
+  - app/Http/Controllers/Admin/VerifikasiController.php
 ---
 
 # Admin
@@ -61,3 +62,6 @@ Index/create/store/edit/update are gated on `User::canManageUsers()` (= `hasMenu
 
 ## update() guards the actor's own account and super_admin targets
 `update()` returns a redirect + `error` flash (never an exception) when the actor changes their own `peran` or sets their own `status` to `non-aktif`, and when a `super_admin` target's `peran` is changed or its `status` is set to `non-aktif` — the form was previously able to demote and deactivate super_admins, which `destroy()`/`toggleStatus()` already refused. `toggleStatus()` now has an explicit `abort_unless(hasRole('super_admin'))` (it used to rely on the menu grant for its 403, so it broke the moment kesra got the grant) and refuses any `super_admin` target, which also stops a super_admin disabling themselves.
+
+## Changing a verification decision cascades to later stages
+In `verifikasi()`, whenever the submitted status is not `setuju`, call `resetDownstreamStages($stage)` before saving. Prerequisites are now re-editable, so leaving a stale `setuju` downstream would let a student skip straight to Kesra after Capil rejected them. `VerifikasiProfilRequest` also accepts `menunggu` (Tarik Kembali) for this reason.

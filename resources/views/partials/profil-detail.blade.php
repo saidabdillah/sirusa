@@ -10,7 +10,7 @@
 
   $stageCards = [
       'capil' => ['diri', 'ortu', 'dokumen'],
-      'kampus' => ['kampus', 'dokumen'],
+      'kampus' => ['diri', 'kampus', 'dokumen'],
   ];
 
   $stageDocSections = [

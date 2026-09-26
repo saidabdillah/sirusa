@@ -14,7 +14,7 @@ class VerifikasiProfilRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'in:setuju,revisi,tolak'],
+            'status' => ['required', 'in:menunggu,setuju,revisi,tolak'],
             'catatan' => ['nullable', 'string', 'max:255'],
         ];
     }

@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/Notifications/**'
+  - 'app/Notifications/*.php'
 ---
 
 # Notifications
@@ -17,3 +18,6 @@ All notifications send synchronously with `notify()` (no `ShouldQueue`, no sched
 
 ## Payload & assertions
 Notification data payload uses keys title/message/icon/url with a named route URL; navbar + NotificationController read these. Recipients for NewScholarship/NewApplication/UserActivated are resolved via the user relation `menus()`/`menuScopes()` or `role('user')` — see admin.md. Tests: in Pest, bare class names passed to Notification::assertSentTo must use `::class` (e.g. NewApplication::class) because the file-level `use` import does not resolve a bare identifier inside the test closure namespace.
+
+## Verification notifications identify the stage that acted
+Verification notifications name the responsible stage, not the admin account: the controller passes `$stage` into `DataVerificationChanged` and the notification resolves title, icon and body from it (capil = Admin Dukcapil / `fa-id-card`, kampus = Admin Kampus / `fa-university`, kesra = Admin Sirusa (Kesra) / `fa-hand-holding-heart`). Append ` Catatan: {catatan}` only for revisi/tolak. Do not read the stage from `verifikasi_capil`/`kampus`/`kesra` — those tables are dead and their enums do not match the statuses actually stored.
