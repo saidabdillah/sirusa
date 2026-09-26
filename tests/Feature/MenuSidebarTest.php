@@ -23,7 +23,7 @@ test('super admin sidebar shows role and menu access but not template surat', fu
         ->assertDontSee('<span>Template Surat</span>', false);
 });
 
-test('admin sidebar shows admin menus but not role and menu access', function () {
+test('kesra sidebar shows admin menus plus Pengguna but not role and menu management', function () {
     $admin = User::factory()->admin()->create(['email' => 'sidebar-admin@test.com']);
 
     actingAs($admin)
@@ -33,9 +33,13 @@ test('admin sidebar shows admin menus but not role and menu access', function ()
         ->assertSee('<span>Verifikasi Kesra</span>', false)
         // Halaman Kampus (Master Data) dikelola role kesra.
         ->assertSee('<span>Kampus</span>', false)
-        ->assertDontSee('Kelola Akses', false)
+        // Kesra diberi grant `admin.pengguna`; group "Kelola Akses" ikut tampil karena
+        // sidebarMenus() hanya mengambil menu parent, tapi anak lain tetap tersaring.
+        ->assertSee('Kelola Akses', false)
+        ->assertSee('<span>Pengguna</span>', false)
         ->assertDontSee('<span>Role</span>', false)
-        ->assertDontSee('<span>Akses Menu</span>', false);
+        ->assertDontSee('<span>Akses Menu</span>', false)
+        ->assertDontSee('<span>Kelola Menu</span>', false);
 });
 
 test('kampus role sidebar does not show kampus master data menu', function () {

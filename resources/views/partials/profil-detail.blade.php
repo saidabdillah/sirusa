@@ -2,6 +2,22 @@
   $showDownloadDocs = $showDownloadDocs ?? false;
   $profile = $profile ?? null;
 
+  /**
+   * Scoping peruntukan data per tahap verifikasi. Null = tampilkan semua
+   * (halaman pendaftar). 'kesra' = tahap akhir, juga semua.
+   */
+  $stage = $stage ?? null;
+
+  $stageCards = [
+      'capil' => ['diri', 'ortu', 'dokumen'],
+      'kampus' => ['kampus', 'dokumen'],
+  ];
+
+  $stageDocSections = [
+      'capil' => ['Dokumen Diri Sendiri', 'Dokumen Orang Tua / Wali'],
+      'kampus' => ['Dokumen untuk Kampus'],
+  ];
+
   $documentSections = [
     'Dokumen Diri Sendiri' => [
       ['key' => 'foto_profil', 'label' => 'Pas Foto 3x4'],
@@ -23,9 +39,15 @@
       ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali'],
     ],
   ];
+
+  $visibleCards = $stageCards[$stage] ?? ['diri', 'kampus', 'ortu', 'dokumen'];
+  $visibleDocSections = $stageDocSections[$stage] ?? array_keys($documentSections);
+  $visibleSections = array_intersect_key($documentSections, array_flip($visibleDocSections));
+  $showPrestasi = ! in_array($stage, ['capil', 'kampus'], true);
 @endphp
 
 {{-- Card: Data Diri --}}
+@if(in_array('diri', $visibleCards))
 <div class="card">
   <div class="card-header">
     <h4>Data Diri</h4>
@@ -65,8 +87,10 @@
     </div>
   </div>
 </div>
+@endif
 
 {{-- Card: Data Kampus --}}
+@if(in_array('kampus', $visibleCards))
 <div class="card">
   <div class="card-header">
     <h4>Data Kampus</h4>
@@ -118,8 +142,10 @@
     </div>
   </div>
 </div>
+@endif
 
 {{-- Card: Data Orang Tua & Wali --}}
+@if(in_array('ortu', $visibleCards))
 <div class="card">
   <div class="card-header">
     <h4>Data Orang Tua &amp; Wali</h4>
@@ -199,15 +225,17 @@
     @endif
   </div>
 </div>
+@endif
 
 {{-- Card: Dokumen Pendukung --}}
+@if(in_array('dokumen', $visibleCards))
 <div class="card">
   <div class="card-header">
     <h4>Dokumen Pendukung</h4>
   </div>
   <div class="card-body">
     <small class="text-muted d-block mb-3">Dokumen diambil dari data profil.</small>
-    @foreach($documentSections as $sectionName => $docs)
+    @foreach($visibleSections as $sectionName => $docs)
     @unless($loop->first)
     <hr>
     @endunless
@@ -239,6 +267,7 @@
     </div>
     @endforeach
 
+    @if($showPrestasi)
     <hr>
     <div class="mb-3">
       <h6 class="mb-0"><i class="fas fa-trophy text-primary mr-1"></i>Sertifikat Prestasi</h6>
@@ -266,5 +295,7 @@
     @else
     <span class="text-muted">Tidak ada</span>
     @endif
+    @endif
   </div>
 </div>
+@endif

@@ -28,7 +28,7 @@
     <div class="row">
       <div class="col-12">
         <div class="card">
-          @if(auth()->user()->hasRole('super_admin'))
+          @if(auth()->user()->canManageUsers())
           <div class="card-header">
             <a href="{{ route('admin.pengguna.buat') }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Pengguna
@@ -51,14 +51,13 @@
                 <tbody>
                   @foreach($users as $user)
                   @php
-                    $roleLabels = [
-                        'super_admin' => 'Super Admin',
-                        'kesra' => 'Kesra',
-                        'kampus' => 'Kampus',
-                        'capil' => 'Capil',
-                        'user' => 'User',
-                    ];
                     $roleName = $user->getRoleNames()->first();
+                    // Baris super_admin tidak punya aksi sama sekali: hanya super_admin
+                    // yang boleh menyuntingnya, dan aksi logout/statusnya justru ditolak.
+                    $rowIsSuperAdmin = $roleName === 'super_admin';
+                    $isSuperAdmin = auth()->user()->hasRole('super_admin');
+                    $canEdit = ! $rowIsSuperAdmin && auth()->user()->canManageUsers();
+                    $canUseSuperActions = $isSuperAdmin && ! $rowIsSuperAdmin;
                   @endphp
                   <tr>
                     <td>{{ $loop->iteration }}</td>
@@ -77,16 +76,19 @@
                       @endif
                     </td>
                     <td>
-                      @if(auth()->user()->hasRole('super_admin'))
+                      @if(! $rowIsSuperAdmin)
                       <div class="btn-group">
                         <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                           <i class="fas fa-cog"></i> Aksi
                         </button>
                         <div class="dropdown-menu dropdown-menu-right">
+                          @if($canEdit)
                           <a class="dropdown-item" href="{{ route('admin.pengguna.ubah', $user) }}">
                             <i class="fas fa-user-tag mr-1"></i> Ubah
                           </a>
+                          @endif
 
+                          @if($canUseSuperActions)
                           <div class="dropdown-divider"></div>
 
                           <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="m-0">
@@ -139,6 +141,7 @@
                               <i class="fas fa-trash mr-1"></i> Hapus User
                             </button>
                           </form>
+                          @endif
                         </div>
                       </div>
                       @endif

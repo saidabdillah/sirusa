@@ -32,6 +32,7 @@ test('edit form does not expose password or email fields', function () {
 test('password cannot be changed through the edit form', function () {
     actingAs($this->superAdmin)
         ->put(route('admin.pengguna.perbarui', $this->target), [
+            'peran' => 'user',
             'status' => 'aktif',
             'password' => 'barusandi123',
             'password_confirmation' => 'barusandi123',
@@ -43,7 +44,7 @@ test('password cannot be changed through the edit form', function () {
 
 test('password stays unchanged after a normal edit', function () {
     actingAs($this->superAdmin)
-        ->put(route('admin.pengguna.perbarui', $this->target), ['status' => 'aktif'])
+        ->put(route('admin.pengguna.perbarui', $this->target), ['peran' => 'user', 'status' => 'aktif'])
         ->assertRedirect(route('admin.pengguna.index'));
 
     expect(Hash::check('oldpassword1', $this->target->fresh()->password))->toBeTrue();

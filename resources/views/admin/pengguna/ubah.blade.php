@@ -33,11 +33,9 @@
                   @php $currentPeran = old('peran', $user->roles->first()?->name ?? ''); @endphp
                   <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
                     <option value="" {{ $currentPeran === '' ? 'selected' : '' }}>-- Pilih Peran --</option>
-                    <option value="super_admin" {{ $currentPeran === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
-                    <option value="kesra" {{ $currentPeran === 'kesra' ? 'selected' : '' }}>Kesra</option>
-                    <option value="kampus" {{ $currentPeran === 'kampus' ? 'selected' : '' }}>Kampus</option>
-                    <option value="capil" {{ $currentPeran === 'capil' ? 'selected' : '' }}>Capil</option>
-                    <option value="user" {{ $currentPeran === 'user' ? 'selected' : '' }}>User</option>
+                    @foreach ($peranOptions as $peranValue => $peranLabel)
+                      <option value="{{ $peranValue }}" {{ $currentPeran === $peranValue ? 'selected' : '' }}>{{ $peranLabel }}</option>
+                    @endforeach
                   </select>
                   @error('peran')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -125,7 +123,13 @@
     var akunKampus = $('#akunKampus');
 
     function toggleAkun() {
-      akunKampus.toggleClass('d-none', peran.val() !== 'kampus');
+      var isKampus = peran.val() === 'kampus';
+
+      // Lihat catatan di `buat.blade.php`: `d-none` saja tidak menghentikan
+      // pengiriman input, jadi select yang tersembunyi ikut terkirim dan
+      // divalidasi seolah-olah peran yang dipilih adalah `kampus`.
+      akunKampus.toggleClass('d-none', !isKampus);
+      akunKampus.find('select').prop('disabled', !isKampus);
     }
 
     peran.on('change', toggleAkun);

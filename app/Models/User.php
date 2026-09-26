@@ -16,6 +16,19 @@ class User extends Authenticatable
 {
     use HasFactory, HasRoles, Notifiable;
 
+    /**
+     * The only role names the app recognises, mapped to their display label.
+     *
+     * @var array<string, string>
+     */
+    public const ROLE_LABELS = [
+        'super_admin' => 'Super Admin',
+        'kesra' => 'Kesra',
+        'kampus' => 'Kampus',
+        'capil' => 'Capil',
+        'user' => 'User',
+    ];
+
     protected $fillable = [
         'username',
         'email',
@@ -88,6 +101,41 @@ class User extends Authenticatable
     public function hasMenuAccess(string $routeName): bool
     {
         return $this->menuScopes()->contains(fn (string $scope) => $this->menuScopeCovers($scope, $routeName));
+    }
+
+    /**
+     * May this user open the Pengguna module at all (index, create, edit)?
+     *
+     * Breadth follows the menu grant, like every other admin module; only the
+     * rules that protect the super_admin account itself stay on `hasRole`.
+     */
+    public function canManageUsers(): bool
+    {
+        return $this->hasMenuAccess('admin.pengguna.index');
+    }
+
+    /**
+     * Role names this user is allowed to hand out when creating or editing an account.
+     *
+     * @return list<string>
+     */
+    public function assignableRoles(): array
+    {
+        $roles = array_keys(self::ROLE_LABELS);
+
+        return $this->hasRole('super_admin')
+            ? $roles
+            : array_values(array_diff($roles, ['super_admin']));
+    }
+
+    /**
+     * Assignable roles as `value => label`, ready for a `<select>`.
+     *
+     * @return array<string, string>
+     */
+    public function assignableRoleOptions(): array
+    {
+        return array_intersect_key(self::ROLE_LABELS, array_flip($this->assignableRoles()));
     }
 
     public static function menuScopeCovers(string $scope, string $routeName): bool

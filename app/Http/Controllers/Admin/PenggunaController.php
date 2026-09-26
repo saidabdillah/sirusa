@@ -19,15 +19,21 @@ class PenggunaController extends Controller
     {
         $users = User::with('roles')->latest()->get();
 
-        return view('admin.pengguna.index', compact('users'));
+        return view('admin.pengguna.index', [
+            'users' => $users,
+            'roleLabels' => User::ROLE_LABELS,
+        ]);
     }
 
     public function create(): View
     {
-        abort_unless(auth()->user()->hasRole('super_admin'), 403);
+        $currentUser = auth()->user();
+
+        abort_unless($currentUser->canManageUsers(), 403);
 
         return view('admin.pengguna.buat', [
             'kampusList' => $this->kampusList(),
+            'peranOptions' => $currentUser->assignableRoleOptions(),
         ]);
     }
 
@@ -53,9 +59,10 @@ class PenggunaController extends Controller
             $user->assignRole('user');
 
             $user->profile()->create([
-                'nik' => $validated['nik'],
-                'nim' => $validated['nim'] ?? null,
+                'nik' => $validated['nik'] ?? null,
             ]);
+
+            $message = 'Pengguna baru berhasil ditambahkan. Kata sandi awal akun mahasiswa adalah 12345678.';
         } else {
             $user = User::create([
                 'username' => $validated['username'],
@@ -65,55 +72,73 @@ class PenggunaController extends Controller
                 'kampus_id' => $validated['peran'] === 'kampus' ? ($validated['kampus_id'] ?? null) : null,
             ]);
             $user->assignRole($validated['peran']);
+
+            $message = 'Pengguna baru berhasil ditambahkan.';
         }
 
-        return redirect()->route('admin.pengguna.index')->with('success', 'Pengguna baru berhasil ditambahkan. Kata sandi awal akun mahasiswa adalah 12345678.');
+        return redirect()->route('admin.pengguna.index')->with('success', $message);
     }
 
     public function edit(User $user): View
     {
-        abort_unless(auth()->user()->hasRole('super_admin'), 403);
+        $currentUser = auth()->user();
+
+        abort_unless($currentUser->canManageUsers(), 403);
+        $this->abortUnlessMayTouch($user);
 
         $user->load('roles');
 
         return view('admin.pengguna.ubah', [
             'user' => $user,
             'kampusList' => $this->kampusList(),
+            'peranOptions' => $currentUser->assignableRoleOptions(),
         ]);
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $currentUser = auth()->user();
+
         $validated = $request->validated();
 
-        if (! auth()->user()->hasRole('super_admin')) {
-            unset($validated['peran']);
+        // Menurunkan peran atau menonaktifkan akun sendiri akan mengunci akses ke modul ini.
+        if ($user->id === $currentUser->id) {
+            if ($validated['peran'] !== $user->roles->first()?->name) {
+                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah peran akun sendiri');
+            }
+
+            if ($validated['status'] === 'non-aktif') {
+                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat menonaktifkan akun sendiri');
+            }
         }
 
-        $payload = $validated;
+        // Akun super_admin dilindungi: perannya tidak bisa diturunkan lewat form edit
+        // (destroy() sudah menolak penghapusannya) dan statusnya tidak bisa dinonaktifkan —
+        // aturan yang sama dengan shortcut Nonaktifkan di daftar.
+        if ($user->hasRole('super_admin')) {
+            if ($validated['peran'] !== 'super_admin') {
+                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah peran Super Admin');
+            }
 
-        if (! auth()->user()->hasRole('super_admin')) {
-            unset($payload['peran']);
+            if ($validated['status'] === 'non-aktif') {
+                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah status Super Admin');
+            }
         }
 
-        if (isset($payload['peran']) && $payload['peran'] !== 'kampus') {
-            $payload['kampus_id'] = null;
-        }
-
-        $user->update($payload);
-
-        if (isset($validated['peran'])) {
-            $user->syncRoles($validated['peran']);
-        }
+        $user->update([
+            'status' => $validated['status'],
+            'kampus_id' => $validated['peran'] === 'kampus' ? ($validated['kampus_id'] ?? null) : null,
+        ]);
+        $user->syncRoles($validated['peran']);
 
         return redirect()->route('admin.pengguna.index')->with('success', 'Data pengguna berhasil diperbarui');
     }
 
     public function toggleStatus(User $user): RedirectResponse
     {
-        $currentUser = auth()->user();
+        abort_unless(auth()->user()->hasRole('super_admin'), 403);
 
-        if (! $currentUser->hasRole('super_admin') && $user->hasRole('super_admin')) {
+        if ($user->hasRole('super_admin')) {
             return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah status Super Admin');
         }
 
@@ -155,6 +180,22 @@ class PenggunaController extends Controller
         $user->delete();
 
         return redirect()->route('admin.pengguna.index')->with('success', 'Pengguna berhasil dihapus');
+    }
+
+    /**
+     * Hanya super_admin yang boleh menyunting akun super_admin.
+     *
+     * Jalur POST sudah ditutup `UpdateUserRequest::authorize()`; ini untuk halaman
+     * Form -> Ubah. `assignableRoles()` menutup jalur "beri peran super_admin",
+     * sedangkan ini menutup jalur "sunting akun yang sudah jadi super_admin".
+     */
+    private function abortUnlessMayTouch(User $user): void
+    {
+        abort_if(
+            $user->hasRole('super_admin') && ! auth()->user()->hasRole('super_admin'),
+            403,
+            'Anda tidak dapat menyunting akun Super Admin.',
+        );
     }
 
     private function kampusList(): Collection

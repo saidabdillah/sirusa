@@ -24,11 +24,9 @@
                 <div class="form-group">
                   <label for="peran">Peran <span class="text-danger">*</span></label>
                   <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
-                    <option value="user" {{ old('peran', 'user') === 'user' ? 'selected' : '' }}>User</option>
-                    <option value="super_admin" {{ old('peran') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
-                    <option value="kesra" {{ old('peran') === 'kesra' ? 'selected' : '' }}>Kesra</option>
-                    <option value="kampus" {{ old('peran') === 'kampus' ? 'selected' : '' }}>Kampus</option>
-                    <option value="capil" {{ old('peran') === 'capil' ? 'selected' : '' }}>Capil</option>
+                    @foreach ($peranOptions as $peranValue => $peranLabel)
+                      <option value="{{ $peranValue }}" {{ old('peran', 'user') === $peranValue ? 'selected' : '' }}>{{ $peranLabel }}</option>
+                    @endforeach
                   </select>
                   @error('peran')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -138,19 +136,28 @@
     var akunKampus = $('#akunKampus');
     var usernameField = $('[data-field="username"]');
 
+    // `d-none` hanya menyembunyikan lewat CSS: input di dalam blok tersembunyi tetap
+    // aktif sehingga browser tetap mengirimnya, dan nilainya ikut divalidasi padahal
+    // bukan milik peran yang dipilih. `disabled` membuat browser tidak mengirim input
+    // itu sama sekali, jadi payload hanya berisi field milik peran terpilih.
+    function syncBlock(block, isVisible) {
+      block.toggleClass('d-none', !isVisible);
+      block.find('input, select, textarea').prop('disabled', !isVisible);
+    }
+
     function toggleAkun() {
       var isUser = peran.val() === 'user';
       var isKampus = peran.val() === 'kampus';
 
       // Akun mahasiswa: NIK (kata sandi otomatis, username opsional)
-      akunMahasiswa.toggleClass('d-none', !isUser);
+      syncBlock(akunMahasiswa, isUser);
       // Akun staf: kata sandi + konfirmasi
-      akunStaf.toggleClass('d-none', isUser);
+      syncBlock(akunStaf, !isUser);
       // Admin kampus: pilihan kampus
-      akunKampus.toggleClass('d-none', !isKampus);
+      syncBlock(akunKampus, isKampus);
 
       // Username mahasiswa diisi otomatis bila dikosongkan
-      usernameField.toggleClass('d-none', isUser);
+      syncBlock(usernameField, !isUser);
     }
 
     peran.on('change', toggleAkun);

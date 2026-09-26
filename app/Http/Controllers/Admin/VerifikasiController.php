@@ -22,7 +22,10 @@ class VerifikasiController extends Controller
 
         $users = User::role('user')
             ->where('status', 'aktif')
-            ->with('profile')
+            ->with(['profile' => fn ($query) => $query->when(
+                $stage === 'kampus',
+                fn ($profile) => $profile->with('prodi')
+            )])
             ->when($kampusId && $stage === 'kampus', fn ($query) => $query->whereHas('profile.prodi.fakultas', fn ($q) => $q->where('kampus_id', $kampusId))
             )
             ->get()

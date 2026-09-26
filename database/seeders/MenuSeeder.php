@@ -159,6 +159,9 @@ class MenuSeeder extends Seeder
                 'admin.pendaftar',
                 'admin.kesra',
                 'master-data', 'admin.kampus',
+                // `kelola-akses` (parent) ikut di-grant supaya item "Pengguna" muncul di
+                // sidebar — sidebarMenus() hanya query menu parent_id null.
+                'kelola-akses', 'admin.pengguna',
             ],
             'user' => [
                 'dasbor',

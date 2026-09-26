@@ -201,6 +201,89 @@ test('tolak keputusan option is rendered on the verification decision page', fun
         ->assertSee('>Tolak</option>', false);
 });
 
+test('capil verification page only shows identity data per its purpose', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
+        ->assertOk()
+        // Data yang menjadi wewenang Capil.
+        ->assertSee('Data Diri')
+        ->assertSee('Data Orang Tua &amp; Wali', false)
+        ->assertSee('Dokumen Diri Sendiri')
+        ->assertSee('Dokumen Orang Tua / Wali')
+        // Bukan wewenang Capil.
+        ->assertDontSee('Data Kampus')
+        ->assertDontSee('Dokumen untuk Kampus')
+        ->assertDontSee('Sertifikat Prestasi');
+});
+
+test('kampus verification page only shows campus data per its purpose', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kampus');
+
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.lihat', $this->applicantUser))
+        ->assertOk()
+        // Data yang menjadi wewenang Kampus.
+        ->assertSee('Data Kampus')
+        ->assertSee('Dokumen untuk Kampus')
+        // Bukan wewenang Kampus.
+        ->assertDontSee('Data Diri')
+        ->assertDontSee('Data Orang Tua &amp; Wali', false)
+        ->assertDontSee('Dokumen Diri Sendiri')
+        ->assertDontSee('Dokumen Orang Tua / Wali')
+        ->assertDontSee('Sertifikat Prestasi');
+});
+
+test('kesra verification page shows all sections for the final eligibility check', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kesra');
+
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.lihat', $this->applicantUser))
+        ->assertOk()
+        ->assertSee('Data Diri')
+        ->assertSee('Data Kampus')
+        ->assertSee('Data Orang Tua &amp; Wali', false)
+        ->assertSee('Dokumen Diri Sendiri')
+        ->assertSee('Dokumen untuk Kampus')
+        ->assertSee('Dokumen Orang Tua / Wali')
+        ->assertSee('Sertifikat Prestasi');
+});
+
+test('previous stage notes are visible to the next stage verifier', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kampus')
+        ->update(['catatan_capil' => 'KTP kurang terbaca']);
+
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.lihat', $this->applicantUser))
+        ->assertOk()
+        ->assertSee('Catatan Capil:')
+        ->assertSee('KTP kurang terbaca');
+});
+
+test('verification index columns follow the purpose of each stage', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil')
+        ->update(['prodi_id' => $this->prodi->id, 'ipk' => 3.5, 'nim' => '2010123456']);
+
+    // Capil: fokus identitas.
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['No', 'Nama', 'NIK', 'No. Kartu Keluarga', 'Desil', 'Status', 'Aksi'], false)
+        ->assertDontSee('Program Studi');
+
+    $this->applicantUser->profile->update(['verif_capil' => 'setuju']);
+
+    // Kampus: fokus data mahasiswa.
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['No', 'Nama', 'NIM', 'Program Studi', 'IPK', 'Status', 'Aksi'], false)
+        ->assertSee('Teknik Informatika')
+        ->assertSee('2010123456')
+        ->assertDontSee('No. Kartu Keluarga');
+});
+
 test('regular user cannot access verification pages', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'capil');
 

@@ -1,8 +1,27 @@
 @extends('layouts.app')
 
 @php
-  $routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
-  $stageLabel = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'][$stage] ?? ucfirst($stage);
+$routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
+$stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
+$stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
+
+// Kolom peruntukan per tahap verifikasi.
+$stageColumns = [
+'capil' => [
+['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
+['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
+['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
+],
+'kampus' => [
+['label' => 'NIM', 'value' => fn ($p) => $p->nim ?? '-'],
+['label' => 'Program Studi', 'value' => fn ($p) => $p->prodi?->nama ?? '-'],
+['label' => 'IPK', 'value' => fn ($p) => $p->ipk ?? '-'],
+],
+'kesra' => [
+['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
+['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
+],
+][$stage] ?? [];
 @endphp
 
 @section('content')
@@ -42,7 +61,9 @@
                   <tr>
                     <th>No</th>
                     <th>Nama</th>
-                    <th>NIK</th>
+                    @foreach($stageColumns as $column)
+                    <th>{{ $column['label'] }}</th>
+                    @endforeach
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -53,7 +74,9 @@
                   <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $p->nama_lengkap ?? '-' }}</td>
-                    <td>{{ $p->nik ?? '-' }}</td>
+                    @foreach($stageColumns as $column)
+                    <td>{{ $column['value']($p) }}</td>
+                    @endforeach
                     <td>
                       @php $status = $p->{'verif_'.$stage}; @endphp
                       @if($status === 'revisi')
@@ -74,7 +97,8 @@
                   </tr>
                   @empty
                   <tr>
-                    <td colspan="5" class="text-center text-muted">Tidak ada profil yang menunggu verifikasi {{ $stageLabel }}.</td>
+                    <td colspan="{{ count($stageColumns) + 4 }}" class="text-center text-muted">Tidak ada profil yang
+                      menunggu verifikasi {{ $stageLabel }}.</td>
                   </tr>
                   @endforelse
                 </tbody>

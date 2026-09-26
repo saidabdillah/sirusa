@@ -2,7 +2,8 @@
 
 @php
   $routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
-  $stageLabel = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'][$stage] ?? ucfirst($stage);
+  $stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
+  $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
 @endphp
 
 @section('content')
@@ -19,7 +20,7 @@
   <div class="section-body">
     <div class="row">
       <div class="col-lg-8">
-        @include('partials.profil-detail', ['profile' => $profile])
+        @include('partials.profil-detail', ['profile' => $profile, 'stage' => $stage])
       </div>
 
       <div class="col-lg-4 sticky-sidebar">
@@ -38,6 +39,9 @@
               <span>{{ $label }}</span>
               <span class="badge badge-{{ $badge }}">{{ $text }}</span>
             </div>
+            @if($profile->{'catatan_'.$s})
+            <small class="text-muted d-block mb-2"><strong>Catatan {{ $stageLabels[$s] }}:</strong> {{ $profile->{'catatan_'.$s} }}</small>
+            @endif
             @endforeach
             @if($profile->verifStatus() === 'terverifikasi')
             <div class="alert alert-success mb-0 mt-2"><i class="fas fa-check-circle"></i> Profil telah terverifikasi lengkap.</div>
@@ -68,7 +72,7 @@
               <div class="form-group">
                 <label for="catatan">Catatan</label>
                 <textarea class="form-control @error('catatan') is-invalid @enderror" name="catatan" id="catatan"
-                  rows="4" placeholder="Catatan (wajib jika minta perbaikan)">{{ old('catatan') }}</textarea>
+                  rows="4" placeholder="Catatan (wajib jika minta perbaikan)">{{ old('catatan', $profile->{'catatan_'.$stage}) }}</textarea>
                 @error('catatan')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
