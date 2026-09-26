@@ -84,7 +84,7 @@ class MenuSeeder extends Seeder
                     ['label' => 'Role', 'route' => 'admin.role.index', 'scope' => 'admin.role'],
                     ['label' => 'Pengguna', 'route' => 'admin.pengguna.index', 'scope' => 'admin.pengguna'],
                     ['label' => 'Akses Menu', 'route' => 'admin.menu.index', 'scope' => 'admin.menu'],
-                    ['label' => 'Kelola Menu', 'route' => 'admin.menuKelola.index', 'scope' => 'admin.menuKelola'],
+                    ['label' => 'Kelola Menu', 'route' => 'admin.menukelola.index', 'scope' => 'admin.menukelola'],
                 ],
             ],
             [
@@ -149,7 +149,7 @@ class MenuSeeder extends Seeder
                 'admin.role',
                 'admin.pengguna',
                 'admin.menu',
-                'admin.menuKelola',
+                'admin.menukelola',
             ],
             'capil' => [
                 'dasbor',

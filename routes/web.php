@@ -18,7 +18,7 @@ use App\Http\Controllers\User\PendaftaranController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-Route::get('/', fn () => view('landing'))->name('landing');
+Route::get('/', fn() => view('landing'))->name('landing');
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/masuk', [AuthController::class, 'masuk'])->name('login');
@@ -149,10 +149,10 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::put('/menu', [MenuController::class, 'perbarui'])->name('menu.grants');
 
         // Kelola Menu (CRUD menu sidebar)
-        Route::get('/menu/kelola', [MenuController::class, 'kelola'])->name('menuKelola.index');
-        Route::post('/menu/kelola', [MenuController::class, 'store'])->name('menuKelola.simpan');
-        Route::put('/menu/kelola/{menu}', [MenuController::class, 'update'])->name('menuKelola.perbarui');
-        Route::delete('/menu/kelola/{menu}', [MenuController::class, 'destroy'])->name('menuKelola.hapus');
+        Route::get('/menu/kelola', [MenuController::class, 'kelola'])->name('menukelola.index');
+        Route::post('/menu/kelola', [MenuController::class, 'store'])->name('menukelola.simpan');
+        Route::put('/menu/kelola/{menu}', [MenuController::class, 'update'])->name('menukelola.perbarui');
+        Route::delete('/menu/kelola/{menu}', [MenuController::class, 'destroy'])->name('menukelola.hapus');
     });
 
     // User routes (akses via menu, bukan role)

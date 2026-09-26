@@ -1,29 +1,29 @@
 @extends('layouts.app')
 
 @php
-  $documentGroups = [
-    'Berkas Data Diri' => [
-      'foto_profil' => 'Pas Foto 3x4',
-      'dokumen_ktp' => 'KTP (Kartu Tanda Penduduk)',
-      'dokumen_kk' => 'KK (Kartu Keluarga)',
-      'dokumen_desil' => 'Dokumen Desil',
-      'dokumen_sktm' => 'SKTM (Surat Keterangan Tidak Mampu)',
-    ],
-    'Berkas Kampus' => [
-      'dokumen_transkrip' => 'Transkrip',
-      'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
-      'dokumen_surat_pernyataan' => 'Surat Pernyataan',
-      'dokumen_bukti_ukt' => 'Bukti UKT (Uang Kuliah Tunggal)',
-    ],
-    'Berkas Orang Tua/Wali' => [
-      'ktp_ayah' => 'KTP (Kartu Tanda Penduduk) Ayah',
-      'ktp_ibu' => 'KTP (Kartu Tanda Penduduk) Ibu',
-      'ktp_wali' => 'KTP (Kartu Tanda Penduduk) Wali',
-      'kk_wali' => 'KK (Kartu Keluarga) Wali',
-    ],
-  ];
-  $waliDocFields = ['ktp_wali', 'kk_wali'];
-  $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'];
+$documentGroups = [
+'Berkas Data Diri' => [
+'foto_profil' => 'Pas Foto 3x4',
+'dokumen_ktp' => 'KTP (Kartu Tanda Penduduk)',
+'dokumen_kk' => 'KK (Kartu Keluarga)',
+'dokumen_desil' => 'Dokumen Desil',
+'dokumen_sktm' => 'SKTM (Surat Keterangan Tidak Mampu)',
+],
+'Berkas Kampus' => [
+'dokumen_transkrip' => 'Transkrip',
+'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
+'dokumen_surat_pernyataan' => 'Surat Pernyataan',
+'dokumen_bukti_ukt' => 'Bukti UKT (Uang Kuliah Tunggal)',
+],
+'Berkas Orang Tua/Wali' => [
+'ktp_ayah' => 'KTP (Kartu Tanda Penduduk) Ayah',
+'ktp_ibu' => 'KTP (Kartu Tanda Penduduk) Ibu',
+'ktp_wali' => 'KTP (Kartu Tanda Penduduk) Wali',
+'kk_wali' => 'KK (Kartu Keluarga) Wali',
+],
+];
+$waliDocFields = ['ktp_wali', 'kk_wali'];
+$pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'];
 @endphp
 
 @section('skeleton')
@@ -65,8 +65,8 @@
     @endif
 
     {{-- Semua blok ini hanya relevan untuk mahasiswa. Akun staf (super_admin,
-         kesra, kampus, capil) tidak punya baris profil, jadi halaman profil
-         mereka berhenti di Informasi Akun. --}}
+    kesra, kampus, capil) tidak punya baris profil, jadi halaman profil
+    mereka berhenti di Informasi Akun. --}}
     @if ($isMahasiswa)
     @if(! $profileComplete)
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
@@ -83,42 +83,45 @@
     @endif
 
     @if($profile)
-      @switch($profile->verifStatus())
-        @case('terverifikasi')
-          <div class="alert alert-success">
-            <i class="fas fa-shield-alt"></i> Data profil Anda telah <strong>terverifikasi</strong> oleh seluruh verifikator.
-          </div>
-          @break
-        @case('revisi')
-          <div class="alert alert-danger">
-            <i class="fas fa-times-circle"></i> Data profil Anda <strong>perlu perbaikan</strong>. Silakan periksa catatan verifikator lalu simpan kembali profil Anda.
-            @foreach($profile->verifStageLabels() as $stage => $label)
-              @if($profile->{'verif_'.$stage} === 'revisi' && $profile->{'catatan_'.$stage})
-                <div class="mt-2"><strong>{{ $label }}:</strong> {{ $profile->{'catatan_'.$stage} }}</div>
-              @endif
-            @endforeach
-          </div>
-          @break
-        @case('tolak')
-          <div class="alert alert-danger">
-            <i class="fas fa-times-circle"></i> Data profil Anda <strong>ditolak</strong>. Silakan periksa catatan verifikator lalu simpan kembali profil Anda.
-            @foreach($profile->verifStageLabels() as $stage => $label)
-              @if($profile->{'verif_'.$stage} === 'tolak' && $profile->{'catatan_'.$stage})
-                <div class="mt-2"><strong>{{ $label }}:</strong> {{ $profile->{'catatan_'.$stage} }}</div>
-              @endif
-            @endforeach
-          </div>
-          @break
-        @default
-          <div class="alert alert-info">
-            <i class="fas fa-clock"></i> Data profil Anda sedang dalam <strong>proses verifikasi</strong>. Data yang disimpan saat ini akan direset untuk diverifikasi ulang.
-          </div>
-      @endswitch
+    @switch($profile->verifStatus())
+    @case('terverifikasi')
+    <div class="alert alert-success">
+      <i class="fas fa-shield-alt"></i> Data profil Anda telah <strong>terverifikasi</strong> oleh seluruh verifikator.
+    </div>
+    @break
+    @case('revisi')
+    <div class="alert alert-danger">
+      <i class="fas fa-times-circle"></i> Data profil Anda <strong>perlu perbaikan</strong>. Silakan periksa catatan
+      verifikator lalu simpan kembali profil Anda.
+      @foreach($profile->verifStageLabels() as $stage => $label)
+      @if($profile->{'verif_'.$stage} === 'revisi' && $profile->{'catatan_'.$stage})
+      <div class="mt-2"><strong>{{ $label }}:</strong> {{ $profile->{'catatan_'.$stage} }}</div>
+      @endif
+      @endforeach
+    </div>
+    @break
+    @case('tolak')
+    <div class="alert alert-danger">
+      <i class="fas fa-times-circle"></i> Data profil Anda <strong>ditolak</strong>. Silakan periksa catatan verifikator
+      lalu simpan kembali profil Anda.
+      @foreach($profile->verifStageLabels() as $stage => $label)
+      @if($profile->{'verif_'.$stage} === 'tolak' && $profile->{'catatan_'.$stage})
+      <div class="mt-2"><strong>{{ $label }}:</strong> {{ $profile->{'catatan_'.$stage} }}</div>
+      @endif
+      @endforeach
+    </div>
+    @break
+    @default
+    <div class="alert alert-info">
+      <i class="fas fa-clock"></i> Data profil Anda sedang dalam <strong>proses verifikasi</strong>. Data yang disimpan
+      saat ini akan direset untuk diverifikasi ulang.
+    </div>
+    @endswitch
     @endif
     @endif
 
-    <div class="row {{ $isMahasiswa ? '' : 'justify-content-center' }}">
-    @if ($isMahasiswa)
+    <div class="row {{ $isMahasiswa ? '' : 'justify-content-start' }}">
+      @if ($isMahasiswa)
       <div class="col-lg-8">
         <div class="card">
           <div class="card-header">
@@ -165,7 +168,8 @@
                   <select class="form-control @error('desil') is-invalid @enderror" id="desil" name="desil">
                     <option value="">Pilih Desil (1-10)</option>
                     @foreach(range(1, 10) as $d)
-                    <option value="{{ $d }}" {{ old('desil', $profile->desil ?? '') == $d ? 'selected' : '' }}>Desil {{ $d }}</option>
+                    <option value="{{ $d }}" {{ old('desil', $profile->desil ?? '') == $d ? 'selected' : '' }}>Desil {{
+                      $d }}</option>
                     @endforeach
                   </select>
                   @error('desil')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -197,8 +201,8 @@
                     @foreach(['Laki-laki' => 'laki_laki', 'Perempuan' => 'perempuan'] as $label => $key)
                     <div class="custom-control custom-radio mr-4">
                       <input type="radio" class="custom-control-input @error('jenis_kelamin') is-invalid @enderror"
-                        id="jenis_kelamin_{{ $key }}" name="jenis_kelamin" value="{{ $label }}"
-                        {{ old('jenis_kelamin', $profile->jenis_kelamin ?? '') === $label ? 'checked' : '' }}>
+                        id="jenis_kelamin_{{ $key }}" name="jenis_kelamin" value="{{ $label }}" {{ old('jenis_kelamin',
+                        $profile->jenis_kelamin ?? '') === $label ? 'checked' : '' }}>
                       <label class="custom-control-label" for="jenis_kelamin_{{ $key }}">{{ $label }}</label>
                     </div>
                     @endforeach
@@ -210,7 +214,8 @@
                   <select class="form-control @error('agama') is-invalid @enderror" id="agama" name="agama">
                     <option value="">Pilih Agama</option>
                     @foreach(['Islam', 'Kristen', 'Katholik', 'Hindu', 'Buddha', 'Konghucu'] as $agama)
-                    <option value="{{ $agama }}" {{ old('agama', $profile->agama ?? '') === $agama ? 'selected' : '' }}>{{ $agama }}</option>
+                    <option value="{{ $agama }}" {{ old('agama', $profile->agama ?? '') === $agama ? 'selected' : ''
+                      }}>{{ $agama }}</option>
                     @endforeach
                   </select>
                   @error('agama')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -249,7 +254,8 @@
                   <label for="desa_kelurahan">Desa/Kelurahan <span class="text-danger">*</span></label>
                   <select class="form-control @error('desa_kelurahan') is-invalid @enderror" id="desa_kelurahan"
                     name="desa_kelurahan">
-                    <option value="">{{ ($profile->desa_kelurahan ?? '') ? 'Pilih Desa/Kelurahan' : 'Pilih Kecamatan terlebih dahulu' }}</option>
+                    <option value="">{{ ($profile->desa_kelurahan ?? '') ? 'Pilih Desa/Kelurahan' : 'Pilih Kecamatan
+                      terlebih dahulu' }}</option>
                   </select>
                   @error('desa_kelurahan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -325,9 +331,8 @@
                     <div class="input-group-prepend">
                       <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" inputmode="numeric"
-                      class="form-control @error('ukt') is-invalid @enderror" id="ukt" name="ukt"
-                      value="{{ old('ukt', $profile->ukt ?? '') }}" placeholder="contoh 2.500.000">
+                    <input type="text" inputmode="numeric" class="form-control @error('ukt') is-invalid @enderror"
+                      id="ukt" name="ukt" value="{{ old('ukt', $profile->ukt ?? '') }}" placeholder="contoh 2.500.000">
                   </div>
                   @error('ukt')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
@@ -343,13 +348,15 @@
                   <div class="d-flex align-items-center">
                     @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'wali' => 'Wali'] as $value => $label)
                     <div class="custom-control custom-radio mr-4">
-                      <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror" id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}"
-                        {{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
+                      <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror"
+                        id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}" {{ old('ikut_kk',
+                        $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
                       <label class="custom-control-label" for="ikut_kk_{{ $value }}">{{ $label }}</label>
                     </div>
                     @endforeach
                   </div>
-                  <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data orang tua/wali yang dipilih wajib diisi.</small>
+                  <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data
+                    orang tua/wali yang dipilih wajib diisi.</small>
                   @error('ikut_kk')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
               </div>
@@ -374,7 +381,8 @@
                     name="pekerjaan_ayah">
                     <option value="">Pilih Pekerjaan</option>
                     @foreach($pekerjaanList as $pekerjaan)
-                    <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ayah', $profile->pekerjaan_ayah ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
+                    <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ayah', $profile->pekerjaan_ayah ?? '') ===
+                      $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
                     @endforeach
                   </select>
                   @error('pekerjaan_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -401,14 +409,16 @@
                     name="pekerjaan_ibu">
                     <option value="">Pilih Pekerjaan</option>
                     @foreach($pekerjaanList as $pekerjaan)
-                    <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ibu', $profile->pekerjaan_ibu ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
+                    <option value="{{ $pekerjaan }}" {{ old('pekerjaan_ibu', $profile->pekerjaan_ibu ?? '') ===
+                      $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
                     @endforeach
                   </select>
                   @error('pekerjaan_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 
-              <div id="section-wali" style="{{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === 'wali' ? '' : 'display:none;' }}">
+              <div id="section-wali"
+                style="{{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === 'wali' ? '' : 'display:none;' }}">
                 <hr>
                 <h6 class="text-muted mb-2">Wali</h6>
                 <div class="form-row">
@@ -432,7 +442,8 @@
                       name="hubungan_wali">
                       <option value="">Pilih Hubungan</option>
                       @foreach(['Paman', 'Bibi', 'Kakek', 'Nenek', 'Lainnya'] as $hubungan)
-                      <option value="{{ $hubungan }}" {{ old('hubungan_wali', $profile->hubungan_wali ?? '') === $hubungan ? 'selected' : '' }}>{{ $hubungan }}</option>
+                      <option value="{{ $hubungan }}" {{ old('hubungan_wali', $profile->hubungan_wali ?? '') ===
+                        $hubungan ? 'selected' : '' }}>{{ $hubungan }}</option>
                       @endforeach
                     </select>
                     @error('hubungan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -443,7 +454,8 @@
                       name="pekerjaan_wali">
                       <option value="">Pilih Pekerjaan</option>
                       @foreach($pekerjaanList as $pekerjaan)
-                      <option value="{{ $pekerjaan }}" {{ old('pekerjaan_wali', $profile->pekerjaan_wali ?? '') === $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
+                      <option value="{{ $pekerjaan }}" {{ old('pekerjaan_wali', $profile->pekerjaan_wali ?? '') ===
+                        $pekerjaan ? 'selected' : '' }}>{{ $pekerjaan }}</option>
                       @endforeach
                     </select>
                     @error('pekerjaan_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -455,30 +467,33 @@
 
               {{-- DOKUMEN --}}
               <h5 class="mb-3">Dokumen</h5>
-              <small class="text-muted d-block mb-3">Unggah dokumen sekali di profil. Dokumen akan diverifikasi oleh pihak terkait.</small>
+              <small class="text-muted d-block mb-3">Unggah dokumen sekali di profil. Dokumen akan diverifikasi oleh
+                pihak terkait.</small>
               @foreach($documentGroups as $groupName => $documents)
-                <h6 class="mt-3 mb-2"><i class="fas fa-folder text-primary mr-1"></i>{{ $groupName }}</h6>
-                @foreach($documents as $field => $label)
-                  @php $isWaliDoc = in_array($field, $waliDocFields, true); @endphp
-                  <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}" style="{{ $isWaliDoc && old('ikut_kk', $profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
-                    <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                      <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"
-                        name="{{ $field }}" accept=".pdf,.jpg,.jpeg,.png">
-                      @if($profile && $profile->{$field})
-                      <div class="input-group-append">
-                        <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank" class="btn btn-outline-secondary" title="Lihat dokumen">
-                          <i class="fas fa-eye"></i>
-                        </a>
-                      </div>
-                      @endif
-                      @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                    @if($profile && $profile->{$field})
-                    <small class="text-muted">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
-                    @endif
+              <h6 class="mt-3 mb-2"><i class="fas fa-folder text-primary mr-1"></i>{{ $groupName }}</h6>
+              @foreach($documents as $field => $label)
+              @php $isWaliDoc = in_array($field, $waliDocFields, true); @endphp
+              <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}"
+                style="{{ $isWaliDoc && old('ikut_kk', $profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
+                <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"
+                    name="{{ $field }}" accept=".pdf,.jpg,.jpeg,.png">
+                  @if($profile && $profile->{$field})
+                  <div class="input-group-append">
+                    <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank"
+                      class="btn btn-outline-secondary" title="Lihat dokumen">
+                      <i class="fas fa-eye"></i>
+                    </a>
                   </div>
-                @endforeach
+                  @endif
+                  @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @if($profile && $profile->{$field})
+                <small class="text-muted">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
+                @endif
+              </div>
+              @endforeach
               @endforeach
 
               <div class="form-group">
@@ -489,7 +504,8 @@
                 @if($profile && $profile->dokumen_prestasi)
                 <div class="mt-2">
                   @foreach($profile->dokumen_prestasi as $path)
-                  <a href="{{ route('dokumen.show', $path) }}" target="_blank" class="btn btn-sm btn-outline-secondary mr-1 mb-1"><i class="fas fa-file mr-1"></i>Prestasi</a>
+                  <a href="{{ route('dokumen.show', $path) }}" target="_blank"
+                    class="btn btn-sm btn-outline-secondary mr-1 mb-1"><i class="fas fa-file mr-1"></i>Prestasi</a>
                   @endforeach
                 </div>
                 @endif
@@ -504,7 +520,7 @@
           </form>
         </div>
       </div>
-    @endif
+      @endif
 
       <div class="col-12 col-lg-{{ $isMahasiswa ? '4' : '6' }}">
         <div class="card">
