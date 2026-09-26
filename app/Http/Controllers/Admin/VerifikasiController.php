@@ -7,38 +7,25 @@ use App\Http\Requests\Admin\VerifikasiProfilRequest;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Notifications\DataVerificationChanged;
+use App\Support\VerifikasiAntrean;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class VerifikasiController extends Controller
 {
-    private const STAGES = ['capil', 'kampus', 'kesra'];
-
     private const FILTERS = ['menunggu', 'revisi', 'setuju', 'tolak'];
 
     public function index(string $stage): View
     {
         $stage = $this->validStage($stage);
-
-        $kampusId = $this->scopedKampusId();
         $filter = $this->validFilter();
+        $antrean = $this->antrean($stage);
 
-        $users = User::role('user')
-            ->where('status', 'aktif')
-            ->with(['profile' => fn ($query) => $query->with('prodi.fakultas.kampus')])
-            ->when($kampusId && $stage === 'kampus', fn ($query) => $query->whereHas('profile.prodi.fakultas', fn ($q) => $q->where('kampus_id', $kampusId))
-            )
-            ->get()
-            ->filter(fn (User $user) => $user->profile && $user->profile->canVerifStage($stage))
-            ->filter(fn (User $user) => $filter === null
-                || $user->profile->verifStageDecision($stage)['status'] === $filter)
-            ->sortBy([
-                fn (User $user) => $user->profile->verifQueueRank($stage),
-                fn (User $user) => $user->profile->nama_lengkap,
-            ])
-            ->values();
-
-        return view('admin.verifikasi.index', compact('stage', 'users', 'filter'));
+        return view('admin.verifikasi.index', [
+            'stage' => $stage,
+            'users' => $antrean->antrean($filter),
+            'filter' => $filter,
+        ]);
     }
 
     public function show(User $user, string $stage): View
@@ -50,12 +37,8 @@ class VerifikasiController extends Controller
             abort(403);
         }
 
-        if ($stage === 'kampus') {
-            $userKampusId = $this->scopedKampusId();
-
-            if ($userKampusId && $profile->prodi?->fakultas?->kampus_id !== $userKampusId) {
-                abort(403);
-            }
+        if ($stage === 'kampus' && $this->diLuarKampus($profile)) {
+            abort(403);
         }
 
         return view('admin.verifikasi.lihat', compact('stage', 'user', 'profile'));
@@ -70,12 +53,8 @@ class VerifikasiController extends Controller
             abort(403);
         }
 
-        if ($stage === 'kampus') {
-            $userKampusId = $this->scopedKampusId();
-
-            if ($userKampusId && $profile->prodi?->fakultas?->kampus_id !== $userKampusId) {
-                abort(403);
-            }
+        if ($stage === 'kampus' && $this->diLuarKampus($profile)) {
+            abort(403);
         }
 
         $data = $request->validated();
@@ -101,13 +80,13 @@ class VerifikasiController extends Controller
             default => 'tarik kembali',
         };
 
-        return redirect()->route($this->indexRoute($stage))
+        return redirect()->route($this->antrean($stage)->routeName())
             ->with('success', "Verifikasi profil {$profile->nama_lengkap} berhasil di{$successAction}.");
     }
 
     private function validStage(string $stage): string
     {
-        if (! in_array($stage, self::STAGES, true)) {
+        if (! in_array($stage, UserProfile::verifStageOrder(), true)) {
             abort(404);
         }
 
@@ -124,23 +103,18 @@ class VerifikasiController extends Controller
         return in_array($filter, self::FILTERS, true) ? $filter : null;
     }
 
-    private function indexRoute(string $stage): string
+    private function antrean(string $stage): VerifikasiAntrean
     {
-        return match ($stage) {
-            'capil' => 'admin.capil.index',
-            'kampus' => 'admin.kampusverif.index',
-            default => 'admin.kesra.index',
-        };
+        return new VerifikasiAntrean($stage);
     }
 
-    private function scopedKampusId(): ?int
+    /**
+     * Admin kampus hanya boleh menangani mahasiswa di kampusnya sendiri.
+     */
+    private function diLuarKampus(UserProfile $profile): bool
     {
-        $user = auth()->user();
+        $kampusId = $this->antrean('kampus')->scopedKampusId();
 
-        if (! $user->hasRole('kampus')) {
-            return null;
-        }
-
-        return $user->kampus_id;
+        return $kampusId !== null && $profile->prodi?->fakultas?->kampus_id !== $kampusId;
     }
 }

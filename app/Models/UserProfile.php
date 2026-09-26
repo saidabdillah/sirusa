@@ -85,6 +85,25 @@ class UserProfile extends Model
         ];
     }
 
+    /**
+     * Prefix route tiap tahap verifikasi. Tidak seragam — Verifikasi Kampus
+     * memakai `admin.kampusverif`, bukan `admin.kampus` — jadi pemetaannya
+     * harus satu sumber kebenaran, bukan di-hardcode di tiap controller.
+     */
+    public static function verifRoutePrefixes(): array
+    {
+        return [
+            'capil' => 'capil',
+            'kampus' => 'kampusverif',
+            'kesra' => 'kesra',
+        ];
+    }
+
+    public static function verifStageOrder(): array
+    {
+        return array_keys(self::verifStages());
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -199,7 +218,7 @@ class UserProfile extends Model
     public function canVerifStage(string $stage): bool
     {
         $stages = self::verifStages();
-        $order = array_keys($stages);
+        $order = self::verifStageOrder();
         $index = array_search($stage, $order, true);
 
         if ($index === false) {
@@ -243,7 +262,7 @@ class UserProfile extends Model
     public function resetDownstreamStages(string $stage): void
     {
         $stages = self::verifStages();
-        $order = array_keys($stages);
+        $order = self::verifStageOrder();
         $index = array_search($stage, $order, true);
 
         if ($index === false) {

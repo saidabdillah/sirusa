@@ -41,19 +41,30 @@
           </div>
           <div class="card-body text-center">
             <div class="mb-3">
-              @if($applicant->status === 'verifikasi')
-              <span class="badge badge-warning p-2"><i class="fas fa-clock"></i> Verifikasi</span>
-              @elseif($applicant->status === 'diterima')
-              <span class="badge badge-success p-2"><i class="fas fa-check-circle"></i> Diterima</span>
-              @elseif($applicant->status === 'ditolak')
-              <span class="badge badge-danger p-2"><i class="fas fa-times-circle"></i> Ditolak</span>
-              @endif
+              <span class="badge badge-{{ $applicant->statusBadge() }} p-2">
+                @switch($applicant->status)
+                  @case('verifikasi')<i class="fas fa-clock"></i> Verifikasi@break
+                  @case('diterima')<i class="fas fa-check-circle"></i> Diterima@break
+                  @case('ditolak')<i class="fas fa-times-circle"></i> Ditolak@break
+                  @default<i class="fas fa-ban"></i> {{ $applicant->statusLabel() }}
+                @endswitch
+              </span>
             </div>
             @if($applicant->catatan)
             <div class="text-left">
               <strong>Catatan Admin:</strong>
               <p class="mb-0">{!! nl2br(e($applicant->catatan)) !!}</p>
             </div>
+            @endif
+            @if($applicant->canBeCancelled())
+              <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" class="mt-3">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger btn-block btn-sm"
+                        onclick="return confirm('Batalkan pendaftaran ini? Anda bisa mendaftar beasiswa lain setelahnya.')">
+                  <i class="fas fa-times"></i> Batalkan Pendaftaran
+                </button>
+              </form>
             @endif
           </div>
         </div>

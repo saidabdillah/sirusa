@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 
@@ -12,7 +13,7 @@ uses(RefreshDatabase::class)->group('profil');
 
 function completeProfilePayload($prodi): array
 {
-    return [
+    return array_merge([
         'nama_lengkap' => 'Budi',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
@@ -38,11 +39,13 @@ function completeProfilePayload($prodi): array
         'nama_ibu' => 'Ibu Budi',
         'nik_ibu' => '6302000000000003',
         'pekerjaan_ibu' => 'Petani',
-    ];
+    ], berkasProfilDummy());
 }
 
 beforeEach(function () {
     seedAkses();
+
+    Storage::fake('public');
 
     Http::fake([
         'konoland-api.vercel.app/*' => Http::response([
@@ -94,7 +97,7 @@ test('user can open profil form with region and campus fields', function () {
 test('user can update profile with campus data and parent nik', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
-    $payload = [
+    $payload = array_merge([
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
@@ -120,7 +123,7 @@ test('user can update profile with campus data and parent nik', function () {
         'nama_ibu' => 'Ibu Fauzi',
         'nik_ibu' => '6302000000000003',
         'pekerjaan_ibu' => 'Petani',
-    ];
+    ], berkasProfilDummy());
 
     actingAs($user)
         ->put(route('profile.update'), $payload)
@@ -242,7 +245,8 @@ test('profil update validates parent nik to 16 digits', function () {
 
     actingAs($user)
         ->put(route('profile.update'), $payload)
-        ->assertSessionHasErrors(['nik_ayah', 'nik_ibu', 'nik_wali']);
+        ->assertSessionHasErrors(['nik_ayah', 'nik_ibu'])
+        ->assertSessionDoesntHaveErrors(['nik_wali']);
 });
 
 test('profil shows validation message under the followed parent nik field', function () {
@@ -323,6 +327,7 @@ test('profile is incomplete without campus data and complete with it', function 
         'dokumen_desil' => 'profil/1/desil.pdf',
         'dokumen_sktm' => 'profil/1/sktm.pdf',
         'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
         'ktp_ayah' => 'profil/1/ktp_ayah.pdf',

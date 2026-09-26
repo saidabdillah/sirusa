@@ -17,6 +17,14 @@
       </div>
     @endif
 
+    @unless($kampusId)
+      <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i>
+        Beasiswa hanya bisa dilihat setelah Program Studi pada profil Anda terisi, karena setiap beasiswa diperuntukkan untuk satu kampus.
+        <a href="{{ route('profile') }}" class="alert-link">Lengkapi profil sekarang</a>.
+      </div>
+    @endunless
+
     <div class="section-body">
       <div class="row">
         @forelse($scholarships as $scholarship)
@@ -25,14 +33,17 @@
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
                   <h5 class="card-title mb-0">{{ $scholarship->nama }}</h5>
-                  @if(isset($applications[$scholarship->id]))
-                    @if($applications[$scholarship->id] === 'verifikasi')
-                      <span class="badge badge-warning">Verifikasi</span>
-                    @elseif($applications[$scholarship->id] === 'diterima')
-                      <span class="badge badge-success">Diterima</span>
-                    @elseif($applications[$scholarship->id] === 'ditolak')
-                      <span class="badge badge-danger">Ditolak</span>
-                    @endif
+                  @if(isset($applications[$scholarship->id]) && $applications[$scholarship->id] !== 'dibatalkan')
+                    @switch($applications[$scholarship->id])
+                      @case('verifikasi')
+                        <span class="badge badge-warning">Verifikasi</span>
+                        @break
+                      @case('diterima')
+                        <span class="badge badge-success">Diterima</span>
+                        @break
+                      @default
+                        <span class="badge badge-danger">Ditolak</span>
+                    @endswitch
                   @elseif($scholarship->isExpired())
                     <span class="badge badge-danger">Berakhir</span>
                   @else
@@ -80,7 +91,13 @@
           <div class="col-12">
             <div class="card">
               <div class="card-body text-center">
-                <div class="text-muted">Belum ada beasiswa tersedia</div>
+                <div class="text-muted">
+                  @if($kampusId)
+                    Belum ada beasiswa tersedia untuk kampus Anda saat ini.
+                  @else
+                    Lengkapi Program Studi pada profil Anda untuk melihat daftar beasiswa.
+                  @endif
+                </div>
               </div>
             </div>
           </div>

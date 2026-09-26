@@ -197,7 +197,7 @@
                     </div>
                     @endforeach
                   </div>
-                  @error('jenis_kelamin')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  @error('jenis_kelamin')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
                   <label for="agama">Agama <span class="text-danger">*</span></label>
@@ -337,14 +337,14 @@
                   <div class="d-flex align-items-center">
                     @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'wali' => 'Wali'] as $value => $label)
                     <div class="custom-control custom-radio mr-4">
-                      <input type="radio" class="custom-control-input" id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}"
+                      <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror" id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}"
                         {{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
                       <label class="custom-control-label" for="ikut_kk_{{ $value }}">{{ $label }}</label>
                     </div>
                     @endforeach
                   </div>
                   <small class="text-muted d-block">KK terdaftar mengikuti orang tua/wali yang diikuti. Data orang tua/wali yang diikuti wajib diisi.</small>
-                  @error('ikut_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  @error('ikut_kk')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
               </div>
 
@@ -454,7 +454,7 @@
                 <h6 class="mt-3 mb-2"><i class="fas fa-folder text-primary mr-1"></i>{{ $groupName }}</h6>
                 @foreach($documents as $field => $label)
                   @php $isWaliDoc = in_array($field, $waliDocFields, true); @endphp
-                  <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}" style="{{ $isWaliDoc && ($profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
+                  <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}" style="{{ $isWaliDoc && old('ikut_kk', $profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
                     <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
                     <div class="input-group">
                       <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"

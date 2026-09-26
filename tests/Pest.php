@@ -2,6 +2,7 @@
 
 use Database\Seeders\MenuSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -55,6 +56,29 @@ function seedAkses()
     Role::firstOrCreate(['name' => 'user']);
 
     (new MenuSeeder)->run();
+}
+
+/**
+ * Berkas yang form profil tandai dengan `*` dan `UpdateProfilRequest` mewajibkan.
+ * Pakai `Storage::fake('public')` di beforeEach supaya file palsu tidak ditulis ke disk.
+ */
+function berkasProfilDummy(): array
+{
+    $pdf = fn (string $nama) => UploadedFile::fake()->create($nama, 100, 'application/pdf');
+
+    return [
+        'foto_profil' => UploadedFile::fake()->image('foto-profil.jpg'),
+        'dokumen_ktp' => $pdf('ktp.pdf'),
+        'dokumen_kk' => $pdf('kk.pdf'),
+        'dokumen_desil' => $pdf('desil.pdf'),
+        'dokumen_sktm' => $pdf('sktm.pdf'),
+        'dokumen_transkrip' => $pdf('transkrip.pdf'),
+        'dokumen_surat_aktif' => $pdf('surat-aktif.pdf'),
+        'dokumen_surat_pernyataan' => $pdf('surat-pernyataan.pdf'),
+        'dokumen_bukti_ukt' => $pdf('bukti-ukt.pdf'),
+        'ktp_ayah' => $pdf('ktp-ayah.pdf'),
+        'ktp_ibu' => $pdf('ktp-ibu.pdf'),
+    ];
 }
 
 function something()

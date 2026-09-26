@@ -43,6 +43,7 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
         'dokumen_desil' => 'profil/1/desil.pdf',
         'dokumen_sktm' => 'profil/1/sktm.pdf',
         'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
         'ktp_ayah' => 'profil/1/ktp_ayah.pdf',

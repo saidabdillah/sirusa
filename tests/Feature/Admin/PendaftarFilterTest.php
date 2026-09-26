@@ -131,6 +131,30 @@ test('pendaftar index rejects invalid status filter', function () {
         ->assertSessionHasErrors('status');
 });
 
+test('pendaftar index filters cancelled registrations apart from decisions', function () {
+    $scholarship = Scholarship::factory()->create();
+
+    $batal = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'user_id' => $this->user->id,
+        'status' => 'dibatalkan',
+    ]);
+    $ditolak = Applicant::factory()->create([
+        'beasiswa_id' => $scholarship->id,
+        'status' => 'ditolak',
+    ]);
+
+    actingAs($this->admin)
+        ->get(route('admin.pendaftar.index', ['status' => 'dibatalkan']))
+        ->assertOk()
+        ->assertSee('Dibatalkan');
+
+    $applicants = Applicant::where('status', 'dibatalkan')->get();
+    expect($applicants)->toHaveCount(1)
+        ->and($applicants->first()->id)->toBe($batal->id)
+        ->and($ditolak->status)->toBe('ditolak');
+});
+
 test('pendaftar index rejects invalid beasiswa filter', function () {
     actingAs($this->admin)
         ->get(route('admin.pendaftar.index', ['beasiswa_id' => 9999]))

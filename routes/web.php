@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BeasiswaController;
 use App\Http\Controllers\Admin\KampusController;
+use App\Http\Controllers\Admin\KeputusanPendaftaranController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PendaftarController;
 use App\Http\Controllers\Admin\PenggunaController;
@@ -122,6 +123,7 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::get('/verifikasi/kesra', [VerifikasiController::class, 'index'])->defaults('stage', 'kesra')->name('kesra.index');
         Route::get('/verifikasi/kesra/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kesra')->name('kesra.lihat');
         Route::put('/verifikasi/kesra/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kesra')->name('kesra.verifikasi');
+        Route::put('/verifikasi/kesra/{user}/pendaftaran/{applicant}', [KeputusanPendaftaranController::class, 'update'])->defaults('stage', 'kesra')->name('kesra.pendaftaran.keputusan');
 
         // Pengguna
         Route::get('/pengguna', [PenggunaController::class, 'index'])->name('pengguna.index');
@@ -158,5 +160,6 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::get('/pendaftaran/{applicant}', [PendaftaranController::class, 'show'])->name('pendaftaran.lihat');
         Route::get('/daftar-beasiswa', [PendaftaranController::class, 'create'])->name('pendaftaran.buat');
         Route::post('/pendaftaran', [PendaftaranController::class, 'store'])->name('pendaftaran.simpan');
+        Route::delete('/pendaftaran/{applicant}', [PendaftaranController::class, 'destroy'])->name('pendaftaran.batal');
     });
 });

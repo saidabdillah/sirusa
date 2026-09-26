@@ -88,7 +88,7 @@
                   <i class="fas fa-pause-circle"></i><br>
                   Beasiswa ini sedang tidak aktif
                 </div>
-              @elseif($application)
+              @elseif($application && ! $application->isCancelled())
                 @if($application->status === 'verifikasi')
                   <div class="mb-3">
                     <div class="text-muted">Periode pendaftaran</div>
@@ -109,9 +109,26 @@
                   <div class="alert alert-danger">
                     <i class="fas fa-times-circle"></i><br>
                     <strong>Pendaftaran Ditolak.</strong><br>
-                    Silakan hubungi admin untuk informasi lebih lanjut.
+                    {{ $application->catatan ? 'Alasan: '.$application->catatan : 'Silakan hubungi admin untuk informasi lebih lanjut.' }}
                   </div>
+                  <a href="{{ route('user.beasiswa.index') }}" class="btn btn-primary btn-lg btn-block">
+                    <i class="fas fa-search"></i> Cari Beasiswa Lain
+                  </a>
                 @endif
+              @elseif($blocking)
+                <div class="alert alert-warning">
+                  <i class="fas fa-exclamation-circle"></i><br>
+                  @if($blocking->status === 'diterima')
+                    <strong>Anda sudah diterima.</strong><br>
+                    Setiap mahasiswa hanya boleh menerima satu beasiswa, dan Anda sudah diterima pada {{ $blocking->beasiswa?->nama }}.
+                  @else
+                    <strong>Sudah ada pendaftaran aktif.</strong><br>
+                    Anda sedang memproses pendaftaran pada {{ $blocking->beasiswa?->nama }}. Setiap mahasiswa hanya boleh satu beasiswa.
+                  @endif
+                </div>
+                <a href="{{ route('user.pendaftaran.index') }}" class="btn btn-info btn-lg btn-block">
+                  <i class="fas fa-list"></i> Lihat Pendaftaran Saya
+                </a>
               @elseif(! $profileComplete)
                 <div class="alert alert-warning">
                   <i class="fas fa-exclamation-triangle"></i><br>

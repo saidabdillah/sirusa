@@ -25,6 +25,12 @@
             <h4>Riwayat Pendaftaran</h4>
           </div>
           <div class="card-body">
+            @if($applicants->isEmpty())
+              <div class="text-center text-muted mb-3">
+                Anda belum punya pendaftaran beasiswa. <a href="{{ route('user.beasiswa.index') }}">Lihat daftar beasiswa</a>.
+              </div>
+            @endif
+
             <div class="table-responsive">
               <table class="table table-striped" id="myApplicantTable">
                 <thead>
@@ -46,12 +52,11 @@
                       <td>{{ $applicant->beasiswa->kampus }}</td>
                       <td>{{ $applicant->ipk }}</td>
                       <td>
-                        @if($applicant->status === 'verifikasi')
-                          <span class="badge badge-warning">Verifikasi</span>
-                        @elseif($applicant->status === 'diterima')
-                          <span class="badge badge-success">Diterima</span>
-                        @elseif($applicant->status === 'ditolak')
-                          <span class="badge badge-danger">Ditolak</span>
+                        <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
+                        @if($applicant->isActive())
+                          <button type="button" class="btn btn-outline-secondary btn-sm ml-1" data-toggle="modal" data-target="#batal-{{ $applicant->id }}">
+                            <i class="fas fa-times"></i> Batalkan
+                          </button>
                         @endif
                       </td>
                       <td>{{ $applicant->created_at->translatedFormat('d M Y H:i') }}</td>
@@ -70,6 +75,35 @@
       </div>
     </div>
   </div>
+
+  {{-- Modal diletakkan di luar tabel: DataTables memindahkan <tr> saat pagination,
+       sehingga modal di dalam <tbody> akan ikut terduplikasi dan rusak. --}}
+  @foreach($applicants->where('status', 'verifikasi') as $applicant)
+    <div class="modal fade" id="batal-{{ $applicant->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Batalkan Pendaftaran</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            Batalkan pendaftaran Beasiswa <strong>{{ $applicant->beasiswa->nama }}</strong>?
+            Pendaftaran ini akan berstatus <strong>Dibatalkan</strong> dan Anda bisa mendaftar beasiswa lain.
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+            <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" class="d-inline">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="btn btn-danger">Ya, Batalkan</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  @endforeach
 </section>
 @endsection
 

@@ -45,6 +45,7 @@
                     <option value="verifikasi" {{ request('status') === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
                     <option value="diterima" {{ request('status') === 'diterima' ? 'selected' : '' }}>Diterima</option>
                     <option value="ditolak" {{ request('status') === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
+                    <option value="dibatalkan" {{ request('status') === 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
                   </select>
                 </div>
                 <div class="col-md-4 mb-2 mb-md-0">
@@ -92,15 +93,7 @@
                       <td>{{ $applicant->prodi ?? '-' }}</td>
                       <td>{{ $applicant->ipk }}</td>
                       <td>
-                        @if($applicant->status === 'verifikasi')
-                          <span class="badge badge-warning">Verifikasi</span>
-                        @elseif($applicant->status === 'diterima')
-                          <span class="badge badge-success">Diterima</span>
-                        @elseif($applicant->status === 'revisi')
-                          <span class="badge badge-warning">Revisi</span>
-                        @elseif($applicant->status === 'ditolak')
-                          <span class="badge badge-danger">Ditolak</span>
-                        @endif
+                        <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
                       </td>
                     </tr>
                   @endforeach

@@ -56,6 +56,24 @@ class User extends Authenticatable
         return $this->hasMany(Applicant::class);
     }
 
+    /**
+     * Pendaftaran yang masih menutup jalan pendaftaran baru. Satu mahasiswa hanya
+     * boleh punya satu beasiswa, jadi `ditolak` dan `dibatalkan` tidak dihitung —
+     * keduanya justru membuka jalan mencoba lagi.
+     */
+    public function blockingApplicant(): ?Applicant
+    {
+        return $this->applicants()
+            ->whereIn('status', Applicant::STATUS_BLOCKING)
+            ->latest('id')
+            ->first();
+    }
+
+    public function canRegisterForScholarship(): bool
+    {
+        return $this->blockingApplicant() === null;
+    }
+
     public function profile(): HasOne
     {
         return $this->hasOne(UserProfile::class);
@@ -228,6 +246,7 @@ class User extends Authenticatable
             'dokumen_desil' => 'Dokumen Desil',
             'dokumen_sktm' => 'SKTM',
             'dokumen_transkrip' => 'Transkrip',
+            'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
             'dokumen_surat_pernyataan' => 'Surat Pernyataan',
             'dokumen_bukti_ukt' => 'Bukti UKT',
             'ktp_ayah' => 'KTP Ayah',

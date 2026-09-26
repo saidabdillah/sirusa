@@ -16,7 +16,7 @@ class PendaftarController extends Controller
     public function index(Request $request): View
     {
         $request->validate([
-            'status' => 'nullable|in:verifikasi,diterima,ditolak',
+            'status' => 'nullable|in:'.implode(',', array_keys(Applicant::STATUS_LABELS)),
             'beasiswa_id' => 'nullable|integer|exists:beasiswa,id',
         ]);
 
@@ -56,7 +56,7 @@ class PendaftarController extends Controller
             $query,
             [
                 'filter' => function (Builder $query, Request $request) {
-                    if (in_array((string) $request->string('status'), ['verifikasi', 'diterima', 'ditolak'], true)) {
+                    if (in_array((string) $request->string('status'), array_keys(Applicant::STATUS_LABELS), true)) {
                         $query->where('status', (string) $request->string('status'));
                     }
 

@@ -7,6 +7,7 @@ use App\Notifications\DataVerificationChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 
@@ -14,7 +15,7 @@ uses(RefreshDatabase::class)->group('verifikasi', 'admin', 'profil');
 
 function verifikasiProfilePayload(int $prodiId): array
 {
-    return [
+    return array_merge([
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000000002',
@@ -40,7 +41,7 @@ function verifikasiProfilePayload(int $prodiId): array
         'nama_ibu' => 'Ibu Ahmad',
         'nik_ibu' => '6302000000000004',
         'pekerjaan_ibu' => 'Petani',
-    ];
+    ], berkasProfilDummy());
 }
 
 function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
@@ -71,6 +72,8 @@ function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
 
 beforeEach(function () {
     seedAkses();
+
+    Storage::fake('public');
 
     $this->capilAdmin = User::factory()->capil()->create(['email' => 'capil@test.com']);
     $this->kampusAdmin = User::factory()->kampusAdmin()->create(['email' => 'kampus@test.com']);

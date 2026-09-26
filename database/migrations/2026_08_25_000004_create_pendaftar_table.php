@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('prodi')->nullable();
             $table->decimal('ipk', 3, 2)->nullable();
             $table->unsignedInteger('semester')->nullable();
-            $table->enum('status', ['verifikasi', 'diterima', 'ditolak'])->default('verifikasi');
+            $table->enum('status', ['verifikasi', 'diterima', 'ditolak', 'dibatalkan'])->default('verifikasi');
             $table->text('catatan')->nullable();
             $table->timestamps();
             $table->unique(['user_id', 'beasiswa_id']);

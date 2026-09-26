@@ -11,14 +11,20 @@ class BeasiswaController extends Controller
     public function index(): View
     {
         $user = auth()->user();
+        $profile = $user->profile;
         $applications = $user->applicants()->pluck('status', 'beasiswa_id');
 
-        $scholarships = Scholarship::where('status', 'aktif')
-            ->where('tanggal_selesai', '>=', now())
+        $kampusId = $profile?->prodi?->fakultas?->kampus_id;
+
+        // Mahasiswa hanya boleh melamar beasiswa kampusnya sendiri, jadi beasiswa
+        // kampus lain tidak perlu tampil sama sekali: menampilkan beasiswa yang
+        // tidak bisa didaftar hanya bikin mahasiswa bingung.
+        $scholarships = Scholarship::tersedia()
+            ->untukKampus($kampusId)
             ->latest()
             ->paginate(9);
 
-        return view('user.beasiswa.index', compact('scholarships', 'applications'));
+        return view('user.beasiswa.index', compact('scholarships', 'applications', 'kampusId'));
     }
 
     public function show(Scholarship $scholarship): View
@@ -29,7 +35,13 @@ class BeasiswaController extends Controller
         $profileComplete = $user->isProfileComplete();
         $profileVerified = $profile?->isVerified() ?? false;
         $eligibilityError = $scholarship->eligibilityIssueFor($profile);
-        $canApply = $profileComplete && $profileVerified && ! $application && $eligibilityError === null && ! $scholarship->isExpired();
+        $blocking = $user->blockingApplicant();
+        $canApply = $profileComplete
+            && $profileVerified
+            && ! $application
+            && ! $blocking
+            && $eligibilityError === null
+            && ! $scholarship->isExpired();
 
         return view('user.beasiswa.lihat', compact(
             'scholarship',
@@ -37,6 +49,7 @@ class BeasiswaController extends Controller
             'profileComplete',
             'profileVerified',
             'eligibilityError',
+            'blocking',
             'canApply',
         ));
     }

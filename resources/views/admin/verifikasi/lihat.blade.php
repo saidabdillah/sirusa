@@ -1,10 +1,11 @@
 @extends('layouts.app')
 
 @php
-  $routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
+  $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()[$stage];
   $stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
   $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
   $decision = $profile->verifStageDecision($stage);
+  $applications = $stage === 'kesra' ? $user->applicants()->with('beasiswa')->latest()->get() : collect();
 @endphp
 
 @section('content')
@@ -96,6 +97,96 @@
             </form>
           </div>
         </div>
+
+        {{-- Keputusan beasiswa diambil per pendaftaran, bukan dari status profil di
+             atas. Verifikasi Kesra hanya menyatakan identitasnya sudah benar. --}}
+        @if($stage === 'kesra')
+          <div class="card">
+            <div class="card-header">
+              <h4>Pendaftaran Beasiswa</h4>
+            </div>
+            <div class="card-body">
+              @if($applications->isEmpty())
+                <div class="text-muted">
+                  {{ $profile->verif_kesra === 'setuju'
+                      ? 'Mahasiswa ini sudah terverifikasi tapi tidak mendaftar beasiswa.'
+                      : 'Keputusan beasiswa baru bisa diambil setelah profil disetujui pada tahap Kesra.' }}
+                </div>
+              @else
+                @if($profile->verif_kesra !== 'setuju')
+                  <div class="alert alert-warning">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Setujui verifikasi profil di atas terlebih dahulu sebelum memutuskan pendaftaran.
+                  </div>
+                @endif
+
+                @foreach($applications as $applicant)
+                  <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                      <div>
+                        <strong>{{ $applicant->beasiswa?->nama }}</strong>
+                        <div class="text-muted small">
+                          Kuota {{ $applicant->beasiswa?->kuota }} &middot; IPK minimal {{ number_format($applicant->beasiswa?->ipk_minimal ?? 0, 2) }}
+                          &middot; Semester minimal {{ $applicant->beasiswa?->semester_minimal }}
+                        </div>
+                      </div>
+                      <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
+                    </div>
+
+                    <div class="row small text-muted mb-2">
+                      <div class="col-6">IPK saat daftar: <strong>{{ $applicant->ipk ?? '-' }}</strong></div>
+                      <div class="col-6">Semester saat daftar: <strong>{{ $applicant->semester ?? '-' }}</strong></div>
+                      <div class="col-12">Prodi: <strong>{{ $applicant->prodi ?? '-' }}</strong></div>
+                    </div>
+
+                    @foreach($applicant->snapshotDrifts($profile) as $drift)
+                      <div class="alert alert-warning py-2 px-3 small mb-2">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Data sudah berubah sejak mendaftar &mdash; {{ $drift }}.
+                        Putuskan berdasarkan kelayakan saat mendaftar.
+                      </div>
+                    @endforeach
+
+                    @if($applicant->isCancelled())
+                      <div class="text-muted small mb-0">
+                        <i class="fas fa-ban mr-1"></i> Dibatalkan mahasiswa, tidak bisa diputuskan lagi.
+                      </div>
+                    @else
+                      <form action="{{ route($routePrefix.'.pendaftaran.keputusan', [$user, $applicant]) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="form-group mb-2">
+                          <select class="form-control form-control-sm @error('pendaftaran_status') is-invalid @enderror"
+                                  name="pendaftaran_status" {{ $profile->verif_kesra !== 'setuju' ? 'disabled' : '' }}>
+                            <option value="diterima" {{ old('pendaftaran_status') === 'diterima' ? 'selected' : '' }}>Terima</option>
+                            <option value="ditolak" {{ old('pendaftaran_status') === 'ditolak' ? 'selected' : '' }}>Tolak</option>
+                            @if($applicant->isDecided())
+                              <option value="verifikasi" {{ old('pendaftaran_status') === 'verifikasi' ? 'selected' : '' }}>Tarik Kembali</option>
+                            @endif
+                          </select>
+                          @error('pendaftaran_status')
+                          <div class="invalid-feedback">{{ $message }}</div>
+                          @enderror
+                        </div>
+                        <div class="form-group mb-2">
+                          <input type="text" class="form-control form-control-sm @error('pendaftaran_catatan') is-invalid @enderror"
+                                 name="pendaftaran_catatan" placeholder="Alasan (wajib jika ditolak)"
+                                 value="{{ old('pendaftaran_catatan', $applicant->catatan) }}"
+                                 {{ $profile->verif_kesra !== 'setuju' ? 'disabled' : '' }}>
+                          @error('pendaftaran_catatan')
+                          <div class="invalid-feedback">{{ $message }}</div>
+                          @enderror
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm btn-block" {{ $profile->verif_kesra !== 'setuju' ? 'disabled' : '' }}>
+                          <i class="fas fa-save"></i> Simpan Keputusan Pendaftaran
+                        </button>
+                      </form>
+                    @endif
+                  </div>
+                @endforeach
+              @endif
+            </div>
+          </div>
+        @endif
       </div>
     </div>
   </div>
