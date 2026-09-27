@@ -6,7 +6,7 @@
 <div class="modal fade" id="modal-ubah-role-{{ $role->id }}" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <form action="{{ route('admin.role.perbarui', $role) }}" method="POST">
+      <form action="{{ route('admin.role.perbarui', $role) }}" method="POST" data-ajax-form>
         @csrf
         @method('PUT')
         <input type="hidden" name="modal_target" value="{{ $modalTarget }}">

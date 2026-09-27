@@ -94,7 +94,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-            <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" class="d-inline">
+            <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" data-ajax-form class="d-inline">
               @csrf
               @method('DELETE')
               <button type="submit" class="btn btn-danger">Ya, Batalkan</button>
@@ -111,6 +111,7 @@
 <script>
 $(document).ready(function() {
   $('#myApplicantTable').DataTable({
+    processing: true,
     language: {
       search: "Cari:",
       lengthMenu: "Tampilkan _MENU_ data",

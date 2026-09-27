@@ -32,18 +32,26 @@
             <h4>Informasi Akun</h4>
           </div>
           <div class="card-body">
+            {{-- NIK/NIM hanya relevan untuk mahasiswa. Akun staf tidak punya baris
+                 `profil_pengguna`, jadi menampilkan keduanya hanya menghasilkan
+                 dua baris "-" yang membingungkan. --}}
             <dl class="row mb-0">
+              @if (auth()->user()->isMahasiswa())
               <dt class="col-sm-4">NIK</dt>
               <dd class="col-sm-8">{{ auth()->user()->profile?->nik ?? '-' }}</dd>
               <dt class="col-sm-4">NIM</dt>
               <dd class="col-sm-8">{{ auth()->user()->profile?->nim ?? '-' }}</dd>
-              <dt class="col-sm-4">Email</dt>
-              <dd class="col-sm-8">{{ auth()->user()->email ?? '-' }}</dd>
+              @endif
               <dt class="col-sm-4">Username</dt>
               <dd class="col-sm-8">{{ auth()->user()->username }}</dd>
+              <dt class="col-sm-4">Email</dt>
+              <dd class="col-sm-8">{{ auth()->user()->email ?? '-' }}</dd>
+              <dt class="col-sm-4">Peran</dt>
+              <dd class="col-sm-8">{{ \App\Models\User::ROLE_LABELS[auth()->user()->getRoleNames()->first()] ?? 'User' }}</dd>
             </dl>
             <div class="alert alert-info mt-3 mb-0">
-              <i class="fas fa-info-circle mr-1"></i> Login menggunakan NIK Anda. Kata sandi awal akun adalah NIM, lalu dapat Anda ganti di bawah.
+              <i class="fas fa-info-circle mr-1"></i>
+              Login menggunakan <strong>{{ auth()->user()->loginCredentialLabel() }}</strong> Anda. Jika lupa, hubungi admin untuk mereset kata sandi.
             </div>
           </div>
         </div>
@@ -54,20 +62,31 @@
           <div class="card-header">
             <h4>Ganti Kata Sandi</h4>
           </div>
-          <form action="{{ route('settings.update') }}" method="POST">
+          <form action="{{ route('settings.update') }}" method="POST" id="formSettings" data-ajax-form>
             @csrf
             @method('PUT')
             <div class="card-body">
               <div class="form-group">
-                <label>Kata Sandi Baru <span class="text-danger">*</span></label>
-                <input type="password" name="password" class="form-control @error('password') is-invalid @enderror">
-                @error('password')
+                <label for="current_password">Kata Sandi Saat Ini <span class="text-danger">*</span></label>
+                <input id="current_password" type="password" name="current_password" autocomplete="current-password"
+                  class="form-control @error('current_password') is-invalid @enderror">
+                @error('current_password')
                   <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>
               <div class="form-group">
-                <label>Konfirmasi Kata Sandi <span class="text-danger">*</span></label>
-                <input type="password" name="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror">
+                <label for="password">Kata Sandi Baru <span class="text-danger">*</span></label>
+                <input id="password" type="password" name="password" autocomplete="new-password"
+                  class="form-control @error('password') is-invalid @enderror">
+                @error('password')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="form-text text-muted">Minimal 8 karakter.</small>
+              </div>
+              <div class="form-group">
+                <label for="password_confirmation">Konfirmasi Kata Sandi <span class="text-danger">*</span></label>
+                <input id="password_confirmation" type="password" name="password_confirmation" autocomplete="new-password"
+                  class="form-control @error('password_confirmation') is-invalid @enderror">
                 @error('password_confirmation')
                   <div class="invalid-feedback">{{ $message }}</div>
                 @enderror

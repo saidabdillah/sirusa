@@ -117,11 +117,14 @@ test('mahasiswa tetap melihat form profil lengkap dengan unggah berkas', functio
 });
 
 /**
- * Kartu Informasi Akun untuk akun staf harus di tengah di semua viewport.
- * `offset-lg-*` hanya aktif di >=992px; di bawah itu kolom jadi flex item
- * bersebelahan, jadi lebih baik row-nya yang di-center.
+ * Kartu Informasi Akun untuk akun staf harus rata kiri.
+ *
+ * Sebelumnya row-nya memakai `justify-content-center`, jadi satu-satunya kartu
+ * melayang di tengah halaman. Spesifikasi batch 2 poin 6 minta
+ * `justify-content-start` untuk semua role selain `user`. `offset-lg-*` tetap
+ * dilarang karena hanya aktif di >=992px.
  */
-test('kartu informasi akun akun staf di center di semua viewport', function (string $peran) {
+test('kartu informasi akun staf rata kiri di semua viewport', function (string $peran) {
     $user = stafFactory($peran);
 
     $html = actingAs($user)
@@ -129,10 +132,28 @@ test('kartu informasi akun akun staf di center di semua viewport', function (str
         ->assertOk();
 
     expect($html->getContent())
-        ->toContain('<div class="row justify-content-center">')
+        ->toContain('<div class="row justify-content-start">')
         ->toContain('col-12 col-lg-6')
+        ->not->toContain('justify-content-center')
         ->not->toContain('offset-lg-3');
 })->with('peran staf');
+
+/**
+ * mahasiswa mendapat dua kartu (profil + informasi akun), jadi row-nya tidak
+ * diberi kelas perataan apa pun -- kartu-kartunya tetap mengisi lebar penuh.
+ */
+test('row profil mahasiswa tidak dipaksa perataan tertentu', function () {
+    $mahasiswa = User::factory()->standardUser()->create();
+
+    $html = actingAs($mahasiswa)
+        ->get(route('profile'))
+        ->assertOk();
+
+    expect($html->getContent())
+        ->toContain('<div class="row ">')
+        ->not->toContain('justify-content-center')
+        ->not->toContain('justify-content-start');
+});
 
 test('mahasiswa tetap boleh menyimpan profil seperti biasa', function () {
     $user = User::factory()->standardUser()->create(['email' => 'mahasiswa@test.com']);

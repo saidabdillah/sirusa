@@ -80,7 +80,7 @@
                       <i class="fas fa-edit"></i>
                     </button>
                     @if(! $menu->wajib)
-                    <form action="{{ route('admin.menuKelola.hapus', $menu) }}" method="POST" class="d-inline-block align-middle btn-delete-form">
+                    <form action="{{ route('admin.menukelola.hapus', $menu) }}" method="POST" data-ajax-form class="d-inline-block align-middle btn-delete-form">
                       @csrf
                       @method('DELETE')
                       <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
@@ -111,7 +111,7 @@
                       <i class="fas fa-edit"></i>
                     </button>
                     @if(! $child->wajib)
-                    <form action="{{ route('admin.menuKelola.hapus', $child) }}" method="POST" class="d-inline-block align-middle btn-delete-form">
+                    <form action="{{ route('admin.menukelola.hapus', $child) }}" method="POST" data-ajax-form class="d-inline-block align-middle btn-delete-form">
                       @csrf
                       @method('DELETE')
                       <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
@@ -156,12 +156,40 @@
       $('#' + openModal).modal('show');
     }
 
-    const btnDelete = document.querySelectorAll('.btn-delete');
-    btnDelete.forEach(function(button) {
-      button.addEventListener('click', function() {
-        button.closest('.btn-delete-form').submit();
-      });
+    // Bersihkan sisa error validasi saat modal ditutup, bukan saat dibuka.
+    //
+    // Error 422 dilukis oleh `paintFieldError()` di `custom.js` (form di sini
+    // `data-ajax-form`, jadi halamannya tidak pernah reload). Tanpa baris ini:
+    // tambah menu -> submit kosong -> 422 -> tutup -> buka Tambah lagi, border
+    // merah dan pesan errornya masih menempel walaupun formnya sudah dianggap
+    // bersih.
+    //
+    // Kenapa bukan `show.bs.modal`: ada jalur fallback di atas yang membuka
+    // ulang modal setelah page reload, dengan error yang sudah dirender server
+    // di tiap modal. Kalau dibersihkan saat `show`, error itu langsung terhapus
+    // sebelum sempat dibaca. Pada page load baru modal belum pernah dibuka, jadi
+    // `hidden` tidak pernah menyala dan error render-server tetap utuh.
+    //
+    // Yang dibersihkan HANYA state visual error. Nilai input tidak disentuh
+    // sama sekali -- form Ubah harus tetap menampilkan data tersimpannya
+    // setiap kali dibuka.
+    //
+    // Selektor `.invalid-feedback` sengaja TANPA `[data-ajax]`: blok pesan dari
+    // server dirender sebagai `invalid-feedback d-block`, jadi `d-block` yang
+    // memaksa pesannya tetap terlihat walau `is-invalid` sudah dicabut di baris
+    // atas. Kalau hanya blok AJAX yang dibersihkan, membuka ulang modal akan
+    // meninggalkan pesan tanpa border merah.
+    $('.modal').on('hidden.bs.modal', function () {
+      const $form = $(this).find('form');
+
+      $form.find('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
+      $form.find('.flatpickr-alt').removeClass('is-invalid');
+      $form.find('.invalid-feedback').removeClass('d-block').css('display', 'none').text('');
     });
+
+    // Konfirmasi `.btn-delete` ditangani global di `custom.js`; handler lokal
+    // pernah ada di sini dan memakai `submit()` native, yang melewati handler
+    // AJAX form sehingga halaman jadi reload penuh.
   });
 </script>
 @endpush

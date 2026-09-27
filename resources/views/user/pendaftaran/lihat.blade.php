@@ -57,7 +57,7 @@
             </div>
             @endif
             @if($applicant->canBeCancelled())
-              <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" class="mt-3">
+              <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" data-ajax-form class="mt-3">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-outline-danger btn-block btn-sm"
@@ -69,34 +69,27 @@
           </div>
         </div>
 
-        {{-- Card: Verifikasi Profil --}}
+        {{-- Kartu status per tahap dihapus. Yang ditampilkan hanya catatan
+             verifikator, karena itu umpan balik yang harus ditindaklanjuti
+             mahasiswastatus tahapnya sendiri tidak ditampilkan. --}}
+        @if($profile->catatan_capil || $profile->catatan_kampus || $profile->catatan_kesra)
         <div class="card">
           <div class="card-header">
-            <h4>Verifikasi Profil</h4>
+            <h4>Catatan Verifikator</h4>
           </div>
           <div class="card-body">
-            @foreach($profile->verifStageLabels() as $stage => $label)
-            @php
-              $status = $profile->{'verif_'.$stage};
-              $badge = match ($status) { 'setuju' => 'success', 'revisi' => 'danger', 'tolak' => 'danger', default => 'warning' };
-              $text = match ($status) { 'setuju' => 'Disetujui', 'revisi' => 'Perlu Perbaikan', 'tolak' => 'Ditolak', default => 'Menunggu' };
-            @endphp
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>{{ $label }}</span>
-              <span class="badge badge-{{ $badge }}">{{ $text }}</span>
-            </div>
-            @endforeach
             @if($profile->catatan_capil)
-            <small class="text-muted d-block mt-2"><strong>Catatan Capil:</strong> {{ $profile->catatan_capil }}</small>
+            <small class="text-muted d-block mb-1"><strong>Catatan Capil:</strong> {{ $profile->catatan_capil }}</small>
             @endif
             @if($profile->catatan_kampus)
-            <small class="text-muted d-block"><strong>Catatan Kampus:</strong> {{ $profile->catatan_kampus }}</small>
+            <small class="text-muted d-block mb-1"><strong>Catatan Kampus:</strong> {{ $profile->catatan_kampus }}</small>
             @endif
             @if($profile->catatan_kesra)
             <small class="text-muted d-block"><strong>Catatan Kesra:</strong> {{ $profile->catatan_kesra }}</small>
             @endif
           </div>
         </div>
+        @endif
 
         {{-- Card: Beasiswa --}}
         <div class="card">

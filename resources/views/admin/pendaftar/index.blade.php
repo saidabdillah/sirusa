@@ -58,7 +58,7 @@
                   </select>
                 </div>
                 <div class="col-md-2 mb-2 mb-md-0">
-                  <button type="submit" class="btn btn-primary btn-block">
+                  <button type="submit" class="btn btn-primary btn-block" data-loading-text="Mencari...">
                     <i class="fas fa-search"></i> Cari
                   </button>
                 </div>

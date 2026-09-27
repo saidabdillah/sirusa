@@ -138,14 +138,14 @@
                 <a href="{{ route('profile') }}" class="btn btn-warning btn-lg btn-block">
                   <i class="fas fa-user-edit"></i> Lengkapi Profil
                 </a>
-              @elseif(! $profileVerified)
+              @elseif(! $capilVerified)
                 <div class="alert alert-warning">
                   <i class="fas fa-shield-alt"></i><br>
-                  <strong>Profil belum terverifikasi.</strong><br>
-                  Anda dapat mendaftar setelah data profil diverifikasi oleh pihak terkait.
+                  <strong>Data dasar belum disetujui Capil.</strong><br>
+                  Anda dapat mendaftar setelah data dasar Anda disetujui hasil verifikasi Capil.
                 </div>
                 <a href="{{ route('profile') }}" class="btn btn-info btn-lg btn-block">
-                  <i class="fas fa-user-check"></i> Lihat Status Verifikasi
+                  <i class="fas fa-user-check"></i> Perbarui Data Profil
                 </a>
               @elseif($eligibilityError)
                 <div class="alert alert-warning">

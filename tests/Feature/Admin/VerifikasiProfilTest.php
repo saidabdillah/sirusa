@@ -1,11 +1,14 @@
 <?php
 
+use App\Models\Applicant;
 use App\Models\Kampus;
+use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Notifications\DataVerificationChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,6 +20,7 @@ function verifikasiProfilePayload(int $prodiId): array
 {
     return array_merge([
         'nama_lengkap' => 'Ahmad Fauzi',
+        'email' => 'ahmad.fauzi@example.test',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000000002',
         'nim' => '2010123456',
@@ -54,7 +58,7 @@ function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
 
     $suffix = str_pad((string) $user->id, 6, '0', STR_PAD_LEFT);
 
-    return UserProfile::create(array_merge([
+    $profile = UserProfile::create(array_merge([
         'user_id' => $user->id,
         'nama_lengkap' => "Ahmad Fauzi #{$user->id}",
         'nik' => '6302000000'.$suffix,
@@ -68,6 +72,34 @@ function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
         'kecamatan' => 'Awayan',
         'desa_kelurahan' => 'Ambakiang',
     ], $stages[$stage]));
+
+    // Tahap kampus dan kesra baru masuk antrean setelah mahasiswa benar-benar
+    // mendaftar beasiswa, jadi fixture-nya butuh baris `pendaftar` juga.
+    if ($stage !== 'capil') {
+        Applicant::create([
+            'user_id' => $user->id,
+            'beasiswa_id' => beasiswaVerifikasi()->id,
+            'status' => 'verifikasi',
+        ]);
+    }
+
+    return $profile;
+}
+
+/**
+ * Satu beasiswa dipakai bersama seluruh fixture di file ini supaya tidak
+ * menabrak indeks unik `[user_id, beasiswa_id]` pada tabel `pendaftar`.
+ */
+function beasiswaVerifikasi(): Scholarship
+{
+    return Scholarship::query()->first() ?: Scholarship::factory()->create([
+        'kampus_id' => Kampus::query()->firstOrFail()->id,
+        'ipk_minimal' => 0,
+        'semester_minimal' => 0,
+        'status' => 'aktif',
+        'tanggal_mulai' => now()->subDay(),
+        'tanggal_selesai' => now()->addMonths(2),
+    ]);
 }
 
 beforeEach(function () {
@@ -118,6 +150,53 @@ test('kampus index lists only profiles whose capil stage was approved', function
         ->assertOk()
         ->assertSee($pending->profile->nama_lengkap)
         ->assertDontSee($waitingCapil->profile->nama_lengkap);
+});
+
+test('disetujui Capil tidak otomatis membuka antrean kampus sebelum mahasiswa mendaftar', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
+            'status' => 'setuju',
+            'catatan' => 'Data dasar benar',
+        ])
+        ->assertRedirect(route('admin.capil.index'));
+
+    $profile = $this->applicantUser->refresh()->profile;
+
+    expect($profile->verif_capil)->toBe('setuju')
+        // Disetujui Capil != otomatis terverifikasi kampus.
+        ->and($profile->verif_kampus)->toBe('menunggu')
+        // Tidak masuk antreanampus karena belum ada pendaftaran.
+        ->and($profile->canVerifStage('kampus'))->toBeFalse();
+
+    // Permintaan pertama KINGSA flash "berhasil disetujui" dari Capil, yang
+    // isinya memuat nama mahasiswa. Flash-nya baru hilang di permintaan
+    // berikutnya, jadi pemeriksaannya dilakukan setelah satu request lain.
+    actingAs($this->kampusAdmin)->get(route('admin.kampusverif.index'));
+
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.index'))
+        ->assertOk()
+        ->assertDontSee($profile->nama_lengkap);
+
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.lihat', $this->applicantUser))
+        ->assertForbidden();
+
+    // Begitu ada pendaftaran, tahap kampus bisa dikerjakan.
+    Applicant::create([
+        'user_id' => $this->applicantUser->id,
+        'beasiswa_id' => beasiswaVerifikasi()->id,
+        'status' => 'verifikasi',
+    ]);
+
+    expect($profile->canVerifStage('kampus'))->toBeTrue();
+
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.index'))
+        ->assertOk()
+        ->assertSee($profile->nama_lengkap);
 });
 
 test('kesra index lists only profiles approved by previous stages', function () {
@@ -270,7 +349,8 @@ test('previous stage notes are visible to the next stage verifier', function () 
     actingAs($this->kampusAdmin)
         ->get(route('admin.kampusverif.lihat', $this->applicantUser))
         ->assertOk()
-        ->assertSee('Catatan Capil:')
+        ->assertSee('Catatan verifikator')
+        ->assertSee('Capil')
         ->assertSee('KTP kurang terbaca');
 });
 
@@ -286,6 +366,14 @@ test('verification index columns follow the purpose of each stage', function () 
         ->assertDontSee('Program Studi');
 
     $this->applicantUser->profile->update(['verif_capil' => 'setuju']);
+
+    // Disetujui Capil tidak otomatis berarti masuk antrean kampus: mahasiswa
+    // harus sudah mendaftar beasiswa supaya ada yang perlu diverifikasi.
+    Applicant::create([
+        'user_id' => $this->applicantUser->id,
+        'beasiswa_id' => beasiswaVerifikasi()->id,
+        'status' => 'verifikasi',
+    ]);
 
     // Kampus: fokus data mahasiswa.
     actingAs($this->kampusAdmin)
@@ -417,16 +505,101 @@ test('a stage is hidden once a downstream stage has been decided', function () {
         ->assertForbidden();
 });
 
-test('the decision form shows the current choice and offers to pull it back', function () {
+test('the decision form shows the current choice and offers no pull-back', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'capil')
         ->update(['verif_capil' => 'revisi', 'catatan_capil' => 'KTP kurang terbaca']);
 
-    actingAs($this->capilAdmin)
+    $isi = actingAs($this->capilAdmin)
         ->get(route('admin.capil.lihat', $this->applicantUser))
         ->assertOk()
         ->assertSee('Keputusan saat ini:')
-        ->assertSee('Tarik Kembali (kembalikan ke Menunggu)')
-        ->assertSee('<option value="revisi" selected>', false);
+        ->assertSee('<option value="revisi" selected>', false)
+        ->getContent();
+
+    // Menarik keputusan ke daftar tunggu tidak lagi disediakan sebagai pilihan
+    // di form, jadi konfirmasi penarik keputusan tidak mungkin muncul lagi.
+    expect($isi)->not->toContain('Tarik Kembali (kembalikan ke Menunggu)')
+        ->not->toContain('value="menunggu"');
+});
+
+test('an undecided profile starts the decision dropdown on the placeholder', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    $isi = actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
+        ->assertOk()
+        ->getContent();
+
+    // Status `menunggu` berarti "belum ada keputusan", jadi tidak boleh
+    // otomatis menyorot salah satu keputusan. Tanpa ini browser akan memilih
+    // option pertama dan admin bisa menyetujui tanpa pernah memilih.
+    expect($isi)->toContain('<option value="" selected>');
+
+    foreach (['setuju', 'revisi', 'tolak'] as $pilihan) {
+        expect($isi)->not->toContain('<option value="'.$pilihan.'" selected>');
+    }
+});
+
+test('only setujui and tolak ask for confirmation', function () {
+    $isi = File::get(resource_path('views/admin/verifikasi/lihat.blade.php'));
+
+    // Peta konfirmasi, bukan rantai ternary: tidak ada lagi nilai yang tak
+    // dikenali jatuh ke teks "Tarik kembali keputusan ini ke daftar tunggu?".
+    expect($isi)->toContain('var KONFIRMASI = {')
+        ->toContain("text: 'Yakin setuju?'")
+        ->toContain("text: 'Yakin ditolak?'")
+        ->toContain("tombol: 'Ya, Setujui!'")
+        ->toContain("tombol: 'Ya, Tolak!'");
+
+    // "Minta Perbaikan" dan "— Pilih —" tidak masuk peta, jadi dikirim langsung
+    // tanpa dialog.
+    expect($isi)->toContain('if (!dialog) {')
+        ->not->toContain('revisi: {');
+
+    // Teks penarik keputusan harus benar-benar hilang dari view.
+    expect($isi)->not->toContain('Tarik kembali keputusan ini ke daftar tunggu?')
+        ->not->toContain('Ya, Tarik Kembali!');
+});
+
+test('catatan is required when a revision is requested', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    // Tanpa catatan: ditolak, dan status TIDAK tersimpan.
+    actingAs($this->capilAdmin)
+        ->putJson(route('admin.capil.verifikasi', $this->applicantUser), [
+            'status' => 'revisi',
+            'catatan' => '',
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('catatan');
+
+    expect($this->applicantUser->refresh()->profile->verif_capil)->toBe('menunggu')
+        ->and($this->applicantUser->refresh()->profile->catatan_capil)->toBeNull();
+
+    // Dengan catatan: berhasil.
+    actingAs($this->capilAdmin)
+        ->putJson(route('admin.capil.verifikasi', $this->applicantUser), [
+            'status' => 'revisi',
+            'catatan' => 'KTP kurang terbaca',
+        ])
+        ->assertOk();
+
+    expect($this->applicantUser->refresh()->profile->verif_capil)->toBe('revisi')
+        ->and($this->applicantUser->refresh()->profile->catatan_capil)->toBe('KTP kurang terbaca');
+});
+
+test('catatan stays optional for the other decisions', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    foreach (['setuju', 'tolak'] as $keputusan) {
+        actingAs($this->capilAdmin)
+            ->putJson(route('admin.capil.verifikasi', $this->applicantUser), [
+                'status' => $keputusan,
+            ])
+            ->assertOk();
+
+        expect($this->applicantUser->refresh()->profile->verif_capil)->toBe($keputusan);
+    }
 });
 
 test('the verification queue can be filtered by decision status', function () {

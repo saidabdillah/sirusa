@@ -18,7 +18,7 @@
             <div class="card-header">
               <h4>Ubah Data Pengguna</h4>
             </div>
-            <form action="{{ route('admin.pengguna.perbarui', $user) }}" method="POST">
+            <form action="{{ route('admin.pengguna.perbarui', $user) }}" method="POST" id="formPengguna" data-ajax-form>
               @csrf
               @method('PUT')
               <div class="card-body">
@@ -32,7 +32,7 @@
                   <label for="peran">Peran <span class="text-danger">*</span></label>
                   @php $currentPeran = old('peran', $user->roles->first()?->name ?? ''); @endphp
                   <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
-                    <option value="" {{ $currentPeran === '' ? 'selected' : '' }}>-- Pilih Peran --</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
                     @foreach ($peranOptions as $peranValue => $peranLabel)
                       <option value="{{ $peranValue }}" {{ $currentPeran === $peranValue ? 'selected' : '' }}>{{ $peranLabel }}</option>
                     @endforeach
@@ -43,7 +43,7 @@
                 <div class="form-group d-none" id="akunKampus">
                   <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
                   <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
-                    <option value="">-- Pilih Kampus --</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
                     @foreach ($kampusList as $kampusId => $kampusNama)
                       <option value="{{ $kampusId }}" {{ (string) old('kampus_id', $user->kampus_id) === (string) $kampusId ? 'selected' : '' }}>{{ $kampusNama }}</option>
                     @endforeach

@@ -2,15 +2,25 @@
 
 namespace App\Http\Requests\Kampus;
 
+use App\Http\Requests\Concerns\TrimsNameInput;
 use App\Models\Prodi;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class StoreProdiRequest extends FormRequest
 {
+    use TrimsNameInput;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'nama' => $this->trimSederhana($this->input('nama')),
+        ]);
     }
 
     public function rules(): array

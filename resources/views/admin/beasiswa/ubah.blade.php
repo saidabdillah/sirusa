@@ -28,7 +28,7 @@
 
       <div class="row">
         <div class="col-lg-8">
-          <form action="{{ route('admin.beasiswa.perbarui', $scholarship) }}" method="POST">
+          <form action="{{ route('admin.beasiswa.perbarui', $scholarship) }}" method="POST" id="formBeasiswa" data-ajax-form>
             @csrf
             @method('PUT')
 
@@ -48,7 +48,7 @@
                   <div class="form-group col-md-8">
                     <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
                     <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
-                      <option value="">Pilih Kampus</option>
+                      <option value="">&mdash; Pilih &mdash;</option>
                       @foreach($kampusList as $kampus)
                         <option value="{{ $kampus->id }}" {{ old('kampus_id', $selectedKampusId) == $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
                       @endforeach
@@ -239,9 +239,9 @@ $(document).ready(function() {
 
   showKampusTree();
 
-  flatpickr('.flatpickr', {
-    dateFormat: 'Y-m-d'
-  });
+  // Helper yang sama dipakai `buat.blade.php`, jadi tampilan dan perilaku
+  // date picker identik di kedua form.
+  initDatePicker('.flatpickr');
 });
 </script>
 @endpush

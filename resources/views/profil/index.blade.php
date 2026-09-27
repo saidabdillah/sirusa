@@ -82,13 +82,12 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     </div>
     @endif
 
+    {{-- Hanya umpan balik yang harus ditindaklanjuti mahasiswa yang
+         ditampilkan. Status tahap dan progress verifikasi sengaja tidak
+         dimunculkan; datanya tetap disimpan untuk penyaringan, audit, dan
+         alur kerja verifikator. --}}
     @if($profile)
     @switch($profile->verifStatus())
-    @case('terverifikasi')
-    <div class="alert alert-success">
-      <i class="fas fa-shield-alt"></i> Data profil Anda telah <strong>terverifikasi</strong> oleh seluruh verifikator.
-    </div>
-    @break
     @case('revisi')
     <div class="alert alert-danger">
       <i class="fas fa-times-circle"></i> Data profil Anda <strong>perlu perbaikan</strong>. Silakan periksa catatan
@@ -111,15 +110,13 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       @endforeach
     </div>
     @break
-    @default
-    <div class="alert alert-info">
-      <i class="fas fa-clock"></i> Data profil Anda sedang dalam <strong>proses verifikasi</strong>. Data yang disimpan
-      saat ini akan direset untuk diverifikasi ulang.
-    </div>
     @endswitch
     @endif
     @endif
 
+    {{-- Kartu Tunggal untuk staf: `justify-content-start` (bukan `offset-lg-*`
+         yang hanya berlaku di >=992px, dan bukan `justify-content-center` yang
+         membuat kartu melayang di tengah halaman). --}}
     <div class="row {{ $isMahasiswa ? '' : 'justify-content-start' }}">
       @if ($isMahasiswa)
       <div class="col-lg-8">
@@ -127,18 +124,28 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
           <div class="card-header">
             <h4>Edit Profil</h4>
           </div>
-          <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" id="profilForm">
+          <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" id="profilForm"
+            data-ajax-form>
             @csrf
             @method('PUT')
             <div class="card-body">
 
               {{-- DATA DIRI --}}
               <h5 class="mb-3">Data Diri</h5>
-              <div class="form-group">
-                <label for="nama_lengkap">Nama Lengkap <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('nama_lengkap') is-invalid @enderror" id="nama_lengkap"
-                  name="nama_lengkap" value="{{ old('nama_lengkap', $profile->nama_lengkap ?? '') }}">
-                @error('nama_lengkap')<div class="invalid-feedback">{{ $message }}</div>@enderror
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="nama_lengkap">Nama Lengkap <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control @error('nama_lengkap') is-invalid @enderror" id="nama_lengkap"
+                    name="nama_lengkap" value="{{ old('nama_lengkap', $profile->nama_lengkap ?? '') }}">
+                  @error('nama_lengkap')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="email">Email <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email"
+                    value="{{ old('email', auth()->user()->email) }}" placeholder="contoh: nama@email.com"
+                    autocomplete="email">
+                  @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
               </div>
 
               <div class="form-row">
@@ -478,7 +485,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
                 <div class="input-group">
                   <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"
-                    name="{{ $field }}" accept=".pdf,.jpg,.jpeg,.png">
+                    name="{{ $field }}" accept="image/*,.pdf,.webp">
                   @if($profile && $profile->{$field})
                   <div class="input-group-append">
                     <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank"
@@ -499,7 +506,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-group">
                 <label for="dokumen_prestasi">Dokumen Prestasi (Pilihan, bisa lebih dari satu)</label>
                 <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror"
-                  id="dokumen_prestasi" name="dokumen_prestasi[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                  id="dokumen_prestasi" name="dokumen_prestasi[]" accept="image/*,.pdf,.webp" multiple>
                 @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 @if($profile && $profile->dokumen_prestasi)
                 <div class="mt-2">
@@ -573,14 +580,27 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   });
 
   if (typeof Cleave !== 'undefined' && document.getElementById('ukt')) {
-    new Cleave('#ukt', {
+    // UKT adalah rupiah bulat, jadi `numeralDecimalScale: 0`. Konfigurasi
+    // sebelumnya set `numeralDecimalMark: ','`; Cleave lalu membuang karakter
+    // apa pun yang bukan digit/koma, termasuk titik. Nilai dari database
+    // (`decimal(10,2)`) adalah "1500000.00" — titiknya hilang tapi "00"-nya
+    // tetap ikut, jadi 1500000 tampil jadi 150.000.000 dan angka itu tersimpan
+    // ulang setiap kali form dikirim. `decimal:0` di cast `UserProfile`
+    // membuat Blade hanya mengirim digit, dan `onValueChanged` menjaga agar
+    // nilai yang sudah di-format tidak dibaca ulang sebagai input mentah.
+    var uktCleave = new Cleave('#ukt', {
       numeral: true,
       numeralThousandsGroupStyle: 'thousand',
       delimiter: '.',
-      numeralDecimalMark: ',',
+      numeralIntegerScale: 15,
       numeralDecimalScale: 0,
       numeralPositiveOnly: true,
+      stripLeadingZeroes: true,
     });
+
+    // Guard terakhir: apa pun yang lolos (tempel dari sumber lain, nilai lama
+    // yang belum ter-cast) tetap dirender sebagai digit murni.
+    uktCleave.setRawValue(String($('#ukt').val() || '').replace(/\D/g, ''));
   }
 
   var desaUrlBase = "{{ url('/api/wilayah/desa') }}";
@@ -590,14 +610,33 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       $('#desa_kelurahan').html('<option value="">Pilih Kecamatan terlebih dahulu</option>');
       return;
     }
-    $.getJSON(desaUrlBase + '/' + code, function(data) {
-      var options = '<option value="">Pilih Desa/Kelurahan</option>';
-      $.each(data, function(i, item) {
-        var selected = (selectedDesa && selectedDesa === item.village) ? ' selected' : '';
-        options += '<option value="' + item.village + '"' + selected + '>' + item.village + '</option>';
+
+    var $desa = $('#desa_kelurahan');
+
+    $.getJSON(desaUrlBase + '/' + code)
+      .done(function(data) {
+        var options = '<option value="">Pilih Desa/Kelurahan</option>';
+        $.each(data, function(i, item) {
+          var selected = (selectedDesa && selectedDesa === item.village) ? ' selected' : '';
+          options += '<option value="' + item.village + '"' + selected + '>' + item.village + '</option>';
+        });
+        $desa.html(options);
+      })
+      .fail(function(xhr) {
+        // Tanpa cabang ini, select menganggur di "Memuat data..." selamanya
+        // begitu request gagal: tidak ada daftar desa, tidak ada pesan, dan
+        // user tidak tahu harus melakukan apa. Selectnya sendiri dibersihkan
+        // supaya tidak menipu dengan tetap menampilkan "sedang memuat".
+        $desa.html('<option value="">Gagal memuat desa. Pilih kecamatan lagi.</option>');
+
+        Swal.fire({
+          icon: xhr.status === 0 ? 'warning' : 'error',
+          title: xhr.status === 0 ? 'Koneksi bermasalah' : 'Gagal memuat desa',
+          text: xhr.status === 0
+            ? 'Permintaan tidak terkirim. Periksa koneksi internet Anda lalu pilih kecamatan lagi.'
+            : 'Daftar desa untuk kecamatan ini tidak bisa dimuat. Silakan coba lagi.'
+        });
       });
-      $('#desa_kelurahan').html(options);
-    });
   }
 
   var initialDesa = "{{ old('desa_kelurahan', $profile->desa_kelurahan ?? '') }}";
@@ -673,6 +712,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   $('input[name="ikut_kk"]').on('change', updateWaliVisibility);
 
   updateWaliVisibility();
+
 </script>
 @endpush
 @endif

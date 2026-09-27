@@ -18,7 +18,7 @@ use App\Http\Controllers\User\PendaftaranController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-Route::get('/', fn() => view('landing'))->name('landing');
+Route::get('/', fn () => view('landing'))->name('landing');
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/masuk', [AuthController::class, 'masuk'])->name('login');
@@ -114,13 +114,18 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::get('/pendaftar/data', [PendaftarController::class, 'data'])->name('pendaftar.data');
 
         // Verifikasi data profil
+        // Rute `unduh` diletakkan sebelum `{user}` supaya tidak tertangkap
+        // sebagai parameter pengguna.
         Route::get('/verifikasi/capil', [VerifikasiController::class, 'index'])->defaults('stage', 'capil')->name('capil.index');
+        Route::get('/verifikasi/capil/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'capil')->name('capil.export');
         Route::get('/verifikasi/capil/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'capil')->name('capil.lihat');
         Route::put('/verifikasi/capil/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'capil')->name('capil.verifikasi');
         Route::get('/verifikasi/kampus', [VerifikasiController::class, 'index'])->defaults('stage', 'kampus')->name('kampusverif.index');
+        Route::get('/verifikasi/kampus/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'kampus')->name('kampusverif.export');
         Route::get('/verifikasi/kampus/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kampus')->name('kampusverif.lihat');
         Route::put('/verifikasi/kampus/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kampus')->name('kampusverif.verifikasi');
         Route::get('/verifikasi/kesra', [VerifikasiController::class, 'index'])->defaults('stage', 'kesra')->name('kesra.index');
+        Route::get('/verifikasi/kesra/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'kesra')->name('kesra.export');
         Route::get('/verifikasi/kesra/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kesra')->name('kesra.lihat');
         Route::put('/verifikasi/kesra/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kesra')->name('kesra.verifikasi');
         Route::put('/verifikasi/kesra/{user}/pendaftaran/{applicant}', [KeputusanPendaftaranController::class, 'update'])->defaults('stage', 'kesra')->name('kesra.pendaftaran.keputusan');

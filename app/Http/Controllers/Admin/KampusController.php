@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Kampus\MassDeleteFakultasRequest;
 use App\Http\Requests\Kampus\MassDeleteKampusRequest;
@@ -23,6 +24,8 @@ use Illuminate\View\View;
 
 class KampusController extends Controller
 {
+    use RespondsToAjax;
+
     // ─── Kampus ────────────────────────────────────────────────────
 
     public function index(): View
@@ -60,13 +63,13 @@ class KampusController extends Controller
         return view('admin.kampus.buat');
     }
 
-    public function store(StoreKampusRequest $request): RedirectResponse
+    public function store(StoreKampusRequest $request): RedirectResponse|JsonResponse
     {
         foreach ($request->validated('nama_kampus') as $nama) {
             Kampus::create(['nama_kampus' => $nama]);
         }
 
-        return redirect()->route('admin.kampus.index')->with('success', 'Kampus berhasil ditambahkan');
+        return $this->ajaxOk($request, 'Kampus berhasil ditambahkan', route('admin.kampus.index'));
     }
 
     public function edit(Kampus $kampus): View
@@ -74,26 +77,25 @@ class KampusController extends Controller
         return view('admin.kampus.ubah', compact('kampus'));
     }
 
-    public function update(UpdateKampusRequest $request, Kampus $kampus): RedirectResponse
+    public function update(UpdateKampusRequest $request, Kampus $kampus): RedirectResponse|JsonResponse
     {
         $kampus->update($request->validated());
 
-        return redirect()->route('admin.kampus.index')->with('success', 'Kampus berhasil diperbarui');
+        return $this->ajaxOk($request, 'Kampus berhasil diperbarui', route('admin.kampus.index'));
     }
 
-    public function destroy(Kampus $kampus): RedirectResponse
+    public function destroy(Request $request, Kampus $kampus): RedirectResponse|JsonResponse
     {
         $kampus->delete();
 
-        return redirect()->route('admin.kampus.index')->with('success', 'Kampus berhasil dihapus');
+        return $this->ajaxOk($request, 'Kampus berhasil dihapus', route('admin.kampus.index'));
     }
 
-    public function massDestroy(MassDeleteKampusRequest $request): RedirectResponse
+    public function massDestroy(MassDeleteKampusRequest $request): RedirectResponse|JsonResponse
     {
         $count = Kampus::whereIn('id', $request->validated('ids'))->delete();
 
-        return redirect()->route('admin.kampus.index')
-            ->with('success', "{$count} kampus berhasil dihapus");
+        return $this->ajaxOk($request, "{$count} kampus berhasil dihapus", route('admin.kampus.index'));
     }
 
     // ─── Fakultas ──────────────────────────────────────────────────
@@ -133,14 +135,13 @@ class KampusController extends Controller
         return view('admin.kampus.fakultas.buat', compact('kampus'));
     }
 
-    public function fakultasStore(StoreFakultasRequest $request, Kampus $kampus): RedirectResponse
+    public function fakultasStore(StoreFakultasRequest $request, Kampus $kampus): RedirectResponse|JsonResponse
     {
         foreach ($request->validated('nama') as $nama) {
             $kampus->fakultas()->create(['nama' => $nama]);
         }
 
-        return redirect()->route('admin.kampus.fakultas.index', $kampus)
-            ->with('success', 'Fakultas berhasil ditambahkan');
+        return $this->ajaxOk($request, 'Fakultas berhasil ditambahkan', route('admin.kampus.fakultas.index', $kampus));
     }
 
     public function fakultasEdit(Kampus $kampus, Fakultas $fakultas): View
@@ -150,34 +151,31 @@ class KampusController extends Controller
         return view('admin.kampus.fakultas.ubah', compact('kampus', 'fakultas'));
     }
 
-    public function fakultasUpdate(UpdateFakultasRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse
+    public function fakultasUpdate(UpdateFakultasRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse|JsonResponse
     {
         abort_unless($fakultas->kampus_id === $kampus->id, 404);
 
         $fakultas->update($request->validated());
 
-        return redirect()->route('admin.kampus.fakultas.index', $kampus)
-            ->with('success', 'Fakultas berhasil diperbarui');
+        return $this->ajaxOk($request, 'Fakultas berhasil diperbarui', route('admin.kampus.fakultas.index', $kampus));
     }
 
-    public function fakultasDestroy(Kampus $kampus, Fakultas $fakultas): RedirectResponse
+    public function fakultasDestroy(Request $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse|JsonResponse
     {
         abort_unless($fakultas->kampus_id === $kampus->id, 404);
 
         $fakultas->delete();
 
-        return redirect()->route('admin.kampus.fakultas.index', $kampus)
-            ->with('success', 'Fakultas berhasil dihapus');
+        return $this->ajaxOk($request, 'Fakultas berhasil dihapus', route('admin.kampus.fakultas.index', $kampus));
     }
 
-    public function fakultasMassDestroy(MassDeleteFakultasRequest $request, Kampus $kampus): RedirectResponse
+    public function fakultasMassDestroy(MassDeleteFakultasRequest $request, Kampus $kampus): RedirectResponse|JsonResponse
     {
         $count = Fakultas::where('kampus_id', $kampus->id)
             ->whereIn('id', $request->validated('ids'))
             ->delete();
 
-        return redirect()->route('admin.kampus.fakultas.index', $kampus)
-            ->with('success', "{$count} fakultas berhasil dihapus");
+        return $this->ajaxOk($request, "{$count} fakultas berhasil dihapus", route('admin.kampus.fakultas.index', $kampus));
     }
 
     // ─── Prodi ─────────────────────────────────────────────────────
@@ -222,7 +220,7 @@ class KampusController extends Controller
         return view('admin.kampus.prodi.buat', compact('kampus', 'fakultas'));
     }
 
-    public function prodiStore(StoreProdiRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse
+    public function prodiStore(StoreProdiRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse|JsonResponse
     {
         abort_unless($fakultas->kampus_id === $kampus->id, 404);
 
@@ -230,8 +228,7 @@ class KampusController extends Controller
             $fakultas->prodi()->create(['nama' => $nama]);
         }
 
-        return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
-            ->with('success', 'Program studi berhasil ditambahkan');
+        return $this->ajaxOk($request, 'Program studi berhasil ditambahkan', route('admin.kampus.prodi.index', [$kampus, $fakultas]));
     }
 
     public function prodiEdit(Kampus $kampus, Fakultas $fakultas, Prodi $prodi): View
@@ -241,27 +238,25 @@ class KampusController extends Controller
         return view('admin.kampus.prodi.ubah', compact('kampus', 'fakultas', 'prodi'));
     }
 
-    public function prodiUpdate(UpdateProdiRequest $request, Kampus $kampus, Fakultas $fakultas, Prodi $prodi): RedirectResponse
+    public function prodiUpdate(UpdateProdiRequest $request, Kampus $kampus, Fakultas $fakultas, Prodi $prodi): RedirectResponse|JsonResponse
     {
         abort_unless($fakultas->kampus_id === $kampus->id && $prodi->fakultas_id === $fakultas->id, 404);
 
         $prodi->update($request->validated());
 
-        return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
-            ->with('success', 'Program studi berhasil diperbarui');
+        return $this->ajaxOk($request, 'Program studi berhasil diperbarui', route('admin.kampus.prodi.index', [$kampus, $fakultas]));
     }
 
-    public function prodiDestroy(Kampus $kampus, Fakultas $fakultas, Prodi $prodi): RedirectResponse
+    public function prodiDestroy(Request $request, Kampus $kampus, Fakultas $fakultas, Prodi $prodi): RedirectResponse|JsonResponse
     {
         abort_unless($fakultas->kampus_id === $kampus->id && $prodi->fakultas_id === $fakultas->id, 404);
 
         $prodi->delete();
 
-        return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
-            ->with('success', 'Program studi berhasil dihapus');
+        return $this->ajaxOk($request, 'Program studi berhasil dihapus', route('admin.kampus.prodi.index', [$kampus, $fakultas]));
     }
 
-    public function prodiMassDestroy(MassDeleteProdiRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse
+    public function prodiMassDestroy(MassDeleteProdiRequest $request, Kampus $kampus, Fakultas $fakultas): RedirectResponse|JsonResponse
     {
         abort_unless($fakultas->kampus_id === $kampus->id, 404);
 
@@ -269,7 +264,6 @@ class KampusController extends Controller
             ->whereIn('id', $request->validated('ids'))
             ->delete();
 
-        return redirect()->route('admin.kampus.prodi.index', [$kampus, $fakultas])
-            ->with('success', "{$count} program studi berhasil dihapus");
+        return $this->ajaxOk($request, "{$count} program studi berhasil dihapus", route('admin.kampus.prodi.index', [$kampus, $fakultas]));
     }
 }

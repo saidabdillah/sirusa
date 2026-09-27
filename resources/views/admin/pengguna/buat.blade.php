@@ -18,14 +18,15 @@
             <div class="card-header">
               <h4>Form Tambah Pengguna</h4>
             </div>
-            <form action="{{ route('admin.pengguna.simpan') }}" method="POST">
+            <form action="{{ route('admin.pengguna.simpan') }}" method="POST" id="formPengguna" data-ajax-form>
               @csrf
               <div class="card-body">
                 <div class="form-group">
                   <label for="peran">Peran <span class="text-danger">*</span></label>
                   <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
+                    <option value="">&mdash; Pilih &mdash;</option>
                     @foreach ($peranOptions as $peranValue => $peranLabel)
-                      <option value="{{ $peranValue }}" {{ old('peran', 'user') === $peranValue ? 'selected' : '' }}>{{ $peranLabel }}</option>
+                      <option value="{{ $peranValue }}" {{ old('peran') === $peranValue ? 'selected' : '' }}>{{ $peranLabel }}</option>
                     @endforeach
                   </select>
                   @error('peran')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -75,7 +76,7 @@
                 <div class="form-group d-none mt-3" id="akunKampus">
                   <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
                   <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
-                    <option value="">-- Pilih Kampus --</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
                     @foreach ($kampusList as $kampusId => $kampusNama)
                       <option value="{{ $kampusId }}" {{ (string) old('kampus_id') === (string) $kampusId ? 'selected' : '' }}>{{ $kampusNama }}</option>
                     @endforeach
@@ -87,7 +88,8 @@
                 <div class="form-group">
                   <label for="status">Status <span class="text-danger">*</span></label>
                   <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
-                    <option value="aktif" {{ old('status', 'aktif') === 'aktif' ? 'selected' : '' }}>Aktif</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
+                    <option value="aktif" {{ old('status') === 'aktif' ? 'selected' : '' }}>Aktif</option>
                     <option value="non-aktif" {{ old('status') === 'non-aktif' ? 'selected' : '' }}>Nonaktif</option>
                   </select>
                   @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror

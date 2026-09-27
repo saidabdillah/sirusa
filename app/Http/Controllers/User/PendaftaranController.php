@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Notifications\NewApplication;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PendaftaranController extends Controller
 {
+    use RespondsToAjax;
+
     public function create(Request $request): RedirectResponse|View
     {
         $user = auth()->user();
@@ -31,18 +35,18 @@ class PendaftaranController extends Controller
         return view('user.pendaftaran.buat', compact('scholarship', 'profile'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $profile = $user->profile;
         $scholarship = Scholarship::findOrFail($request->integer('beasiswa_id'));
 
         if ($error = $this->profilError($user, $profile)) {
-            return redirect()->route('profile')->with('error', $error);
+            return $this->ajaxFail($request, $error, route('profile'));
         }
 
         if ($error = $this->beasiswaError($user, $scholarship, $profile)) {
-            return redirect()->route('user.beasiswa.lihat', $scholarship)->with('error', $error);
+            return $this->ajaxFail($request, $error, route('user.beasiswa.lihat', $scholarship));
         }
 
         $snapshot = [
@@ -75,7 +79,7 @@ class PendaftaranController extends Controller
         User::usersGrantedMenu('admin.pendaftar')
             ->each->notify(new NewApplication($applicant, $profile?->nama_lengkap ?: $user->username));
 
-        return redirect()->route('user.pendaftaran.index')->with('success', 'Pendaftaran berhasil dikirim');
+        return $this->ajaxOk($request, 'Pendaftaran berhasil dikirim', route('user.pendaftaran.index'));
     }
 
     /**
@@ -83,21 +87,27 @@ class PendaftaranController extends Controller
      * pendaftaran yang salah pilih. Statusnya `dibatalkan`, bukan `ditolak` --
      * yang berarti keputusan Kesra, dan justru membuka jalan mendaftar lagi.
      */
-    public function destroy(Applicant $applicant): RedirectResponse
+    public function destroy(Request $request, Applicant $applicant): RedirectResponse|JsonResponse
     {
         if ($applicant->user_id !== auth()->id()) {
             abort(403);
         }
 
         if (! $applicant->canBeCancelled()) {
-            return redirect()->route('user.pendaftaran.index')
-                ->with('error', 'Pendaftaran ini sudah diputuskan sehingga tidak bisa dibatalkan.');
+            return $this->ajaxFail(
+                $request,
+                'Pendaftaran ini sudah diputuskan sehingga tidak bisa dibatalkan.',
+                route('user.pendaftaran.index')
+            );
         }
 
         $applicant->update(['status' => 'dibatalkan']);
 
-        return redirect()->route('user.pendaftaran.index')
-            ->with('success', 'Pendaftaran dibatalkan. Anda bisa mendaftar beasiswa lain.');
+        return $this->ajaxOk(
+            $request,
+            'Pendaftaran dibatalkan. Anda bisa mendaftar beasiswa lain.',
+            route('user.pendaftaran.index')
+        );
     }
 
     public function index(): View
@@ -132,8 +142,11 @@ class PendaftaranController extends Controller
             return 'Profil belum lengkap. Silakan lengkapi profil terlebih dahulu.';
         }
 
-        if (! $profile?->isVerified()) {
-            return 'Profil belum terverifikasi. Silakan tunggu verifikasi dari pihak kami terlebih dahulu.';
+        // Cukup disetujui Capil. Menunggu tahap kampus dan kesra membuat
+        // pendaftaran mustahil, karena kedua tahap itu baru dikerjakan setelah
+        // ada pendaftarannya.
+        if (! $profile?->isCapilVerified()) {
+            return 'Data dasar Anda belum disetujui Capil. Silakan tunggu hasil verifikasi Capil terlebih dahulu.';
         }
 
         return null;

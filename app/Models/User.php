@@ -189,6 +189,20 @@ class User extends Authenticatable
         return $this->hasRole('user');
     }
 
+    /**
+     * Credential yang boleh dipakai untuk masuk, sesuai aturan SIRUSA.
+     *
+     * Mahasiswa punya NIK *dan* username, jadi bebas memakai salah satu. Akun
+     * staf (super_admin/kesra/kampus/capil) tidak punya baris profil, jadi
+     * NIK-nya kosong -- menampilkan "login dengan NIK" untuk mereka hanya
+     * membingungkan. Resolver backend sudah benar (NIK dari `profil_pengguna`
+     * -> `users.username` -> `users.email`); ini cuma teks untuk ditampilkan.
+     */
+    public function loginCredentialLabel(): string
+    {
+        return $this->isMahasiswa() ? 'NIK atau username' : 'username';
+    }
+
     public function isProfileComplete(): bool
     {
         $profile = $this->profile;

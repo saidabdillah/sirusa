@@ -87,26 +87,24 @@
           @endif
         </div>
 
-        @if($profile)
+        {{-- Kartu ringkasan status verifikasi dihapus sesuai permintaan:
+             status per tahap tidak lagi ditampilkan di halaman pengguna.
+             Data statusnya tetap ada di database dan dipakai untuk penyaringan
+             antrean, audit, dan alur kerja verifikator. --}}
+        @if($profile && ($profile->catatan_capil || $profile->catatan_kampus || $profile->catatan_kesra))
         <div class="card">
           <div class="card-header">
-            <h4>Status Verifikasi</h4>
+            <h4>Catatan Verifikator</h4>
           </div>
           <div class="card-body">
             @foreach($profile->verifStageLabels() as $s => $label)
-            @php
-              $verifStatus = $profile->{'verif_'.$s};
-              $badge = match ($verifStatus) { 'setuju' => 'success', 'revisi' => 'danger', 'tolak' => 'danger', default => 'warning' };
-              $text = match ($verifStatus) { 'setuju' => 'Disetujui', 'revisi' => 'Perlu Perbaikan', 'tolak' => 'Ditolak', default => 'Menunggu' };
-            @endphp
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>{{ $label }}</span>
-              <span class="badge badge-{{ $badge }}">{{ $text }}</span>
+            @if($profile->{'catatan_'.$s})
+            <div class="mb-2">
+              <strong>{{ $label }}</strong>
+              <div class="text-muted">{{ $profile->{'catatan_'.$s} }}</div>
             </div>
-            @endforeach
-            @if($profile->verifStatus() === 'terverifikasi')
-            <div class="alert alert-success mb-0 mt-2"><i class="fas fa-check-circle"></i> Profil telah terverifikasi lengkap.</div>
             @endif
+            @endforeach
           </div>
         </div>
         @endif

@@ -97,24 +97,46 @@ test('scholarship index action buttons have spacing', function () {
         ->assertDontSee('d-flex gap-1', false);
 });
 
-test('password batas waktu validation fails for past dates', function () {
+test('tanggal mulai boleh sudah lewat, tapi urutan tanggal tetap dijaga', function () {
     $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
     $this->actingAs($this->admin);
 
+    // Tanggal mulai yang sudah lewat tetap diterima: beasiswa bisa dibuat atau
+    // diperbaiki di tengah masa pendaftarannya, bahkan setelahnya.
     post(route('admin.beasiswa.simpan'), [
-        'nama' => 'Beasiswa Gagal',
+        'nama' => 'Beasiswa Lampau',
         'kampus_id' => $kampus->id,
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
-        'tanggal_mulai' => now()->subDay()->format('Y-m-d'),
-        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_mulai' => now()->subMonth()->format('Y-m-d'),
+        'tanggal_selesai' => now()->subWeek()->format('Y-m-d'),
         'ipk_minimal' => 3,
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
         'status' => 'aktif',
-        'prodi_ids' => [],
-    ])->assertSessionHasErrors('tanggal_mulai');
+        'prodi_ids' => [$prodi->id],
+    ])->assertSessionDoesntHaveErrors()
+        ->assertRedirect(route('admin.beasiswa.index'));
+
+    $this->assertDatabaseHas('beasiswa', ['nama' => 'Beasiswa Lampau']);
+
+    // Yang tetap ditolak adalah tanggal selesai sebelum tanggal mulai.
+    post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Terbalik',
+        'kampus_id' => $kampus->id,
+        'kuota' => 5,
+        'tingkat_gelar' => 'S1',
+        'tanggal_mulai' => now()->addMonth()->format('Y-m-d'),
+        'tanggal_selesai' => now()->subDay()->format('Y-m-d'),
+        'ipk_minimal' => 3,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [$prodi->id],
+    ])->assertSessionHasErrors('tanggal_selesai');
 });
 
 test('scholarship store rejects zero kuota and zero ipk', function () {

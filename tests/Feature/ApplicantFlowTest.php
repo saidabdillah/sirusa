@@ -212,16 +212,48 @@ test('application rejected when profile incomplete', function () {
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
 
-test('application rejected when profile not yet verified', function () {
+test('application rejected while capil has not approved the profile yet', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
     $scholarship = createEligibleScholarship($this->kampus->id);
+
+    // Hanya persetujuan Capil yang dibutuhkan untuk mendaftar. Menunggu tahap
+    // kampus dan kesra membuat pendaftaran mustahil, karena kedua tahap itu
+    // baru dikerjakan setelah ada pendaftarannya.
+    expect($this->user->profile->isCapilVerified())->toBeFalse()
+        ->and($this->user->profile->isVerified())->toBeFalse();
 
     actingAs($this->user)
         ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
         ->assertRedirect(route('profile'))
-        ->assertSessionHas('error', 'Profil belum terverifikasi. Silakan tunggu verifikasi dari pihak kami terlebih dahulu.');
+        ->assertSessionHas('error', 'Data dasar Anda belum disetujui Capil. Silakan tunggu hasil verifikasi Capil terlebih dahulu.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
+});
+
+test('application accepted once capil approves the profile, without waiting for later stages', function () {
+    createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
+    $this->user->profile->update(['verif_capil' => 'setuju']);
+    $scholarship = createEligibleScholarship($this->kampus->id);
+
+    $profile = $this->user->profile;
+
+    expect($profile->isCapilVerified())->toBeTrue()
+        // Belum terverifikasi penuh, tapi itu tidak menghalangi pendaftaran.
+        ->and($profile->isVerified())->toBeFalse()
+        ->and($profile->verif_kampus)->toBe('menunggu');
+
+    actingAs($this->user)
+        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
+        ->assertRedirect(route('user.pendaftaran.index'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('pendaftar', [
+        'user_id' => $this->user->id,
+        'beasiswa_id' => $scholarship->id,
+    ]);
+
+    // Pendaftaran itulah yang membuat tahap kampus jadi bisa dikerjakan.
+    expect($profile->canVerifStage('kampus'))->toBeTrue();
 });
 
 test('application rejected when wali data incomplete and kk ikut wali', function () {

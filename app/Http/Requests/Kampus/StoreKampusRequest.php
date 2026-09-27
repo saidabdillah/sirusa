@@ -2,15 +2,34 @@
 
 namespace App\Http\Requests\Kampus;
 
+use App\Http\Requests\Concerns\TrimsNameInput;
 use App\Models\Kampus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class StoreKampusRequest extends FormRequest
 {
+    use TrimsNameInput;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Pangkas spasi di ujung sebelum validasi.
+     *
+     * Tanpa ini dua celah lolos: `required` hanya menolak string kosong, jadi
+     * `"   "` tetap dianggap terisi dan bisa membuat kampus bernama spasi; dan
+     * pengecekan `Kampus::where('nama_kampus', $nama)` di `after()` memakai
+     * nilai yang belum dipangkas, jadi `"  Teknik  "` tidak dianggap bentrok
+     * dengan `"Teknik"` yang sudah ada.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'nama_kampus' => $this->trimSederhana($this->input('nama_kampus')),
+        ]);
     }
 
     public function rules(): array

@@ -14,7 +14,7 @@
 <div class="modal fade" id="modal-ubah-menu-{{ $menu->id }}" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
-      <form action="{{ route('admin.menuKelola.perbarui', $menu) }}" method="POST">
+      <form action="{{ route('admin.menukelola.perbarui', $menu) }}" method="POST" data-ajax-form>
         @csrf
         @method('PUT')
         <input type="hidden" name="modal_target" value="{{ $modalTarget }}">

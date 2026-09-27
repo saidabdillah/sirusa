@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\KeputusanPendaftaranRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Notifications\ApplicationDecision;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class KeputusanPendaftaranController extends Controller
 {
+    use RespondsToAjax;
+
     /**
      * Keputusan ini diambil per pendaftaran, bukan per profil.
      *
@@ -23,7 +27,7 @@ class KeputusanPendaftaranController extends Controller
      * penerimaan dari `verif_kesra` akan otomatis menerima pendaftar kedua
      * setelah yang pertama ditolak — tanpa pernah ditinjau Kesra.
      */
-    public function update(KeputusanPendaftaranRequest $request, User $user, Applicant $applicant): RedirectResponse
+    public function update(KeputusanPendaftaranRequest $request, User $user, Applicant $applicant): RedirectResponse|JsonResponse
     {
         abort_unless(auth()->user()->hasMenuAccess('admin.kesra.index'), 403);
 
@@ -74,8 +78,11 @@ class KeputusanPendaftaranController extends Controller
 
         $applicant->user->notify(new ApplicationDecision($applicant, $attributes['status'], $attributes['catatan']));
 
-        return redirect()->route('admin.kesra.lihat', $user)
-            ->with('success', "Pendaftaran Beasiswa {$applicant->beasiswa?->nama} berhasil di{$this->successVerb($attributes['status'])}.");
+        return $this->ajaxOk(
+            $request,
+            "Pendaftaran Beasiswa {$applicant->beasiswa?->nama} berhasil di{$this->successVerb($attributes['status'])}.",
+            route('admin.kesra.lihat', $user)
+        );
     }
 
     /**

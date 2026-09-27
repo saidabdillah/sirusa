@@ -15,6 +15,7 @@ function completeProfilePayload($prodi): array
 {
     return array_merge([
         'nama_lengkap' => 'Budi',
+        'email' => 'user@test.com',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
         'nim' => '2010123456',
@@ -99,6 +100,7 @@ test('user can update profile with campus data and parent nik', function () {
 
     $payload = array_merge([
         'nama_lengkap' => 'Ahmad Fauzi',
+        'email' => 'user@test.com',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
         'nim' => '2010998877',
@@ -129,6 +131,13 @@ test('user can update profile with campus data and parent nik', function () {
         ->put(route('profile.update'), $payload)
         ->assertRedirect(route('profile'))
         ->assertSessionHas('success');
+
+    // Email disimpan di tabel `users`, bukan di `profil_pengguna`, supaya tidak
+    // ada kolom email ganda.
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+        'email' => 'user@test.com',
+    ]);
 
     $this->assertDatabaseHas('profil_pengguna', [
         'user_id' => $user->id,
@@ -217,6 +226,7 @@ test('profil update requires campus data ipk and semester', function () {
     actingAs($user)
         ->put(route('profile.update'), [
             'nama_lengkap' => 'Budi',
+            'email' => 'user@test.com',
             'kecamatan' => 'Awayan',
             'desa_kelurahan' => 'Ambakiang',
         ])
@@ -404,9 +414,13 @@ test('profil keeps RT/RW abbreviated in the address label', function () {
 test('profil spells out the ikut kk helper text and fixes its wording', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
-    actingAs($user)
-        ->get(route('profile'))
-        ->assertOk()
-        ->assertSee('Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data orang tua/wali yang dipilih wajib diisi.')
-        ->assertDontSee('yang diikuti');
+    $html = actingAs($user)->get(route('profile'))->assertOk()->getContent();
+
+    // Teks helper di Blade ditulis beberapa baris, jadi whitespace hasil
+    // format sumber diratakan dulu sebelum dicari.
+    $htmlRata = preg_replace('/\s+/', ' ', $html);
+
+    expect($htmlRata)
+        ->toContain('Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data orang tua/wali yang dipilih wajib diisi.')
+        ->not->toContain('yang diikuti');
 });

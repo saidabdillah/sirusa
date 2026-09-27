@@ -38,7 +38,7 @@
             <a href="{{ route('admin.kampus.buat') }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Kampus
             </a>
-            <form action="{{ route('admin.kampus.massDestroy') }}" method="POST" id="form-mass-delete">
+            <form action="{{ route('admin.kampus.massDestroy') }}" method="POST" id="form-mass-delete" data-ajax-form>
               @csrf
               @method('DELETE')
               <button type="button" class="btn btn-danger" id="btn-mass-delete" disabled>

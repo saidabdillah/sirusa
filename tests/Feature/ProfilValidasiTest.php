@@ -18,6 +18,7 @@ function payloadProfilLengkap(int $prodiId, array $ubah = []): array
 
     return array_merge([
         'nama_lengkap' => 'Budi Santoso',
+        'email' => 'budi.santoso@example.test',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
         'nim' => '2010123456',
@@ -114,7 +115,7 @@ test('setiap field bertanda bintang di form profil wajib diisi', function (strin
     )->toBeFalse();
 })->with([
     // Data Diri
-    'nama_lengkap', 'nik', 'no_kk', 'telepon', 'desil', 'tempat_lahir', 'tanggal_lahir',
+    'nama_lengkap', 'email', 'nik', 'no_kk', 'telepon', 'desil', 'tempat_lahir', 'tanggal_lahir',
     'jenis_kelamin', 'agama', 'kecamatan', 'desa_kelurahan', 'alamat',
     // Data Kampus
     'nama_kampus', 'fakultas', 'prodi_id', 'ipk', 'semester', 'ukt',
@@ -304,16 +305,16 @@ test('setiap field bermasalah menampilkan border merah dan pesan di bawah input'
 test('upload berkas wali tetap terlihat setelah validasi gagal', function () {
     $this->withSession(['_old_input' => ['ikut_kk' => 'wali']]);
 
-    $html = actingAs($this->user)->get(route('profile'))->getContent();
+    $html = preg_replace('/\s+/', ' ', actingAs($this->user)->get(route('profile'))->getContent());
 
-    expect($html)->toMatch('/class="form-group wali-doc" style=""/')
-        ->and($html)->not->toMatch('/class="form-group wali-doc" style="display:none;"/');
+    expect($html)->toContain('class="form-group wali-doc" style=""')
+        ->and($html)->not->toContain('class="form-group wali-doc" style="display:none;"');
 
     $this->flushSession();
 
     $this->withSession(['_old_input' => ['ikut_kk' => 'ayah']]);
 
-    $html = actingAs($this->user)->get(route('profile'))->getContent();
+    $html = preg_replace('/\s+/', ' ', actingAs($this->user)->get(route('profile'))->getContent());
 
-    expect($html)->toMatch('/class="form-group wali-doc" style="display:none;"/');
+    expect($html)->toContain('class="form-group wali-doc" style="display:none;"');
 });

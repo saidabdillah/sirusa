@@ -74,7 +74,7 @@
                       data-toggle="modal" data-target="#modal-ubah-role-{{ $role->id }}">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <form action="{{ route('admin.role.hapus', $role) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
+                    <form action="{{ route('admin.role.hapus', $role) }}" method="POST" data-ajax-form class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                       @csrf
                       @method('DELETE')
                       <button type="button" class="btn btn-danger btn-sm btn-delete" title="Hapus"
@@ -105,7 +105,7 @@
   <div class="modal fade" id="modal-tambah-role" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
-        <form action="{{ route('admin.role.simpan') }}" method="POST">
+        <form action="{{ route('admin.role.simpan') }}" method="POST" id="formRole" data-ajax-form>
           @csrf
           <input type="hidden" name="modal_target" value="{{ $modalTarget }}">
           <div class="modal-header">
@@ -146,16 +146,7 @@
       $('#' + openModal).modal('show');
     }
 
-    (function() {
-      const btnDelete = document.querySelectorAll('.btn-delete');
-      btnDelete.forEach(function(button) {
-        button.addEventListener('click', function() {
-          const form = button.closest('.btn-delete-form');
-          const text = button.getAttribute('data-confirm-text');
-          form.submit();
-        });
-      });
-    })();
+    // Konfirmasi `.btn-delete` ditangani global di `custom.js`.
   });
 </script>
 @endpush

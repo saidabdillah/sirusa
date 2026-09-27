@@ -5,6 +5,22 @@
   $stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
   $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
   $decision = $profile->verifStageDecision($stage);
+
+  // Nilai yang harus tampil di dropdown keputusan. `menunggu` tidak punya opsi
+  // sendiri -- menarik keputusan ke daftar tunggu memang tidak disediakan --
+  // jadi status itu diperlakukan sama dengan "belum ada keputusan": dropdown
+  // kembali ke "— Pilih —" supaya admin tidak ikut menyetujui apa pun tanpa
+  // sengaja memilih.
+  $statusTerpilih = old('status', $decision['status']);
+
+  if ($statusTerpilih === 'menunggu') {
+      $statusTerpilih = '';
+  }
+  $verifNotes = array_filter([
+    'Capil' => $profile->catatan_capil,
+    'Kampus' => $profile->catatan_kampus,
+    'Kesra' => $profile->catatan_kesra,
+  ]);
   $applications = $stage === 'kesra' ? $user->applicants()->with('beasiswa')->latest()->get() : collect();
 @endphp
 
@@ -28,34 +44,22 @@
       <div class="col-lg-4 sticky-sidebar">
         <div class="card">
           <div class="card-header">
-            <h4>Status Verifikasi</h4>
-          </div>
-          <div class="card-body">
-            @foreach($profile->verifStageLabels() as $s => $label)
-            @php
-              $status = $profile->{'verif_'.$s};
-              $badge = match ($status) { 'setuju' => 'success', 'revisi' => 'danger', 'tolak' => 'danger', default => 'warning' };
-              $text = match ($status) { 'setuju' => 'Disetujui', 'revisi' => 'Perlu Perbaikan', 'tolak' => 'Ditolak', default => 'Menunggu' };
-            @endphp
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>{{ $label }}</span>
-              <span class="badge badge-{{ $badge }}">{{ $text }}</span>
-            </div>
-            @if($profile->{'catatan_'.$s})
-            <small class="text-muted d-block mb-2"><strong>Catatan {{ $stageLabels[$s] }}:</strong> {{ $profile->{'catatan_'.$s} }}</small>
-            @endif
-            @endforeach
-            @if($profile->verifStatus() === 'terverifikasi')
-            <div class="alert alert-success mb-0 mt-2"><i class="fas fa-check-circle"></i> Profil telah terverifikasi lengkap.</div>
-            @endif
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
             <h4>Verifikasi {{ $stageLabel }}</h4>
           </div>
           <div class="card-body">
+            {{-- Ringkasan status per tahap dihapus dari halaman ini, sesuai
+                 permintaan. Jejak audit tetap ada: catatan tiap verifikator
+                 ditampilkan di bawah sebagai read-only, dan statusnya tetap
+                 tersimpan di database untuk penyaringan antrean serta audit. --}}
+            @if($verifNotes)
+            <div class="border rounded p-3 mb-3">
+              <div class="text-muted mb-2"><strong>Catatan verifikator</strong></div>
+              @foreach($verifNotes as $noteLabel => $noteText)
+              <div class="mb-1"><strong>{{ $noteLabel }}:</strong> {{ $noteText }}</div>
+              @endforeach
+            </div>
+            @endif
+
             @if($decision['decided'])
             <div class="alert alert-info">
               <i class="fas fa-info-circle mr-1"></i>
@@ -63,19 +67,16 @@
               mengubahnya menjadi Persetujuan, Perbaikan, Penolakan, atau menariknya kembali.
             </div>
             @endif
-            <form action="{{ route($routePrefix.'.verifikasi', $user) }}" method="POST">
+            <form action="{{ route($routePrefix.'.verifikasi', $user) }}" method="POST" id="formVerifikasi" data-ajax-form>
               @csrf
               @method('PUT')
               <div class="form-group">
                 <label for="status">Keputusan <span class="text-danger">*</span></label>
                 <select class="form-control @error('status') is-invalid @enderror" name="status" id="status">
-                  <option value="" {{ ! old('status') ? 'selected' : '' }}>-- pilih --</option>
-                  <option value="setuju" {{ old('status', $decision['status']) === 'setuju' ? 'selected' : '' }}>Setujui</option>
-                  <option value="revisi" {{ old('status', $decision['status']) === 'revisi' ? 'selected' : '' }}>Minta Perbaikan</option>
-                  <option value="tolak" {{ old('status', $decision['status']) === 'tolak' ? 'selected' : '' }}>Tolak</option>
-                  @if($decision['decided'])
-                  <option value="menunggu" {{ old('status', $decision['status']) === 'menunggu' ? 'selected' : '' }}>Tarik Kembali (kembalikan ke Menunggu)</option>
-                  @endif
+                  <option value="" {{ $statusTerpilih === '' ? 'selected' : '' }}>&mdash; Pilih &mdash;</option>
+                  <option value="setuju" {{ $statusTerpilih === 'setuju' ? 'selected' : '' }}>Setujui</option>
+                  <option value="revisi" {{ $statusTerpilih === 'revisi' ? 'selected' : '' }}>Minta Perbaikan</option>
+                  <option value="tolak" {{ $statusTerpilih === 'tolak' ? 'selected' : '' }}>Tolak</option>
                 </select>
                 @error('status')
                 <div class="invalid-feedback">{{ $message }}</div>
@@ -84,22 +85,34 @@
                   pada tahap-tahap berikutnya ke daftar tunggu.</small>
               </div>
               <div class="form-group">
-                <label for="catatan">Catatan</label>
+                <label for="catatan">
+                  Catatan
+                  {{-- Wajib hanya untuk "Minta Perbaikan". Dit-toggle dari JS saat
+                       keputusan berubah, dan ditegakkan di backend lewat
+                       `required_if:status,revisi` pada `VerifikasiProfilRequest`. --}}
+                  <span class="text-danger d-none" id="catatan-wajib">*</span>
+                </label>
                 <textarea class="form-control @error('catatan') is-invalid @enderror" name="catatan" id="catatan"
                   rows="4" placeholder="Catatan (wajib jika minta perbaikan)">{{ old('catatan', $profile->{'catatan_'.$stage}) }}</textarea>
                 @error('catatan')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>
-              <button type="button" class="btn btn-primary btn-block" id="btn-verifikasi">
+              {{-- `type="button"` karena ada konfirmasi SweetAlert sebelum submit,
+                   jadi handler AJAX di `custom.js` dipicu dari `trigger('submit')`
+                   dan bukan dari tombolnya sendiri. Tanpa `data-loading-button`
+                   tombol ini tidak akan pernah dapat spinner: `submitAjax()`
+                   mencari `button[type="submit"]` dan tidak menemukannya. --}}
+              <button type="button" class="btn btn-primary btn-block" id="btn-verifikasi"
+                      data-loading-button data-loading-text="Menyimpan keputusan...">
                 <i class="fas fa-save"></i> Simpan Keputusan
               </button>
             </form>
           </div>
         </div>
 
-        {{-- Keputusan beasiswa diambil per pendaftaran, bukan dari status profil di
-             atas. Verifikasi Kesra hanya menyatakan identitasnya sudah benar. --}}
+        {{-- Keputusan beasiswa diambil per pendaftaran, bukan dari status profil.
+             Verifikasi Kesra hanya menyatakan identitasnya sudah benar. --}}
         @if($stage === 'kesra')
           <div class="card">
             <div class="card-header">
@@ -151,16 +164,25 @@
                         <i class="fas fa-ban mr-1"></i> Dibatalkan mahasiswa, tidak bisa diputuskan lagi.
                       </div>
                     @else
-                      <form action="{{ route($routePrefix.'.pendaftaran.keputusan', [$user, $applicant]) }}" method="POST">
+                      <form action="{{ route($routePrefix.'.pendaftaran.keputusan', [$user, $applicant]) }}" method="POST" data-ajax-form>
                         @csrf
                         @method('PUT')
                         <div class="form-group mb-2">
+                          @php
+                            // Nilai yang harus disorot. Pendaftaran yang statusnya
+                            // `verifikasi` BELUM punya keputusan, jadi jangan
+                            // otomatis menyorot "Terima" -- kalau tidak, admin
+                            // bisa menekan simpan tanpa memilih apa pun dan
+                            // pendaftaran justru diterima.
+                            $statusPendaftaran = old('pendaftaran_status', $applicant->status);
+                          @endphp
                           <select class="form-control form-control-sm @error('pendaftaran_status') is-invalid @enderror"
                                   name="pendaftaran_status" {{ $profile->verif_kesra !== 'setuju' ? 'disabled' : '' }}>
-                            <option value="diterima" {{ old('pendaftaran_status') === 'diterima' ? 'selected' : '' }}>Terima</option>
-                            <option value="ditolak" {{ old('pendaftaran_status') === 'ditolak' ? 'selected' : '' }}>Tolak</option>
+                            <option value="" {{ $statusPendaftaran === 'verifikasi' ? 'selected' : '' }}>&mdash; Pilih &mdash;</option>
+                            <option value="diterima" {{ $statusPendaftaran === 'diterima' ? 'selected' : '' }}>Terima</option>
+                            <option value="ditolak" {{ $statusPendaftaran === 'ditolak' ? 'selected' : '' }}>Tolak</option>
                             @if($applicant->isDecided())
-                              <option value="verifikasi" {{ old('pendaftaran_status') === 'verifikasi' ? 'selected' : '' }}>Tarik Kembali</option>
+                              <option value="verifikasi" {{ $statusPendaftaran === 'verifikasi' ? 'selected' : '' }}>Tarik Kembali</option>
                             @endif
                           </select>
                           @error('pendaftaran_status')
@@ -196,28 +218,69 @@
 @push('script')
 <script>
   $(document).ready(function () {
+    // Hanya "Setujui" dan "Tolak" yang menutup kesempatan mahasiswa untuk
+    // memperbaiki data, jadi hanya keduanya yang perlu konfirmasi.
+    //
+    // "Minta Perbaikan" dan "— Pilih —" sengaja TIDAK memakai dialog:
+    //   - "— Pilih —" dikirim apa adanya supaya pesan "Status verifikasi harus
+    //     dipilih." muncul inline di bawah select. Dengan dialog, user akan
+    //     diminta mengonfirmasi sesuatu yang tidak ada: menarik keputusan ke
+    //     daftar tunggu, padahal belum ada keputusan untuk ditarik.
+    //   - "Minta Perbaikan" dikirim apa adanya supaya pesan "Catatan wajib
+    //     diisi ketika memilih Minta Perbaikan." muncul inline di bawah
+    //     textarea, bukan lewat dialog konfirmasi yang menggantung.
+    //
+    // Peta (bukan rantai ternary) supaya tidak ada lagi nilai yang "tidak
+    // dikenali" diam-diam jatuh ke teks penarik keputusan.
+    var KONFIRMASI = {
+      setuju: {
+        text: 'Yakin setuju?',
+        tombol: 'Ya, Setujui!',
+        warna: '#47c363'
+      },
+      tolak: {
+        text: 'Yakin ditolak?',
+        tombol: 'Ya, Tolak!',
+        warna: '#e74c3c'
+      }
+    };
+
+    // Catatan wajib hanya untuk "Minta Perbaikan". `required` di sini cuma
+    // penanda semantik + untuk aksesibilitas; penegakan sebenarnya ada di
+    // `VerifikasiProfilRequest` (`required_if:status,revisi`).
+    function toggleCatatanWajib() {
+      var wajib = $('#status').val() === 'revisi';
+
+      $('#catatan').prop('required', wajib);
+      $('#catatan-wajib').toggleClass('d-none', !wajib);
+    }
+
+    toggleCatatanWajib();
+    $('#status').on('change', toggleCatatanWajib);
+
     $('#btn-verifikasi').on('click', function () {
-      var status = $('#status').val();
-      var text = status === 'setuju'
-        ? 'Setujui data profil ini?'
-        : (status === 'revisi'
-          ? 'Minta perbaikan data profil ini?'
-          : (status === 'tolak'
-            ? 'Tolak data profil ini?'
-            : 'Tarik kembali keputusan ini ke daftar tunggu?'));
+      var $form = $(this.form);
+      var dialog = KONFIRMASI[$('#status').val()];
+
+      if (!dialog) {
+        // `trigger('submit')` supaya handler AJAX di `custom.js` ikut jalan;
+        // `submit()` native akan melewatinya dan memuat ulang halaman.
+        $form.trigger('submit');
+        return;
+      }
+
       Swal.fire({
         title: 'Konfirmasi',
-        text: text,
+        text: dialog.text,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: status === 'setuju' || status === 'menunggu' ? '#47c363' : '#e74c3c',
+        confirmButtonColor: dialog.warna,
         cancelButtonColor: '#6c757d',
-        confirmButtonText: status === 'setuju' ? 'Ya, Setujui!' : (status === 'revisi' ? 'Ya, Minta Perbaikan!' : (status === 'tolak' ? 'Ya, Tolak!' : 'Ya, Tarik Kembali!')),
+        confirmButtonText: dialog.tombol,
         cancelButtonText: 'Batal'
-      }).then((result) => {
+      }).then(function (result) {
         if (result.isConfirmed) {
-          showSubmitLoading('Menyimpan...');
-          this.form.submit();
+          $form.trigger('submit');
         }
       });
     });

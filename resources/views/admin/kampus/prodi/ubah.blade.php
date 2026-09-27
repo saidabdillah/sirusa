@@ -20,7 +20,7 @@
             <div class="card-header">
               <h4>Form Ubah Program Studi</h4>
             </div>
-            <form action="{{ route('admin.kampus.prodi.perbarui', [$kampus, $fakultas, $prodi]) }}" method="POST">
+            <form action="{{ route('admin.kampus.prodi.perbarui', [$kampus, $fakultas, $prodi]) }}" method="POST" id="formProdi" data-ajax-form>
               @csrf
               @method('PUT')
               <div class="card-body">

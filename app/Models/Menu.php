@@ -44,9 +44,41 @@ class Menu extends Model
         return $this->hasMany(self::class, 'parent_id')->orderBy('urutan');
     }
 
+    /**
+     * Label grup di sidebar, dalam urutan tampil.
+     *
+     * Dipakai tiga tempat sekaligus: `layouts/partials/sidebar.blade.php`
+     * (urutan + teks `menu-header`), `StoreMenuRequest`/`UpdateMenuRequest`
+     * (`Rule::in`), dan `MenuSeeder`. Karena bukan foreign key, mengganti
+     * string di sini TIDAK memperbaiki baris `menus.section` yang sudah ada --
+     * `MenuSeeder` yang memindahkannya (idempoten lewat
+     * `updateOrCreate(['section', 'label', 'parent_id'])` + `buangMenuLama()`).
+     *
+     * PENTING: sidebar hanya mengiterasi daftar ini. Menu dengan `section`
+     * yang tidak terdaftar di sini TIDAK AKAN muncul sama sekali, bukan hanya
+     * salah tempat -- jadi setiap section baru wajib ditambah ke daftar ini,
+     * bukan cuma dipakai di seeder.
+     *
+     * Urutan mengikuti alur kerja: operasional harian (Administrasi) ->
+     * antrean verifikasi -> alat sistem (Administrator) -> menu mahasiswa.
+     * `Administrasi` sengaja masih memuat "Master Data": data master
+     * kampus adalah back-office, sama seperti Beasiswa dan Pendaftar.
+     * `Pengaturan` dan `Manajemen` belum dipakai `MenuSeeder`; keduanya tetap
+     * disimpan karena bisa dipilih saat menambah menu baru.
+     *
+     * @return list<string>
+     */
     public static function sections(): array
     {
-        return ['Menu Utama', 'Menu Admin', 'Menu Pengguna', 'Pengaturan', 'Manajemen'];
+        return [
+            'Menu Utama',
+            'Administrasi',
+            'Verifikasi',
+            'Administrator',
+            'Layanan Mahasiswa',
+            'Pengaturan',
+            'Manajemen',
+        ];
     }
 
     public function roles(): BelongsToMany

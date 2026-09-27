@@ -28,7 +28,7 @@
 
     <div class="row">
       <div class="col-lg-8">
-        <form action="{{ route('admin.beasiswa.simpan') }}" method="POST">
+        <form action="{{ route('admin.beasiswa.simpan') }}" method="POST" id="formBeasiswa" data-ajax-form>
           @csrf
 
           {{-- Section: Informasi Utama --}}
@@ -48,7 +48,7 @@
                 <div class="form-group col-md-8">
                   <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
                   <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
-                    <option value="">Pilih Kampus</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
                     @foreach($kampusList as $kampus)
                     <option value="{{ $kampus->id }}" {{ old('kampus_id')==$kampus->id ? 'selected' : '' }}>{{
                       $kampus->nama_kampus }}</option>
@@ -66,7 +66,7 @@
                   <label for="tingkat_gelar">Tingkat Gelar <span class="text-danger">*</span></label>
                   <select class="form-control @error('tingkat_gelar') is-invalid @enderror" id="tingkat_gelar"
                     name="tingkat_gelar">
-                    <option value="">Pilih Gelar</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
                     <option value="S1" {{ old('tingkat_gelar')==='S1' ? 'selected' : '' }}>S1</option>
                     <option value="S2" {{ old('tingkat_gelar')==='S2' ? 'selected' : '' }}>S2</option>
                     <option value="S3" {{ old('tingkat_gelar')==='S3' ? 'selected' : '' }}>S3</option>
@@ -131,8 +131,9 @@
                 <div class="form-group col-md-4">
                   <label for="status">Status <span class="text-danger">*</span></label>
                   <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
-                    <option value="aktif" {{ old('status', 'aktif' )==='aktif' ? 'selected' : '' }}>Aktif</option>
-                    <option value="non-aktif" {{ old('status')==='non-aktif' ? 'selected' : '' }}>Non-aktif</option>
+                    <option value="">&mdash; Pilih &mdash;</option>
+                    <option value="aktif" {{ old('status') === 'aktif' ? 'selected' : '' }}>Aktif</option>
+                    <option value="non-aktif" {{ old('status') === 'non-aktif' ? 'selected' : '' }}>Non-aktif</option>
                   </select>
                   @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -261,10 +262,9 @@
 
     showKampusTree();
 
-    flatpickr('.flatpickr', {
-      dateFormat: 'Y-m-d',
-      disableMobile: true,
-    });
+    // Helper yang sama dipakai `ubah.blade.php`, jadi tampilan dan perilaku
+    // date picker identik di kedua form.
+    initDatePicker('.flatpickr');
   });
 </script>
 @endpush

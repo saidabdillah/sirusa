@@ -14,7 +14,7 @@
 <div class="modal fade" id="modal-tambah-menu" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
-      <form action="{{ route('admin.menuKelola.simpan') }}" method="POST">
+      <form action="{{ route('admin.menukelola.simpan') }}" method="POST" data-ajax-form>
         @csrf
         <input type="hidden" name="modal_target" value="{{ $modalTarget }}">
         <div class="modal-header">
@@ -48,6 +48,13 @@
             <div class="form-group col-md-6">
               <label for="section-tambah">Section <span class="text-danger">*</span></label>
               <select class="form-control {{ $isTarget && $errors->has('section') ? 'is-invalid' : '' }}" id="section-tambah" name="section">
+                {{-- Wajib ada opsi kosong: `$sectionVal` selalu string kosong
+                     saat modal ini dibuka bersih, dan `<select>` tanpa
+                     `<option value="">` akan diam-diam memilih opsi pertama
+                     ("Menu Utama") sehingga user mengira itu pilihannya.
+                     Modal Ubah TIDAK memakai opsi kosong karena section wajib
+                     diisi dan nilainya selalu tersimpan. --}}
+                <option value="">— Pilih —</option>
                 @foreach($sections as $section)
                 <option value="{{ $section }}" {{ $sectionVal === $section ? 'selected' : '' }}>{{ $section }}</option>
                 @endforeach

@@ -4,6 +4,7 @@ use App\Models\Kampus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
@@ -499,4 +500,155 @@ test('kampus role cannot access kampus management but kesra role can', function 
 test('unauthenticated user cannot access kampus management', function () {
     get(route('admin.kampus.index'))->assertRedirect(route('login'));
     get(route('admin.kampus.buat'))->assertRedirect(route('login'));
+});
+
+// ─── Pemangkasan spasi (spesifikasi batch 2, poin 12) ─────────────────────
+//
+// `required` hanya menolak string kosong, jadi `"   "` dulu lolos dan bisa
+// membuat kampus/fakultas/prodi bernama spasi. Pengecekan duplikat di
+// `after()` juga memakai nilai yang belum dipangkas, sehingga
+// `"  Teknik  "` tidak dianggap bentrok dengan `"Teknik"` yang sudah ada.
+
+test('nama kampus yang hanya berisi spasi ditolak', function () {
+    actingAs($this->admin)
+        ->post(route('admin.kampus.simpan'), ['nama_kampus' => ['   ']])
+        ->assertSessionHasErrors('nama_kampus.0');
+
+    expect(Kampus::where('nama_kampus', '   ')->exists())->toBeFalse();
+});
+
+test('nama kampus dipangkas spasi ujungnya sebelum disimpan', function () {
+    actingAs($this->admin)
+        ->post(route('admin.kampus.simpan'), ['nama_kampus' => ['  Universitas Lambung Mangkurat  ']])
+        ->assertSessionHasNoErrors();
+
+    expect(Kampus::where('nama_kampus', 'Universitas Lambung Mangkurat')->exists())->toBeTrue();
+});
+
+test('kampus yang hanya berbeda spasi dianggap duplikat', function () {
+    Kampus::create(['nama_kampus' => 'Teknik Elektro']);
+
+    actingAs($this->admin)
+        ->post(route('admin.kampus.simpan'), ['nama_kampus' => ['  Teknik Elektro  ']])
+        // `after()` menempelkan error duplikat di key induk `nama_kampus`,
+        // bukan `nama_kampus.0`.
+        ->assertSessionHasErrors(['nama_kampus' => 'Kampus "Teknik Elektro" sudah terdaftar.']);
+
+    expect(Kampus::where('nama_kampus', 'Teknik Elektro')->count())->toBe(1);
+});
+
+test('nama fakultas yang hanya berisi spasi ditolak', function () {
+    [$kampus] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->post(route('admin.kampus.fakultas.simpan', $kampus), ['nama' => ['   ']])
+        ->assertSessionHasErrors('nama.0');
+
+    expect($kampus->fakultas()->where('nama', '   ')->exists())->toBeFalse();
+});
+
+test('fakultas yang hanya berbeda spasi dianggap duplikat', function () {
+    [$kampus] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->post(route('admin.kampus.fakultas.simpan', $kampus), ['nama' => ['  Fakultas Teknik  ']])
+        ->assertSessionHasErrors(['nama' => 'Fakultas "Fakultas Teknik" sudah terdaftar pada kampus ini.']);
+
+    expect($kampus->fakultas()->where('nama', 'Fakultas Teknik')->count())->toBe(1);
+});
+
+test('nama prodi yang hanya berisi spasi ditolak', function () {
+    [$kampus, $fakultas] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->post(route('admin.kampus.prodi.simpan', [$kampus, $fakultas]), ['nama' => ['   ']])
+        ->assertSessionHasErrors('nama.0');
+
+    expect($fakultas->prodi()->where('nama', '   ')->exists())->toBeFalse();
+});
+
+test('prodi yang hanya berbeda spasi dianggap duplikat', function () {
+    [$kampus, $fakultas] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->post(route('admin.kampus.prodi.simpan', [$kampus, $fakultas]), ['nama' => ['  Teknik Informatika  ']])
+        ->assertSessionHasErrors(['nama' => 'Program studi "Teknik Informatika" sudah terdaftar pada fakultas ini.']);
+
+    expect($fakultas->prodi()->where('nama', 'Teknik Informatika')->count())->toBe(1);
+});
+
+test('ubah nama kampus dipangkas spasi ujungnya', function () {
+    [$kampus] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->put(route('admin.kampus.perbarui', $kampus), ['nama_kampus' => '  Universitas Islam Negeri Antasari  '])
+        ->assertSessionHasNoErrors();
+
+    expect($kampus->fresh()->nama_kampus)->toBe('Universitas Islam Negeri Antasari');
+});
+
+test('ubah nama fakultas dipangkas spasi ujungnya', function () {
+    [$kampus, $fakultas] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->put(route('admin.kampus.fakultas.perbarui', [$kampus, $fakultas]), ['nama' => '  Fakultas Ekonomi  '])
+        ->assertSessionHasNoErrors();
+
+    expect($fakultas->fresh()->nama)->toBe('Fakultas Ekonomi');
+});
+
+test('ubah nama prodi dipangkas spasi ujungnya', function () {
+    [$kampus, $fakultas, $prodi] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->put(route('admin.kampus.prodi.perbarui', [$kampus, $fakultas, $prodi]), ['nama' => '  Akuntansi  '])
+        ->assertSessionHasNoErrors();
+
+    expect($prodi->fresh()->nama)->toBe('Akuntansi');
+});
+
+test('ubah nama yang hanya berisi spasi ditolak dan tidak menimpa data lama', function () {
+    [$kampus, $fakultas, $prodi] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->put(route('admin.kampus.fakultas.perbarui', [$kampus, $fakultas]), ['nama' => '   '])
+        ->assertSessionHasErrors('nama');
+
+    expect($fakultas->fresh()->nama)->toBe('Fakultas Teknik')
+        ->and($prodi->fresh()->nama)->toBe('Teknik Informatika');
+});
+
+test('halaman tambah dan ubah merender input dengan penanda ajax', function () {
+    [$kampus, $fakultas] = createKampusHierarchy();
+
+    actingAs($this->admin)
+        ->get(route('admin.kampus.buat'))
+        ->assertOk()
+        ->assertSee('name="nama_kampus[]"', false)
+        ->assertSee('data-ajax-form', false);
+
+    actingAs($this->admin)
+        ->get(route('admin.kampus.fakultas.buat', $kampus))
+        ->assertOk()
+        ->assertSee('name="nama[]"', false)
+        ->assertSee('data-ajax-form', false);
+
+    actingAs($this->admin)
+        ->get(route('admin.kampus.prodi.buat', [$kampus, $fakultas]))
+        ->assertOk()
+        ->assertSee('name="nama[]"', false)
+        ->assertSee('data-ajax-form', false);
+});
+
+test('validasi kampus lewat ajax membalas 422 dengan peta error per indeks', function () {
+    actingAs($this->admin)
+        ->post(
+            route('admin.kampus.simpan'),
+            ['nama_kampus' => ['   ', 'Kampus Baru']],
+            ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json']
+        )
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['nama_kampus.0']);
+
+    expect(Kampus::where('nama_kampus', 'Kampus Baru')->exists())->toBeFalse();
 });

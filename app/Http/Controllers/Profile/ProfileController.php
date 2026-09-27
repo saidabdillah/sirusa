@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Profile;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profil\UpdateProfilRequest;
 use App\Models\Kampus;
 use App\Models\UserProfile;
 use App\Services\WilayahService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +16,8 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    use RespondsToAjax;
+
     private const PROVINSI = 'Kalimantan Selatan';
 
     private const KABUPATEN = 'Balangan';
@@ -86,11 +90,17 @@ class ProfileController extends Controller
         ));
     }
 
-    public function update(UpdateProfilRequest $request): RedirectResponse
+    public function update(UpdateProfilRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         $data['provinsi'] = self::PROVINSI;
         $data['kabupaten_kota'] = self::KABUPATEN;
+
+        // Email ada di `users`, bukan di `profil_pengguna`. Ditarik dari payload
+        // supaya tidak ikut tersimpan ke tabel profil (tidak fillable, jadi
+        // `fill()` akan membuangnya diam-diam kalau tidak dilepas di sini).
+        $email = $data['email'] ?? null;
+        unset($data['email']);
 
         $ikutKk = $request->input('ikut_kk', 'ayah');
 
@@ -145,11 +155,21 @@ class ProfileController extends Controller
             $profile->resetVerification();
             $profile->save();
 
-            return redirect()->route('profile')->with('success', 'Profil berhasil diperbarui');
+            if ($email !== null && $email !== auth()->user()->email) {
+                auth()->user()->forceFill(['email' => $email])->save();
+            }
+
+            return $this->ajaxOk($request, 'Profil berhasil diperbarui', route('profile'));
         } catch (\Throwable $e) {
             Log::error('Gagal update profil: '.$e->getMessage());
 
-            return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan profil: '.$e->getMessage());
+            return $this->ajaxFail(
+                $request,
+                'Terjadi kesalahan saat menyimpan profil: '.$e->getMessage(),
+                null,
+                [],
+                500
+            );
         }
     }
 

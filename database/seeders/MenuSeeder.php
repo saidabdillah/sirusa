@@ -7,6 +7,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 
 class MenuSeeder extends Seeder
@@ -28,7 +29,7 @@ class MenuSeeder extends Seeder
             [
                 'label' => 'Beasiswa',
                 'icon' => 'fas fa-award',
-                'section' => 'Menu Admin',
+                'section' => 'Administrasi',
                 'urutan' => 10,
                 'children' => [
                     ['label' => 'Daftar Beasiswa', 'route' => 'admin.beasiswa.index', 'scope' => 'admin.beasiswa'],
@@ -39,37 +40,48 @@ class MenuSeeder extends Seeder
                 'icon' => 'fas fa-users',
                 'route' => 'admin.pendaftar.index',
                 'scope' => 'admin.pendaftar',
-                'section' => 'Menu Admin',
+                'section' => 'Administrasi',
                 'urutan' => 20,
             ],
+            // Tiga menu verifikasi dipindah ke section sendiri dan labelnya
+            // dipangkas: section "Verifikasi" sudah menyebut prosesnya, jadi
+            // mengulanginya di tiap label cuma menambah ruang kosong di sidebar.
+            //
+            // "Kampus" sekarang jadi nama menu DAN nama child "Master Data".
+            // Keduanya tidak bentrok karena `updateOrCreate` dicocokkan dengan
+            // (section, label, parent_id) -- section dan parent-nya berbeda --
+            // tapi teks konfirmasi hapus di "Kelola Menu" jadi ambigu
+            // ("Hapus menu 'Kampus'?" untuk dua menu berbeda). Halaman
+            // "Akses Menu" tidak ambigu karena menampilkan `(section)` di
+            // samping label.
             [
-                'label' => 'Verifikasi Capil',
+                'label' => 'Dukcapil',
                 'icon' => 'fas fa-id-card',
                 'route' => 'admin.capil.index',
                 'scope' => 'admin.capil',
-                'section' => 'Menu Admin',
+                'section' => 'Verifikasi',
                 'urutan' => 25,
             ],
             [
-                'label' => 'Verifikasi Kampus',
+                'label' => 'Kampus',
                 'icon' => 'fas fa-graduation-cap',
                 'route' => 'admin.kampusverif.index',
                 'scope' => 'admin.kampusverif',
-                'section' => 'Menu Admin',
+                'section' => 'Verifikasi',
                 'urutan' => 26,
             ],
             [
-                'label' => 'Verifikasi Kesra',
+                'label' => 'Kesra',
                 'icon' => 'fas fa-clipboard-check',
                 'route' => 'admin.kesra.index',
                 'scope' => 'admin.kesra',
-                'section' => 'Menu Admin',
+                'section' => 'Verifikasi',
                 'urutan' => 27,
             ],
             [
                 'label' => 'Master Data',
                 'icon' => 'fas fa-university',
-                'section' => 'Menu Admin',
+                'section' => 'Administrasi',
                 'urutan' => 30,
                 'children' => [
                     ['label' => 'Kampus', 'route' => 'admin.kampus.index', 'scope' => 'admin.kampus'],
@@ -78,7 +90,7 @@ class MenuSeeder extends Seeder
             [
                 'label' => 'Kelola Akses',
                 'icon' => 'fas fa-user-shield',
-                'section' => 'Menu Admin',
+                'section' => 'Administrator',
                 'urutan' => 50,
                 'children' => [
                     ['label' => 'Role', 'route' => 'admin.role.index', 'scope' => 'admin.role'],
@@ -88,9 +100,9 @@ class MenuSeeder extends Seeder
                 ],
             ],
             [
-                'label' => 'Menu Beasiswa',
+                'label' => 'Beasiswa Saya',
                 'icon' => 'fas fa-award',
-                'section' => 'Menu Pengguna',
+                'section' => 'Layanan Mahasiswa',
                 'urutan' => 10,
                 'children' => [
                     ['label' => 'Daftar Beasiswa', 'route' => 'user.beasiswa.index', 'scope' => 'user.beasiswa'],
@@ -102,16 +114,26 @@ class MenuSeeder extends Seeder
         $keyToId = [];
 
         foreach ($menus as $item) {
-            $parent = Menu::create([
-                'label' => $item['label'],
-                'icon' => $item['icon'] ?? null,
-                'route' => $item['route'] ?? null,
-                'scope' => $item['scope'] ?? null,
-                'section' => $item['section'],
-                'urutan' => $item['urutan'],
-                'aktif' => true,
-                'wajib' => $item['wajib'] ?? false,
-            ]);
+            // Idempoten lewat (section, label, parent_id). `create()` dipakai
+            // sebelumnya, jadi menjalankan seeder dua kali menghasilkan dua
+            // pohon menu -- dan `role_menu` ikut jadi rangkap. `label` saja
+            // tidak cukup sebagai kunci: "Daftar Beasiswa" ada di section
+            // "Administrasi" dan "Layanan Mahasiswa" sekaligus.
+            $parent = Menu::updateOrCreate(
+                [
+                    'section' => $item['section'],
+                    'label' => $item['label'],
+                    'parent_id' => null,
+                ],
+                [
+                    'icon' => $item['icon'] ?? null,
+                    'route' => $item['route'] ?? null,
+                    'scope' => $item['scope'] ?? null,
+                    'urutan' => $item['urutan'],
+                    'aktif' => true,
+                    'wajib' => $item['wajib'] ?? false,
+                ]
+            );
 
             if (isset($item['scope'])) {
                 $keyToId[$item['scope']] = $parent->id;
@@ -119,20 +141,32 @@ class MenuSeeder extends Seeder
             $keyToId[Str::kebab($item['label'])] = $parent->id;
 
             foreach (array_values($item['children'] ?? []) as $index => $child) {
-                $childMenu = $parent->children()->create([
-                    'label' => $child['label'],
-                    'icon' => $child['icon'] ?? null,
-                    'route' => $child['route'],
-                    'scope' => $child['scope'],
-                    'section' => $item['section'],
-                    'urutan' => $index + 1,
-                    'aktif' => true,
-                    'wajib' => false,
-                ]);
+                $childMenu = Menu::updateOrCreate(
+                    [
+                        'section' => $item['section'],
+                        'label' => $child['label'],
+                        'parent_id' => $parent->id,
+                    ],
+                    [
+                        'icon' => $child['icon'] ?? null,
+                        'route' => $child['route'],
+                        'scope' => $child['scope'],
+                        'urutan' => $index + 1,
+                        'aktif' => true,
+                        'wajib' => false,
+                    ]
+                );
 
                 $keyToId[$child['scope']] = $childMenu->id;
             }
         }
+
+        // Pangkas menu yang tidak lagi ada di daftar seed. Tanpa ini, mengganti
+        // nama scope/route (mis. `admin.menuKelola` -> `admin.menukelola`)
+        // meninggalkan baris lama yang `route`-nya sudah tidak terdaftar --
+        // sidebar memanggil `route($menu->route)` dan seluruh aplikasi akan 500
+        // dengan RouteNotFoundException sampai cache view dibersihkan.
+        $this->buangMenuLama(array_values($keyToId));
 
         $grants = [
             'super_admin' => [
@@ -176,23 +210,86 @@ class MenuSeeder extends Seeder
             ],
             'user' => [
                 'dasbor',
-                'menu-beasiswa',
+                'beasiswa-saya',
                 'user.beasiswa',
                 'user.pendaftaran',
             ],
         ];
 
+        $this->pasangGrant($grants, $keyToId);
+    }
+
+    /**
+     * Grant menu ke role.
+     *
+     * Kunci sebuah entri grant adalah `scope` menunya, atau
+     * `Str::kebab($label)` untuk menu tanpa scope (mis. "Master Data" ->
+     * `master-data`).
+     *
+     * Kunci label jauh lebih rapuh daripada `scope`: begitu labelnya diubah,
+     * kuncinya ikut berubah dan grant-nya hilang tanpa keterangan -- gejalanya cuma
+     * "menu tiba-tiba tidak muncul" di sidebar, yang jauh lebih sulit
+     * ditelusuri daripada error saat seeding. Karena itu kunci yang tidak
+     * ketemu sengaja dibiarkan gagal keras, bukan `continue` diam-diam.
+     *
+     * @param  array<string, list<string>>  $grants
+     * @param  array<string, int>  $keyToId
+     */
+    private function pasangGrant(array $grants, array $keyToId): void
+    {
         foreach ($grants as $roleName => $keys) {
             $role = Role::firstOrCreate(['name' => $roleName]);
 
             foreach ($keys as $key) {
-                if (isset($keyToId[$key])) {
-                    DB::table('role_menu')->insert([
-                        'role_id' => $role->id,
-                        'menu_id' => $keyToId[$key],
-                    ]);
+                if (! isset($keyToId[$key])) {
+                    throw new RuntimeException(sprintf(
+                        'MenuSeeder: grant "%s" untuk role "%s" tidak cocok dengan menu mana pun. '
+                        .'Kunci grant = `scope` menu, atau `Str::kebab($label)` untuk menu tanpa scope.',
+                        $key,
+                        $roleName
+                    ));
                 }
+
+                // `insertOrIgnore`, bukan `insert`: seeder harus aman
+                // dijalankan berkali-kali tanpa violate unique key pada
+                // pivot `role_menu` (primary key gabungan role_id+menu_id).
+                DB::table('role_menu')->insertOrIgnore([
+                    'role_id' => $role->id,
+                    'menu_id' => $keyToId[$key],
+                ]);
             }
         }
+    }
+
+    /**
+     * Hapus menu yang id-nya tidak ada di hasil seed, beserta grant-nya.
+     *
+     * Dipanggil SEBELUM grant ditambahkan supaya `role_menu` untuk menu
+     * lama ikut hilang (dipivot `cascade`).
+     *
+     * @param  list<int>  $idYangDipertahankan
+     */
+    private function buangMenuLama(array $idYangDipertahankan): void
+    {
+        $idLama = Menu::query()
+            ->whereNotIn('id', $idYangDipertahankan)
+            ->pluck('id');
+
+        // `menus.parent_id` di-declare `nullOnDelete`, jadi anak yang tidak lagi
+        // ada di daftar seed akan tertinggal sebagai yatim `parent_id = NULL`
+        // dan muncul sebagai menu top-level yang salah. Bersihkan eksplisit.
+        $yatim = Menu::query()
+            ->whereNotNull('parent_id')
+            ->whereNotIn('parent_id', $idYangDipertahankan)
+            ->pluck('id');
+
+        $idHapus = $idLama->merge($yatim)->unique()->values();
+
+        if ($idHapus->isEmpty()) {
+            return;
+        }
+
+        DB::table('role_menu')->whereIn('menu_id', $idHapus)->delete();
+        Menu::query()->whereIn('id', $idHapus)->delete();
     }
 }

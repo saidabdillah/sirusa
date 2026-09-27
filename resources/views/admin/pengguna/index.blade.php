@@ -97,7 +97,7 @@
                           @if($canUseSuperActions)
                           <div class="dropdown-divider"></div>
 
-                          <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" class="m-0">
+                          <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" data-ajax-form class="m-0">
                             @csrf
                             @method('PATCH')
                             @if($user->status === 'aktif')
@@ -121,7 +121,7 @@
                             @endif
                           </form>
 
-                          <form action="{{ route('admin.pengguna.reset-password', $user) }}" method="POST" class="m-0">
+                          <form action="{{ route('admin.pengguna.reset-password', $user) }}" method="POST" data-ajax-form class="m-0">
                             @csrf
                             <button type="button" class="dropdown-item btn-confirm-toggle"
                               data-confirm-title="Reset Password?"
@@ -135,7 +135,7 @@
 
                           <div class="dropdown-divider"></div>
 
-                          <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" class="m-0">
+                          <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" data-ajax-form class="m-0">
                             @csrf
                             @method('DELETE')
                             <button type="button" class="dropdown-item text-danger btn-delete"
@@ -169,6 +169,10 @@
 <script>
   $(document).ready(function() {
     $('#userTable').DataTable({
+      // Tanpa ini tabel diam-diam menampilkan data lama selama pemuatan,
+      // lalu berubah mendadak -- tidak ada tanda sedang bekerja. Teks
+      // loading-nya disetel sekali di `custom.js`, bukan di sini.
+      processing: true,
       language: {
         search: "Cari:",
         lengthMenu: "Tampilkan _MENU_ data",
@@ -185,45 +189,10 @@
       }
     });
 
-    const btnConfirmToggle = document.querySelectorAll('.btn-confirm-toggle');
-    btnConfirmToggle.forEach(function(button) {
-      button.addEventListener('click', function() {
-        Swal.fire({
-          title: button.getAttribute('data-confirm-title'),
-          text: button.getAttribute('data-confirm-text'),
-          icon: button.getAttribute('data-confirm-icon') || 'question',
-          showCancelButton: true,
-          confirmButtonColor: button.getAttribute('data-confirm-color') || '#6777ef',
-          cancelButtonColor: '#6c757d',
-          confirmButtonText: button.getAttribute('data-confirm-button') || 'Ya',
-          cancelButtonText: 'Batal',
-        }).then(function(result) {
-          if (result.isConfirmed) {
-            button.closest('form').submit();
-          }
-        });
-      });
-    });
-
-    const btnDelete = document.querySelectorAll('.btn-delete');
-    btnDelete.forEach(function(button) {
-      button.addEventListener('click', function() {
-        Swal.fire({
-          title: button.getAttribute('data-confirm-title'),
-          text: button.getAttribute('data-confirm-text'),
-          icon: button.getAttribute('data-confirm-icon') || 'warning',
-          showCancelButton: true,
-          confirmButtonColor: button.getAttribute('data-confirm-color') || '#e74c3c',
-          cancelButtonColor: '#6c757d',
-          confirmButtonText: button.getAttribute('data-confirm-button') || 'Ya, Hapus!',
-          cancelButtonText: 'Batal',
-        }).then(function(result) {
-          if (result.isConfirmed) {
-            button.closest('form').submit();
-          }
-        });
-      });
-    });
+    // Konfirmasi `.btn-confirm-toggle` dan `.btn-delete` ditangani global di
+    // `custom.js`. Versi lokal pernah ada di sini sehingga dua dialog
+    // SweetAlert muncul sekali per klik dan salah satunya memakai `submit()`
+    // native, yang melewati handler AJAX form.
   });
 </script>
 @endpush

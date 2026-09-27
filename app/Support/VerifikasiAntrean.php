@@ -80,10 +80,11 @@ class VerifikasiAntrean
             ->filter(fn (User $user) => $user->profile && $user->profile->canVerifStage($this->stage))
             ->filter(fn (User $user) => $filter === null
                 || $user->profile->verifStageDecision($this->stage)['status'] === $filter)
-            ->sortBy([
-                fn (User $user) => $user->profile->verifQueueRank($this->stage),
-                fn (User $user) => $user->profile->nama_lengkap,
-            ])
+            // `sortBy` menerima satu kunci, jadi pengurutannya dirantai dari yang
+            // paling lemah. `sortBy` stabil, sehingga nama tetap menentukan
+            // urutan di dalam rank yang sama.
+            ->sortBy(fn (User $user) => $user->profile->nama_lengkap)
+            ->sortBy(fn (User $user) => $user->profile->verifQueueRank($this->stage))
             ->values();
     }
 

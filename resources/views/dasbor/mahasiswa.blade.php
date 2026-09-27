@@ -39,34 +39,9 @@
           @endif
 
           @if($profile)
-            <div class="mb-3">
-              <div class="text-muted">Status Verifikasi</div>
-              @php
-                $badge = match ($profile->verifStatus()) {
-                    'terverifikasi' => 'success',
-                    'ditolak' => 'danger',
-                    default => 'warning',
-                };
-              @endphp
-              <span class="badge badge-{{ $badge }} p-2">{{ ucfirst($profile->verifStatus()) }}</span>
-            </div>
-
-            <div class="mb-3">
-              <div class="text-muted mb-2">Progres Verifikasi</div>
-              @foreach($profile->verifStageLabels() as $stage => $label)
-                @php
-                  $status = $profile->{'verif_'.$stage};
-                  $warna = match ($status) { 'setuju' => 'success', 'revisi', 'tolak' => 'danger', default => 'warning' };
-                  $teks = match ($status) { 'setuju' => 'Disetujui', 'revisi' => 'Perlu Perbaikan', 'tolak' => 'Ditolak', default => 'Menunggu' };
-                @endphp
-                <div class="d-flex justify-content-between align-items-center py-1">
-                  <span>{{ $label }}</span>
-                  <span class="badge badge-{{ $warna }}">{{ $teks }}</span>
-                </div>
-                @if($profile->{'catatan_'.$stage})
-                  <small class="text-muted d-block mb-2"><strong>Catatan:</strong> {{ $profile->{'catatan_'.$stage} }}</small>
-                @endif
-              @endforeach
+            <div class="text-muted">
+              Data profil Anda sudah tersimpan. Status verifikasi tidak ditampilkan
+              di sini;hubungi petugas bila ada yang perlu diperbaiki.
             </div>
           @else
             <div class="text-muted">Anda belum membuat profil. <a href="{{ route('profile') }}">Buat profil sekarang</a>.</div>

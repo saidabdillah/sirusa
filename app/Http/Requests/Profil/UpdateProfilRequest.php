@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Profil;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProfilRequest extends FormRequest
 {
@@ -19,8 +20,21 @@ class UpdateProfilRequest extends FormRequest
     {
         $this->merge([
             'ikut_kk' => $this->input('ikut_kk', 'ayah'),
-            'ukt' => str_replace('.', '', (string) $this->input('ukt')),
+            'ukt' => self::normalisasiRupiah($this->input('ukt')),
         ]);
+    }
+
+    /**
+     * Buang semua karakter selain digit dari nominal UKT.
+     *
+     * Form mengirim angka berformat Indonesia ("1.500.000"), jadi pemisah ribuan
+     * harus dibuang. `str_replace('.', '')` saja tidak cukup: pengguna juga bisa
+     * mengetik koma atau spasi, dan sisa karakter itu akan lolos ke `numeric`
+     * lalu disimpan sebagai 0.
+     */
+    private static function normalisasiRupiah(mixed $value): string
+    {
+        return preg_replace('/\D/', '', (string) $value) ?? '';
     }
 
     public function rules(): array
@@ -31,6 +45,16 @@ class UpdateProfilRequest extends FormRequest
 
         return [
             'nama_lengkap' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                // Unik per akun. `ignore` memakai id akun yang sedang diedit,
+                // jadi menyimpan tanpa mengubah email tidak akan bentrok
+                // dengan dirinya sendiri.
+                Rule::unique('users', 'email')->ignore($this->user()->id),
+            ],
             'nik' => ['required', 'digits:16'],
             'no_kk' => ['required', 'digits:16'],
             'nim' => ['nullable', 'string', 'max:30'],
@@ -90,7 +114,7 @@ class UpdateProfilRequest extends FormRequest
      *
      * @return array<int, string>
      */
-    private function dokumen(string $field, string $tipe = 'file', string $ekstensi = 'pdf,jpg,jpeg,png'): array
+    private function dokumen(string $field, string $tipe = 'file', string $ekstensi = 'pdf,jpg,jpeg,png,webp'): array
     {
         return [
             filled($this->user()?->profile?->{$field}) ? 'nullable' : 'required',
@@ -104,6 +128,9 @@ class UpdateProfilRequest extends FormRequest
     {
         return [
             'nama_lengkap.required' => 'Nama lengkap harus diisi.',
+            'email.required' => 'Email harus diisi.',
+            'email.email' => 'Email harus berupa alamat email yang valid.',
+            'email.unique' => 'Email ini sudah digunakan user lain.',
             'nik.required' => 'NIK harus diisi.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
             'no_kk.required' => 'Nomor Kartu Keluarga harus diisi.',

@@ -33,11 +33,11 @@ class BeasiswaController extends Controller
         $profile = $user->profile;
         $application = $user->applicants()->where('beasiswa_id', $scholarship->id)->first();
         $profileComplete = $user->isProfileComplete();
-        $profileVerified = $profile?->isVerified() ?? false;
+        $capilVerified = $profile?->isCapilVerified() ?? false;
         $eligibilityError = $scholarship->eligibilityIssueFor($profile);
         $blocking = $user->blockingApplicant();
         $canApply = $profileComplete
-            && $profileVerified
+            && $capilVerified
             && ! $application
             && ! $blocking
             && $eligibilityError === null

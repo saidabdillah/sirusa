@@ -67,6 +67,13 @@ $filterOptions = [
         <div class="card">
           <div class="card-header">
             <h4>Daftar Verifikasi Profil {{ $stageLabel }}</h4>
+            <div class="card-header-action">
+              @if(auth()->user()->hasMenuAccess($routePrefix.'.export'))
+              <a href="{{ route($routePrefix.'.export', request()->only('filter')) }}" class="btn btn-outline-success">
+                <i class="fas fa-file-excel mr-1"></i> Unduh Excel
+              </a>
+              @endif
+            </div>
           </div>
           <div class="card-body">
             <div class="alert alert-primary">
@@ -86,7 +93,7 @@ $filterOptions = [
                 </select>
               </div>
               <div class="col-md-2 mb-2 mb-md-0">
-                <button type="submit" class="btn btn-primary btn-block">
+                <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
                   <i class="fas fa-filter mr-1"></i> Terapkan
                 </button>
               </div>
@@ -152,6 +159,7 @@ $filterOptions = [
   $(document).ready(function() {
     $('#verifikasiTable').DataTable({
       order: [],
+      processing: true,
       language: {
         search: "Cari:",
         lengthMenu: "Tampilkan _MENU_ data",

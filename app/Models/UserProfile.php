@@ -12,6 +12,20 @@ class UserProfile extends Model
 
     protected $table = 'profil_pengguna';
 
+    /**
+     * Default saat baris profil baru dibuat di memori (mis. `updateOrCreate`
+     * yang belum menyentuh kolom status). Kolomnya sendiri sudah punya
+     * `default('menunggu')` di migrasi, jadi ini cuma menutup jalur pembuatan
+     * baris yang tidak lewat DEFAULT database.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'verif_capil' => 'menunggu',
+        'verif_kampus' => 'menunggu',
+        'verif_kesra' => 'menunggu',
+    ];
+
     protected $fillable = [
         'user_id',
         'nama_lengkap',
@@ -73,6 +87,12 @@ class UserProfile extends Model
             'tanggal_lahir' => 'date',
             'kk_ikut_wali' => 'boolean',
             'dokumen_prestasi' => 'array',
+            // Tanpa cast, `decimal(10,2)` dibaca sebagai string "1500000.00".
+            // Input UKT dirender ke Cleave yang membuang titik tetapi
+            // mempertahankan "00", jadi 1500000 -> 150000000 (x100) setiap
+            // kali form dibuka lalu disimpan ulang. `decimal:0` memangkas nilai
+            // ke bilangan bulat rupiah sebelum masuk ke Blade.
+            'ukt' => 'decimal:0',
         ];
     }
 
@@ -127,11 +147,64 @@ class UserProfile extends Model
         return implode(', ', $parts);
     }
 
+    /**
+     * Data orang tua/wali yang dipilih mahasiswa lewat field "Kartu Keluarga".
+     *
+     * Satu sumber untuk nama, NIK, dan pekerjaan sekaligus, supaya tidak
+     * mungkin ada tampilan yang menampilkan nama ayah tapi NIK ibu.
+     * Pemanggil yang hanya butuh satu bagian tetap bisa ambil dari array ini
+     * alih-alih menulis `match ($this->ikut_kk)` sendiri-sendiri.
+     *
+     * `default` memakai ayah supaya profil lama yang `ikut_kk`-nya kosong tetap
+     * punya orang tua yang bisa ditampilkan, sama seperti bawaan form.
+     *
+     * @return array{label: string, nama: ?string, nik: ?string, pekerjaan: ?string}
+     */
+    public function orangTuaDipilih(): array
+    {
+        return match ($this->ikut_kk) {
+            'wali' => [
+                'label' => 'Wali',
+                'nama' => $this->nama_wali,
+                'nik' => $this->nik_wali,
+                'pekerjaan' => $this->pekerjaan_wali,
+            ],
+            'ibu' => [
+                'label' => 'Ibu',
+                'nama' => $this->nama_ibu,
+                'nik' => $this->nik_ibu,
+                'pekerjaan' => $this->pekerjaan_ibu,
+            ],
+            default => [
+                'label' => 'Ayah',
+                'nama' => $this->nama_ayah,
+                'nik' => $this->nik_ayah,
+                'pekerjaan' => $this->pekerjaan_ayah,
+            ],
+        };
+    }
+
     public function isVerified(): bool
     {
         return $this->verif_capil === 'setuju'
             && $this->verif_kampus === 'setuju'
             && $this->verif_kesra === 'setuju';
+    }
+
+    /**
+     * Data dasar mahasiswa sudah disetujui Capil.
+     *
+     * Ini bukan berarti terverifikasi penuh. Verifikasi Capil hanya menyatakan
+     * bahwa identitas dan data dasar sudah benar, dan itu sudah cukup untuk
+     * boleh mendaftar beasiswa. Campus dan Kesra memeriksa hal yang berbeda --
+     * eligibility akademik dan kelayakan pendaftar -- dan baru bisa diperiksa
+     * setelah mahasiswa benar-benar mendaftar. Kalau pendaftaran ikut menunggu
+     * `isVerified()`, tidak akan pernah ada yang bisa mendaftar, karena tahap
+     * kampus dan kesra tidak akan pernah disentuh.
+     */
+    public function isCapilVerified(): bool
+    {
+        return $this->verif_capil === 'setuju';
     }
 
     public function verifStatus(): string
@@ -229,6 +302,16 @@ class UserProfile extends Model
             if ($this->{$stages[$previous][0]} !== 'setuju') {
                 return false;
             }
+        }
+
+        // Disetujui Capil bukan berarti otomatis terverifikasi di kampus.
+        // Verifikasi kampus memeriksa kelayakan akademik mahasiswa yang sedang
+        // mendaftar beasiswa, jadi tidak ada yang perlu diverifikasi sebelum
+        // ada pendaftaran. Tanpa syarat ini semua mahasiswa masuk antrean
+        // kampus padahal belum punya apa pun untuk diperiksa.
+        if ($stage === 'kampus' && $this->isCapilVerified()
+            && ! $this->user?->applicants()->exists()) {
+            return false;
         }
 
         if ($this->{$stages[$stage][0]} === 'menunggu') {

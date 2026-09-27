@@ -20,7 +20,12 @@ class StoreScholarshipRequest extends FormRequest
             'kampus_id' => 'required|integer|exists:kampus,id',
             'kuota' => 'required|integer|min:1',
             'tingkat_gelar' => 'required|in:S1,S2,S3',
-            'tanggal_mulai' => 'required|date|after:today',
+            // Tanggal mulai boleh sudah lewat. Beasiswa bisa dibuat atau diubah
+            // ulang di tengah masa pendaftarannya, bahkan setelah periode itu
+            // selesai, jadi aturan "setelah hari ini" hanya menolak tanggal yang
+            // tidak masuk akal, bukan pekerjaan yang sah.
+            // Yang dijaga tetap urutan tanggal lewat `after_or_equal`.
+            'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'ipk_minimal' => 'required|numeric|gt:0|max:4',
             'semester_minimal' => 'required|integer|between:1,14',
@@ -61,8 +66,9 @@ class StoreScholarshipRequest extends FormRequest
             'tingkat_gelar.required' => 'Tingkat gelar harus dipilih',
             'tingkat_gelar.in' => 'Tingkat gelar tidak valid',
             'tanggal_mulai.required' => 'Tanggal mulai harus diisi',
-            'tanggal_mulai.after' => 'Tanggal mulai harus setelah hari ini',
+            'tanggal_mulai.date' => 'Tanggal mulai tidak valid',
             'tanggal_selesai.required' => 'Tanggal selesai harus diisi',
+            'tanggal_selesai.date' => 'Tanggal selesai tidak valid',
             'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai',
             'ipk_minimal.required' => 'IPK minimal harus diisi',
             'ipk_minimal.numeric' => 'IPK minimal harus berupa angka',

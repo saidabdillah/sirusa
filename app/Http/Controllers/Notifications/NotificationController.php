@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Notifications;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
+    use RespondsToAjax;
+
     public function index(): View
     {
         $notifications = auth()->user()
@@ -19,11 +24,11 @@ class NotificationController extends Controller
         return view('notifications.index', compact('notifications'));
     }
 
-    public function readAll(): RedirectResponse
+    public function readAll(Request $request): RedirectResponse|JsonResponse
     {
         auth()->user()->unreadNotifications->markAsRead();
 
-        return back()->with('success', 'Semua notifikasi ditandai sudah dibaca');
+        return $this->ajaxOk($request, 'Semua notifikasi ditandai sudah dibaca');
     }
 
     public function show(DatabaseNotification $notification): RedirectResponse
@@ -48,7 +53,7 @@ class NotificationController extends Controller
         return redirect()->route('dashboard');
     }
 
-    public function destroy(DatabaseNotification $notification): RedirectResponse
+    public function destroy(Request $request, DatabaseNotification $notification): RedirectResponse|JsonResponse
     {
         if ($notification->notifiable_id !== auth()->id() || $notification->notifiable_type !== auth()->user()->getMorphClass()) {
             abort(403);
@@ -56,20 +61,20 @@ class NotificationController extends Controller
 
         $notification->delete();
 
-        return back()->with('success', 'Notifikasi dihapus');
+        return $this->ajaxOk($request, 'Notifikasi dihapus');
     }
 
-    public function destroyAll(): RedirectResponse
+    public function destroyAll(Request $request): RedirectResponse|JsonResponse
     {
         auth()->user()->notifications()->delete();
 
-        return back()->with('success', 'Semua notifikasi dihapus');
+        return $this->ajaxOk($request, 'Semua notifikasi dihapus');
     }
 
-    public function destroyRead(): RedirectResponse
+    public function destroyRead(Request $request): RedirectResponse|JsonResponse
     {
         auth()->user()->notifications()->whereNotNull('read_at')->delete();
 
-        return back()->with('success', 'Notifikasi yang sudah dibaca dihapus');
+        return $this->ajaxOk($request, 'Notifikasi yang sudah dibaca dihapus');
     }
 }

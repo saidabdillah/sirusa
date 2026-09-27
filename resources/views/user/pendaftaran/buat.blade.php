@@ -18,7 +18,7 @@
           <div class="card-header">
             <h4>Konfirmasi Pendaftaran</h4>
           </div>
-          <form action="{{ route('user.pendaftaran.simpan') }}" method="POST" id="formAjukan">
+          <form action="{{ route('user.pendaftaran.simpan') }}" method="POST" data-ajax-form id="formAjukan">
             @csrf
             <input type="hidden" name="beasiswa_id" value="{{ $scholarship->id }}">
             <div class="card-body">

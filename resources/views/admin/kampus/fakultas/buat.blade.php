@@ -19,7 +19,7 @@
             <div class="card-header">
               <h4>Form Tambah Fakultas</h4>
             </div>
-            <form action="{{ route('admin.kampus.fakultas.simpan', $kampus) }}" method="POST">
+            <form action="{{ route('admin.kampus.fakultas.simpan', $kampus) }}" method="POST" id="formFakultas" data-ajax-form>
               @csrf
               <div class="card-body">
                 <label>Nama Fakultas <span class="text-danger">*</span></label>

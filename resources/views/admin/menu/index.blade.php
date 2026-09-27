@@ -31,7 +31,7 @@
         <div class="card-header">
           <h4>Centang menu untuk setiap role</h4>
           <div class="card-header-action ml-3">
-            <a href="{{ route('admin.menuKelola.index') }}" class="btn btn-info">
+            <a href="{{ route('admin.menukelola.index') }}" class="btn btn-info">
               <i class="fas fa-sitemap"></i> Kelola Menu
             </a>
           </div>
@@ -47,7 +47,7 @@
             pada baris menu utama untuk membuka/tutup sub-menunya. Untuk menambah/mengubah/menghapus menu, buka
             <strong>Kelola Menu</strong>.
           </div>
-          <form action="{{ route('admin.menu.grants') }}" method="POST">
+          <form action="{{ route('admin.menu.grants') }}" method="POST" id="formMenuGrants" data-ajax-form>
             @csrf
             @method('PUT')
             <div class="table-responsive">

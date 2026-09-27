@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Scholarship\StoreScholarshipRequest;
 use App\Http\Requests\Scholarship\UpdateScholarshipRequest;
@@ -18,6 +19,8 @@ use Illuminate\View\View;
 
 class BeasiswaController extends Controller
 {
+    use RespondsToAjax;
+
     public function index(): View
     {
         $scholarships = Scholarship::latest()->paginate(10);
@@ -76,7 +79,7 @@ class BeasiswaController extends Controller
         return view('admin.beasiswa.buat', compact('kampusList'));
     }
 
-    public function store(StoreScholarshipRequest $request): RedirectResponse
+    public function store(StoreScholarshipRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         $prodiIds = $data['prodi_ids'];
@@ -90,7 +93,7 @@ class BeasiswaController extends Controller
 
         User::role('user')->lazy()->each->notify(new NewScholarship($scholarship));
 
-        return redirect()->route('admin.beasiswa.index')->with('success', 'Beasiswa berhasil ditambahkan');
+        return $this->ajaxOk($request, 'Beasiswa berhasil ditambahkan', route('admin.beasiswa.index'));
     }
 
     public function show(Scholarship $scholarship): View
@@ -122,7 +125,7 @@ class BeasiswaController extends Controller
         return view('admin.beasiswa.ubah', compact('scholarship', 'kampusList', 'selectedKampusId'));
     }
 
-    public function update(UpdateScholarshipRequest $request, Scholarship $scholarship): RedirectResponse
+    public function update(UpdateScholarshipRequest $request, Scholarship $scholarship): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         $prodiIds = $data['prodi_ids'];
@@ -133,7 +136,7 @@ class BeasiswaController extends Controller
         $scholarship->update($data);
         $this->syncFakultas($scholarship, $prodiIds);
 
-        return redirect()->route('admin.beasiswa.index')->with('success', 'Beasiswa berhasil diperbarui');
+        return $this->ajaxOk($request, 'Beasiswa berhasil diperbarui', route('admin.beasiswa.index'));
     }
 
     private function syncFakultas(Scholarship $scholarship, array $prodiIds): void
@@ -153,10 +156,10 @@ class BeasiswaController extends Controller
         }
     }
 
-    public function destroy(Scholarship $scholarship): RedirectResponse
+    public function destroy(Request $request, Scholarship $scholarship): RedirectResponse|JsonResponse
     {
         $scholarship->delete();
 
-        return redirect()->route('admin.beasiswa.index')->with('success', 'Beasiswa berhasil dihapus');
+        return $this->ajaxOk($request, 'Beasiswa berhasil dihapus', route('admin.beasiswa.index'));
     }
 }

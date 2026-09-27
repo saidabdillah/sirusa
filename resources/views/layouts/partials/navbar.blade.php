@@ -13,9 +13,9 @@
             <span class="badge badge-primary ml-1">{{ $unreadCount }}</span>
           @endif
           <div class="float-right">
-            <form action="{{ route('notifications.read-all') }}" method="POST" class="d-inline">
+            <form action="{{ route('notifications.read-all') }}" method="POST" data-ajax-form class="d-inline">
               @csrf
-              <button type="submit" class="btn btn-link p-0">Tandai Semua Sudah Dibaca</button>
+              <button type="submit" class="btn btn-link p-0" data-loading-text="Menandai...">Tandai Semua Sudah Dibaca</button>
             </form>
           </div>
         </div>
@@ -82,7 +82,16 @@
             'Accept': 'application/json',
           },
         })
-          .then(function (res) { return res.json(); })
+          .then(function (res) {
+            // 5xx balannya HTML halaman error, bukan JSON, jadi `res.json()`
+            // akan melempar. Cek dulu supaya masuk ke `.catch()` dengan pesan
+            // yang benar, bukan "Unexpected token <".
+            if (!res.ok) {
+              throw new Error('HTTP ' + res.status);
+            }
+
+            return res.json();
+          })
           .then(function (data) {
             Swal.fire({
               title: data.title,
@@ -97,6 +106,19 @@
               if (result.isConfirmed) {
                 document.getElementById('logout-form').submit();
               }
+            });
+          })
+          // Tanpa cabang ini, request yang gagal (koneksi putus, 403, 500)
+          // ditelan promise begitu saja: tidak ada dialog konfirmasi yang
+          // muncul dan tidak ada pesan apa pun, sehingga klik Logout seolah
+          // tidak berefek. Tombolnya sendiri tidak pernah di-disable, jadi
+          // tidak ada keadaan "nyangkut" -- masalahnya murni tidak ada
+          // umpan balik sama sekali.
+          .catch(function () {
+            Swal.fire({
+              icon: 'error',
+              title: 'Gagal',
+              text: 'Konfirmasi logout tidak bisa dimuat. Silakan coba lagi.',
             });
           });
       });

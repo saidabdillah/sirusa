@@ -19,7 +19,7 @@
             <div class="card-header">
               <h4>Form Ubah Fakultas</h4>
             </div>
-            <form action="{{ route('admin.kampus.fakultas.perbarui', [$kampus, $fakultas]) }}" method="POST">
+            <form action="{{ route('admin.kampus.fakultas.perbarui', [$kampus, $fakultas]) }}" method="POST" id="formFakultas" data-ajax-form>
               @csrf
               @method('PUT')
               <div class="card-body">

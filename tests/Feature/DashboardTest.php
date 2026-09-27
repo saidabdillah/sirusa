@@ -51,6 +51,29 @@ function mahasiswaTahap(string $tahap, string $nama): User
         'semester' => 4,
     ], $stages[$tahap]));
 
+    // Tahap kampus baru masuk antrean setelah mahasiswa mendaftar beasiswa, jadi
+    // fixture-nya perlu satu pendaftaran. Beasisanya dibuat sekali lalu dipakai
+    // ulang supaya indeks unik `[user_id, beasiswa_id]` tidak bermasalah.
+    if ($tahap === 'kampus') {
+        $beasiswa = Scholarship::query()->where('nama', 'Beasiswa Antrean')->first()
+            ?: Scholarship::factory()->create([
+                'nama' => 'Beasiswa Antrean',
+                'kampus_id' => test()->kampus->id,
+                'kampus' => test()->kampus->nama_kampus,
+                'ipk_minimal' => 0,
+                'semester_minimal' => 0,
+                'status' => 'aktif',
+                'tanggal_mulai' => now()->subDay(),
+                'tanggal_selesai' => now()->addMonth(),
+            ]);
+
+        Applicant::create([
+            'user_id' => $user->id,
+            'beasiswa_id' => $beasiswa->id,
+            'status' => 'verifikasi',
+        ]);
+    }
+
     return $user;
 }
 

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Kampus;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -64,19 +65,27 @@ class DatabaseSeeder extends Seeder
         );
         $adminCapil->assignRole('capil');
 
-        // Seeder data demo (katalog kampus, beasiswa contoh, user mahasiswa)
-        // dinonaktifkan — aktifkan kembali bila perlu data contoh:
-        // $this->call(KampusSeeder::class);
+        // Akun mahasiswa siap pakai untuk pengujian: username `user`, NIK
+        // `6300000000000001`, password `password`. Profil, prodi, dan
+        // pendaftar ikut dibuat supaya seluruh alur bisa dicoba tanpa input
+        // manual. Idempoten -- aman dijalankan berulang.
         //
+        // Seeder ini memanggil `KampusSeeder` + `ScholarshipSeeder` sendiri
+        // bila master datanya belum ada, jadi blok data demo yang
+        // dinonaktifkan di bawah tidak perlu diaktifkan untuk memakainya.
+        $this->call(UserDemoSeeder::class);
+
         // Tautkan demo admin kampus ke kampus ULM (idempoten) supaya verifikasi
         // kampus pada sesi demo hanya menampilkan data prodi miliknya.
-        // $ulm = Kampus::query()->where('nama_kampus', 'Universitas Lambung Mangkurat')->first();
-        // if ($ulm) {
-        //     $adminKampus->update(['kampus_id' => $ulm->id]);
-        // }
-        // $this->call(ScholarshipSeeder::class);
-        // $this->call(UserSeeder::class);
+        $ulm = Kampus::query()->where('nama_kampus', 'Universitas Lambung Mangkurat')->first();
 
+        if ($ulm) {
+            $adminKampus->update(['kampus_id' => $ulm->id]);
+        }
+
+        // Seeder data demo yang lain (50 user mahasiswa, jumlah tiap iterasi)
+        // dinonaktifkan — aktifkan kembali bila perlu data contoh:
+        // $this->call(UserSeeder::class);
         // Menu & hak akses default — WAJIB tetap dijalankan: tanpa ini sidebar
         // kosong dan semua rute yang tercakup menu akan 403.
         $this->call(MenuSeeder::class);

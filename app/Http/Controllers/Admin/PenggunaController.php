@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\Kampus;
 use App\Models\User;
 use App\Notifications\UserActivated;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PenggunaController extends Controller
 {
+    use RespondsToAjax;
+
     public function index(): View
     {
         $users = User::with('roles')->latest()->get();
@@ -57,7 +62,7 @@ class PenggunaController extends Controller
         ]);
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validated();
 
@@ -96,7 +101,7 @@ class PenggunaController extends Controller
             $message = 'Pengguna baru berhasil ditambahkan.';
         }
 
-        return redirect()->route('admin.pengguna.index')->with('success', $message);
+        return $this->ajaxOk($request, $message, route('admin.pengguna.index'));
     }
 
     public function edit(User $user): View
@@ -115,7 +120,7 @@ class PenggunaController extends Controller
         ]);
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse|JsonResponse
     {
         $currentUser = auth()->user();
 
@@ -124,11 +129,11 @@ class PenggunaController extends Controller
         // Menurunkan peran atau menonaktifkan akun sendiri akan mengunci akses ke modul ini.
         if ($user->id === $currentUser->id) {
             if ($validated['peran'] !== $user->roles->first()?->name) {
-                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah peran akun sendiri');
+                return $this->ajaxFail($request, 'Anda tidak dapat mengubah peran akun sendiri', route('admin.pengguna.index'));
             }
 
             if ($validated['status'] === 'non-aktif') {
-                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat menonaktifkan akun sendiri');
+                return $this->ajaxFail($request, 'Anda tidak dapat menonaktifkan akun sendiri', route('admin.pengguna.index'));
             }
         }
 
@@ -137,11 +142,11 @@ class PenggunaController extends Controller
         // aturan yang sama dengan shortcut Nonaktifkan di daftar.
         if ($user->hasRole('super_admin')) {
             if ($validated['peran'] !== 'super_admin') {
-                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah peran Super Admin');
+                return $this->ajaxFail($request, 'Anda tidak dapat mengubah peran Super Admin', route('admin.pengguna.index'));
             }
 
             if ($validated['status'] === 'non-aktif') {
-                return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah status Super Admin');
+                return $this->ajaxFail($request, 'Anda tidak dapat mengubah status Super Admin', route('admin.pengguna.index'));
             }
         }
 
@@ -151,55 +156,55 @@ class PenggunaController extends Controller
         ]);
         $user->syncRoles($validated['peran']);
 
-        return redirect()->route('admin.pengguna.index')->with('success', 'Data pengguna berhasil diperbarui');
+        return $this->ajaxOk($request, 'Data pengguna berhasil diperbarui', route('admin.pengguna.index'));
     }
 
-    public function toggleStatus(User $user): RedirectResponse
+    public function toggleStatus(Request $request, User $user): RedirectResponse|JsonResponse
     {
         abort_unless(auth()->user()->hasRole('super_admin'), 403);
 
         if ($user->hasRole('super_admin')) {
-            return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat mengubah status Super Admin');
+            return $this->ajaxFail($request, 'Anda tidak dapat mengubah status Super Admin', route('admin.pengguna.index'));
         }
 
         $newStatus = $user->status === 'aktif' ? 'non-aktif' : 'aktif';
         $user->update(['status' => $newStatus]);
 
         if ($newStatus === 'aktif') {
-            $user->notify(new UserActivated($user->username));
+            $user->notify(new UserActivated($user->username, $user->loginCredentialLabel()));
         }
 
         $label = $newStatus === 'aktif' ? 'diaktifkan' : 'dinonaktifkan';
 
-        return redirect()->route('admin.pengguna.index')->with('success', "Pengguna berhasil {$label}");
+        return $this->ajaxOk($request, "Pengguna berhasil {$label}", route('admin.pengguna.index'));
     }
 
-    public function resetPassword(User $user): RedirectResponse
+    public function resetPassword(Request $request, User $user): RedirectResponse|JsonResponse
     {
         abort_unless(auth()->user()->hasRole('super_admin'), 403);
 
         $user->update(['password' => '12345678']);
 
-        return redirect()->route('admin.pengguna.index')->with('success', "Kata sandi '{$user->username}' berhasil direset menjadi 12345678");
+        return $this->ajaxOk($request, "Kata sandi '{$user->username}' berhasil direset menjadi 12345678", route('admin.pengguna.index'));
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
         abort_unless(auth()->user()->hasRole('super_admin'), 403);
 
         $currentUser = auth()->user();
 
         if ($currentUser->id === $user->id) {
-            return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat menghapus akun sendiri');
+            return $this->ajaxFail($request, 'Anda tidak dapat menghapus akun sendiri', route('admin.pengguna.index'));
         }
 
         if ($user->hasRole('super_admin')) {
-            return redirect()->route('admin.pengguna.index')->with('error', 'Anda tidak dapat menghapus Super Admin');
+            return $this->ajaxFail($request, 'Anda tidak dapat menghapus Super Admin', route('admin.pengguna.index'));
         }
 
         $user->delete();
 
-        return redirect()->route('admin.pengguna.index')->with('success', 'Pengguna berhasil dihapus');
+        return $this->ajaxOk($request, 'Pengguna berhasil dihapus', route('admin.pengguna.index'));
     }
 
     /**

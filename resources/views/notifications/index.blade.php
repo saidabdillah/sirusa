@@ -22,13 +22,13 @@
       <div class="col-12">
         <div class="card">
           <div class="card-header flex-wrap">
-            <form action="{{ route('notifications.read-all') }}" method="POST" class="d-inline mr-1 mb-1">
+            <form action="{{ route('notifications.read-all') }}" method="POST" data-ajax-form class="d-inline mr-1 mb-1">
               @csrf
               <button type="submit" class="btn btn-sm btn-primary">
                 <i class="fas fa-check-double"></i> Tandai Semua Sudah Dibaca
               </button>
             </form>
-            <form action="{{ route('notifications.destroy-read') }}" method="POST" class="d-inline mr-1 mb-1">
+            <form action="{{ route('notifications.destroy-read') }}" method="POST" data-ajax-form class="d-inline mr-1 mb-1">
               @csrf
               @method('DELETE')
               <button type="button" class="btn btn-sm btn-delete" data-confirm-title="Hapus yang Sudah Dibaca?"
@@ -36,7 +36,7 @@
                 <i class="fas fa-trash"></i> Hapus yang Sudah Dibaca
               </button>
             </form>
-            <form action="{{ route('notifications.destroy-all') }}" method="POST" class="d-inline mb-1">
+            <form action="{{ route('notifications.destroy-all') }}" method="POST" data-ajax-form class="d-inline mb-1">
               @csrf
               @method('DELETE')
               <button type="button" class="btn btn-sm btn-delete" data-confirm-title="Hapus SEMUA Notifikasi?"
@@ -81,7 +81,7 @@
                       @endif
                     </td>
                     <td>
-                      <form action="{{ route('notifications.destroy', $notification) }}" method="POST" class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
+                      <form action="{{ route('notifications.destroy', $notification) }}" method="POST" data-ajax-form class="d-inline-block align-middle mr-1 mb-1 btn-delete-form">
                         @csrf
                         @method('DELETE')
                         <button type="button" class="btn btn-sm btn-delete" title="Hapus notifikasi"
@@ -110,6 +110,7 @@
     $('#notifikasiTable').DataTable({
       order: [[3, 'desc']],
       pageLength: 10,
+      processing: true,
       language: {
         search: "Cari:",
         lengthMenu: "Tampilkan _MENU_ data",

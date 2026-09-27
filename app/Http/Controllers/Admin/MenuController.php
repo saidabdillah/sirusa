@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Menu\StoreMenuRequest;
 use App\Http\Requests\Menu\UpdateMenuAccessRequest;
 use App\Http\Requests\Menu\UpdateMenuRequest;
 use App\Models\Menu;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
 class MenuController extends Controller
 {
+    use RespondsToAjax;
+
     public function index(): View
     {
         $roles = Role::orderBy('id')->get();
@@ -27,13 +32,13 @@ class MenuController extends Controller
         return view('admin.menu.index', compact('roles', 'menus', 'grants'));
     }
 
-    public function perbarui(UpdateMenuAccessRequest $request): RedirectResponse
+    public function perbarui(UpdateMenuAccessRequest $request): RedirectResponse|JsonResponse
     {
         $grants = $request->validated('grants') ?? [];
 
         $allMenuIds = DB::table('menus')->where('aktif', true)->pluck('id')->all();
         $wajibMenuIds = DB::table('menus')->where('wajib', true)->pluck('id')->all();
-        $superAdminModuleIds = DB::table('menus')->whereIn('scope', ['admin.role', 'admin.menu', 'admin.menuKelola', 'admin.pengguna'])->pluck('id')->all();
+        $superAdminModuleIds = DB::table('menus')->whereIn('scope', ['admin.role', 'admin.menu', 'admin.menukelola', 'admin.pengguna'])->pluck('id')->all();
 
         foreach (Role::all() as $role) {
             $menuIds = [];
@@ -69,7 +74,7 @@ class MenuController extends Controller
             }
         }
 
-        return redirect()->route('admin.menu.index')->with('success', 'Akses menu berhasil diperbarui');
+        return $this->ajaxOk($request, 'Akses menu berhasil diperbarui', route('admin.menu.index'));
     }
 
     public function kelola(): View
@@ -80,7 +85,7 @@ class MenuController extends Controller
         return view('admin.menu.kelola', compact('menus', 'parents'));
     }
 
-    public function store(StoreMenuRequest $request): RedirectResponse
+    public function store(StoreMenuRequest $request): RedirectResponse|JsonResponse
     {
         $menu = Menu::create(array_merge($request->validated(), [
             'aktif' => $request->boolean('aktif'),
@@ -93,31 +98,31 @@ class MenuController extends Controller
             'menu_id' => $menu->id,
         ]);
 
-        return redirect()->route('admin.menuKelola.index')->with('success', 'Menu berhasil ditambahkan');
+        return $this->ajaxOk($request, 'Menu berhasil ditambahkan', route('admin.menukelola.index'));
     }
 
-    public function update(UpdateMenuRequest $request, Menu $menu): RedirectResponse
+    public function update(UpdateMenuRequest $request, Menu $menu): RedirectResponse|JsonResponse
     {
         $menu->update(array_merge($request->validated(), [
             'aktif' => $request->boolean('aktif'),
             'wajib' => $request->boolean('wajib'),
         ]));
 
-        return redirect()->route('admin.menuKelola.index')->with('success', 'Menu berhasil diperbarui');
+        return $this->ajaxOk($request, 'Menu berhasil diperbarui', route('admin.menukelola.index'));
     }
 
-    public function destroy(Menu $menu): RedirectResponse
+    public function destroy(Request $request, Menu $menu): RedirectResponse|JsonResponse
     {
         if ($menu->wajib) {
-            return redirect()->route('admin.menuKelola.index')->with('error', 'Menu wajib tidak dapat dihapus');
+            return $this->ajaxFail($request, 'Menu wajib tidak dapat dihapus', route('admin.menukelola.index'));
         }
 
         if ($menu->children()->exists()) {
-            return redirect()->route('admin.menuKelola.index')->with('error', 'Menu masih memiliki sub-menu. Hapus sub-menu terlebih dahulu.');
+            return $this->ajaxFail($request, 'Menu masih memiliki sub-menu. Hapus sub-menu terlebih dahulu.', route('admin.menukelola.index'));
         }
 
         $menu->delete();
 
-        return redirect()->route('admin.menuKelola.index')->with('success', 'Menu berhasil dihapus');
+        return $this->ajaxOk($request, 'Menu berhasil dihapus', route('admin.menukelola.index'));
     }
 }

@@ -40,6 +40,10 @@
                 <label for="login">NIK atau Username</label>
                 <input id="login" type="text" class="form-control @error('login') is-invalid @enderror" name="login" value="{{ old('login') }}" tabindex="1" autofocus>
                 @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                {{-- Semua peran bisa masuk dengan NIK maupun username. Mahasiswa
+                     punya keduanya, jadi bebas memakai salah satu; akun staf tidak
+                     punya NIK, sehingga otomatis memakai username. --}}
+                <small class="text-muted">Mahasiswa dapat memakai NIK atau username. Akun staf memakai username.</small>
               </div>
 
               <div class="form-group">
@@ -48,7 +52,6 @@
                 </div>
                 <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" tabindex="2">
                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <small class="text-muted">Lupa kata sandi? Hubungi admin untuk reset.</small>
               </div>
 
               <div class="form-group">
@@ -59,7 +62,7 @@
               </div>
 
               <div class="form-group">
-                <button type="submit" class="btn btn-primary btn-lg btn-block" tabindex="4">
+                <button type="submit" class="btn btn-primary btn-lg btn-block" tabindex="4" data-loading-text="Sedang masuk...">
                   Masuk
                 </button>
               </div>
