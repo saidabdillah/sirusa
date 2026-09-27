@@ -40,10 +40,6 @@
                 <label for="login">NIK atau Username</label>
                 <input id="login" type="text" class="form-control @error('login') is-invalid @enderror" name="login" value="{{ old('login') }}" tabindex="1" autofocus>
                 @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                {{-- Semua peran bisa masuk dengan NIK maupun username. Mahasiswa
-                     punya keduanya, jadi bebas memakai salah satu; akun staf tidak
-                     punya NIK, sehingga otomatis memakai username. --}}
-                <small class="text-muted">Mahasiswa dapat memakai NIK atau username. Akun staf memakai username.</small>
               </div>
 
               <div class="form-group">

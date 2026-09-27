@@ -97,6 +97,103 @@ test('scholarship index action buttons have spacing', function () {
         ->assertDontSee('d-flex gap-1', false);
 });
 
+test('satu program studi yang sah sudah cukup untuk menyimpan beasiswa', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $fakultas = $kampus->fakultas()->create(['nama' => 'Teknik']);
+    $prodiPertama = $fakultas->prodi()->create(['nama' => 'Informatika']);
+    $prodiKedua = $fakultas->prodi()->create(['nama' => 'Sipil']);
+
+    $this->actingAs($this->admin);
+
+    // Tidak ada aturan "semua prodi wajib dipilih": yang diminta minimal satu,
+    // dan yang tersimpan harus persis prodi yang dicentang admin.
+    post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Satu Prodi',
+        'kampus_id' => $kampus->id,
+        'kuota' => 5,
+        'tingkat_gelar' => 'S1',
+        'tanggal_mulai' => now()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
+        'ipk_minimal' => 3,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [$prodiPertama->id],
+    ])->assertSessionDoesntHaveErrors();
+
+    $beasiswa = Scholarship::where('nama', 'Beasiswa Satu Prodi')->firstOrFail();
+    $tersimpan = $beasiswa->fakultas()->with('prodi')->get()
+        ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('id')->all());
+
+    $this->assertSame([$prodiPertama->id], $tersimpan->values()->all());
+
+    // Dua prodi dari kampus yang sama juga sah.
+    post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Dua Prodi',
+        'kampus_id' => $kampus->id,
+        'kuota' => 5,
+        'tingkat_gelar' => 'S1',
+        'tanggal_mulai' => now()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
+        'ipk_minimal' => 3,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [$prodiPertama->id, $prodiKedua->id],
+    ])->assertSessionDoesntHaveErrors();
+});
+
+test('prodi dari kampus lain tetap ditolak', function () {
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
+    $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+
+    $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Ranking Dua']);
+    $prodiLain = $kampusLain->fakultas()->create(['nama' => 'Ekonomi'])->prodi()->create(['nama' => 'Akuntansi']);
+
+    $this->actingAs($this->admin);
+
+    post(route('admin.beasiswa.simpan'), [
+        'nama' => 'Beasiswa Salah Kampus',
+        'kampus_id' => $kampus->id,
+        'kuota' => 5,
+        'tingkat_gelar' => 'S1',
+        'tanggal_mulai' => now()->format('Y-m-d'),
+        'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
+        'ipk_minimal' => 3,
+        'semester_minimal' => 3,
+        'deskripsi' => 'Deskripsi',
+        'persyaratan' => 'Persyaratan',
+        'status' => 'aktif',
+        'prodi_ids' => [$prodiLain->id],
+    ])->assertSessionHasErrors('prodi_ids');
+
+    // Pesan lama ("Semua program studi harus berada di kampus tujuan beasiswa")
+    // tidak bisa ditindaklanjuti: admin tidak pernah mencentang prodi itu,
+    // dan pesan itu tidak memberi tahu prodi mana yang salah. Yang muncul
+    // harus menyebut nama program studinya.
+    expect(session('errors')->first('prodi_ids'))
+        ->toContain('Akuntansi')
+        ->toContain('tidak berada di kampus tujuan');
+
+    $this->assertDatabaseMissing('beasiswa', ['nama' => 'Beasiswa Salah Kampus']);
+});
+
+test('checkbox prodi di kampus tersembunyi dinonaktifkan agar tidak ikut terkirim', function () {
+    // Checkbox yang hanya disembunyikan (d-none) tetap terkirim bersama form,
+    // sehingga prodi dari kampus lain ikut masuk ke `prodi_ids[]` dan membuat
+    // admin ditolak dengan pesan yang tidak bisa ditindaklanjuti: ia tidak
+    // pernah mencentang prodi itu. `showKampusTree()` harus menonaktifkan
+    // checkbox di luar kampus terpilih, bukan hanya menyembunyikannya.
+    foreach (['buat', 'ubah'] as $view) {
+        $source = file_get_contents(resource_path("views/admin/beasiswa/{$view}.blade.php"));
+
+        expect($source)
+            ->toContain(".prop('disabled', !isSelected)");
+    }
+});
+
 test('tanggal mulai boleh sudah lewat, tapi urutan tanggal tetap dijaga', function () {
     $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
     $prodi = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);

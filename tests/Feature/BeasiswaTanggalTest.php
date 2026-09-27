@@ -115,6 +115,66 @@ test('perubahan tanggal masa lalu lewat form ubah tetap diterima', function () {
         ->toBe(now()->subYear()->startOfYear()->addDays(20)->format('Y-m-d'));
 });
 
+test('form ubah juga menolak tanggal selesai yang lebih awal dari tanggal mulai', function () {
+    // `UpdateScholarshipRequest` punya salinan aturan tanggal sendiri, jadi
+    // urutan create saja tidak cukup: kalau salinan itu omit `after_or_equal`,
+    // form Ubah akan menerima tanggal yang terbalik tanpa satu pun error.
+    $beasiswa = Scholarship::factory()->create([
+        'kampus_id' => $this->kampus->id,
+        'tingkat_gelar' => 'S1',
+        'status' => 'aktif',
+        'tanggal_mulai' => '2026-01-15',
+        'tanggal_selesai' => '2026-03-20',
+    ]);
+
+    actingAs($this->admin)
+        ->put(route('admin.beasiswa.perbarui', $beasiswa), [
+            'nama' => $beasiswa->nama,
+            'deskripsi' => $beasiswa->deskripsi,
+            'persyaratan' => $beasiswa->persyaratan,
+            'kampus_id' => $this->kampus->id,
+            'prodi_ids' => [$this->prodi->id],
+            'tingkat_gelar' => 'S1',
+            'kuota' => $beasiswa->kuota,
+            'ipk_minimal' => 2.5,
+            'semester_minimal' => 3,
+            'tanggal_mulai' => '2026-09-30',
+            'tanggal_selesai' => '2026-09-20',
+            'status' => 'aktif',
+        ])
+        ->assertSessionHasErrors('tanggal_selesai')
+        ->assertSessionDoesntHaveErrors('tanggal_mulai');
+
+    // Data lama harus utuh: request yang ditolak tidak boleh menimpa tanggal.
+    expect($beasiswa->refresh()->tanggal_mulai->format('Y-m-d'))->toBe('2026-01-15')
+        ->and($beasiswa->tanggal_selesai->format('Y-m-d'))->toBe('2026-03-20');
+});
+
+test('form ubah juga menolak tanggal mulai yang tidak valid', function () {
+    $beasiswa = Scholarship::factory()->create([
+        'kampus_id' => $this->kampus->id,
+        'tanggal_mulai' => '2026-01-15',
+        'tanggal_selesai' => '2026-03-20',
+    ]);
+
+    actingAs($this->admin)
+        ->put(route('admin.beasiswa.perbarui', $beasiswa), [
+            'nama' => $beasiswa->nama,
+            'deskripsi' => $beasiswa->deskripsi,
+            'persyaratan' => $beasiswa->persyaratan,
+            'kampus_id' => $this->kampus->id,
+            'prodi_ids' => [$this->prodi->id],
+            'tingkat_gelar' => 'S1',
+            'kuota' => $beasiswa->kuota,
+            'ipk_minimal' => 2.5,
+            'semester_minimal' => 3,
+            'tanggal_mulai' => 'bukan tanggal',
+            'tanggal_selesai' => '2026-03-20',
+            'status' => 'aktif',
+        ])
+        ->assertSessionHasErrors('tanggal_mulai');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Konsistensi date picker antara create dan edit

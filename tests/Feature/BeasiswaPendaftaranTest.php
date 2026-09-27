@@ -222,6 +222,146 @@ test('mahasiswa tidak bisa membatalkan pendaftaran orang lain', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Batas pembatalan: masa pendaftaran beasiswa
+|--------------------------------------------------------------------------
+|
+| `canBeCancelled()` memakai `beasiswa.tanggal_selesai`, batas yang sama
+| dengan `scopeTersedia()`. Test ini mengunci aturan itu supaya tombol di
+| halaman detail dan penolakan endpoint tidak pernah berbeda pendapat.
+|
+*/
+
+test('pembatalan hanya boleh selama masa pendaftaran beasiswa masih terbuka', function () {
+    sudahTerverifikasi($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    // Daftar dulu saat masa pendaftaran masih terbuka, baru tutup masanya.
+    // Urutan ini penting: jendela ditutup SETELAH pendaftaran. Kalau dibalik,
+    // `store()` sendiri yang menolak karena beasiswa sudah tidak menerima
+    // pendaftar, sehingga skenario yang diuji tidak pernah terjadi.
+    actingAs($this->mahasiswa)->post(route('user.pendaftaran.simpan'), ['beasiswa_id' => $beasiswa->id]);
+    $applicant = Applicant::firstOrFail();
+    $beasiswa->update(['tanggal_selesai' => now()->subDay()]);
+
+    expect($applicant->canBeCancelled())->toBeFalse()
+        ->and($applicant->cancellationBlockedReason())->toContain('sudah ditutup');
+
+    actingAs($this->mahasiswa)->delete(route('user.pendaftaran.batal', $applicant))
+        ->assertRedirect(route('user.pendaftaran.index'))
+        ->assertSessionHas('error');
+
+    expect($applicant->refresh()->status)->toBe('verifikasi');
+});
+
+test('pendaftaran yang masaicrosoft pendaftarannya sudah ditutup ditolak dengan alasan yang jelas', function () {
+    sudahTerverifikasi($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->post(route('user.pendaftaran.simpan'), ['beasiswa_id' => $beasiswa->id]);
+    $applicant = Applicant::firstOrFail();
+    $beasiswa->update(['tanggal_selesai' => now()->subDay()]);
+
+    // Dipanggil langsung ke endpoint, bukan lewat tombol yang disembunyikan.
+    // Penyembunyian tombol UI tidak pernah menggantikan validasi server.
+    actingAs($this->mahasiswa)
+        ->deleteJson(route('user.pendaftaran.batal', $applicant))
+        ->assertStatus(422)
+        ->assertJson([
+            'success' => false,
+            'message' => 'Masa pendaftaran beasiswa ini sudah ditutup sehingga tidak bisa dibatalkan lagi.',
+        ]);
+
+    expect($applicant->refresh()->status)->toBe('verifikasi');
+});
+
+test('pembatalan kedua ditolak', function () {
+    sudahTerverifikasi($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->post(route('user.pendaftaran.simpan'), ['beasiswa_id' => $beasiswa->id]);
+    $applicant = Applicant::firstOrFail();
+
+    actingAs($this->mahasiswa)->delete(route('user.pendaftaran.batal', $applicant));
+
+    expect($applicant->refresh()->canBeCancelled())->toBeFalse()
+        ->and($applicant->cancellationBlockedReason())->toBe('Pendaftaran ini sudah dibatalkan.');
+
+    actingAs($this->mahasiswa)->delete(route('user.pendaftaran.batal', $applicant))
+        ->assertRedirect(route('user.pendaftaran.index'))
+        ->assertSessionHas('error');
+
+    expect($applicant->refresh()->status)->toBe('dibatalkan');
+});
+
+test('beasiswa tanpa tanggal selesai dianggap sudah lewat batas', function () {
+    $beasiswa = new Scholarship;
+    $beasiswa->tanggal_selesai = null;
+
+    $applicant = Applicant::make(['status' => 'verifikasi']);
+    $applicant->setRelation('beasiswa', $beasiswa);
+
+    expect($applicant->canBeCancelled())->toBeFalse();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Pembatalan hanya di halaman detail
+|--------------------------------------------------------------------------
+|
+| Tombol dibatalkan dari tabel karena tabel memuat banyak baris sekaligus:
+| dari sana, satu klik "Batalkan" berarti eyebrow "ya, batalkan ini" untuk
+| pendaftaran yang tidak terlihat judulnya. Detail Pendaftaran memberi konteks
+| nama beasiswa dan catatan sebelum argparse.
+|
+*/
+
+test('tabel pendaftaran tidak lagi menawarkan pembatalan', function () {
+    sudahTerverifikasi($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->post(route('user.pendaftaran.simpan'), ['beasiswa_id' => $beasiswa->id]);
+    $applicant = Applicant::firstOrFail();
+
+    // Pendaftaran masih aktif DAN masa pendaftaran masih terbuka, jadi di
+    // bawah aturan lama tabel ini menampilkan tombolnya.
+    expect($applicant->canBeCancelled())->toBeTrue();
+
+    actingAs($this->mahasiswa)->get(route('user.pendaftaran.index'))
+        ->assertOk()
+        ->assertDontSee('Batalkan Pendaftaran')
+        ->assertDontSee('Ya, Batalkan')
+        ->assertDontSee('id="batal-'.$applicant->id.'"');
+});
+
+test('halaman detail menawarkan pembatalan selama masa pendaftaran masih terbuka', function () {
+    sudahTerverifikasi($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->post(route('user.pendaftaran.simpan'), ['beasiswa_id' => $beasiswa->id]);
+    $applicant = Applicant::firstOrFail();
+
+    actingAs($this->mahasiswa)->get(route('user.pendaftaran.lihat', $applicant))
+        ->assertOk()
+        ->assertSee('Batalkan Pendaftaran')
+        ->assertSee(route('user.pendaftaran.batal', $applicant));
+});
+
+test('halaman detail menyembunyikan pembatalan setelah masa pendaftaran ditutup', function () {
+    sudahTerverifikasi($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->post(route('user.pendaftaran.simpan'), ['beasiswa_id' => $beasiswa->id]);
+    $applicant = Applicant::firstOrFail();
+    $beasiswa->update(['tanggal_selesai' => now()->subDay()]);
+
+    actingAs($this->mahasiswa)->get(route('user.pendaftaran.lihat', $applicant))
+        ->assertOk()
+        ->assertDontSee('Batalkan Pendaftaran')
+        ->assertDontSee('btn-confirm-toggle');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Daftar beasiswa dibatasi kampus profil
 |--------------------------------------------------------------------------
 */
@@ -246,6 +386,50 @@ test('mahasiswa tanpa prodi melihat peringatan untuk melengkapi profil', functio
         ->assertOk()
         ->assertSee('Program Studi pada profil Anda terisi')
         ->assertDontSee('Beasiswa Tersembunyi');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Halaman detail beasiswa harus benar-benar bisa dirender
+|--------------------------------------------------------------------------
+|
+| `BeasiswaController::show()` pernah mengirim `compact('profileVerified')`
+| untuk nama variabel yang tidak pernah didefinisikan, sekaligus lupa
+| mengirim `$capilVerified` yang dipakai view. `compact()` melempar
+| E_WARNING di PHP 8.x, `HandleExceptions` mengubahnya jadi ErrorException,
+| jadi seluruh halaman detail beasiswa 500. Tidak ada test yang melakukan
+| GET ke route ini -- semuanya hanya `assertRedirect` ke sana -- sehingga
+| bug itu lolos. Test di bawah menutup celah itu.
+*/
+
+test('halaman detail beasiswa terbuka untuk mahasiswa yang profilnya belum disetujui Capil', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee($beasiswa->nama)
+        ->assertSee('Data dasar belum disetujui Capil')
+        ->assertDontSee('Ajukan Sekarang');
+});
+
+test('halaman detail beasiswa menampilkan tombol ajukan setelah Capil menyetujui', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi, ['verif_capil' => 'setuju']);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('Ajukan Sekarang')
+        ->assertDontSee('Data dasar belum disetujui Capil');
+});
+
+test('halaman detail beasiswa terbuka untuk mahasiswa yang profilnya belum lengkap', function () {
+    $this->mahasiswa->profile?->delete();
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('Profil belum lengkap');
 });
 
 /*

@@ -34,7 +34,7 @@
           </div>
           <div class="card-body">
             <div class="text-muted mb-0">
-              <i class="fas fa-info-circle"></i> Akun {{ $roleLabel }} tidak membuat data profil, jadi tidak ada data pribadi untuk ditampilkan.
+              <i class="fas fa-info-circle"></i> Akun {{ $roleLabel }} tidak membuat data profil.
             </div>
           </div>
         </div>

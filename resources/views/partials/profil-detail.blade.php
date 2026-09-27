@@ -222,8 +222,6 @@
         </div>
       </div>
     </div>
-    @else
-    <div class="alert alert-secondary mb-0"><i class="fas fa-info-circle"></i> Data wali tidak diikutsertakan (tidak aktif pada kartu keluarga).</div>
     @endif
   </div>
 </div>

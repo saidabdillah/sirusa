@@ -47,7 +47,7 @@ class BeasiswaController extends Controller
             'scholarship',
             'application',
             'profileComplete',
-            'profileVerified',
+            'capilVerified',
             'eligibilityError',
             'blocking',
             'canApply',

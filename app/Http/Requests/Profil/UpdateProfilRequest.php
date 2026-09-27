@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Profil;
 
+use App\Models\Prodi;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateProfilRequest extends FormRequest
 {
@@ -105,6 +107,63 @@ class UpdateProfilRequest extends FormRequest
             'kk_wali' => $pakaiWali ? $this->dokumen('kk_wali') : ['nullable'],
             'dokumen_prestasi' => ['nullable', 'array'],
             'dokumen_prestasi.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
+        ];
+    }
+
+    /**
+     * Cascade kampus -> fakultas -> prodi harus konsisten satu sama lain.
+     *
+     * `nama_kampus` dan `fakultas` sengaja tidak fillable, jadi yang benar-benar
+     * tersimpan hanyalah `prodi_id`. Setelah ini, prodi yang tersimpan adalah
+     * satu-satunya sumber kebenaran: seluruh tampilan (Kelompok Data Kampus di
+     * `partials/profil-detail`, gate pendaftaran beasiswa, dan cek kelayakan
+     * menuruni lewat `prodi->fakultas->kampus`.
+     *
+     * Tanpa pemeriksaan ini, form bisa saja mengirim kombinasi yang tidak
+     * mungkin terjadi -- misalnya prodi dari Universitas A tapi nama kampus
+     * Universitas B. Data yang tersimpan tetap benar (hanya prodi_id), tapi
+     * yang tampil di form lain mengikuti `prodi_id`, sehingga mahasiswa
+     * melihat pilihan yang berbeda dari yang ia kirim tanpa diberi tahu
+     * alasannya.
+     *
+     * Pesan sengaja ditambahkan ke `prodi_id`, bukan ke `nama_kampus`/
+     * `fakultas`: dua field itu hanya input penanda, bukan data yang disimpan,
+     * jadi error harus menunjuk ke kontrol yang benar-benar bermasalah.
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                if ($validator->errors()->hasAny(['prodi_id', 'nama_kampus', 'fakultas'])) {
+                    return;
+                }
+
+                $prodi = Prodi::query()
+                    ->with('fakultas')
+                    ->find($this->input('prodi_id'));
+
+                if (! $prodi?->fakultas) {
+                    return;
+                }
+
+                $namaKampusProdi = $prodi->fakultas->kampus?->nama_kampus;
+
+                if ($namaKampusProdi !== $this->input('nama_kampus')) {
+                    $validator->errors()->add(
+                        'prodi_id',
+                        'Program studi yang dipilih tidak berada pada kampus yang dipilih.'
+                    );
+
+                    return;
+                }
+
+                if ($prodi->fakultas->nama !== $this->input('fakultas')) {
+                    $validator->errors()->add(
+                        'prodi_id',
+                        'Program studi yang dipilih tidak berada pada fakultas yang dipilih.'
+                    );
+                }
+            },
         ];
     }
 

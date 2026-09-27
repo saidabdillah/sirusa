@@ -56,8 +56,12 @@
                     // yang boleh menyuntingnya, dan aksi logout/statusnya justru ditolak.
                     $rowIsSuperAdmin = $roleName === 'super_admin';
                     $isSuperAdmin = auth()->user()->hasRole('super_admin');
+                    // Ubah, ubah status, dan reset password mengikuti gate yang sama
+                    // dengan controller (`canManageUsers()`), jadi UI dan backend
+                    // tidak bisa berbeda pendapat. Hapus tetap khusus super_admin.
                     $canEdit = ! $rowIsSuperAdmin && auth()->user()->canManageUsers();
-                    $canUseSuperActions = $isSuperAdmin && ! $rowIsSuperAdmin;
+                    $canManageAccount = $canEdit;
+                    $canDelete = $isSuperAdmin && ! $rowIsSuperAdmin;
                   @endphp
                   <tr>
                     <td>{{ $loop->iteration }}</td>
@@ -94,7 +98,7 @@
                           </a>
                           @endif
 
-                          @if($canUseSuperActions)
+                          @if($canManageAccount)
                           <div class="dropdown-divider"></div>
 
                           <form action="{{ route('admin.pengguna.toggle-status', $user) }}" method="POST" data-ajax-form class="m-0">
@@ -133,6 +137,7 @@
                             </button>
                           </form>
 
+                          @if($canDelete)
                           <div class="dropdown-divider"></div>
 
                           <form action="{{ route('admin.pengguna.hapus', $user) }}" method="POST" data-ajax-form class="m-0">
@@ -147,6 +152,7 @@
                               <i class="fas fa-trash mr-1"></i> Hapus User
                             </button>
                           </form>
+                          @endif
                           @endif
                         </div>
                       </div>

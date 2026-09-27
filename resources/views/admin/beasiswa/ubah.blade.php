@@ -224,7 +224,17 @@ $(document).ready(function() {
   function showKampusTree() {
     var selected = $('#kampus_id').val();
     $('#prodi-tree .kampus-tree').each(function() {
-      $(this).toggleClass('d-none', String($(this).attr('data-kampus-id')) !== String(selected));
+      var isSelected = String($(this).attr('data-kampus-id')) === String(selected);
+      $(this).toggleClass('d-none', !isSelected);
+      // Checkbox di campus yang disembunyikan harus dinonaktifkan, bukan hanya
+      // ditutupi. Yang disembunyikan saja tetap terkirim bersama form, jadi
+      // prodi dari kampus lain ikut masuk ke `prodi_ids[]` dan `after()` di
+      // request_then menolak penyimpanan dengan pesan "Semua program studi
+      // harus berada di kampus tujuan beasiswa." -- padahal admin tidak pernah
+      // memilih prodi itu. `disabled` membuatnya tidak ikut disubmit; state
+      // `checked` sengaja dipertahankan supaya berpindah kampus tidak
+      // menghapus pilihan lama.
+      $(this).find('.prodi-check').prop('disabled', !isSelected);
     });
     updateProdiHint();
   }

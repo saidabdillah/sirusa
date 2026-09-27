@@ -23,6 +23,21 @@ beforeEach(function () {
 
     // Ratakan spasi/indenter supaya assertion boleh melintasi baris.
     $this->jsRata = preg_replace('/\s+/', ' ', $this->js);
+
+    // Versi tanpa komentar. Aturan "jalur error tidak boleh menavigasi" harus
+    // dinilai dari kode yang DIJALANKAN; kalau komentar yang menjelaskan aturan
+    // itu sendiri memuat nama fungsinya, assertion jadi salah positives.
+    //
+    // Hanya komentar satu baris penuh yang dibuang. Menghapus `//` di tengah baris
+    // berbahaya: URL di dalam string (`https://...`) dan regex literal
+    // (`/^\d+$/`) sama-sama mengandung karakter itu.
+    $this->jsKode = implode(
+        "\n",
+        array_filter(
+            explode("\n", $this->js),
+            fn ($baris) => ! str_starts_with(trim($baris), '//')
+        )
+    );
 });
 
 // ─── Spinner tombol: satu sumber kebenaran ──────────────────────────────
@@ -222,6 +237,71 @@ test('dialog loading ditutup lewat always sehingga tidak pernah nyangkut', funct
 test('koneksi putus punya pesan sendiri, bukan error generik', function () {
     expect($this->jsRata)->toContain('if (xhr.status === 0) {')
         ->toContain('Permintaan tidak terkirim');
+});
+
+// ─── Success: alert dulu, refresh belakangan ────────────────────────────
+
+test('alert success menutup dirinya sendiri tanpa tombol OK', function () {
+    // Tanpa `timer`, SweetAlert menunggu klik OK dan user harus menekan dua
+    // kali untuk menyelesaikan satu aksi. `showConfirmButton: false` tanpa
+    // `timer` tidak menutup apa pun -- keduanya harus berpasangan.
+    expect($this->jsRata)->toMatch(
+        '/icon: "success".*?text: \(payload && payload\.message\).*?timer: 1500.*?showConfirmButton: false.*?timerProgressBar: true/s'
+    );
+});
+
+test('success alert baru mewariskan teks pesan dari server', function () {
+    // Judul tetap "Berhasil", detailnya dari `response.message` supaya pesan
+    // backend ("Pendaftaran dibatalkan. Anda bisa mendaftar beasiswa lain.")
+    // yang sampai ke user, bukan kalimat generik yang menimpa.
+    expect($this->jsRata)->toMatch(
+        '/icon: "success", title: "Berhasil", text: \(payload && payload\.message\) \|\| "Data berhasil disimpan\."/s'
+    );
+});
+
+test('refresh jalan di dalam then success', function () {
+    // Refresh dipindah ke luar `.then()` berarti navigasi berjalan bersamaan
+    // dengan animasi alert dan user tidak pernah melihat success-nya. Test ini
+    // menahan urutan itu: options timer -> `.then()` -> refresh.
+    expect($this->js)->toMatch(
+        '/icon: "success".*?timerProgressBar: true,\s*\n\s*\}\)\.then\(function \(\) \{.*?refreshAfterSave\(\$form, payload\);/s'
+    );
+});
+
+test('tidak ada navigasi di jalur error', function () {
+    // Semua error harus meninggalkan user di form yang sama supaya isinya
+    // tidak hilang. 422 validasi, 419 sesi kedaluwarsa, 403 akses, 500, dan
+    // koneksi putus (status 0) semuanya masuk lewat `.fail()` ini.
+    $mulai = strpos($this->jsKode, '.fail(function (xhr) {');
+    $selesai = strpos($this->jsKode, '.always(function ()');
+
+    expect($mulai)->toBeInt()->and($selesai)->toBeInt();
+
+    $blokFail = substr($this->jsKode, $mulai, $selesai - $mulai);
+
+    expect($blokFail)->not->toContain('refreshAfterSave')
+        ->not->toContain('location.assign')
+        ->not->toContain('location.reload');
+});
+
+test('hanya ada satu titik navigasi dan hanya bisa dicapai dari sukses', function () {
+    // `window.location.assign` hidup di dalam `refreshAfterSave()`, dan
+    // `refreshAfterSave()` hanya dipanggil dari `.then()` success. Dua
+    // penghitungan ini mengunci invariant itu: menambah pemanggilan kedua di
+    // cabang mana pun akan menggagalkan salah satunya.
+    expect(substr_count($this->js, 'window.location.assign'))->toBe(1)
+        ->and(substr_count($this->js, 'function refreshAfterSave'))->toBe(1)
+        ->and(substr_count($this->js, 'refreshAfterSave($form, payload);'))->toBe(1);
+});
+
+test('jalur ajaxOk yang gagal tidak ikut mewariskan timer', function () {
+    // Backend bisa membalas HTTP 200 dengan `success: false` (jalur
+    // `ajaxFail` pada request biasa). Alert itu harus tetap interaktif --
+    // pesan error butuh tombol OK, karena user harus membacanya dan
+    // memperbaikinya, bukan melihatnya lewat dalam 1500 ms.
+    expect($this->jsRata)->toMatch(
+        '/if \(payload && payload\.success === false\) \{\s*Swal\.fire\(\{\s*icon: "error", title: "Gagal",.*?\}\);\s*return;/s'
+    );
 });
 
 // ─── Validasi native tidak boleh membuka dialog yang tak akan tertutup ──

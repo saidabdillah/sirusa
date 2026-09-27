@@ -7,7 +7,12 @@
   $sectionVal = $isTarget ? old('section') : '';
   $routeVal = $isTarget ? old('route') : '';
   $scopeVal = $isTarget ? old('scope') : '';
-  $urutanVal = ($isTarget && old('urutan') !== null) ? old('urutan') : 0;
+  // Default sengaja kosong, bukan 0. `urutan` wajib diisi di server, dan
+  // prefilling "0" membuat admin menekan Simpan tanpa pernah memilih posisi
+  // menu, padahal 0 berarti anak pertama -- keputusan yang tidak pernah
+  // dibuat. Setelah validasi gagal, nilai yang diketik admin dikembalikan lewat
+  // old() supaya tidak hilang.
+  $urutanVal = $isTarget ? old('urutan', '') : '';
   $aktifVal = $isTarget ? old('aktif', true) : true;
   $wajibVal = $isTarget ? old('wajib', false) : false;
 @endphp

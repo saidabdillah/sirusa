@@ -146,12 +146,16 @@ test('mahasiswa bisa masuk dengan NIK maupun username', function () {
     $this->assertAuthenticatedAs($mahasiswa);
 });
 
-test('login page keeps the combined label, explains it, and drops the reset hint', function () {
+test('login page keeps the combined label and drops the reset hint', function () {
     $this->get(route('login'))
         ->assertOk()
+        // Label tetap NIK/username karena dua-duanya cara masuk yang sah.
         ->assertSee('NIK atau Username')
-        // Petunjuk singkat bahwa semua peran bisa memakai NIK maupun username.
-        ->assertSee('Mahasiswa dapat memakai NIK atau username')
+        // Petunjuk per peran ("Mahasiswa dapat memakai NIK atau username. Akun
+        // staf memakai username.") sudah dihapus: ia cuma menambah kalimat
+        // tanpa mengubah apa pun yang bisa dilakukan pengguna di halaman ini.
+        ->assertDontSee('Mahasiswa dapat memakai NIK atau username')
+        ->assertDontSee('Akun staf memakai username')
         // Tidak ada lagi teks "reset kata sandi" di halaman masuk.
         ->assertDontSee('Lupa kata sandi')
         ->assertDontSee('Hubungi admin untuk reset');
