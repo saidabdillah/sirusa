@@ -16,39 +16,16 @@
     </div>
   @endif
 
+  @if($missingFields)
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-triangle"></i>
+      <strong>Profil belum lengkap.</strong> Isi dulu: {{ implode(', ', $missingFields) }}.
+      <a href="{{ route('profile') }}" class="alert-link">Lengkapi profil sekarang</a>.
+    </div>
+  @endif
+
   <div class="row">
     <div class="col-lg-7">
-      <div class="card">
-        <div class="card-header">
-          <h4>Status Profil Saya</h4>
-          @if($profile)
-            <div class="card-header-action">
-              <span class="text-muted">{{ $profile->nama_lengkap ?: auth()->user()->username }}</span>
-            </div>
-          @endif
-          <div class="card-header-action ml-3">
-            <a href="{{ route('profile') }}" class="btn btn-primary">Buka Profil</a>
-          </div>
-        </div>
-        <div class="card-body">
-          @if($missingFields)
-            <div class="alert alert-warning">
-              <i class="fas fa-exclamation-triangle"></i>
-              <strong>Profil belum lengkap.</strong> Isi dulu: {{ implode(', ', $missingFields) }}.
-            </div>
-          @endif
-
-          @if($profile)
-            <div class="text-muted">
-              Data profil Anda sudah tersimpan. Status verifikasi tidak ditampilkan
-              di sini;hubungi petugas bila ada yang perlu diperbaiki.
-            </div>
-          @else
-            <div class="text-muted">Anda belum membuat profil. <a href="{{ route('profile') }}">Buat profil sekarang</a>.</div>
-          @endif
-        </div>
-      </div>
-
       <div class="card">
         <div class="card-header">
           <h4>Pendaftaran Saya</h4>

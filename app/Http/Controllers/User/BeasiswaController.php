@@ -19,8 +19,16 @@ class BeasiswaController extends Controller
         // Mahasiswa hanya boleh melamar beasiswa kampusnya sendiri, jadi beasiswa
         // kampus lain tidak perlu tampil sama sekali: menampilkan beasiswa yang
         // tidak bisa didaftar hanya bikin mahasiswa bingung.
+        //
+        // `withHitunganCakupan()` menyatukan jumlah fakultas/prodi ke dalam SELECT
+        // yang sama, dan `diterima_count` membuat `sisaKuota()` tidak perlu
+        // COUNT per kartu. Tanpa dua-duanya, tiap kartu menembak query sendiri.
         $scholarships = Scholarship::tersedia()
             ->untukKampus($kampusId)
+            ->withHitunganCakupan()
+            ->withCount([
+                'pendaftar as penerima_diterima' => fn ($q) => $q->where('status', 'diterima'),
+            ])
             ->latest()
             ->paginate(9);
 
@@ -34,6 +42,18 @@ class BeasiswaController extends Controller
         $application = $user->applicants()->where('beasiswa_id', $scholarship->id)->first();
         $profileComplete = $user->isProfileComplete();
         $capilVerified = $profile?->isCapilVerified() ?? false;
+
+        // Muat relasi cakupan sekali di sini: daftar prodi di halaman detail dan
+        // `allowsProdi()` di dalam eligibilityIssueFor() memakai data yang sama.
+        $scholarship->loadMissing('fakultas.prodi');
+
+        // View memanggil `sisaKuota()` dua kali (panel info dan pesan blokir di
+        // `eligibilityIssueFor()`). Tanpa hitungan ini setiap pemanggilan
+        // menembak COUNT-nya sendiri; dengan ini cukup satu.
+        $scholarship->loadCount([
+            'pendaftar as penerima_diterima' => fn ($q) => $q->where('status', 'diterima'),
+        ]);
+
         $eligibilityError = $scholarship->eligibilityIssueFor($profile);
         $blocking = $user->blockingApplicant();
         $canApply = $profileComplete

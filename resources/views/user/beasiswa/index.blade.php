@@ -46,11 +46,20 @@
                     @endswitch
                   @elseif($scholarship->isExpired())
                     <span class="badge badge-danger">Berakhir</span>
+                  @elseif($scholarship->sisaKuota() === 0)
+                    <span class="badge badge-secondary">Kuota Penuh</span>
                   @else
                     <span class="badge badge-success">Aktif</span>
                   @endif
                 </div>
                 <p class="text-muted mb-2">{{ $scholarship->kampus }}</p>
+                <p class="mb-2">
+                  <i class="fas fa-layer-group text-muted"></i>
+                  <small class="text-muted">{{ $scholarship->cakupanLabel() }}</small>
+                </p>
+                @if($scholarship->deskripsi)
+                  <p class="mb-2">{{ \Illuminate\Support\Str::limit($scholarship->deskripsi, 120) }}</p>
+                @endif
                 <div class="row mb-2">
                   <div class="col-6">
                     <small class="text-muted">Gelar</small><br>
@@ -67,8 +76,10 @@
                     <strong>{{ $scholarship->semester_minimal }}</strong>
                   </div>
                   <div class="col-6">
-                    <small class="text-muted">Kuota</small><br>
-                    <strong>{{ $scholarship->kuota }}</strong>
+                    <small class="text-muted">Sisa Kuota</small><br>
+                    <strong class="{{ $scholarship->sisaKuota() === 0 ? 'text-danger' : '' }}">
+                      {{ $scholarship->sisaKuota() }} / {{ $scholarship->kuota }}
+                    </strong>
                   </div>
                 </div>
                 <div class="row">
