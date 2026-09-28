@@ -63,12 +63,6 @@
                   Rp {{ number_format($profile->ukt ?? 0, 0, ',', '.') }}
                 </div>
               </div>
-
-              <div class="alert alert-warning">
-                <i class="fas fa-info-circle"></i>
-                Pastikan seluruh dokumen pendukung (KTP, KK, akta, transkrip, SKTM, dll) sudah diunggah pada halaman
-                <a href="{{ route('profile') }}">Profil</a>. Dokumen tersebut akan diverifikasi oleh pihak terkait.
-              </div>
             </div>
             <div class="card-footer text-right">
               <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-outline-secondary mr-2"><i class="fas fa-arrow-left mr-1"></i> Batal</a>

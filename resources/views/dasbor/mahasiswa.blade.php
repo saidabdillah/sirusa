@@ -16,69 +16,16 @@
     </div>
   @endif
 
+  @if($missingFields)
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-triangle"></i>
+      <strong>Profil belum lengkap.</strong> Isi dulu: {{ implode(', ', $missingFields) }}.
+      <a href="{{ route('profile') }}" class="alert-link">Lengkapi profil sekarang</a>.
+    </div>
+  @endif
+
   <div class="row">
     <div class="col-lg-7">
-      <div class="card">
-        <div class="card-header">
-          <h4>Status Profil Saya</h4>
-          @if($profile)
-            <div class="card-header-action">
-              <span class="text-muted">{{ $profile->nama_lengkap ?: auth()->user()->username }}</span>
-            </div>
-          @endif
-          <div class="card-header-action ml-3">
-            <a href="{{ route('profile') }}" class="btn btn-primary">Buka Profil</a>
-          </div>
-        </div>
-        <div class="card-body">
-          @if($missingFields)
-            <div class="alert alert-warning">
-              <i class="fas fa-exclamation-triangle"></i>
-              <strong>Profil belum lengkap.</strong> Isi dulu: {{ implode(', ', $missingFields) }}.
-            </div>
-          @endif
-
-          @if($profile)
-            @php
-              $statusKeseluruhan = match ($profile->verifStatus()) {
-                'terverifikasi' => ['Terverifikasi', 'success'],
-                'revisi' => ['Perlu Perbaikan', 'warning'],
-                'tolak' => ['Ditolak', 'danger'],
-                default => ['Dalam Proses', 'info'],
-              };
-            @endphp
-
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <div class="text-muted">Status verifikasi data Anda:</div>
-              <span class="badge badge-{{ $statusKeseluruhan[1] }}">{{ $statusKeseluruhan[0] }}</span>
-            </div>
-
-            @foreach(\App\Models\UserProfile::verifStageOrder() as $stage)
-              @php
-                $decision = $profile->verifStageDecision($stage);
-                $catatanTahap = $profile->{'catatan_'.$stage};
-              @endphp
-              <div class="d-flex align-items-start justify-content-between border-bottom py-2">
-                <div>
-                  <div class="font-weight-bold">{{ $profile->verifStageLabels()[$stage] }}</div>
-                  @if(in_array($decision['status'], ['revisi', 'tolak']) && $catatanTahap)
-                    <div class="text-small text-muted">Catatan: {{ $catatanTahap }}</div>
-                  @endif
-                </div>
-                <span class="badge badge-{{ $decision['badge'] }}">{{ $decision['label'] }}</span>
-              </div>
-            @endforeach
-
-            <div class="text-muted text-small mt-3">
-              Pendaftaran beasiswa tidak perlu menunggu verifikasi: begitu profil lengkap,
-              Anda sudah bisa mendaftar. Hubungi petugas bila ada data yang perlu diperbaiki.
-            </div>
-          @else
-            <div class="text-muted">Anda belum membuat profil. <a href="{{ route('profile') }}">Buat profil sekarang</a>.</div>
-          @endif
-        </div>
-      </div>
-
       <div class="card">
         <div class="card-header">
           <h4>Pendaftaran Saya</h4>

@@ -86,7 +86,6 @@ class DashboardController extends Controller
         $kampusId = $profile?->prodi?->fakultas?->kampus_id;
 
         return view('dasbor.mahasiswa', [
-            'profile' => $profile,
             'kampusId' => $kampusId,
             'missingFields' => $user->getMissingProfileFields(),
             'applications' => $user->applicants()->with('beasiswa')->latest()->take(5)->get(),

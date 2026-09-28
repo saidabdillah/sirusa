@@ -129,15 +129,84 @@ test('super admin sees the cross-stage overview', function () {
         ->assertSee('Verifikasi Kesra');
 });
 
+/*
+| Kartu "Status Profil Saya" dihapus dari dasbor mahasiswa.
+|
+| Kartu itu menampilkan nama dan kalimat "Data profil Anda sudah tersimpan.
+| Status verifikasi tidak ditampilkan di sini", yang keduanya tidak memberi
+| tindakan apa pun. Alert profil belum lengkap dipindah keluar kartu supaya
+| pengingatnya tetap ada, dan link ke Profil sekarang ada di alert tersebut
+| serta di sidebar.
+*/
+
 test('student sees the student dashboard', function () {
     $user = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
 
     actingAs($user)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('Status Profil Saya')
-        ->assertSee('Dewi Mahasiswa')
+        ->assertSee('Pendaftaran Saya')
         ->assertSee('Beasiswa Tersedia');
+});
+
+test('student dashboard does not repeat the profile name back to the student', function () {
+    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('Status Profil Saya')
+        ->assertDontSee('Status verifikasi tidak ditampilkan');
+});
+
+test('student dashboard still warns about the incomplete profile', function () {
+    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+
+    // Fixture `mahasiswaTahap()` tidak mengisi UKT, desil, dan dokumen, jadi
+    // daftar field yang kurang harus non-empty dan alert-nya harus tampil.
+    expect($user->getMissingProfileFields())->not->toBeEmpty();
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Profil belum lengkap.')
+        ->assertSee('Lengkapi profil sekarang');
+});
+
+test('student dashboard drops the warning once the profile is complete', function () {
+    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+
+    $user->profile->update([
+        'nik' => '6302000000000001',
+        'no_kk' => '6302000000000009',
+        'ikut_kk' => 'ayah',
+        'ukt' => 3500000,
+        'desil' => 3,
+        'foto_profil' => 'profil/1/foto.jpg',
+        'dokumen_ktp' => 'profil/1/ktp.pdf',
+        'dokumen_kk' => 'profil/1/kk.pdf',
+        'dokumen_desil' => 'profil/1/desil.pdf',
+        'dokumen_sktm' => 'profil/1/sktm.pdf',
+        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_surat_aktif' => 'profil/1/surat.pdf',
+        'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
+        'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
+        'nama_ayah' => 'Ayah',
+        'nik_ayah' => '6302000000000002',
+        'pekerjaan_ayah' => 'Petani',
+        'nama_ibu' => 'Ibu',
+        'nik_ibu' => '6302000000000003',
+        'pekerjaan_ibu' => 'Petani',
+        'ktp_ayah' => 'profil/1/ktp-ayah.pdf',
+        'ktp_ibu' => 'profil/1/ktp-ibu.pdf',
+    ]);
+
+    expect($user->getMissingProfileFields())->toBeEmpty();
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('Profil belum lengkap.');
 });
 
 test('stage dashboard count matches the stage queue the admin actually opens', function () {

@@ -61,12 +61,46 @@
                 <strong>Deskripsi:</strong><br>
                 {!! nl2br(e($scholarship->deskripsi)) !!}
               </div>
-              @if($scholarship->persyaratan)
-                <div class="mb-3">
-                  <strong>Persyaratan:</strong><br>
-                  {!! nl2br(e($scholarship->persyaratan)) !!}
-                </div>
-              @endif
+
+              <div class="mb-3">
+                <strong>Program Studi yang Bisa Mendaftar:</strong><br>
+                @if($scholarship->fakultas->isEmpty())
+                  <span class="text-muted">
+                    Semua Program Studi di {{ $scholarship->kampus }}. Tidak ada pembatasan program studi untuk beasiswa ini.
+                  </span>
+                @else
+                  @foreach($scholarship->fakultas as $fakultas)
+                    <div class="mt-2">
+                      <i class="fas fa-university text-muted"></i> <strong>{{ $fakultas->nama }}</strong>
+                      @if($fakultas->prodi->isEmpty())
+                        <div class="text-muted ml-4"><small>Seluruh program studi pada fakultas ini</small></div>
+                      @else
+                        <ul class="ml-4 mb-0">
+                          @foreach($fakultas->prodi as $prodi)
+                            <li>{{ $prodi->nama }}</li>
+                          @endforeach
+                        </ul>
+                      @endif
+                    </div>
+                  @endforeach
+                @endif
+              </div>
+
+              <div class="mb-3">
+                <strong>Persyaratan:</strong>
+                @php($butirPersyaratan = $scholarship->butirPersyaratan())
+                @if($butirPersyaratan->isEmpty())
+                  <div class="text-muted">Tidak ada persyaratan khusus yang dicantumkan.</div>
+                @else
+                  <ul class="list-unstyled mb-0 mt-2">
+                    @foreach($butirPersyaratan as $butir)
+                      <li class="mb-1">
+                        <i class="fas fa-check-circle text-success"></i> {{ $butir }}
+                      </li>
+                    @endforeach
+                  </ul>
+                @endif
+              </div>
 
             </div>
           </div>

@@ -7,6 +7,7 @@ use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\actingAs;
 
@@ -81,6 +82,59 @@ function sudahTerverifikasi(User $user, Prodi $prodi): User
     ]);
 
     return $user;
+}
+
+/**
+ * Beasiswa aktif dengan satu fakultas dan satu prodi di dalamnya.
+ *
+ * Dipakai oleh test query count: cakupan yang benar-benar terisi memastikan
+ * `cakupanLabel()` dan daftar prodi ikut teruji, bukan hanya cabang kosong.
+ */
+function beasiswaDenganCakupan(string $nama, ?int $kampusId = null): Scholarship
+{
+    $beasiswa = beasiswaTersedia($kampusId ?? test()->kampus->id, ['nama' => $nama]);
+
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas '.$nama])
+        ->prodi()->create(['nama' => 'Prodi '.$nama]);
+
+    return $beasiswa;
+}
+
+/**
+ * Penghitung query dengan reset manual.
+ *
+ * Query setup (insert fakultas/prodi) ikut tercatat, padahal yang ingin
+ * diukur hanya query saat halaman dirender. Karena itu `reset()` dipanggil
+ * setelah data siap dan sebelum GET, supaya yang dibandingkan murni biaya
+ * render. Tanpa itu, selisihnya tergeser oleh jumlah baris yang disisipkan.
+ */
+function penghitungQuery(): object
+{
+    $hitung = new class
+    {
+        private int $jumlah = 0;
+
+        public function reset(): self
+        {
+            $this->jumlah = 0;
+
+            return $this;
+        }
+
+        public function jumlah(): int
+        {
+            return $this->jumlah;
+        }
+
+        public function catat(): void
+        {
+            $this->jumlah++;
+        }
+    };
+
+    DB::listen(fn () => $hitung->catat());
+
+    return $hitung;
 }
 
 beforeEach(function () {
@@ -251,7 +305,7 @@ test('pembatalan hanya boleh selama masa pendaftaran beasiswa masih terbuka', fu
     expect($applicant->refresh()->status)->toBe('verifikasi');
 });
 
-test('pendaftaran yang masaicrosoft pendaftarannya sudah ditutup ditolak dengan alasan yang jelas', function () {
+test('pendaftaran yang masa pendaftaran sudah ditutup ditolak dengan alasan yang jelas', function () {
     sudahTerverifikasi($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);
 
@@ -384,6 +438,265 @@ test('mahasiswa tanpa prodi melihat peringatan untuk melengkapi profil', functio
         ->assertOk()
         ->assertSee('Program Studi pada profil Anda terisi')
         ->assertDontSee('Beasiswa Tersembunyi');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Informasi beasiswa yang harus terbaca mahasiswa
+|--------------------------------------------------------------------------
+|
+| Cakupan fakultas/prodi sudah dipakai `allowsProdi()` untuk menolak
+| pendaftar, tapi tidak pernah ditampilkan. Mahasiswa yang prodinya tidak
+| termasuk bisa ditolak tanpa sempat melihat daftar itu. Test di bawah
+| mengunci tampilan yang menutup celah tersebut.
+*/
+
+test('kartu daftar menampilkan deskripsi ringkas, cakupan, dan sisa kuota', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id, [
+        'nama' => 'Beasiswa Unggulan Teknik',
+        'deskripsi' => 'Beasiswa penuh biaya kuliah untuk mahasiswa berprestasi di Fakultas Teknik.',
+        'kuota' => 10,
+    ]);
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik'])
+        ->prodi()->create(['nama' => 'Teknik Informatika']);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
+        ->assertOk()
+        ->assertSee('mahasiswa berprestasi di Fakultas Teknik')
+        ->assertSee('1 Fakultas')
+        ->assertSee('1 Program Studi')
+        ->assertSee('10 / 10');
+});
+
+test('kartu daftar memotong deskripsi panjang dan tidak menuliskannya penuh', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    beasiswaTersedia($this->kampus->id, [
+        'nama' => 'Beasiswa Deskripsi Panjang',
+        'deskripsi' => str_repeat('Uang kuliah gratis setiap semester. ', 20),
+    ]);
+
+    $html = actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))->assertOk()->getContent();
+
+    // 20 pengulangan = 720 karakter, jauh di atas batas 120. Yang diuji
+    // adalah teksnya terpotong dan ditandai elipsis, bukan panjang persisnya.
+    expect($html)
+        ->toContain('Uang kuliah gratis setiap semester.')
+        ->toContain('...')
+        ->not->toContain(str_repeat('Uang kuliah gratis setiap semester. ', 20));
+});
+
+test('daftar tanpa daftar prodi menulis semua program studi di kampus itu', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    beasiswaTersedia($this->kampus->id, [
+        'kampus' => 'Universitas Lambung Mangkurat',
+        'nama' => 'Beasiswa Terbuka',
+    ]);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
+        ->assertOk()
+        ->assertSee('Semua Program Studi di Universitas Lambung Mangkurat')
+        ->assertDontSee('0 Fakultas');
+});
+
+test('daftar menandai beasiswa yang kuotanya sudah penuh', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Penuh', 'kuota' => 1]);
+    Applicant::create([
+        'user_id' => User::factory()->standardUser()->create()->id,
+        'beasiswa_id' => $beasiswa->id,
+        'status' => 'diterima',
+    ]);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
+        ->assertOk()
+        ->assertSee('Kuota Penuh')
+        ->assertSee('0 / 1');
+});
+
+test('detail menampilkan cakupan fakultas dan prodi', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    $fakultas = $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik']);
+    $fakultas->prodi()->create(['nama' => 'Teknik Informatika']);
+    $fakultas->prodi()->create(['nama' => 'Teknik Elektro']);
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas Ekonomi'])->prodi()->create(['nama' => 'Akuntansi']);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('Program Studi yang Bisa Mendaftar')
+        ->assertSee('Fakultas Teknik')
+        ->assertSee('Teknik Informatika')
+        ->assertSee('Teknik Elektro')
+        ->assertSee('Akuntansi');
+});
+
+test('detail tanpa daftar prodi menjelaskan bahwa semua prodi di kampusnya terbuka', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id, [
+        'kampus' => 'Universitas Lambung Mangkurat',
+        'nama' => 'Beasiswa Tanpa Pembatasan',
+    ]);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('Semua Program Studi di Universitas Lambung Mangkurat')
+        ->assertSee('Tidak ada pembatasan program studi');
+});
+
+test('detail merubah persyaratan bebas menjadi daftar checklist', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id, [
+        'persyaratan' => "- Mahasiswa aktif\n- Tidak pernah punya Beasiswa\nIPK sesuai ketentuan",
+    ]);
+
+    $html = actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('Persyaratan:')
+        ->getContent();
+
+    expect($html)
+        ->toContain('Mahasiswa aktif')
+        ->toContain('Tidak pernah punya Beasiswa')
+        ->not->toContain('- Mahasiswa aktif')
+        ->not->toContain('&#8226;');
+});
+
+test('detail tanpa persyaratan menampilkan kalimat pengganti, bukan kotak kosong', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id, ['persyaratan' => null]);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('Tidak ada persyaratan khusus yang dicantumkan.');
+});
+
+/*
+| Daftar syarat otomatis sengaja tidak ditampilkan.
+|
+| Daftar "Syarat Otomatis" pernah dirender di halaman detail. Isinya bukan
+| informasi baru: sidebar "Daftar Sekarang" sudah menampilkan satu pesan
+| pemblokir yang spesifik lewat `$eligibilityError`, plus alert terpisah untuk
+| profil belum lengkap, Capil belum setuju, dan pendaftaran lain yang jalan.
+| Daftar per poin hanya mengulang pesan yang sama dalam bentuk yang lebih
+| panjang, jadi sudah dihapus dari view.
+|
+| Test di bawah mengunci keputusan itu dari dua sisi: blok daftar tidak boleh
+| muncul, dan pesan pemblokir di sidebar tetap harus ada.
+*/
+
+test('detail tidak menampilkan daftar syarat otomatis', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi, [
+        'verif_capil' => 'setuju',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'setuju',
+    ]);
+    $this->mahasiswa->profile->update(['ipk' => 2.0]);
+
+    $beasiswa = beasiswaTersedia($this->kampus->id, [
+        'ipk_minimal' => 3.5,
+        'semester_minimal' => 5,
+    ]);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertDontSee('Syarat Otomatis')
+        ->assertDontSee('diperiksa dari profil Anda')
+        ->assertDontSee('IPK Anda minimal 3.5')
+        ->assertDontSee('Semester Anda minimal 5')
+        ->assertDontSee('Kuota beasiswa masih tersedia')
+        ->assertDontSee('Periode pendaftaran masih dibuka')
+        ->assertDontSee('Beasiswa berstatus aktif')
+        ->assertDontSee('Program Studi Anda termasuk dalam daftar program studi yang dibuka');
+});
+
+test('sidebar tetap memberi tahu satu alasan pemblokir yang spesifik', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi, [
+        'verif_capil' => 'setuju',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'setuju',
+    ]);
+    $this->mahasiswa->profile->update(['ipk' => 2.0]);
+
+    $beasiswa = beasiswaTersedia($this->kampus->id, ['ipk_minimal' => 3.5]);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->assertSee('IPK minimal untuk beasiswa ini adalah 3.5')
+        ->assertDontSee('Ajukan Sekarang');
+});
+
+test('jumlah query daftar tidak tumbuh saat kartu bertambah', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+
+    $hitung = penghitungQuery();
+    $kampusId = $this->kampus->id;
+    $mahasiswa = $this->mahasiswa;
+
+    $ukurDaftar = function () use ($hitung, $mahasiswa): int {
+        $hitung->reset();
+
+        actingAs($mahasiswa)->get(route('user.beasiswa.index'))->assertOk();
+
+        return $hitung->jumlah();
+    };
+
+    // Pemanasan, dengan alasan yang sama seperti di test detail: cache
+    // permission Spatie dan relasi profil harus terisi dulu.
+    beasiswaDenganCakupan('Pemanasan', $kampusId);
+    $ukurDaftar();
+
+    beasiswaDenganCakupan('Satuan', $kampusId);
+    $satuKartu = $ukurDaftar();
+
+    // Tambah enam kartu: 8 total, masih di bawah page size 9, jadi tidak ada
+    // query paginate tambahan yang mengganggu perbandingan.
+    for ($i = 0; $i < 6; $i++) {
+        beasiswaDenganCakupan('Banyak '.$i, $kampusId);
+    }
+    $delapanKartu = $ukurDaftar();
+
+    // Yang diuji adalah selisihnya, bukan jumlah absolut: layout, navbar, dan
+    // notifikasi memang menjalankan querynya sendiri. Kalau `sisaKuota()` atau
+    // `cakupanLabel()` menembak per kartu, selisihnya ikut bertambah seiring
+    // jumlah kartu.
+    expect($delapanKartu - $satuKartu)->toBe(0);
+});
+
+test('jumlah query detail tidak tumbuh saat prodi cakupan bertambah', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+
+    $hitung = penghitungQuery();
+    $kampusId = $this->kampus->id;
+    $mahasiswa = $this->mahasiswa;
+
+    $ukurDetail = function (Scholarship $beasiswa) use ($hitung, $mahasiswa): int {
+        $hitung->reset();
+
+        actingAs($mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))->assertOk();
+
+        return $hitung->jumlah();
+    };
+
+    // Render pemanasan dulu. Tanpa ini, render pertama menanggung biaya cache
+    // yang baru terisi (cache permission Spatie, relasi profil pada instance
+    // user), sehingga render berikutnya terlihat lebih murah dan selisihnya
+    // negatif. Yang dibandingkan adalah kondisi stabil, setelah cache terisi.
+    $ukurDetail(beasiswaDenganCakupan('Pemanasan', $kampusId));
+
+    $satuProdi = $ukurDetail(beasiswaDenganCakupan('Sedikit', $kampusId));
+
+    $banyak = beasiswaTersedia($kampusId);
+    for ($f = 0; $f < 3; $f++) {
+        $fakultas = $banyak->fakultas()->create(['nama' => 'Fakultas '.$f]);
+        for ($p = 0; $p < 4; $p++) {
+            $fakultas->prodi()->create(['nama' => 'Prodi '.$f.'-'.$p]);
+        }
+    }
+    $duaBelasProdi = $ukurDetail($banyak);
+
+    expect($duaBelasProdi - $satuProdi)->toBe(0);
 });
 
 /*
