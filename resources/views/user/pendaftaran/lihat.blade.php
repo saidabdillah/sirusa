@@ -41,34 +41,25 @@
           </div>
           <div class="card-body text-center">
             <div class="mb-3">
-              {{-- `@break` WAJIB di baris sendiri. Scanner Blade memindai
-                   directive dengan pola `\B@`, yaitu "@" tidak boleh berada di
-                   word boundary. Kalau `@break` menempel setelah teks
-                   ("Verifikasi@break"), huruf sebelum "@" yang mengakhiri kata
-                   membuat "@" jadi word boundary, `\B@` gagal, dan `@break`
-                   TIDAK dikompilasi -- ia tercetak literal di badge dan PHP
-                   jatuh ke case berikutnya. Efeknya satu baris status
-                   sekaligus menampilkan semua ikon, semua label, dan teks
-                   "@break". --}}
+              {{-- Ikon dan label diambil dari `Applicant`, bukan ditulis ulang
+                   per status di sini. `@switch` per status di view adalah tempat
+                   kedua label "Diterima"/"Disetujui" pernah berubah pisahi, dan
+                   `@break` yang menempel setelah teks bisa gagal dikompilasi
+                   lalu tercetak literal. Satu peta di model menutup keduanya. --}}
               <span class="badge badge-{{ $applicant->statusBadge() }} p-2">
-                @switch($applicant->status)
-                  @case('verifikasi')
-                    <i class="fas fa-clock"></i> Verifikasi
-                    @break
-                  @case('diterima')
-                    <i class="fas fa-check-circle"></i> Diterima
-                    @break
-                  @case('ditolak')
-                    <i class="fas fa-times-circle"></i> Ditolak
-                    @break
-                  @case('dibatalkan')
-                    <i class="fas fa-ban"></i> Dibatalkan
-                    @break
-                  @default
-                    <i class="fas fa-ban"></i> {{ $applicant->statusLabel() }}
-                @endswitch
+                <i class="fas {{ $applicant->statusIcon() }}"></i> {{ $applicant->statusLabel() }}
               </span>
             </div>
+            @if($applicant->diputuskan_at)
+            <div class="text-left small text-muted">
+              <div class="mb-0">
+                <strong>Tanggal:</strong> {{ $applicant->diputuskan_at->translatedFormat('d F Y H:i') }}
+                @if($applicant->decidedByName())
+                  &middot; <strong>Diputuskan oleh:</strong> {{ $applicant->decidedByName() }}
+                @endif
+              </div>
+            </div>
+            @endif
             @if($applicant->catatan)
             <div class="text-left">
               <strong>Catatan Admin:</strong>

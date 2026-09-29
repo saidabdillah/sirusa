@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Applicant;
 use App\Models\Kampus;
 use App\Models\Prodi;
 use App\Models\Scholarship;
@@ -240,14 +241,14 @@ test('kolom bukti ukt menawarkan gambar dan pdf di form', function () {
 test('profil baru selalu mulai dengan ketiga tahap menunggu', function () {
     $profile = $this->user->profile()->create(['nama_lengkap' => 'Ahmad Fauzi']);
 
-    expect($profile->verif_catpil)->toBe('menunggu')
+    expect($profile->verif_capil)->toBe('menunggu')
         ->and($profile->verif_kampus)->toBe('menunggu')
         ->and($profile->verif_kesra)->toBe('menunggu');
 
     // Nilai default juga berlaku di level database, bukan cuma di model.
     $this->assertDatabaseHas('profil_pengguna', [
         'user_id' => $this->user->id,
-        'verif_catpil' => 'menunggu',
+        'verif_capil' => 'menunggu',
         'verif_kampus' => 'menunggu',
         'verif_kesra' => 'menunggu',
     ]);
@@ -262,12 +263,12 @@ test('menyimpan profil tidak mengubah status verifikasi', function () {
 
     $profile = profilLokal($this->user);
 
-    expect($profile->verif_catpil)->toBe('menunggu')
+    expect($profile->verif_capil)->toBe('menunggu')
         ->and($profile->verif_kampus)->toBe('menunggu')
         ->and($profile->verif_kesra)->toBe('menunggu')
         // Belum ada keputusan, jadi belum terverifikasi.
         ->and($profile->isVerified())->toBeFalse()
-        ->and($profile->isCatpilVerified())->toBeFalse();
+        ->and($profile->isCapilVerified())->toBeFalse();
 });
 
 /*
@@ -324,23 +325,44 @@ test('dropdown form edit otomatis mengikuti data tersimpan', function () {
         ->and($html)->toContain('&mdash; Pilih &mdash;');
 });
 
-test('dropdown keputusan verifikasi mengikuti keputusan yang tersimpan', function () {
-    $kesraAdmin = User::factory()->admin()->create(['email' => 'kesra@test.com']);
+test('dropdown keputusan verifikasi tidak pernah mengikuti keputusan yang tersimpan', function () {
+    $kampusAdmin = User::factory()->kampusAdmin()->create([
+        'email' => 'kampus@test.com',
+        'kampus_id' => $this->kampus->id,
+    ]);
     $user = User::factory()->standardUser()->create(['email' => 'mhs@test.com']);
 
     $user->profile()->create([
         'nama_lengkap' => 'Ahmad Fauzi',
-        'verif_catpil' => 'setuju',
-        'verif_kampus' => 'setuju',
-        'verif_kesra' => 'revisi',
+        'prodi_id' => $this->prodi->id,
+        'verif_capil' => 'setuju',
+        'verif_kampus' => 'revisi',
     ]);
 
+    // Antrean kampus hanya memuat mahasiswa yang benar-benar punya pendaftaran,
+    // jadi satu baris pendaftaran dibuat supaya halaman detailnya bisa dibuka.
+    Applicant::factory()->create([
+        'user_id' => $user->id,
+        'beasiswa_id' => Scholarship::factory()->create(['kampus_id' => $this->kampus->id])->id,
+        'status' => 'verifikasi',
+    ]);
+
+    // Diuji di halaman Kampus, bukan Kesra: halaman Kesra tidak lagi punya
+    // form verdict profil, hanya keputusan pendaftaran.
     $html = preg_replace(
         '/\s+/',
         ' ',
-        actingAs($kesraAdmin)->get(route('admin.kesra.lihat', $user))->assertOk()->getContent(),
+        actingAs($kampusAdmin)->get(route('admin.kampusverif.lihat', $user))->assertOk()->getContent(),
     );
 
-    expect($html)->toContain('<option value="revisi" selected>')
+    // Berbeda dari form beasiswa, yang terpilih mengikuti nilai tersimpan,
+    // dropdown keputusan sengaja tidak pernah ikut terisi. Admin yang cuma
+    // membuka halaman lalu menekan simpan akan mengirim ulang keputusan lama
+    // sebagai keputusan baru. Keputusan yang tersimpan tetap terbaca di kotak
+    // "Keputusan saat ini".
+    expect($html)->toContain('<option value="" selected>')
+        ->and($html)->not->toContain('<option value="revisi" selected>')
+        ->and($html)->toContain('Keputusan saat ini:')
+        ->and($html)->toContain('Perlu Perbaikan')
         ->and($html)->toContain('&mdash; Pilih &mdash;');
 });

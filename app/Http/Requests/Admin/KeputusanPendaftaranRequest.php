@@ -13,15 +13,21 @@ class KeputusanPendaftaranRequest extends FormRequest
 
     /**
      * Nama input memakai awalan `pendaftaran_` karena halaman detail verifikasi
-     * Kesra memuat dua form: verifikasi profil dan keputusan pendaftaran. Kalau
-     * keduanya memakai `status`, satu error bag akan menandai form yang salah.
+     * masih bisa memuat form verifikasi profil (Capil, Kampus) di sebelah
+     * keputusan pendaftaran. Kalau keduanya memakai `status`, satu error bag
+     * akan menandai form yang salah.
+     *
+     * Hanya `diterima` dan `ditolak` yang valid. `verifikasi` dulu berarti
+     * "tarik kembali", dan dihapus supaya keputusan Kesra tidak bisa
+     * dikosongkan tanpa sengaja. Mengubah keputusan berarti memilih ulang
+     * `diterima` atau `ditolak` lewat form yang sama.
      *
      * @return array<string, array<int, string>>
      */
     public function rules(): array
     {
         return [
-            'pendaftaran_status' => ['required', 'in:diterima,ditolak,verifikasi'],
+            'pendaftaran_status' => ['required', 'in:diterima,ditolak'],
             'pendaftaran_catatan' => ['nullable', 'string', 'max:500', 'required_if:pendaftaran_status,ditolak'],
         ];
     }

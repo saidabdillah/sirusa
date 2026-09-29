@@ -13,10 +13,37 @@ class Applicant extends Model
     protected $table = 'pendaftar';
 
     public const STATUS_LABELS = [
-        'verifikasi' => 'Verifikasi',
-        'diterima' => 'Diterima',
+        'verifikasi' => 'Menunggu',
+        'diterima' => 'Disetujui',
         'ditolak' => 'Ditolak',
         'dibatalkan' => 'Dibatalkan',
+    ];
+
+    /**
+     * Warna badge per status, sebagai pasangan langsung dari `STATUS_LABELS`.
+     * Digit status database (`verifikasi`, `diterima`, …) tidak pernah tampil
+     * mentah di UI -- semua label dan warna lewat kedua peta ini.
+     *
+     * @var array<string, string>
+     */
+    public const STATUS_BADGES = [
+        'verifikasi' => 'warning',
+        'diterima' => 'success',
+        'ditolak' => 'danger',
+        'dibatalkan' => 'secondary',
+    ];
+
+    /**
+     * Ikon per status untuk tampilan berkartu. Dipisah dari warna supaya
+     * `@switch` per status tidak perlu ditulis ulang di tiap view.
+     *
+     * @var array<string, string>
+     */
+    public const STATUS_ICONS = [
+        'verifikasi' => 'fa-clock',
+        'diterima' => 'fa-check-circle',
+        'ditolak' => 'fa-times-circle',
+        'dibatalkan' => 'fa-ban',
     ];
 
     /**
@@ -24,6 +51,28 @@ class Applicant extends Model
      * justru membuka kembali, supaya mahasiswa boleh mencoba lagi.
      */
     public const STATUS_BLOCKING = ['verifikasi', 'diterima'];
+
+    /**
+     * Status pendaftaran yang belum diputuskan, jadi masih menjadi pekerjaan Kesra.
+     *
+     * Dipakai sebagai default daftar antrean Kesra dan sebagai status yang dicari
+     * dashboard. Disebut konstanta, bukan menulis `'verifikasi'` di banyak tempat,
+     * karena "menunggu" untuk tahap Kesra berarti sesuatu yang berbeda dari
+     * "menunggu" pada tahap profil: di sana tidak ada keputusan sama sekali, di sini
+     * produknya satu baris `pendaftar` yang belum diputuskan.
+     */
+    public const PENDING_STATUS = 'verifikasi';
+
+    /**
+     * Nilai `filter` di URL antrean Kesra yang berarti "semua status".
+     *
+     * Bukan string kosong, karena `ConvertEmptyStringsToNull` di middleware `web`
+     * mengubah `?filter=` menjadi `null` -- sama dengan tidak mengirim `filter` sama
+     * sekali. Padahal keduanya harus berbeda: tidak mengirim berarti antrean yang
+     * masih menunggu, sedangkan nilai ini berarti seluruh arsip termasuk yang sudah
+     * dibatalkan mahasiswa.
+     */
+    public const FILTER_ALL = 'semua';
 
     protected $fillable = [
         'user_id',
@@ -34,11 +83,15 @@ class Applicant extends Model
         'semester',
         'status',
         'catatan',
+        'diputuskan_at',
+        'diputuskan_oleh',
     ];
 
     protected function casts(): array
     {
-        return [];
+        return [
+            'diputuskan_at' => 'datetime',
+        ];
     }
 
     public function user(): BelongsTo
@@ -51,6 +104,11 @@ class Applicant extends Model
         return $this->belongsTo(Scholarship::class, 'beasiswa_id');
     }
 
+    public function diputuskanOleh(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diputuskan_oleh');
+    }
+
     public function statusLabel(): string
     {
         return self::STATUS_LABELS[$this->status] ?? ucfirst((string) $this->status);
@@ -58,12 +116,23 @@ class Applicant extends Model
 
     public function statusBadge(): string
     {
-        return match ($this->status) {
-            'diterima' => 'success',
-            'ditolak' => 'danger',
-            'dibatalkan' => 'secondary',
-            default => 'warning',
-        };
+        return self::STATUS_BADGES[$this->status] ?? 'warning';
+    }
+
+    public function statusIcon(): string
+    {
+        return self::STATUS_ICONS[$this->status] ?? 'fa-clock';
+    }
+
+    /**
+     * Nama admin yang memutus pendaftaran ini, atau `null` untuk baris lama
+     * yang diputuskan sebelum kolom `diputuskan_oleh` ada.
+     */
+    public function decidedByName(): ?string
+    {
+        return $this->diputuskan_oleh
+            ? $this->diputuskanOleh?->name
+            : null;
     }
 
     /**

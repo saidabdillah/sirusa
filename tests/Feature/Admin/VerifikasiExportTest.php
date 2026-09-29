@@ -233,15 +233,52 @@ test('unduhan kesra menambah data pendaftaran dan statusnya', function () {
 
     Applicant::where('user_id', $user->id)->update(['status' => 'diterima']);
 
-    $rows = bacaSheet(actingAs($this->kesraAdmin)->get(route('admin.kesra.export')));
+    // Filter `semua`, karena tanpa filter unduhan Kesra hanya berisi yang masih
+    // menunggu -- sama persis dengan antrean di layar.
+    $rows = bacaSheet(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'semua'])));
 
     expect($rows)->toHaveCount(1)
         ->and($rows[0]['Nama Lengkap'])->toBe('Kesra Satu')
         ->and($rows[0]['Beasiswa'])->toBe('Beasiswa Ekspor')
-        ->and($rows[0]['Status Pendaftaran'])->toBe('Diterima')
+        // Label di Excel memakai istilah UI yang sama dengan badge, bukan nilai
+        // mentah database: `diterima` tampil sebagai "Disetujui".
+        ->and($rows[0]['Status Pendaftaran'])->toBe('Disetujui')
         ->and($rows[0]['Nama Orang Tua/Wali'])->toBe('Ayah Ahmad')
         ->and($rows[0]['UKT/SPP'])->toBe('1500000')
         ->and($rows[0]['Status Kesra'])->toBe('Menunggu');
+});
+
+test('unduhan kesra memuat persis isi antrean kesra yang sedang dibuka', function () {
+    $menunggu = User::factory()->standardUser()->create(['email' => 'menunggu@test.com']);
+    buatPemohon($menunggu, 'kesra', $this->prodi, 'Antrean Menunggu');
+
+    $diterima = User::factory()->standardUser()->create(['email' => 'diterima@test.com']);
+    buatPemohon($diterima, 'kesra', $this->prodi, 'Antrean Disetujui');
+    Applicant::where('user_id', $diterima->id)->update(['status' => 'diterima']);
+
+    // Tanpa filter: yang menunggu, sama seperti tabelnya.
+    expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export'))))
+        ->toBe(['Antrean Menunggu']);
+
+    // Filter keputusan: kebalikannya.
+    expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'diterima']))))
+        ->toBe(['Antrean Disetujui']);
+
+    // `semua` menggabungkan keduanya -- tidak ada baris yang hilang di antara
+    // tabel dan file, dan tidak ada yang muncul tiba-tiba.
+    expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'semua']))))
+        ->toHaveCount(2);
+
+    // Pendaftaran yang sudah dibatalkan mahasiswa hanya muncul di `semua`; di
+    // layar pun tidak ada tombol yang mengarah ke form keputusannya.
+    $dibatalkan = User::factory()->standardUser()->create(['email' => 'batal@test.com']);
+    buatPemohon($dibatalkan, 'kesra', $this->prodi, 'Antrean Dibatalkan');
+    Applicant::where('user_id', $dibatalkan->id)->update(['status' => 'dibatalkan']);
+
+    expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'semua']))))
+        ->toContain('Antrean Dibatalkan')
+        ->and(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'dibatalkan']))))
+        ->toBe(['Antrean Dibatalkan']);
 });
 
 test('setiap tahap mengunduh antrean tahapnya sendiri', function () {

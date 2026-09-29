@@ -1,6 +1,18 @@
 {{-- Porsi antrean tiap tahap, hanya tahap yang bisa diakses pengguna. --}}
 @props(['stages' => [], 'perStage' => []])
 
+@php
+  use App\Support\VerifikasiAntrean;
+
+  // Satu baris merangkai beberapa tahap sekaligus, padahal tiap tahap punya
+  // kumpulan status sendiri (lihat `VerifikasiAntrean::ringkasanKolom()`).
+  // Karena itu header dibuat sekali dari daftar lintas tahap, dan setiap sel
+  // mencari kunci status apa yang berlaku untuk tahap baris itu. Status yang
+  // tidak berlaku ditampilkan sebagai tanda hubung -- bukan `0`, karena "0"
+  // berarti tidak ada sedangkan tanda hubung berarti tidak berlaku.
+  $kolom = VerifikasiAntrean::ringkasanKolom();
+@endphp
+
 <div class="card">
   <div class="card-header">
     <h4>Sebaran Antrean per Tahap</h4>
@@ -11,33 +23,34 @@
         <thead>
           <tr>
             <th>Tahap</th>
-            <th class="text-center">Menunggu</th>
-            <th class="text-center">Perlu Perbaikan</th>
-            <th class="text-center">Disetujui</th>
-            <th class="text-center">Ditolak</th>
+            @foreach($kolom as $column)
+              <th class="text-center">{{ $column['label'] }}</th>
+            @endforeach
             <th></th>
           </tr>
         </thead>
         <tbody>
           @forelse($stages as $stage)
             @php
-              $antrean = new \App\Support\VerifikasiAntrean($stage);
-              $label = $antrean->label();
+              $antrean = new VerifikasiAntrean($stage);
+              $kunci = $antrean->ringkasanKeys();
               $counts = $perStage[$stage] ?? [];
             @endphp
             <tr>
-              <td class="text-capitalize">{{ $label }}</td>
-              <td class="text-center">{{ $counts['menunggu'] ?? 0 }}</td>
-              <td class="text-center">{{ $counts['revisi'] ?? 0 }}</td>
-              <td class="text-center">{{ $counts['setuju'] ?? 0 }}</td>
-              <td class="text-center">{{ $counts['tolak'] ?? 0 }}</td>
+              <td class="text-capitalize">{{ $antrean->label() }}</td>
+              @foreach($kolom as $column)
+                @php
+                  $key = current(array_intersect($column['keys'], $kunci));
+                @endphp
+                <td class="text-center">{{ $key === false ? '&mdash;' : ($counts[$key] ?? 0) }}</td>
+              @endforeach
               <td class="text-right">
                 <a href="{{ route($antrean->routeName()) }}" class="btn btn-sm btn-outline-primary">Buka</a>
               </td>
             </tr>
           @empty
             <tr>
-              <td colspan="6" class="text-center text-muted">Tidak ada tahap verifikasi yang bisa diakses.</td>
+              <td colspan="{{ 2 + count($kolom) }}" class="text-center text-muted">Tidak ada tahap verifikasi yang bisa diakses.</td>
             </tr>
           @endforelse
         </tbody>

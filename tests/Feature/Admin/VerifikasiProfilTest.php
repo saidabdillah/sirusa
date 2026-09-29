@@ -5,9 +5,12 @@ use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Notifications\ApplicationDecision;
+use App\Notifications\DataVerificationChanged;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
@@ -49,9 +52,9 @@ function verifikasiProfilePayload(int $prodiId): array
 function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
 {
     $stages = [
-        'catpil' => ['verif_catpil' => 'menunggu', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
-        'kampus' => ['verif_catpil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
-        'kesra' => ['verif_catpil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'],
+        'capil' => ['verif_capil' => 'menunggu', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
+        'kampus' => ['verif_capil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
+        'kesra' => ['verif_capil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'],
     ];
 
     $suffix = str_pad((string) $user->id, 6, '0', STR_PAD_LEFT);
@@ -73,7 +76,7 @@ function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
 
     // Tahap kampus dan kesra baru masuk antrean setelah mahasiswa benar-benar
     // mendaftar beasiswa, jadi fixture-nya butuh baris `pendaftar` juga.
-    if ($stage !== 'catpil') {
+    if ($stage !== 'capil') {
         Applicant::create([
             'user_id' => $user->id,
             'beasiswa_id' => beasiswaVerifikasi()->id,
@@ -105,7 +108,7 @@ beforeEach(function () {
 
     Storage::fake('public');
 
-    $this->catpilAdmin = User::factory()->catpil()->create(['email' => 'catpil@test.com']);
+    $this->capilAdmin = User::factory()->capil()->create(['email' => 'capil@test.com']);
     $this->kampusAdmin = User::factory()->kampusAdmin()->create(['email' => 'kampus@test.com']);
     $this->kesraAdmin = User::factory()->admin()->create(['email' => 'kesra@test.com']);
 
@@ -116,73 +119,59 @@ beforeEach(function () {
     $this->applicantUser = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 });
 
-test('catpil index lists profiles still in flight but hides fully verified ones', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+test('capil index lists profiles still in flight but hides fully verified ones', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
-    // Catpil dan Kampus paralel: keputusan Kampus tidak mengunci Catpil.
-    // Satu-satunya tahap hilir adalah Kesra, dan masih menunggu, jadi Catpil
-    // masih boleh membetulkan keputusannya sendiri.
+    // Sudah lewat ke tahap kampus, tapi belum ada keputusan di tahap berikutnya,
+    // jadi Capil masih boleh membetulkan keputusannya sendiri.
     $inFlight = User::factory()->standardUser()->create();
     createPendingVerifikasiProfile($inFlight, 'kampus');
 
-    // Sudah terverifikasi penuh (Kesra sudah memutuskan), tidak ada yang perlu
-    // ditinjau di tahap manapun.
+    // Sudah terverifikasi penuh, tidak ada yang perlu ditinjau di tahap manapun.
     $done = User::factory()->standardUser()->create();
-    createPendingVerifikasiProfile($done, 'kesra')->update(['verif_kesra' => 'setuju']);
+    createPendingVerifikasiProfile($done, 'kesra');
 
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index'))
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index'))
         ->assertOk()
         ->assertSee($this->applicantUser->profile->nama_lengkap)
         ->assertSee($inFlight->profile->nama_lengkap)
         ->assertDontSee($done->profile->nama_lengkap);
 });
 
-test('kampus queue does not wait for the catpil approval', function () {
+test('kampus index lists only profiles whose capil stage was approved', function () {
     $pending = User::factory()->standardUser()->create();
     createPendingVerifikasiProfile($pending, 'kampus');
 
-    // Catpil dan Kampus paralel: profil yang Catpil belum setujui tetap masuk
-    // antrean Kampus, asalkan mahasiswanya sudah mendaftar beasiswa.
-    $waitingCatpil = User::factory()->standardUser()->create();
-    createPendingVerifikasiProfile($waitingCatpil, 'catpil');
-    Applicant::create([
-        'user_id' => $waitingCatpil->id,
-        'beasiswa_id' => beasiswaVerifikasi()->id,
-        'status' => 'verifikasi',
-    ]);
-
-    // Akun tanpa pendaftaran tetap tidak masuk antrean Kampus.
-    $tanpaPendaftaran = User::factory()->standardUser()->create();
-    createPendingVerifikasiProfile($tanpaPendaftaran, 'catpil');
+    $waitingCapil = User::factory()->standardUser()->create();
+    createPendingVerifikasiProfile($waitingCapil, 'capil');
 
     actingAs($this->kampusAdmin)
         ->get(route('admin.kampusverif.index'))
         ->assertOk()
         ->assertSee($pending->profile->nama_lengkap)
-        ->assertSee($waitingCatpil->profile->nama_lengkap)
-        ->assertDontSee($tanpaPendaftaran->profile->nama_lengkap);
+        ->assertDontSee($waitingCapil->profile->nama_lengkap);
 });
 
-test('disetujui Catpil tidak otomatis membuka antrean kampus sebelum mahasiswa mendaftar', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+test('disetujui Capil tidak otomatis membuka antrean kampus sebelum mahasiswa mendaftar', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
             'status' => 'setuju',
             'catatan' => 'Data dasar benar',
         ])
-        ->assertRedirect(route('admin.catpil.index'));
+        ->assertRedirect(route('admin.capil.index'));
 
     $profile = $this->applicantUser->refresh()->profile;
 
-    expect($profile->verif_catpil)->toBe('setuju')
-        // Disetujui Catpil != otomatis terverifikasi kampus.
+    expect($profile->verif_capil)->toBe('setuju')
+        // Disetujui Capil != otomatis terverifikasi kampus.
         ->and($profile->verif_kampus)->toBe('menunggu')
         // Tidak masuk antreanampus karena belum ada pendaftaran.
         ->and($profile->canVerifStage('kampus'))->toBeFalse();
 
-    // Permintaan pertama KINGSA flash "berhasil disetujui" dari Catpil, yang
+    // Permintaan pertama KINGSA flash "berhasil disetujui" dari Capil, yang
     // isinya memuat nama mahasiswa. Flash-nya baru hilang di permintaan
     // berikutnya, jadi pemeriksaannya dilakukan setelah satu request lain.
     actingAs($this->kampusAdmin)->get(route('admin.kampusverif.index'));
@@ -211,51 +200,151 @@ test('disetujui Catpil tidak otomatis membuka antrean kampus sebelum mahasiswa m
         ->assertSee($profile->nama_lengkap);
 });
 
-test('kesra index lists only profiles approved by previous stages', function () {
+test('the kesra menu opens a queue of registrations waiting for a decision', function () {
+    // `createPendingVerifikasiProfile(..., 'kesra')` sudah membuat satu baris
+    // `pendaftar` berstatus `verifikasi`, jadi yang sudah diputuskan cukup diubah
+    // statusnya -- membuat baris kedua akan menabrak indeks unik
+    // `[user_id, beasiswa_id]`.
     $pending = User::factory()->standardUser()->create();
     createPendingVerifikasiProfile($pending, 'kesra');
 
-    $waitingKampus = User::factory()->standardUser()->create();
-    createPendingVerifikasiProfile($waitingKampus, 'kampus');
+    $diterima = User::factory()->standardUser()->create();
+    createPendingVerifikasiProfile($diterima, 'kesra');
+    $diterima->applicants()->update(['status' => 'diterima']);
 
+    // Kesra punya satu keputusan dan itu keputusan pendaftaran, jadi daftar kerja
+    // Kesra adalah daftar pendaftar yang perlu diputuskan. Halaman profil yang
+    // dulu jadi antrean Kesra sekarang hanya berlaku untuk Capil dan Kampus.
+    $response = actingAs($this->kesraAdmin)->get(route('admin.kesra.index'));
+
+    $response->assertOk()
+        ->assertSee('Pendaftaran Menunggu Putusan')
+        ->assertSee($pending->profile->nama_lengkap)
+        // Default-nya antrean, bukan arsip: yang sudah diputuskan tidak muncul.
+        ->assertDontSee($diterima->profile->nama_lengkap, false);
+
+    // Setiap baris harus bisa diklik sampai form keputusannya. Kalau tidak, admin
+    // mendarat di halaman yang isinya tidak bisa dikerjakan -- dan itu persis yang
+    // terjadi ketika menu Kesra cuma dialihkan ke daftar pendaftar.
+    $response->assertSee(route('admin.kesra.lihat', $pending->id), false);
+
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.lihat', $pending->id))
+        ->assertOk()
+        ->assertSee('name="pendaftaran_status"', false);
+});
+
+test('kesra queue filter switches between pending and decided registrations', function () {
+    $pending = User::factory()->standardUser()->create();
+    createPendingVerifikasiProfile($pending, 'kesra');
+
+    $diterima = User::factory()->standardUser()->create();
+    createPendingVerifikasiProfile($diterima, 'kesra');
+    $diterima->applicants()->update(['status' => 'diterima']);
+
+    // Tanpa filter: yang menunggu saja.
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.index'))
         ->assertOk()
         ->assertSee($pending->profile->nama_lengkap)
-        ->assertDontSee($waitingKampus->profile->nama_lengkap);
+        ->assertDontSee($diterima->profile->nama_lengkap, false);
+
+    // Filter keputusan lama: kebalikannya.
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index', ['filter' => 'diterima']))
+        ->assertOk()
+        ->assertSee($diterima->profile->nama_lengkap)
+        ->assertDontSee($pending->profile->nama_lengkap, false);
+
+    // `filter=semua` berarti seluruh arsip, termasuk yang sudah dibatalkan.
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index', ['filter' => 'semua']))
+        ->assertOk()
+        ->assertSee($pending->profile->nama_lengkap)
+        ->assertSee($diterima->profile->nama_lengkap);
+
+    // `?filter=` kosong TIDAK berarti semua status. `ConvertEmptyStringsToNull`
+    // di middleware `web` mengubahnya jadi `null`, sama persis dengan tidak
+    // mengirim filter sama sekali, jadi ini harus tetap jadi antrean default.
+    // Kalau suatu saat ini berubah, dua arti tersebut ikut berubah bersama dan
+    // daftar tanpa sengaja berubah isi.
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index', ['filter' => '']))
+        ->assertOk()
+        ->assertSee($pending->profile->nama_lengkap)
+        ->assertDontSee($diterima->profile->nama_lengkap, false);
+
+    // Nilai yang tidak dikenal jatuh ke "semua status", bukan 500 dan bukan juga
+    // daftar yang ikut tersaring oleh nilai yang tidak masuk akal itu.
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index', ['filter' => 'bogus']))
+        ->assertOk()
+        ->assertSee($pending->profile->nama_lengkap)
+        ->assertSee($diterima->profile->nama_lengkap);
+});
+
+test('the kesra queue never lists a registration whose decision page would be forbidden', function () {
+    // `verif_kampus` disetujui tanpa pernah ada `verif_capil` yang disetujui --
+    // tidak bisa terjadi lewat UI, tapi bisa lewat seeder atau impor data. Kalau
+    // baris seperti ini muncul di antrean, admin mengklik dan mendapat 403.
+    $user = User::factory()->standardUser()->create();
+
+    UserProfile::create(array_merge(verifikasiProfilePayload($this->prodi->id), [
+        'user_id' => $user->id,
+        'verif_capil' => 'revisi',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'menunggu',
+    ]));
+
+    Applicant::factory()->create([
+        'user_id' => $user->id,
+        'beasiswa_id' => beasiswaVerifikasi()->id,
+    ]);
+
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index'))
+        ->assertOk()
+        ->assertDontSee($user->profile->nama_lengkap, false);
 });
 
 test('verification stage detail is forbidden when the stage is not reachable yet', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
     actingAs($this->kampusAdmin)
         ->get(route('admin.kampusverif.lihat', $this->applicantUser))
         ->assertForbidden();
 });
 
-test('catpil approving a profile persists the status and its note', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+test('capil approving a profile persists the status and notifies the owner', function () {
+    Notification::fake();
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
             'status' => 'setuju',
             'catatan' => 'Data sesuai',
         ])
-        ->assertRedirect(route('admin.catpil.index'));
+        ->assertRedirect(route('admin.capil.index'));
 
     $profile = $this->applicantUser->refresh()->profile;
-    expect($profile->verif_catpil)->toBe('setuju');
-    expect($profile->catatan_catpil)->toBe('Data sesuai');
+    expect($profile->verif_capil)->toBe('setuju');
+    expect($profile->catatan_capil)->toBe('Data sesuai');
+
+    Notification::assertSentTo($this->applicantUser, DataVerificationChanged::class);
 });
 
-test('kesra approval marks the profile as fully verified', function () {
+test('the kesra profile verdict endpoint is closed', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kesra');
 
+    // Tahap Kesra hanya punya satu keputusan, dan itu keputusan pendaftaran
+    // beasiswa. Endpoint verdict profil ditutup supaya tidak ada jalur tulis
+    // kedua yang bisa memberi satu pendaftaran dua jawaban berbeda.
     actingAs($this->kesraAdmin)
         ->put(route('admin.kesra.verifikasi', $this->applicantUser), ['status' => 'setuju'])
-        ->assertRedirect(route('admin.kesra.index'));
+        ->assertForbidden();
 
-    expect($this->applicantUser->refresh()->profile->isVerified())->toBeTrue();
+    expect($this->applicantUser->refresh()->profile->verif_kesra)->toBe('menunggu');
 });
 
 test('revisi at a stage blocks downstream stages until fixed', function () {
@@ -300,18 +389,18 @@ test('tolak keputusan option is rendered on the verification decision page', fun
         ->assertSee('>Tolak</option>', false);
 });
 
-test('catpil verification page only shows identity data per its purpose', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+test('capil verification page only shows identity data per its purpose', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.lihat', $this->applicantUser))
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
         ->assertOk()
-        // Data yang menjadi wewenang Catpil.
+        // Data yang menjadi wewenang Capil.
         ->assertSee('Data Diri')
         ->assertSee('Data Orang Tua &amp; Wali', false)
         ->assertSee('Dokumen Diri Sendiri')
         ->assertSee('Dokumen Orang Tua / Wali')
-        // Bukan wewenang Catpil.
+        // Bukan wewenang Capil.
         ->assertDontSee('Data Kampus')
         ->assertDontSee('Dokumen untuk Kampus')
         ->assertDontSee('Sertifikat Prestasi');
@@ -352,30 +441,30 @@ test('kesra verification page shows all sections for the final eligibility check
 
 test('previous stage notes are visible to the next stage verifier', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus')
-        ->update(['catatan_catpil' => 'KTP kurang terbaca']);
+        ->update(['catatan_capil' => 'KTP kurang terbaca']);
 
     actingAs($this->kampusAdmin)
         ->get(route('admin.kampusverif.lihat', $this->applicantUser))
         ->assertOk()
         ->assertSee('Catatan verifikator')
-        ->assertSee('Catpil')
+        ->assertSee('Capil')
         ->assertSee('KTP kurang terbaca');
 });
 
 test('verification index columns follow the purpose of each stage', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil')
+    createPendingVerifikasiProfile($this->applicantUser, 'capil')
         ->update(['prodi_id' => $this->prodi->id, 'ipk' => 3.5, 'nim' => '2010123456']);
 
-    // Catpil: fokus identitas.
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index'))
+    // Capil: fokus identitas.
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index'))
         ->assertOk()
         ->assertSeeInOrder(['No', 'Nama', 'NIK', 'No. Kartu Keluarga', 'Desil', 'Status', 'Aksi'], false)
         ->assertDontSee('Program Studi');
 
-    $this->applicantUser->profile->update(['verif_catpil' => 'setuju']);
+    $this->applicantUser->profile->update(['verif_capil' => 'setuju']);
 
-    // Disetujui Catpil tidak otomatis berarti masuk antrean kampus: mahasiswa
+    // Disetujui Capil tidak otomatis berarti masuk antrean kampus: mahasiswa
     // harus sudah mendaftar beasiswa supaya ada yang perlu diverifikasi.
     Applicant::create([
         'user_id' => $this->applicantUser->id,
@@ -394,10 +483,10 @@ test('verification index columns follow the purpose of each stage', function () 
 });
 
 test('regular user cannot access verification pages', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
     actingAs($this->applicantUser)
-        ->get(route('admin.catpil.index'))
+        ->get(route('admin.capil.index'))
         ->assertForbidden();
 });
 
@@ -417,45 +506,45 @@ test('updating profile resets verification stages', function () {
 
     $profile = $user->refresh()->profile;
     expect($profile->nama_lengkap)->toBe('Ahmad Baru');
-    expect($profile->verif_catpil)->toBe('menunggu');
+    expect($profile->verif_capil)->toBe('menunggu');
     expect($profile->verif_kampus)->toBe('menunggu');
     expect($profile->verif_kesra)->toBe('menunggu');
-    expect($profile->catatan_catpil)->toBeNull();
+    expect($profile->catatan_capil)->toBeNull();
 });
 
 test('an already approved stage stays in the queue so the decision can be changed', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju'])
-        ->assertRedirect(route('admin.catpil.index'));
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), ['status' => 'setuju'])
+        ->assertRedirect(route('admin.capil.index'));
 
-    // Disetujui, tapi masih ada di daftar Catpil dengan aksi ubah.
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index'))
+    // Disetujui, tapi masih ada di daftar Capil dengan aksi ubah.
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index'))
         ->assertOk()
         ->assertSee($this->applicantUser->profile->nama_lengkap)
         ->assertSee('Ubah Keputusan')
         ->assertSee('Disetujui');
 });
 
-test('catpil can revise an approval into a rejection', function () {
+test('capil can revise an approval into a rejection', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju']);
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), ['status' => 'setuju']);
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
             'status' => 'tolak',
             'catatan' => 'Terdapat kekeliruan pada NIK',
         ])
-        ->assertRedirect(route('admin.catpil.index'))
+        ->assertRedirect(route('admin.capil.index'))
         ->assertSessionHas('success');
 
     $profile = $this->applicantUser->refresh()->profile;
-    expect($profile->verif_catpil)->toBe('tolak');
-    expect($profile->catatan_catpil)->toBe('Terdapat kekeliruan pada NIK');
+    expect($profile->verif_capil)->toBe('tolak');
+    expect($profile->catatan_capil)->toBe('Terdapat kekeliruan pada NIK');
 });
 
 test('revising a stage resets the downstream stages and drops their notes', function () {
@@ -478,77 +567,53 @@ test('revising a stage resets the downstream stages and drops their notes', func
     expect($profile->catatan_kesra)->toBeNull();
 });
 
-test('a stage cannot be revised once the kesra stage has been decided', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'kesra')
-        ->update(['verif_kesra' => 'setuju']);
+test('a stage cannot be revised once a downstream stage has been decided', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kesra');
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
             'status' => 'tolak',
             'catatan' => 'NIK tidak sesuai',
         ])
         ->assertForbidden();
 
-    expect($this->applicantUser->refresh()->profile->verif_catpil)->toBe('setuju');
-});
-
-test('catpil decision does not wait for kampus and does not reset it', function () {
-    // Catpil paralel dengan Kampus: keputusan Kampus yang sudah ada tidak
-    // mengunci Catpil, dan sebaliknya keputusan Catpil tidak menghapus
-    // keputusan Kampus. Hanya Kesra yang direset.
-    createPendingVerifikasiProfile($this->applicantUser, 'kesra')
-        ->update(['catatan_kesra' => 'Catatan lama']);
-
-    expect($this->applicantUser->profile->verif_kampus)->toBe('setuju');
-
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
-            'status' => 'tolak',
-            'catatan' => 'NIK tidak sesuai',
-        ])
-        ->assertRedirect(route('admin.catpil.index'));
-
-    $profile = $this->applicantUser->refresh()->profile;
-    expect($profile->verif_catpil)->toBe('tolak')
-        // Keputusan Kampus tidak tersentuh.
-        ->and($profile->verif_kampus)->toBe('setuju')
-        // Kesra direset karena menunggu kedua tahap ini.
-        ->and($profile->verif_kesra)->toBe('menunggu')
-        ->and($profile->catatan_kesra)->toBeNull();
+    expect($this->applicantUser->refresh()->profile->verif_capil)->toBe('setuju');
 });
 
 test('a decision can be pulled back to the waiting list', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju']);
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), ['status' => 'setuju']);
 
-    actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'menunggu'])
-        ->assertRedirect(route('admin.catpil.index'));
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), ['status' => 'menunggu'])
+        ->assertRedirect(route('admin.capil.index'));
 
-    expect($this->applicantUser->refresh()->profile->verif_catpil)->toBe('menunggu');
+    expect($this->applicantUser->refresh()->profile->verif_capil)->toBe('menunggu');
 });
 
 test('a stage is hidden once a downstream stage has been decided', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'kesra')
-        ->update(['verif_kesra' => 'setuju']);
+    createPendingVerifikasiProfile($this->applicantUser, 'kesra');
 
-    // Kesra sudah diputuskan, jadi Catpil tidak boleh membatalkan adanya.
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.lihat', $this->applicantUser))
+    // Kesra sudah diputuskan, jadi Capil tidak boleh membatalkan adanya.
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
         ->assertForbidden();
 });
 
 test('the decision form shows the current choice and offers no pull-back', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil')
-        ->update(['verif_catpil' => 'revisi', 'catatan_catpil' => 'KTP kurang terbaca']);
+    createPendingVerifikasiProfile($this->applicantUser, 'capil')
+        ->update(['verif_capil' => 'revisi', 'catatan_capil' => 'KTP kurang terbaca']);
 
-    $isi = actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.lihat', $this->applicantUser))
+    $isi = actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
         ->assertOk()
         ->assertSee('Keputusan saat ini:')
-        ->assertSee('<option value="revisi" selected>', false)
+        // Keputusan lama tetap terbaca di kotak read-only, lengkap dengan
+        // labelnya, jadi admin tahu dia sedang memperbaiki apa.
+        ->assertSee('Perlu Perbaikan')
+        ->assertSee('KTP kurang terbaca')
         ->getContent();
 
     // Menarik keputusan ke daftar tunggu tidak lagi disediakan sebagai pilihan
@@ -557,11 +622,31 @@ test('the decision form shows the current choice and offers no pull-back', funct
         ->not->toContain('value="menunggu"');
 });
 
-test('an undecided profile starts the decision dropdown on the placeholder', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+test('the decision dropdown is never pre-filled, even when a decision exists', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil')
+        ->update(['verif_capil' => 'revisi', 'catatan_capil' => 'KTP kurang terbaca']);
 
-    $isi = actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.lihat', $this->applicantUser))
+    $isi = actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
+        ->assertOk()
+        ->getContent();
+
+    // Keputusan lama yang terpilih sebagai default adalah jebakan: admin bisa
+    // cuma membuka halaman lalu menekan simpan, dan keputusan lama terkirim
+    // ulang sebagai keputusan baru. Dropdown harus selalu minta pilihan
+    // eksplisit, apa pun status yang tersimpan.
+    expect($isi)->toContain('<option value="" selected>');
+
+    foreach (['setuju', 'revisi', 'tolak'] as $pilihan) {
+        expect($isi)->not->toContain('<option value="'.$pilihan.'" selected>');
+    }
+});
+
+test('an undecided profile starts the decision dropdown on the placeholder', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    $isi = actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
         ->assertOk()
         ->getContent();
 
@@ -573,6 +658,27 @@ test('an undecided profile starts the decision dropdown on the placeholder', fun
     foreach (['setuju', 'revisi', 'tolak'] as $pilihan) {
         expect($isi)->not->toContain('<option value="'.$pilihan.'" selected>');
     }
+});
+
+test('pilihan admin tidak hilang saat validasi gagal', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    // Dropdown yang selalu kosong tetap harus menghormati `old()`: kalau validasi
+    // memaksa admin mengulang, pilihan yang barusan dibuat tidak boleh hilang
+    // dan membuat dia memilih ulang dari nol.
+    actingAs($this->capilAdmin)
+        ->from(route('admin.capil.lihat', $this->applicantUser))
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
+            'status' => 'revisi',
+            'catatan' => '',
+        ])
+        ->assertRedirect(route('admin.capil.lihat', $this->applicantUser))
+        ->assertSessionHasErrors('catatan');
+
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.lihat', $this->applicantUser))
+        ->assertOk()
+        ->assertSee('<option value="revisi" selected>', false);
 });
 
 test('only setujui and tolak ask for confirmation', function () {
@@ -597,83 +703,80 @@ test('only setujui and tolak ask for confirmation', function () {
 });
 
 test('catatan is required when a revision is requested', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
     // Tanpa catatan: ditolak, dan status TIDAK tersimpan.
-    actingAs($this->catpilAdmin)
-        ->putJson(route('admin.catpil.verifikasi', $this->applicantUser), [
+    actingAs($this->capilAdmin)
+        ->putJson(route('admin.capil.verifikasi', $this->applicantUser), [
             'status' => 'revisi',
             'catatan' => '',
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrors('catatan');
 
-    expect($this->applicantUser->refresh()->profile->verif_catpil)->toBe('menunggu')
-        ->and($this->applicantUser->refresh()->profile->catatan_catpil)->toBeNull();
+    expect($this->applicantUser->refresh()->profile->verif_capil)->toBe('menunggu')
+        ->and($this->applicantUser->refresh()->profile->catatan_capil)->toBeNull();
 
     // Dengan catatan: berhasil.
-    actingAs($this->catpilAdmin)
-        ->putJson(route('admin.catpil.verifikasi', $this->applicantUser), [
+    actingAs($this->capilAdmin)
+        ->putJson(route('admin.capil.verifikasi', $this->applicantUser), [
             'status' => 'revisi',
             'catatan' => 'KTP kurang terbaca',
         ])
         ->assertOk();
 
-    expect($this->applicantUser->refresh()->profile->verif_catpil)->toBe('revisi')
-        ->and($this->applicantUser->refresh()->profile->catatan_catpil)->toBe('KTP kurang terbaca');
+    expect($this->applicantUser->refresh()->profile->verif_capil)->toBe('revisi')
+        ->and($this->applicantUser->refresh()->profile->catatan_capil)->toBe('KTP kurang terbaca');
 });
 
 test('catatan stays optional for the other decisions', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
     foreach (['setuju', 'tolak'] as $keputusan) {
-        actingAs($this->catpilAdmin)
-            ->putJson(route('admin.catpil.verifikasi', $this->applicantUser), [
+        actingAs($this->capilAdmin)
+            ->putJson(route('admin.capil.verifikasi', $this->applicantUser), [
                 'status' => $keputusan,
             ])
             ->assertOk();
 
-        expect($this->applicantUser->refresh()->profile->verif_catpil)->toBe($keputusan);
+        expect($this->applicantUser->refresh()->profile->verif_capil)->toBe($keputusan);
     }
 });
 
 test('the verification queue can be filtered by decision status', function () {
     $pending = User::factory()->standardUser()->create();
-    createPendingVerifikasiProfile($pending, 'catpil');
+    createPendingVerifikasiProfile($pending, 'capil');
 
     $rejected = User::factory()->standardUser()->create();
-    createPendingVerifikasiProfile($rejected, 'catpil')
-        ->update(['verif_catpil' => 'tolak']);
+    createPendingVerifikasiProfile($rejected, 'capil')
+        ->update(['verif_capil' => 'tolak']);
 
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index', ['filter' => 'tolak']))
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index', ['filter' => 'tolak']))
         ->assertOk()
         ->assertSee($rejected->profile->nama_lengkap)
         ->assertDontSee($pending->profile->nama_lengkap);
 
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index', ['filter' => 'menunggu']))
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index', ['filter' => 'menunggu']))
         ->assertOk()
         ->assertSee($pending->profile->nama_lengkap)
         ->assertDontSee($rejected->profile->nama_lengkap);
 });
 
 test('an unknown decision filter falls back to the full queue', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil');
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
 
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index', ['filter' => 'ngawur']))
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index', ['filter' => 'ngawur']))
         ->assertOk()
         ->assertSee($this->applicantUser->profile->nama_lengkap);
 });
 
 test('the empty queue renders no body row so DataTables can initialise', function () {
-    foreach (['admin.catpil.index', 'admin.kampusverif.index', 'admin.kesra.index'] as $route) {
-        $admin = match ($route) {
-            'admin.catpil.index' => $this->catpilAdmin,
-            'admin.kampusverif.index' => $this->kampusAdmin,
-            default => $this->kesraAdmin,
-        };
+    // Kesra tidak punya daftar profil, jadi hanya Capil danampus yang diuji di sini.
+    foreach (['admin.capil.index', 'admin.kampusverif.index'] as $route) {
+        $admin = $route === 'admin.capil.index' ? $this->capilAdmin : $this->kampusAdmin;
 
         $html = actingAs($admin)->get(route($route))->assertOk()->getContent();
 
@@ -688,7 +791,7 @@ test('the empty queue renders no body row so DataTables can initialise', functio
     }
 });
 
-test('the kesra queue shows the complete set of profile columns', function () {
+test('the kesra decision page shows the complete set of profile columns', function () {
     $profile = createPendingVerifikasiProfile($this->applicantUser, 'kesra');
     $profile->update([
         'prodi_id' => $this->prodi->id,
@@ -698,13 +801,21 @@ test('the kesra queue shows the complete set of profile columns', function () {
         'ukt' => 2500000,
     ]);
 
+    // Daftar profil Kesra sudah tidak ada, jadi kelengkapan data yang dilihat admin
+    // sebelum memutus sekarang diuji di halaman keputusannya. Urutannya tidak
+    // penting di sini: halaman ini menumpuk data per kartu, bukan kolom tabel.
     actingAs($this->kesraAdmin)
-        ->get(route('admin.kesra.index'))
+        ->get(route('admin.kesra.lihat', $this->applicantUser))
         ->assertOk()
-        ->assertSeeInOrder([
-            'No', 'Nama', 'NIK', 'No. Kartu Keluarga', 'Desil', 'NIM', 'Program Studi',
-            'Fakultas', 'Kampus', 'IPK', 'Semester', 'UKT/SPP', 'Status', 'Aksi',
-        ], false)
+        ->assertSee('NIK')
+        ->assertSee('No. Kartu Keluarga')
+        ->assertSee('Desil')
+        ->assertSee('NIM')
+        ->assertSee('Program Studi')
+        ->assertSee('Fakultas')
+        ->assertSee('IPK')
+        ->assertSee('Semester')
+        ->assertSee('UKT/SPP')
         ->assertSee('Teknik Informatika')
         ->assertSee('Fakultas Teknik')
         ->assertSee('Universitas Lambung Mangkurat')
@@ -729,11 +840,11 @@ test('the kampus queue adds identity columns to the student data', function () {
         ], false)
         ->assertSee('Laki-laki')
         ->assertSee('Islam')
-        // No. Kartu Keluarga tetap wewenang Catpil saja.
+        // No. Kartu Keluarga tetap wewenang Capil saja.
         ->assertDontSee('No. Kartu Keluarga');
 });
 
-test('the kesra queue eager loads the campus chain instead of querying per row', function () {
+test('the kesra dashboard eager loads the campus chain instead of querying per row', function () {
     foreach (range(1, 4) as $ignored) {
         $user = User::factory()->standardUser()->create();
         createPendingVerifikasiProfile($user, 'kesra')
@@ -745,8 +856,9 @@ test('the kesra queue eager loads the campus chain instead of querying per row',
         $queries[] = $query->sql;
     });
 
+    // Antrean Kesra ada di dasbor tahapnya, bukan di daftar profil.
     actingAs($this->kesraAdmin)
-        ->get(route('admin.kesra.index'))
+        ->get(route('dashboard'))
         ->assertOk()
         ->assertSee('Teknik Informatika', false);
 
@@ -759,13 +871,160 @@ test('the kesra queue eager loads the campus chain instead of querying per row',
 });
 
 test('a decided row shows its note so the verifier can recall what was asked', function () {
-    createPendingVerifikasiProfile($this->applicantUser, 'catpil')
-        ->update(['verif_catpil' => 'revisi', 'catatan_catpil' => 'KTP kurang terbaca']);
+    createPendingVerifikasiProfile($this->applicantUser, 'capil')
+        ->update(['verif_capil' => 'revisi', 'catatan_capil' => 'KTP kurang terbaca']);
 
-    actingAs($this->catpilAdmin)
-        ->get(route('admin.catpil.index'))
+    actingAs($this->capilAdmin)
+        ->get(route('admin.capil.index'))
         ->assertOk()
         ->assertSee('Perlu Perbaikan')
         ->assertSee('KTP kurang terbaca')
         ->assertSee('Ubah Keputusan');
+});
+
+test('the verification notification names the stage and the verifying office', function (string $stage, string $admin, string $routePrefix, string $actor, string $title) {
+    Notification::fake();
+
+    createPendingVerifikasiProfile($this->applicantUser, $stage);
+
+    actingAs($this->{$admin})
+        ->put(route("admin.{$routePrefix}.verifikasi", $this->applicantUser), ['status' => 'setuju']);
+
+    Notification::assertSentTo(
+        $this->applicantUser,
+        DataVerificationChanged::class,
+        function (DataVerificationChanged $notification) use ($title, $actor) {
+            $data = $notification->toDatabase($notification->profile->user);
+
+            expect($data['title'])->toBe($title);
+            expect($data['message'])->toContain("diverifikasi oleh {$actor}");
+            expect($data['message'])->toContain('disetujui');
+
+            return true;
+        }
+    );
+    // Kesra tidak ikut di sini: tahap itu tidak punya verdict profil. Notifikasinya
+    // sekarang `ApplicationDecision`, dikirim dari keputusan pendaftaran.
+})->with([
+    'capil' => ['capil', 'capilAdmin', 'capil', 'Admin Dukcapil', 'Verifikasi Capil'],
+    'kampus' => ['kampus', 'kampusAdmin', 'kampusverif', 'Admin Kampus', 'Verifikasi Kampus'],
+]);
+
+test('the notification carries the verifier note when a revision is requested', function () {
+    Notification::fake();
+
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
+            'status' => 'revisi',
+            'catatan' => 'KTP kurang terbaca',
+        ]);
+
+    Notification::assertSentTo(
+        $this->applicantUser,
+        DataVerificationChanged::class,
+        function (DataVerificationChanged $notification) {
+            $data = $notification->toDatabase($notification->profile->user);
+
+            expect($data['message'])->toContain('perlu perbaikan');
+            expect($data['message'])->toContain('Catatan: KTP kurang terbaca');
+
+            return true;
+        }
+    );
+});
+
+test('an approval notification omits the note', function () {
+    Notification::fake();
+
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    actingAs($this->capilAdmin)
+        ->put(route('admin.capil.verifikasi', $this->applicantUser), [
+            'status' => 'setuju',
+            'catatan' => 'Semua data sesuai',
+        ]);
+
+    Notification::assertSentTo(
+        $this->applicantUser,
+        DataVerificationChanged::class,
+        function (DataVerificationChanged $notification) {
+            expect($notification->toDatabase($notification->profile->user)['message'])
+                ->not->toContain('Catatan:');
+
+            return true;
+        }
+    );
+});
+
+test('the kesra decision uses its own notification icon and names the office', function () {
+    Notification::fake();
+
+    createPendingVerifikasiProfile($this->applicantUser, 'kesra');
+
+    $scholarship = Scholarship::factory()->create([
+        'kampus_id' => $this->prodi->fakultas->kampus_id,
+        'kuota' => 1,
+    ]);
+    $applicant = Applicant::factory()->create([
+        'user_id' => $this->applicantUser->id,
+        'beasiswa_id' => $scholarship->id,
+        'status' => 'verifikasi',
+    ]);
+
+    actingAs($this->kesraAdmin)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$this->applicantUser, $applicant]), [
+            'pendaftaran_status' => 'diterima',
+        ]);
+
+    // Notifikasi keputusan Kesra sekarang memakai label yang sama dengan badge
+    // di UI ("Disetujui"), bukan istilah database ("diterima").
+    Notification::assertSentTo(
+        $this->applicantUser,
+        ApplicationDecision::class,
+        function (ApplicationDecision $notification) {
+            $data = $notification->toDatabase($notification->applicant->user);
+
+            expect($data['icon'])->toBe('fa-award')
+                ->and($data['title'])->toBe('Keputusan Pendaftaran Beasiswa')
+                ->and($data['message'])->toContain('Admin Sirusa (Kesra)')
+                ->and($data['message'])->toContain('Disetujui');
+
+            return true;
+        }
+    );
+});
+
+test('a rejected kesra decision uses the clipboard icon', function () {
+    Notification::fake();
+
+    createPendingVerifikasiProfile($this->applicantUser, 'kesra');
+
+    $scholarship = Scholarship::factory()->create(['kampus_id' => $this->prodi->fakultas->kampus_id]);
+    $applicant = Applicant::factory()->create([
+        'user_id' => $this->applicantUser->id,
+        'beasiswa_id' => $scholarship->id,
+        'status' => 'verifikasi',
+    ]);
+
+    actingAs($this->kesraAdmin)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$this->applicantUser, $applicant]), [
+            'pendaftaran_status' => 'ditolak',
+            'pendaftaran_catatan' => 'Dokumen tidak sesuai',
+        ]);
+
+    Notification::assertSentTo(
+        $this->applicantUser,
+        ApplicationDecision::class,
+        function (ApplicationDecision $notification) {
+            $data = $notification->toDatabase($notification->applicant->user);
+
+            expect($data['icon'])->toBe('fa-clipboard-check')
+                ->and($data['message'])->toContain('Ditolak')
+                ->and($data['message'])->toContain('Dokumen tidak sesuai');
+
+            return true;
+        }
+    );
 });

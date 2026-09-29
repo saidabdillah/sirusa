@@ -1,0 +1,171 @@
+@extends('layouts.app')
+
+@php
+  // Kesra punya bentuk data yang berbeda dari Capil dan Kampus, jadi halaman ini
+  // terpisah dari `index.blade.php`: yang diantrekan bukan profil melainkan baris
+  // `pendaftar`, dan yang diputuskan adalah pendaftaran bukan tahap verifikasi
+  // profil. Kolom, aksi, dan filter status di bawah semuanya mengikuti itu.
+  $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()[$stage];
+
+  // Label dan warna status diambil dari peta di `Applicant`, bukan ditulis ulang,
+  // supaya istilah status tidak pernah berbeda antara daftar ini, badge di baris,
+  // dan halaman mahasiswa.
+  $statusOptions = \App\Models\Applicant::STATUS_LABELS;
+  $semuaStatus = \App\Models\Applicant::FILTER_ALL;
+@endphp
+
+@section('content')
+<section class="section">
+  <div class="section-header">
+    <h1>Verifikasi Kesra</h1>
+    <div class="section-header-breadcrumb">
+      <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dasbor</a></div>
+      <div class="breadcrumb-item">Verifikasi Kesra</div>
+    </div>
+  </div>
+
+  @if(session('success'))
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ session('success') }}
+    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+  </div>
+  @endif
+
+  <div class="section-body">
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4>Pendaftaran Menunggu Putusan</h4>
+            <div class="card-header-action">
+              @if(auth()->user()->hasMenuAccess($routePrefix.'.export'))
+              <a href="{{ route($routePrefix.'.export', request()->only('filter')) }}" class="btn btn-outline-success">
+                <i class="fas fa-file-excel mr-1"></i> Unduh Excel
+              </a>
+              @endif
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-primary">
+              <i class="fas fa-info-circle mr-1"></i>
+              Kesra memutuskan pendaftaran, bukan profil mahasiswa. Satu keputusan di
+              sini menutup tahap Kesra untuk mahasiswa tersebut, dan keputusannya
+              bisa diubah selama pendaftaran belum dibatalkan mahasiswa.
+            </div>
+            <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
+              <div class="col-md-4 mb-2 mb-md-0">
+                <label for="filter">Status Pendaftaran</label>
+                <select class="form-control" name="filter" id="filter">
+                  {{-- "Semua status" harus punya nilai sendiri, bukan `value=""`.
+                       `ConvertEmptyStringsToNull` membuat `?filter=`menjadi
+                       `null`, yang justru berarti "pakai default antrean". --}}
+                  <option value="{{ $semuaStatus }}" {{ $filter === null ? 'selected' : '' }}>-- Semua Status --</option>
+                  @foreach($statusOptions as $value => $label)
+                  <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="col-md-2 mb-2 mb-md-0">
+                <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
+                  <i class="fas fa-filter mr-1"></i> Terapkan
+                </button>
+              </div>
+              @if($filter !== \App\Models\Applicant::PENDING_STATUS)
+              <div class="col-md-2 mb-2 mb-md-0">
+                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary btn-block">Reset</a>
+              </div>
+              @endif
+            </form>
+            <div class="table-responsive">
+              <table class="table table-striped" id="verifikasiTable">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama</th>
+                    <th>NIM</th>
+                    <th>Program Studi</th>
+                    <th>Kampus</th>
+                    <th>Beasiswa</th>
+                    <th>IPK</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @forelse($pendaftaran as $applicant)
+                  @php
+                    $profile = $applicant->user?->profile;
+                    $sudahDiputuskan = $applicant->isDecided();
+                  @endphp
+                  <tr class="{{ $sudahDiputuskan ? 'table-active' : '' }}">
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $profile?->nama_lengkap ?? $applicant->user?->username ?? '-' }}</td>
+                    <td>{{ $profile?->nim ?? '-' }}</td>
+                    <td>{{ $applicant->prodi ?? $profile?->prodi?->nama ?? '-' }}</td>
+                    {{-- `Kampus` punya kolom `nama_kampus`; menulis `kampus->nama`
+                         selalu membalas null. --}}
+                    <td>{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
+                    <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
+                    <td>{{ $applicant->ipk ?? $profile?->ipk ?? '-' }}</td>
+                    <td>
+                      <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
+                    @if($applicant->catatan)
+                      <small class="text-muted">{{ Str::limit($applicant->catatan, 40) }}</small>
+                    @endif
+                    </td>
+                    <td>
+                      {{-- Pendaftaran `dibatalkan` bukan keputusan Kesra dan
+                           formnya tidak dibuka di halaman detail, jadi tidak ada
+                           tombol yang diarahkan ke sana. --}}
+                      @if(! $applicant->isCancelled())
+                      <a href="{{ route($routePrefix.'.lihat', $applicant->user_id) }}"
+                        class="btn btn-sm {{ $sudahDiputuskan ? 'btn-outline-primary' : 'btn-info' }}">
+                        <i class="fas {{ $sudahDiputuskan ? 'fa-edit' : 'fa-eye' }}"></i>
+                        {{ $sudahDiputuskan ? 'Ubah Keputusan' : 'Putuskan' }}
+                      </a>
+                      @else
+                      <span class="text-muted small">Dibatalkan mahasiswa</span>
+                      @endif
+                    </td>
+                  </tr>
+                  @empty
+                  <tr>
+                    <td colspan="9" class="text-center text-muted">Tidak ada pendaftaran dengan status ini.</td>
+                  </tr>
+                  @endforelse
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+@endsection
+
+@push('script')
+<script>
+  $(document).ready(function() {
+    $('#verifikasiTable').DataTable({
+      order: [],
+      processing: true,
+      language: {
+        search: "Cari:",
+        lengthMenu: "Tampilkan _MENU_ data",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        infoEmpty: "Tidak ada data",
+        emptyTable: "Tidak ada pendaftaran dalam daftar verifikasi Kesra.",
+        infoFiltered: "(disaring dari _MAX_ total data)",
+        zeroRecords: "Tidak ada data yang cocok",
+        paginate: {
+          first: "Pertama",
+          last: "Terakhir",
+          next: "Selanjutnya",
+          previous: "Sebelumnya"
+        }
+      }
+    });
+  });
+</script>
+@endpush

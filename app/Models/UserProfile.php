@@ -184,6 +184,15 @@ class UserProfile extends Model
         };
     }
 
+    /**
+     * Semua tahap sudah dituntaskan, termasuk tahap Kesra.
+     *
+     * Perlu diingat bahwa Kesra tidak memverifikasi profil: yang disimpulkan
+     *Kesra adalah keputusan terhadap satu pendaftaran, dan keputusan itu bisa
+     * berupa penolakan. Jadi nilai `true` berarti "prosesnya selesai", bukan
+     * "mahasiswa ini layak diberi beasiswa". Jangan dipakai sebagai syarat
+     * kelayakan.
+     */
     public function isVerified(): bool
     {
         return $this->verif_catpil === 'setuju'

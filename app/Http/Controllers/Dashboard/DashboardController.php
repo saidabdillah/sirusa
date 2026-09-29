@@ -26,7 +26,7 @@ class DashboardController extends Controller
 
         return match (count($stages)) {
             0 => $this->mahasiswa($user),
-            1 => $this->verifikasi(reset($stages), $user),
+            1 => $this->verifikasi(reset($stages)),
             default => $this->ikhtisar($user),
         };
     }
@@ -42,7 +42,7 @@ class DashboardController extends Controller
         ));
     }
 
-    private function verifikasi(string $stage, User $user): View
+    private function verifikasi(string $stage): View
     {
         $antrean = $this->antrean($stage);
 
@@ -52,9 +52,14 @@ class DashboardController extends Controller
             // ("Verifikasi Kesra"), supaya tidak bentrok dengan label menu.
             'stageLabel' => $antrean->actorLabel(),
             'ringkasan' => $antrean->ringkasan(),
-            'antrean' => $antrean->antrean('menunggu')->take(8),
+            // Stat card dan tabel per tahap membaca deklarasi kolom yang sama, jadi
+            // label "menunggu" di keduanya tidak mungkin berbeda definisi.
+            'ringkasanColumns' => $antrean->ringkasanColumns(),
+            // Daftar antrean profil hanya dipakai tahap Capil dan Campus. Kesra
+            // bekerja pada baris `pendaftar`, jadi memindai seluruh user untuk
+            // tahap itu hanya membuang-buang query.
+            'antrean' => $stage === 'kesra' ? collect() : $antrean->antrean('menunggu')->take(8),
             'pendaftaran' => $antrean->pendaftaran(),
-            'stages' => $this->accessibleStages($user),
         ]);
     }
 

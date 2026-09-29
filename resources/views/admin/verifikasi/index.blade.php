@@ -1,39 +1,31 @@
 @extends('layouts.app')
 
 @php
-$routePrefix = $stage === 'catpil' ? 'admin.catpil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
-$stageLabels = ['catpil' => 'Catpil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
+// Hanya Capil dan Campus yang punya daftar verifikasi profil. Tahap Kesra punya
+// halaman sendiri di `kesra.blade.php` karena yang diantrekan dan diputuskan
+// adalah baris `pendaftar`, bukan profil -- `VerifikasiController::index()`
+// memilih view-nya sebelum sampai ke sini, jadi `$stage` tidak pernah `kesra`.
+$routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()[$stage];
+$stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus'];
 $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
 
-// Kolom peruntukan per tahap verifikasi. Catpil fokus data kependudukan, Kampus
-// fokus data mahasiswa, Kesra (tahap akhir) menampilkan seluruh data.
+// Kolom peruntukan per tahap verifikasi. Capil fokus data kependudukan, Kampus
+// fokus data mahasiswa.
 $stageColumns = [
-'catpil' => [
-['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
-['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
-['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
-],
-'kampus' => [
-['label' => 'NIM', 'value' => fn ($p) => $p->nim ?? '-'],
-['label' => 'Program Studi', 'value' => fn ($p) => $p->prodi?->nama ?? '-'],
-['label' => 'IPK', 'value' => fn ($p) => $p->ipk ?? '-'],
-['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
-['label' => 'Tempat, Tanggal Lahir', 'value' => fn ($p) => ($p->tempat_lahir ?? '-').', '.(! blank($p->tanggal_lahir) ? $p->tanggal_lahir->translatedFormat('d M Y') : '-')],
-['label' => 'Jenis Kelamin', 'value' => fn ($p) => $p->jenis_kelamin ?? '-'],
-['label' => 'Agama', 'value' => fn ($p) => $p->agama ?? '-'],
-],
-'kesra' => [
-['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
-['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
-['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
-['label' => 'NIM', 'value' => fn ($p) => $p->nim ?? '-'],
-['label' => 'Program Studi', 'value' => fn ($p) => $p->prodi?->nama ?? '-'],
-['label' => 'Fakultas', 'value' => fn ($p) => $p->prodi?->fakultas?->nama ?? '-'],
-['label' => 'Kampus', 'value' => fn ($p) => $p->prodi?->fakultas?->kampus?->nama_kampus ?? '-'],
-['label' => 'IPK', 'value' => fn ($p) => $p->ipk ?? '-'],
-['label' => 'Semester', 'value' => fn ($p) => $p->semester ?? '-'],
-['label' => 'UKT/SPP', 'value' => fn ($p) => $p->ukt ? 'Rp '.number_format($p->ukt, 0, ',', '.') : '-'],
-],
+    'capil' => [
+        ['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
+        ['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
+        ['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
+    ],
+    'kampus' => [
+        ['label' => 'NIM', 'value' => fn ($p) => $p->nim ?? '-'],
+        ['label' => 'Program Studi', 'value' => fn ($p) => $p->prodi?->nama ?? '-'],
+        ['label' => 'IPK', 'value' => fn ($p) => $p->ipk ?? '-'],
+        ['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
+        ['label' => 'Tempat, Tanggal Lahir', 'value' => fn ($p) => ($p->tempat_lahir ?? '-').', '.(! blank($p->tanggal_lahir) ? $p->tanggal_lahir->translatedFormat('d M Y') : '-')],
+        ['label' => 'Jenis Kelamin', 'value' => fn ($p) => $p->jenis_kelamin ?? '-'],
+        ['label' => 'Agama', 'value' => fn ($p) => $p->agama ?? '-'],
+    ],
 ][$stage] ?? [];
 
 $filterOptions = [

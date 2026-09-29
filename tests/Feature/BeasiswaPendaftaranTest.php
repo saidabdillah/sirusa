@@ -837,7 +837,33 @@ test('kesra tidak bisa memutuskan pendaftaran tanpa alasan saat menolak', functi
     expect($applicant->refresh()->status)->toBe('verifikasi');
 });
 
-test('kesra tidak bisa memutuskan pendaftaran yang profilnya belum disetujui di tahap kesra', function () {
+test('kesra bisa memutuskan pendaftaran tanpa langkah verifikasi profil kesra lebih dulu', function () {
+    $user = User::factory()->standardUser()->create();
+    mhsBeasiswa($user, $this->prodi, [
+        'verif_capil' => 'setuju',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'menunggu',
+    ]);
+
+    $applicant = Applicant::create([
+        'user_id' => $user->id,
+        'beasiswa_id' => beasiswaTersedia($this->kampus->id)->id,
+        'status' => 'verifikasi',
+    ]);
+
+    // Dulu langkah "verifikasi Kesra" harus disetujui dulu, baru pendaftaran
+    // bisa diputuskan. Sekarang keduanya satu aksi yang sama.
+    actingAs($this->kesra)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
+            'pendaftaran_status' => 'diterima',
+        ])
+        ->assertRedirect(route('admin.kesra.lihat', $user));
+
+    expect($applicant->refresh()->status)->toBe('diterima')
+        ->and($user->refresh()->profile->verif_kesra)->toBe('setuju');
+});
+
+test('keputusan kesra menutup tahap kesra pada profilnya, termasuk saat ditolak', function () {
     $user = User::factory()->standardUser()->create();
     mhsBeasiswa($user, $this->prodi, [
         'verif_catpil' => 'setuju',
@@ -853,11 +879,81 @@ test('kesra tidak bisa memutuskan pendaftaran yang profilnya belum disetujui di 
 
     actingAs($this->kesra)
         ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
+            'pendaftaran_status' => 'ditolak',
+            'pendaftaran_catatan' => 'Dokumen tidak memenuhi syarat',
+        ]);
+
+    // Identitas sudah ditinjau -- itu yang dilakukan keputusan ini -- jadi tahap
+    // Kesra selesai meski hasilnya bukan penerimaan. Kalau tahap Kesra tetap
+    // `menunggu`, satu pendaftaran bisa menunggu keputusan yang sudah diberikan.
+    expect($user->refresh()->profile->verif_kesra)->toBe('setuju')
+        ->and($applicant->refresh()->status)->toBe('ditolak');
+});
+
+test('keputusan kesra mencatat tanggal dan petugas yang memutuskan', function () {
+    $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
+    $applicant = Applicant::create([
+        'user_id' => $user->id,
+        'beasiswa_id' => beasiswaTersedia($this->kampus->id)->id,
+        'status' => 'verifikasi',
+    ]);
+
+    actingAs($this->kesra)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
             'pendaftaran_status' => 'diterima',
+        ]);
+
+    $applicant->refresh();
+
+    expect($applicant->diputuskan_oleh)->toBe($this->kesra->id)
+        ->and($applicant->decidedByName())->toBe($this->kesra->name)
+        ->and($applicant->diputuskan_at)->not->toBeNull();
+});
+
+test('keputusan kesra bisa direvisi dari diterima menjadi ditolak tanpa menabrak kuota', function () {
+    $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
+    $applicant = Applicant::create([
+        'user_id' => $user->id,
+        'beasiswa_id' => beasiswaTersedia($this->kampus->id, ['kuota' => 1])->id,
+        'status' => 'verifikasi',
+    ]);
+
+    actingAs($this->kesra)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
+            'pendaftaran_status' => 'diterima',
+        ]);
+
+    // Kuota 1 sudah terpakai oleh pendaftar ini sendiri. Kalau baris ini ikut
+    // dihitung saat pemeriksaan kuota, revisi ke `diterima` akan selalu gagal
+    // dengan "kuota sudah penuh" padahal slot-nya memang miliknya.
+    actingAs($this->kesra)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
+            'pendaftaran_status' => 'ditolak',
+            'pendaftaran_catatan' => 'Terdapat ketidaksesuaian data',
+        ])
+        ->assertRedirect(route('admin.kesra.lihat', $user));
+
+    expect($applicant->refresh()->status)->toBe('ditolak');
+});
+
+test('opsi tarik kembali tidak lagi tersedia pada keputusan pendaftaran', function () {
+    $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
+    $applicant = Applicant::create([
+        'user_id' => $user->id,
+        'beasiswa_id' => beasiswaTersedia($this->kampus->id)->id,
+        'status' => 'diterima',
+    ]);
+
+    // `verifikasi` dulu berarti "tarik kembali". Menolak nilainya membuat
+    // keputusan tidak bisa dikosongkan tanpa sengaja.
+    actingAs($this->kesra)
+        ->from(route('admin.kesra.lihat', $user))
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
+            'pendaftaran_status' => 'verifikasi',
         ])
         ->assertSessionHasErrors('pendaftaran_status');
 
-    expect($applicant->refresh()->status)->toBe('verifikasi');
+    expect($applicant->refresh()->status)->toBe('diterima');
 });
 
 test('kapil tidak bisa memutuskan pendaftaran beasiswa', function () {
