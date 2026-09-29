@@ -59,6 +59,9 @@ class DashboardController extends Controller
             // bekerja pada baris `pendaftar`, jadi memindai seluruh user untuk
             // tahap itu hanya membuang-buang query.
             'antrean' => $stage === 'kesra' ? collect() : $antrean->antrean('menunggu')->take(8),
+            // Kolomnya ikut per tahap, bukan satu daftar tetap: yang tampil di
+            // kartu dasbor harus sama dengan yang jadi dasar keputusan tahap itu.
+            'antreanKolom' => $antrean->antreanKolom(),
             'pendaftaran' => $antrean->pendaftaran(),
         ]);
     }

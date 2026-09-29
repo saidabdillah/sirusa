@@ -105,8 +105,9 @@
                 <thead>
                   <tr>
                     <th>Nama</th>
-                    <th>Program Studi</th>
-                    <th>Kampus</th>
+                    @foreach($antreanKolom as $column)
+                    <th>{{ $column['label'] }}</th>
+                    @endforeach
                     <th></th>
                   </tr>
                 </thead>
@@ -114,15 +115,16 @@
                   @forelse($antrean as $user)
                     <tr>
                       <td>{{ $user->profile->nama_lengkap ?: $user->username }}</td>
-                      <td>{{ $user->profile->prodi?->nama ?? '-' }}</td>
-                      <td>{{ $user->profile->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
+                      @foreach($antreanKolom as $column)
+                      <td>{{ $column['value']($user->profile) }}</td>
+                      @endforeach
                       <td class="text-right">
                         <a href="{{ route($routeShow, $user) }}" class="btn btn-sm btn-outline-primary">Periksa</a>
                       </td>
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="4" class="text-center text-muted">Tidak ada yang menunggu pada tahap ini.</td>
+                      <td colspan="{{ count($antreanKolom) + 2 }}" class="text-center text-muted">Tidak ada yang menunggu pada tahap ini.</td>
                     </tr>
                   @endforelse
                 </tbody>

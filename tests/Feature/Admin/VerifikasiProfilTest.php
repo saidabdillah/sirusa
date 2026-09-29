@@ -283,6 +283,37 @@ test('kesra queue filter switches between pending and decided registrations', fu
         ->assertSee($diterima->profile->nama_lengkap);
 });
 
+test('tombol reset filter selalu ada di ketiga antrean verifikasi', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'capil');
+
+    // Tombol Reset tidak boleh bergantung pada filter aktif. Di Kesra nilai
+    // default-nya sudah `verifikasi`, jadi kalau visibilitasnya ikut filter, satu
+    // dari tiga halaman akan menampilkan tombol yang berbeda bentuknya dari dua
+    // halaman lain. Daftar pencyclant selalu menampilkannya, dan tiga halaman ini
+    // harus konsisten dengan itu.
+    $halaman = [
+        [fn () => actingAs($this->capilAdmin)->get(route('admin.capil.index'))],
+        [fn () => actingAs($this->capilAdmin)->get(route('admin.capil.index', ['filter' => 'menunggu']))],
+        [fn () => actingAs($this->kampusAdmin)->get(route('admin.kampusverif.index'))],
+        [fn () => actingAs($this->kampusAdmin)->get(route('admin.kampusverif.index', ['filter' => 'revisi']))],
+        [fn () => actingAs($this->kesraAdmin)->get(route('admin.kesra.index'))],
+        [fn () => actingAs($this->kesraAdmin)->get(route('admin.kesra.index', ['filter' => 'diterima']))],
+    ];
+
+    foreach ($halaman as [$minta]) {
+        $html = $minta()->assertOk()->getContent();
+
+        // Diambil persis dari jangkar Reset-nya, bukan searching seluruh halaman:
+        // kelas tombol lain di halaman tidak boleh menentukan lulus-tidaknya test
+        // ini, dan kembali ke varian `outline` harus gagal karena alasan yang
+        // benar.
+        preg_match('/<a href="[^"]+" class="([^"]*)">\s*<i class="fas fa-redo"><\/i>\s*Reset/', $html, $cocok);
+
+        expect($cocok)->not->toBeEmpty()
+            ->and($cocok[1])->toBe('btn btn-secondary btn-block');
+    }
+});
+
 test('the kesra queue never lists a registration whose decision page would be forbidden', function () {
     // `verif_kampus` disetujui tanpa pernah ada `verif_capil` yang disetujui --
     // tidak bisa terjadi lewat UI, tapi bisa lewat seeder atau impor data. Kalau

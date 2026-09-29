@@ -68,6 +68,36 @@ class VerifikasiAntrean
     }
 
     /**
+     * Kolom tabel untuk kartu "Menunggu Tindakan Anda" di dasbor tahap profil.
+     *
+     * Sengaja lebih sedikit dan berbeda dari halaman queue. Dua alasannya: kartu
+     * dasbor hanya muat untuk tiga kolom, dan isinya harus yang jadi dasar
+     * keputusan tahap tersebut. Capil memeriksa data kependudukan, jadi prodi dan
+     * kampus tidak relevan di sana -- menampilkannya membuat antrean itu terbaca
+     * seperti daftar yang informasinya tidak pernah dipakai untuk memutuskan.
+     *
+     * Definisi lengkap ada di `admin/verifikasi/index.blade.php`; yang di sini
+     * hanya potongan yang paling menentukan untuk tahap itu.
+     *
+     * @return array<int, array{label: string, value: callable(UserProfile): string}>
+     */
+    public function antreanKolom(): array
+    {
+        return [
+            'capil' => [
+                ['label' => 'NIK', 'value' => fn (UserProfile $profile) => $profile->nik ?? '-'],
+                ['label' => 'No. Kartu Keluarga', 'value' => fn (UserProfile $profile) => $profile->no_kk ?? '-'],
+                ['label' => 'Desil', 'value' => fn (UserProfile $profile) => $profile->desil ? 'Desil '.$profile->desil : '-'],
+            ],
+            'kampus' => [
+                ['label' => 'NIM', 'value' => fn (UserProfile $profile) => $profile->nim ?? '-'],
+                ['label' => 'Program Studi', 'value' => fn (UserProfile $profile) => $profile->prodi?->nama ?? '-'],
+                ['label' => 'IPK', 'value' => fn (UserProfile $profile) => $profile->ipk ?? '-'],
+            ],
+        ][$this->stage] ?? [];
+    }
+
+    /**
      * Antrean profil yang masih boleh ditangani tahap ini, sudah diurutkan.
      *
      * @return Collection<int, User>
