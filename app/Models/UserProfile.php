@@ -184,6 +184,15 @@ class UserProfile extends Model
         };
     }
 
+    /**
+     * Semua tahap sudah dituntaskan, termasuk tahap Kesra.
+     *
+     * Perlu diingat bahwa Kesra tidak memverifikasi profil: yang disimpulkan
+     *Kesra adalah keputusan terhadap satu pendaftaran, dan keputusan itu bisa
+     * berupa penolakan. Jadi nilai `true` berarti "prosesnya selesai", bukan
+     * "mahasiswa ini layak diberi beasiswa". Jangan dipakai sebagai syarat
+     * kelayakan.
+     */
     public function isVerified(): bool
     {
         return $this->verif_capil === 'setuju'
@@ -356,94 +365,5 @@ class UserProfile extends Model
             $this->{$stages[$downstream][0]} = 'menunggu';
             $this->{$stages[$downstream][1]} = null;
         }
-    }
-
-    public function syncVerifStatusFromTables(): void
-    {
-        $verifKampus = VerifikasiKampus::where('mahasiswa_id', $this->id)
-            ->latest('verified_at')
-            ->first();
-
-        $verifCapil = VerifikasiCapil::where('mahasiswa_id', $this->id)
-            ->latest('verified_at')
-            ->first();
-
-        $verifKesra = VerifikasiKesra::where('mahasiswa_id', $this->id)
-            ->latest('verified_at')
-            ->first();
-
-        if ($verifKampus) {
-            $this->verif_kampus = $verifKampus->status;
-            $this->catatan_kampus = $verifKampus->catatan;
-        }
-
-        if ($verifCapil) {
-            $this->verif_capil = $verifCapil->status;
-            $this->catatan_capil = $verifCapil->catatan;
-        }
-
-        if ($verifKesra) {
-            $this->verif_kesra = $verifKesra->status;
-            $this->catatan_kesra = $verifKesra->catatan;
-        }
-
-        $this->save();
-    }
-
-    public function verifyKampus(string $status, ?string $catatan = null, ?int $verifierId = null): VerifikasiKampus
-    {
-        $verif = VerifikasiKampus::updateOrCreate(
-            ['mahasiswa_id' => $this->id, 'verifier_id' => $verifierId],
-            [
-                'pengajuan_id' => null,
-                'status' => $status,
-                'catatan' => $catatan,
-                'verified_at' => now(),
-            ]
-        );
-
-        $this->verif_kampus = $verif->status;
-        $this->catatan_kampus = $verif->catatan;
-        $this->save();
-
-        return $verif;
-    }
-
-    public function verifyCapil(string $status, ?string $catatan = null, ?int $verifierId = null): VerifikasiCapil
-    {
-        $verif = VerifikasiCapil::updateOrCreate(
-            ['mahasiswa_id' => $this->id, 'verifier_id' => $verifierId],
-            [
-                'pengajuan_id' => null,
-                'status' => $status,
-                'catatan' => $catatan,
-                'verified_at' => now(),
-            ]
-        );
-
-        $this->verif_capil = $verif->status;
-        $this->catatan_capil = $verif->catatan;
-        $this->save();
-
-        return $verif;
-    }
-
-    public function verifyKesra(string $status, ?string $catatan = null, ?int $verifierId = null): VerifikasiKesra
-    {
-        $verif = VerifikasiKesra::updateOrCreate(
-            ['mahasiswa_id' => $this->id, 'verifier_id' => $verifierId],
-            [
-                'pengajuan_id' => null,
-                'status' => $status,
-                'catatan' => $catatan,
-                'verified_at' => now(),
-            ]
-        );
-
-        $this->verif_kesra = $verif->status;
-        $this->catatan_kesra = $verif->catatan;
-        $this->save();
-
-        return $verif;
     }
 }

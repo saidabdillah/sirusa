@@ -114,6 +114,140 @@ test('kesra sees the kesra dashboard with the pending registration queue', funct
         ->assertSee('Citra Kesra');
 });
 
+test('kesra dashboard has one queue, not a duplicate list of the same people', function () {
+    $user = mahasiswaTahap('kesra', 'Citra Kesra');
+    $beasiswa = Scholarship::factory()->create([
+        'kampus_id' => $this->kampus->id,
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+    Applicant::factory()->create(['user_id' => $user->id, 'beasiswa_id' => $beasiswa->id]);
+
+    $html = actingAs($this->kesraAdmin)->get(route('dashboard'))->assertOk()->getContent();
+
+    // Kesra memverifikasi satu pendaftaran per mahasiswa, jadi daftar berbasis
+    // `verif_kesra` dan daftar berbasis `pendaftar.status` menunjuk orang yang
+    // sama. Hanya satu yang boleh tampil.
+    expect($html)->not->toContain('Menunggu Tindakan Anda')
+        // Satu baris memuat identitas sekaligus beasiswa yang diputuskan.
+        ->and($html)->toContain('Beasiswa')
+        ->and($html)->toContain('Pendaftaran Menunggu Putusan');
+});
+
+test('kesra stat cards count registrations, not profile verdicts', function () {
+    $beasiswa = Scholarship::factory()->create([
+        'kampus_id' => $this->kampus->id,
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+
+    foreach (['verifikasi' => 2, 'diterima' => 1, 'ditolak' => 1, 'dibatalkan' => 1] as $status => $jumlah) {
+        foreach (range(1, $jumlah) as $ignored) {
+            $user = mahasiswaTahap('kesra', "Citra $status $ignored");
+
+            Applicant::factory()->create([
+                'user_id' => $user->id,
+                'beasiswa_id' => $beasiswa->id,
+                'status' => $status,
+            ]);
+        }
+    }
+
+    $response = actingAs($this->kesraAdmin)->get(route('dashboard'))->assertOk();
+
+    expect($response->viewData('ringkasan'))->toBe([
+        'verifikasi' => 2,
+        'diterima' => 1,
+        'ditolak' => 1,
+        'dibatalkan' => 1,
+    ]);
+
+    // "Perlu Perbaikan" adalah status profil. Tidak ada kode yang bisa menulisnya
+    // di tahap Kesra lagi, jadi menampilkannya hanya menambah angka nol yang
+    // selalu nol.
+    expect($response->getContent())->toContain('Menunggu Putusan')
+        ->not->toContain('Perlu Perbaikan');
+});
+
+test('kesra queue count matches the applicant list its menu opens', function () {
+    $beasiswa = Scholarship::factory()->create([
+        'kampus_id' => $this->kampus->id,
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+
+    foreach (range(1, 3) as $ignored) {
+        $user = mahasiswaTahap('kesra', "Citra Antre $ignored");
+
+        Applicant::factory()->create([
+            'user_id' => $user->id,
+            'beasiswa_id' => $beasiswa->id,
+        ]);
+    }
+
+    // Satu yang sudah diputuskan tidak boleh dihitung sebagai antrean.
+    $selesai = mahasiswaTahap('kesra', 'Citra Sudah Diterima');
+
+    Applicant::factory()->create([
+        'user_id' => $selesai->id,
+        'beasiswa_id' => $beasiswa->id,
+        'status' => 'diterima',
+    ]);
+
+    $ringkasan = actingAs($this->kesraAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->viewData('ringkasan');
+
+    // Halaman tujuan menu Kesra -- harus punya isi yang sama dengan angkanya.
+    $dashboard = actingAs($this->kesraAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->getContent();
+
+    $antrean = actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index'))
+        ->assertOk()
+        ->getContent();
+
+    expect($ringkasan['verifikasi'])->toBe(3)
+        // Tabel di dasbor boleh menampilkan semua pendaftaran yang masih
+        // `verifikasi`, bukan hanya 8 pertama, jadi yang diperiksa di sini hanya
+        // bahwa yang sudah diputuskan tidak bocor ke kartu "menunggu".
+        ->and($dashboard)->toContain('Citra Antre 1')
+        ->and($dashboard)->not->toContain('Citra Sudah Diterima')
+        ->and($antrean)->toContain('Citra Antre 1')
+        ->and($antrean)->not->toContain('Citra Sudah Diterima')
+        // "Lihat Semua" harus mengarah ke antrean Kesra itu juga. Kalau masih ke
+        // daftar pendaftar, angkanya benar tapi tempat kerjanya bukan antrean
+        // yang sedang dikerjakan admin.
+        ->and($dashboard)->toContain(route('admin.kesra.index'))
+        ->and($dashboard)->not->toContain(route('admin.pendaftar.index', ['status' => 'verifikasi']));
+});
+
+test('the campus column on a stage dashboard shows the real campus name', function () {
+    mahasiswaTahap('capil', 'Ani Capil');
+
+    // `kampus` punya kolom `nama_kampus`. Menulis `kampus->nama` membuat Eloquent
+    // membalas `null` dan kolomnya tampil sebagai "-", padahal relasinya lengkap.
+    actingAs($this->capilAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSeeInOrder(['Ani Capil', 'Teknik Informatika', 'Universitas Lambung Mangkurat'], false);
+});
+
+test('the cross-stage table marks statuses that do not apply to a stage', function () {
+    mahasiswaTahap('kesra', 'Citra Kesra');
+
+    $html = actingAs($this->superAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->getContent();
+
+    // "Perlu Perbaikan" hanya milik Capil dan Kampus. Di baris Kesra selnya harus
+    // tanda hubung -- angka nol akan berarti "tidak ada yang perlu perbaikan",
+    // padahal status itu memang tidak berlaku di sana.
+    expect($html)->toContain('Perlu Perbaikan')
+        ->and($html)->toContain('&mdash;');
+});
+
 test('super admin sees the cross-stage overview', function () {
     mahasiswaTahap('capil', 'Ani Capil');
     mahasiswaTahap('kampus', 'Budi Kampus');
@@ -127,6 +261,41 @@ test('super admin sees the cross-stage overview', function () {
         ->assertSee('Verifikasi Capil')
         ->assertSee('Verifikasi Kampus')
         ->assertSee('Verifikasi Kesra');
+});
+
+test('tidak ada dasbor yang menampilkan widget tahapan berikutnya', function () {
+    mahasiswaTahap('capil', 'Ani Capil');
+    mahasiswaTahap('kampus', 'Budi Kampus');
+    mahasiswaTahap('kesra', 'Citra Kesra');
+    $mahasiswa = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+
+    $dasbor = [
+        'capil' => actingAs($this->capilAdmin)->get(route('dashboard'))->assertOk()->getContent(),
+        'kampus' => actingAs($this->kampusAdmin)->get(route('dashboard'))->assertOk()->getContent(),
+        'kesra' => actingAs($this->kesraAdmin)->get(route('dashboard'))->assertOk()->getContent(),
+        'super admin' => actingAs($this->superAdmin)->get(route('dashboard'))->assertOk()->getContent(),
+        'mahasiswa' => actingAs($mahasiswa)->get(route('dashboard'))->assertOk()->getContent(),
+    ];
+
+    foreach ($dasbor as $nama => $html) {
+        // Widget ini hanya pernah muncul di tahap Capil dan Kampus, tapi
+        // pemeriksaan dilakukan di kelima dasbor supaya widget yang strolling
+        // ke halaman lain ikut ketahuan.
+        expect($html, $nama)->not->toContain('Tahapan Berikutnya');
+    }
+});
+
+test('statistik antrean tetap ada di dasbor tahap', function () {
+    actingAs($this->capilAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        // Angka dan tabelnya tetap; yang dihapus hanya kartu "Tahapan
+        // Berikutnya" beserta navigasi ke tahap lain.
+        ->assertSee('Menunggu Tindakan')
+        ->assertSee('Perlu Perbaikan')
+        ->assertSee('Disetujui')
+        ->assertSee('Ditolak')
+        ->assertSee('Menunggu Tindakan Anda');
 });
 
 /*

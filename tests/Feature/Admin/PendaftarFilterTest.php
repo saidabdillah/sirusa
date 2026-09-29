@@ -155,6 +155,23 @@ test('pendaftar index filters cancelled registrations apart from decisions', fun
         ->and($ditolak->status)->toBe('ditolak');
 });
 
+test('dropdown status memakai istilah ui yang sama dengan badge', function () {
+    $html = actingAs($this->admin)
+        ->get(route('admin.pendaftar.index'))
+        ->assertOk()
+        ->getContent();
+
+    // Label diambil dari `Applicant::STATUS_LABELS`. Kalau suatu saat istilah
+    // status berubah, dropdown ikut berubah karena tidak ditulis ulang di view.
+    foreach (Applicant::STATUS_LABELS as $nilai => $label) {
+        expect($html)->toContain('<option value="'.$nilai.'"');
+        expect($html)->toContain($label);
+    }
+
+    expect($html)->toContain('>Menunggu<')
+        ->and($html)->toContain('>Disetujui<');
+});
+
 test('pendaftar index rejects invalid beasiswa filter', function () {
     actingAs($this->admin)
         ->get(route('admin.pendaftar.index', ['beasiswa_id' => 9999]))

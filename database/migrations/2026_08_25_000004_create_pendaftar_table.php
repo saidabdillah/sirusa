@@ -18,6 +18,14 @@ return new class extends Migration
             $table->unsignedInteger('semester')->nullable();
             $table->enum('status', ['verifikasi', 'diterima', 'ditolak', 'dibatalkan'])->default('verifikasi');
             $table->text('catatan')->nullable();
+
+            // Momen keputusan Kesra, terpisah dari `updated_at` yang ikut berubah
+            // setiap kali baris disentuh. `updated_at` tidak bisa dipakai karena
+            // keputusan revisi juga memutusnya, jadi tanggal yang tampil di blok
+            // keputusan harus berasal dari penulisan yang disengaja.
+            $table->timestamp('diputuskan_at')->nullable();
+            $table->foreignId('diputuskan_oleh')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
             $table->unique(['user_id', 'beasiswa_id']);
         });

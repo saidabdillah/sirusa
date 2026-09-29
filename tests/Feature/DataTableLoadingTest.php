@@ -76,8 +76,9 @@ test('teks loading disetel sekali secara global di custom js', function () {
 
 test('ada tabel yang memakai DataTable untuk diuji', function () {
     // Penjaga: kalau filter di atas salah, semua test lain di file ini lulus
-    // tanpa memeriksa apa pun.
-    expect($this->tabel)->toHaveCount(9);
+    // tanpa memeriksa apa pun. Angkanya harus ikut naik setiap kali ada view
+    // baru yang menginisialisasi DataTable.
+    expect($this->tabel)->toHaveCount(10);
 });
 
 test('setiap tabel punya flag processing', function (string $path) {

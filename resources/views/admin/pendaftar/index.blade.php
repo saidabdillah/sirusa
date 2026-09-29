@@ -42,10 +42,12 @@
                   <label for="status">Status</label>
                   <select name="status" id="status" class="form-control">
                     <option value="">-- Semua Status --</option>
-                    <option value="verifikasi" {{ request('status') === 'verifikasi' ? 'selected' : '' }}>Verifikasi</option>
-                    <option value="diterima" {{ request('status') === 'diterima' ? 'selected' : '' }}>Diterima</option>
-                    <option value="ditolak" {{ request('status') === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
-                    <option value="dibatalkan" {{ request('status') === 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
+                    {{-- Label diambil dari peta status `Applicant`, bukan ditulis
+                         ulang di sini, supaya dropdown tidak menampilkan label
+                         basi saat istilah status berubah. --}}
+                    @foreach(\App\Models\Applicant::STATUS_LABELS as $nilai => $label)
+                      <option value="{{ $nilai }}" {{ request('status') === $nilai ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                   </select>
                 </div>
                 <div class="col-md-4 mb-2 mb-md-0">

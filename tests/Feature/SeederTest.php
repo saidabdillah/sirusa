@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserProfile;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\MenuSeeder;
+use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -341,6 +342,44 @@ test('seeder membuat akun role user yang siap dipakai untuk testing', function (
         ->and($profile->ukt)->not->toBeNull()
         ->and($profile->nama_ayah)->not->toBeNull()
         ->and($profile->nama_ibu)->not->toBeNull();
+});
+
+test('verif_kesra pada data demo selalu mengikuti status pendaftaran', function () {
+    $this->seed(DatabaseSeeder::class);
+    // `UserSeeder` sengaja tidak ikut `DatabaseSeeder` (dinyalakan lewat
+    // uncomment), tapi konsistensi penanda Kesra di sana tetap harus benar --
+    // paling mudah dicek dengan menjalankannya langsung. Role, kampus, dan
+    // beasiswa sudah dibuat `UserDemoSeeder`.
+    $this->seed(UserSeeder::class);
+
+    $sudahDiputuskan = Applicant::query()
+        ->whereIn('status', ['diterima', 'ditolak'])
+        ->with('user.profile')
+        ->get();
+
+    expect($sudahDiputuskan)->not->toBeEmpty();
+
+    foreach ($sudahDiputuskan as $applicant) {
+        // Kesra tidak memverifikasi profil: yang diputuskan ada di baris
+        // `pendaftar`. `verif_kesra` hanya menyatakan bahwa pendaftaran itu sudah
+        // diputuskan, jadi tidak boleh ada mahasiswa yang punya pendaftaran
+        // `diterima` sementara `verif_kesra`-nya masih `menunggu` -- kondisi yang
+        // mustahil terjadi di aplikasi tapi mudah muncul kalau seedernya menulis
+        // kedua nilai secara terpisah.
+        expect($applicant->user?->profile?->verif_kesra, $applicant->user?->username)
+            ->toBe('setuju');
+    }
+});
+
+test('pendaftaran yang sudah diputuskan pada data demo punya tanggal keputusan', function () {
+    $this->seed(DatabaseSeeder::class);
+    $this->seed(UserSeeder::class);
+
+    $diterima = Applicant::query()->where('status', 'diterima')->firstOrFail();
+    $menunggu = Applicant::query()->where('status', 'verifikasi')->firstOrFail();
+
+    expect($diterima->diputuskan_at)->not->toBeNull()
+        ->and($menunggu->diputuskan_at)->toBeNull();
 });
 
 test('akun demo user tertaut ke prodi, kampus, dan pendaftar', function () {

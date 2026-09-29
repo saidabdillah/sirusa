@@ -99,12 +99,10 @@ class PendaftarController extends Controller
 
     private function renderStatus(Applicant $applicant): string
     {
-        return match ($applicant->status) {
-            'verifikasi' => '<span class="badge badge-warning">Verifikasi</span>',
-            'diterima' => '<span class="badge badge-success">Diterima</span>',
-            'revisi' => '<span class="badge badge-warning">Revisi</span>',
-            'ditolak' => '<span class="badge badge-danger">Ditolak</span>',
-            default => '',
-        };
+        return sprintf(
+            '<span class="badge badge-%s">%s</span>',
+            $applicant->statusBadge(),
+            e($applicant->statusLabel()),
+        );
     }
 }

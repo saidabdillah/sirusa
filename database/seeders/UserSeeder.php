@@ -40,19 +40,31 @@ class UserSeeder extends Seeder
         ['kecamatan' => 'Awayan', 'desa' => 'Ambakiang'],
     ];
 
+    /**
+     * Status verifikasi profil per mahasiswa, berurutan `[capil, kampus]`.
+     *
+     * `verif_kesra` sengaja tidak ada di sini. Kesra tidak memverifikasi profil --
+     * yang diputuskan ada di baris `pendaftar` -- jadi `verif_kesra` cuma
+     * menyatakan bahwa pendaftaran mahasiswa itu sudah diputuskan, dan nilainya
+     * harus ikut diturunkan dari `applicants`. Kalau ditulis manual di sini,
+     * data demo bisa punya pendaftaran `diterima` sementara `verif_kesra` masih
+     * `menunggu`, kondisi yang tidak mungkin terjadi di aplikasi.
+     *
+     * @var array<string, array{0: string, 1: string}>
+     */
     private array $verifikasi = [
-        'user01' => ['menunggu', 'setuju', 'setuju'],
-        'user02' => ['setuju', 'setuju', 'menunggu'],
-        'user03' => ['setuju', 'menunggu', 'menunggu'],
-        'user04' => ['revisi', 'menunggu', 'menunggu'],
-        'user05' => ['setuju', 'setuju', 'setuju'],
-        'user06' => ['menunggu', 'menunggu', 'menunggu'],
-        'user07' => ['setuju', 'menunggu', 'menunggu'],
-        'user08' => ['setuju', 'setuju', 'setuju'],
-        'user09' => ['setuju', 'setuju', 'setuju'],
-        'user10' => ['menunggu', 'menunggu', 'menunggu'],
-        'user11' => ['setuju', 'setuju', 'menunggu'],
-        'user12' => ['menunggu', 'menunggu', 'menunggu'],
+        'user01' => ['setuju', 'setuju'],
+        'user02' => ['setuju', 'setuju'],
+        'user03' => ['setuju', 'menunggu'],
+        'user04' => ['revisi', 'menunggu'],
+        'user05' => ['setuju', 'setuju'],
+        'user06' => ['menunggu', 'menunggu'],
+        'user07' => ['setuju', 'menunggu'],
+        'user08' => ['setuju', 'setuju'],
+        'user09' => ['setuju', 'setuju'],
+        'user10' => ['menunggu', 'menunggu'],
+        'user11' => ['setuju', 'setuju'],
+        'user12' => ['menunggu', 'menunggu'],
     ];
 
     public function run(): void
@@ -129,7 +141,7 @@ class UserSeeder extends Seeder
                     'kk_wali' => $data['kk_ikut_wali'] ? "profil/{$key}/kk_wali.jpg" : null,
                     'verif_capil' => $verif[0],
                     'verif_kampus' => $verif[1],
-                    'verif_kesra' => $verif[2],
+                    'verif_kesra' => $this->verifKesra($data['applicants']),
                     'catatan_capil' => $verif[0] === 'revisi' ? 'NIK dan nama tidak sesuai dengan data KK' : null,
                 ],
             );
@@ -149,6 +161,7 @@ class UserSeeder extends Seeder
                         'ipk' => $data['ipk'],
                         'semester' => $data['semester'],
                         'status' => $status,
+                        'diputuskan_at' => in_array($status, ['diterima', 'ditolak'], true) ? now() : null,
                     ],
                 );
             }
@@ -160,6 +173,27 @@ class UserSeeder extends Seeder
     private function nik(string $number): string
     {
         return '6303'.str_pad($number, 12, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Nilai `verif_kesra` untuk sekumpulan pendaftaran milik satu mahasiswa.
+     *
+     * Sama seperti `KeputusanPendaftaranController::update()`: begitu satu
+     * pendaftaran diputuskan -- diterima maupun ditolak -- tahap Kesra mahasiswa
+     * itu selesai, jadi penanda profilnya jadi `setuju`. Yang belum diputuskan
+     * apa pun tetap `menunggu`.
+     *
+     * @param  array<string, string>  $applicants  Peta nama beasiswa => status pendaftaran.
+     */
+    private function verifKesra(array $applicants): string
+    {
+        foreach ($applicants as $status) {
+            if (in_array($status, ['diterima', 'ditolak'], true)) {
+                return 'setuju';
+            }
+        }
+
+        return 'menunggu';
     }
 
     private function seedManyPenerima(): void

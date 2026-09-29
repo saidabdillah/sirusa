@@ -108,21 +108,34 @@ class KesraVerifikasiExport extends VerifikasiExport
     }
 
     /**
-     * Satu mahasiswa bisa mendaftar lebih dari satu beasiswa, jadi semua
-     * pendaftaran ikut dibawa tanpa menambah query per baris.
+     * Baris unduhan Kesra diambil dari antrean PENDAFTARAN, bukan antrean profil.
+     *
+     * `VerifikasiExport::users()` bawaannya memfilter profil lewat
+     * `canVerifStage()`, yang hanya berarti "sudah lolos Capil dan Kampus" --
+     * termasuk pendaftaran yang keputusannya sudah dicetak berminggu lalu. Itu
+     * bukan isi antrean Kesra, dan unduhan yang berbeda dari daftar yang dibaca
+     * admin adalah sumber kesalahan yang mahal.
      */
     public function users(): Collection
     {
-        return parent::users()->load('applicants.beasiswa');
+        return $this->antrean()->pendaftarUsers($this->filter());
     }
 
     /**
+     * Pendaftaran milik satu orang, dipersempit ke status yang sedang difilter
+     * supaya kolom "Status Pendaftaran" dan "Catatan Pendaftaran" menggambarkan
+     * antrean yang sama dengan yang diunduh.
+     *
      * @return Collection<int, Applicant>
      */
     private function pendaftaran(User $user): Collection
     {
-        return $user->relationLoaded('applicants')
+        $applicants = $user->relationLoaded('applicants')
             ? $user->applicants
             : $user->applicants()->with('beasiswa')->get();
+
+        return $this->filter() !== null
+            ? $applicants->where('status', $this->filter())->values()
+            : $applicants;
     }
 }

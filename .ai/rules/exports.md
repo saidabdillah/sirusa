@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/Exports/**'
+  - app/Exports/KesraVerifikasiExport.php
 ---
 
 # Exports
@@ -16,3 +17,6 @@ NIK/NIM/No. KK lewat `teks()` (string) dan TIDAK boleh diberi `number_format` at
 
 ## Jangan pakai range() untuk iterasi huruf kolom
 `VerifikasiExport::gayaHeader()` sebelumnya memakai `range('A', $lastColumn)`, yang hanya bisa menghitung huruf tunggal. Begitu kolom melewati `Z` (26 kolom) fungsi itu melempar ErrorException dan unduhan jadi 500. Jebakan ini tidak terlihat sampai ada subclass dengan >26 kolom (ekspor Kesra sekarang 35 kolom). Iterasi lewat indeks dengan `Coordinate::stringFromColumnIndex()`.
+
+## Unduhan Kesra harus berisi persis isi antrean yang sedang dibuka
+`KesraVerifikasiExport::users()` wajib baca dari `VerifikasiAntrean::pendaftarUsers($this->filter())`, bukan `parent::users()` yang memfilter profil lewat `canVerifStage()` — yang mengembalikan semua yang lolos Capil+Kampus termasuk yang keputusannya lama, sehingga unduhan tidak sama dengan tabel yang dibaca admin. `VerifikasiExport` menyediakan accessor `filter()` dan `antrean()` protected untuk itu. Filter yang sama harus diteruskan ke kolom pendaftaran di dalam sel (`pendaftaran($user)`), supaya "Status Pendaftaran" di Excel juga jujur.

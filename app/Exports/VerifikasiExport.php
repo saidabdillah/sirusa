@@ -89,6 +89,27 @@ abstract class VerifikasiExport
         return implode('-', $parts);
     }
 
+    /**
+     * Filter yang sedang berlaku, supaya subclass bisa ikut mempersempit datanya.
+     *
+     * Untuk Kesra, filter ini adalah status pendaftaran, bukan status profil. Kalau
+     * unduhannya tidak ikut menyaring, file Excel dan daftar di layar akan
+     * berbeda isi padahal keduanya dari tombol yang sama.
+     */
+    protected function filter(): ?string
+    {
+        return $this->filter;
+    }
+
+    /**
+     * Antrean yang sama dengan yang dibuka admin, supaya subclass bisa menggantinya
+     * dengan sumber data yang relevan tahapnya tanpa menggali property private.
+     */
+    protected function antrean(): VerifikasiAntrean
+    {
+        return $this->antrean;
+    }
+
     public function toSpreadsheet(): Spreadsheet
     {
         $book = new Spreadsheet;

@@ -3,6 +3,7 @@ paths:
   - 'app/Http/Controllers/Admin/**'
   - app/Http/Controllers/Admin/PenggunaController.php
   - app/Http/Controllers/Admin/VerifikasiController.php
+  - app/Http/Controllers/Admin/KeputusanPendaftaranController.php
 ---
 
 # Admin
@@ -80,3 +81,12 @@ Index/create/store/edit/update are gated on `User::canManageUsers()` (= `hasMenu
 
 ## Changing a verification decision cascades to later stages
 In `verifikasi()`, whenever the submitted status is not `setuju`, call `resetDownstreamStages($stage)` before saving. Prerequisites are now re-editable, so leaving a stale `setuju` downstream would let a student skip straight to Kesra after Capil rejected them. `VerifikasiProfilRequest` also accepts `menunggu` (Tarik Kembali) for this reason.
+
+## One Kesra decision, written to both the applicant row and verif_kesra
+Kesra has exactly one decision per registration. `update()` writes `pendaftar.status` AND sets `verif_kesra='setuju'` in the same transaction, inside the existing `lockForUpdate()` quota block (which excludes the applicant itself, so revising an accepted row is not blocked by its own slot). The profile-level endpoint `admin.kesra.verifikasi` is 403 for stage kesra — do not reintroduce a form or gate that requires `verif_kesra='setuju'` first. `pendaftar_status` accepts only `diterima`/`ditolak`; there is no pull-back to `verifikasi`.
+
+## Antrean Kesra adalah halaman sendiri, bukan redirect ke daftar pendaftar
+`VerifikasiController::index()` untuk stage `kesra` ME-RENDER `admin/verifikasi/kesra.blade.php` (view terpisah dari `index.blade.php`, karena bentuk datanya berbeda: baris `pendaftar`, bukan profil). Dilarang redirect `kesra` ke `admin.pendaftar.index` — daftar pendaftar tidak punya tombol keputusan, jadi admin mendarat di halaman yang isinya tidak bisa dikerjakan. Link "Lihat Semua" di `resources/views/dasbor/verifikasi.blade.php` harus ke `admin.kesra.index` (bukan `admin.pendaftar.index?status=verifikasi`) supaya angka dasbor dan halaman tuju satu antrean. Default tanpa `filter` = hanya yang menunggu (`Applicant::PENDING_STATUS`); `filter=semua` = semua status termasuk `dibatalkan`; filter tidak dikenal = semua status. Baris `dibatalkan` ditampilkan tanpa tombol aksi karena form keputusannya memang tidak dibuka. Verifikasi profil Kesra tidak ada; keputusan hanya lewat `KeputusanPendaftaranController::update()`.
+
+## Filter "semua status" pakai sentinel, bukan string kosong
+Middleware `web` sudah termasuk `ConvertEmptyStringsToNull`, jadi `?filter=` sampai ke controller sebagai `null` — sama persis dengan tidak mengirim `filter` sama sekali. Karena itu "tampilkan semua status" memakai nilai sentinel `Applicant::FILTER_ALL` = `'semua'`, bukan `value=""` di select. Tanpa filter (null) = antrean yang menunggu; `semua`/nilai tak dikenal = semua status. Kalau suatu saat filter kosong perlu berarti "semua", sentinel ini yang harus diubah, bukan select-nya.

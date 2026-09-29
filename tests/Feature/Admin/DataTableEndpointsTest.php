@@ -106,10 +106,29 @@ test('pendaftar data endpoint respects status filter', function () {
         ->getJson(route('admin.pendaftar.data', ['status' => 'diterima']))
         ->assertOk()
         ->assertJson(['recordsTotal' => 2, 'recordsFiltered' => 1])
-        ->assertJsonPath('data.0.status', '<span class="badge badge-success">Diterima</span>');
+        // Label "Disetujui", bukan "Diterima": istilah di UI sekarang sama
+        // dengan peta `Applicant::STATUS_LABELS`, bukan nilai mentah database.
+        ->assertJsonPath('data.0.status', '<span class="badge badge-success">Disetujui</span>');
 
     expect($response->json('data.0.aksi'))->toBeNull();
 });
+
+test('pendaftar data endpoint renders a badge for every status', function (string $status, string $badge, string $label) {
+    $scholarship = Scholarship::factory()->create();
+    Applicant::factory()->create(['beasiswa_id' => $scholarship->id, 'status' => $status]);
+
+    // `dibatalkan` dulu jatuh ke `default => ''` di mapper lama, jadi barisnya
+    // tampil tanpa badge sama sekali. Sekarang keempat status wajib punya badge.
+    actingAs($this->admin)
+        ->getJson(route('admin.pendaftar.data'))
+        ->assertOk()
+        ->assertJsonPath('data.0.status', "<span class=\"badge badge-{$badge}\">{$label}</span>");
+})->with([
+    'verifikasi' => ['verifikasi', 'warning', 'Menunggu'],
+    'diterima' => ['diterima', 'success', 'Disetujui'],
+    'ditolak' => ['ditolak', 'danger', 'Ditolak'],
+    'dibatalkan' => ['dibatalkan', 'secondary', 'Dibatalkan'],
+]);
 
 test('pendaftar data endpoint searches by applicant name', function () {
     $scholarship = Scholarship::factory()->create();

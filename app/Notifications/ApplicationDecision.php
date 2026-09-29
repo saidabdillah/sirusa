@@ -38,10 +38,9 @@ class ApplicationDecision extends Notification
 
     private function translatedStatus(): string
     {
-        return match ($this->status) {
-            'diterima' => 'diterima',
-            'ditolak' => 'ditolak',
-            default => 'dikembalikan ke daftar tunggu',
-        };
+        // Label diambil dari peta status yang sama dengan badge di UI, supaya
+        // mahasiswa membaca "Disetujui" di notifikasi dan "Disetujui" di daftar
+        // pendaftaran, bukan dua istilah berbeda untuk satu status.
+        return Applicant::STATUS_LABELS[$this->status] ?? $this->status;
     }
 }

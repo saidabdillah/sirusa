@@ -18,3 +18,6 @@ New profiles start with `verif_capil/kampus/kesra = 'menunggu'` from both the mi
 
 ## Blok orang tua/wali dibaca lewat orangTuaDipilih()
 Semua tempat yang perlu data orang tua/wali (ekspor Excel Capil/Kampus/Kesra) harus memakai `$profile->orangTuaDipilih()` yang mengembalikan `{label, nama, nik, pekerjaan}` sekaligus, bukan `match ($profile->ikut_kk)` sendiri-sendiri per kolom. Menulis tiap kolom terpisah mudah membuat baris menampilkan nama ayah dengan NIK ibu. `default` memakai ayah supaya profil lama dengan `ikut_kk` kosong tetap punya data.
+
+## Status labels, badge colours and icons live only in the model
+`STATUS_LABELS` (verifikasi=Menunggu, diterima=Disetujui, ditolak=Ditolak, dibatalkan=Dibatalkan), `STATUS_BADGES` and `STATUS_ICONS` are the only place these labels exist. Enum values in the database are unchanged. Views and `PendaftarController::renderStatus()` must read `statusLabel()/statusBadge()/statusIcon()` — never hand-write a status label or colour, and never `@switch` over status in a view.

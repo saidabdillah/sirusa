@@ -1,6 +1,7 @@
 ---
 paths:
   - database/seeders/MenuSeeder.php
+  - database/seeders/UserSeeder.php
 ---
 
 # Seeders
@@ -19,3 +20,6 @@ Section tidak menambah atau mengurangi permission: `role_menu` tetap satu-satuny
 
 ## Label menu verifikasi sudah dipangkas, jangan dikembalikan
 Tiga antrean verifikasi bernama `Dukcapil`, `Kampus`, `Kesra` di section `Verifikasi` -- bukan `Verifikasi Capil`/`Verifikasi Kampus`/`Verifikasi Kesra`. Prefiksnya dihapus karena header section sudah menyebut prosesnya. `scope` (`admin.capil`, `admin.kampusverif`, `admin.kesra`) tidak berubah sama sekali, jadi grant dan permission aman. Konsekuensi yang harus diingat: `Kampus` sekarang dipakai dua menu (antrean verifikasi di section `Verifikasi` dan Master Data di section `Administrasi`) -- mereka tidak bentrok di DB karena `parent_id` dan `section`-nya berbeda, tapi tes sidebar WAJIB mencocokkan `href`/`scope`, bukan teks label, dan teks konfirmasi hapus di "Kelola Menu" jadi ambigu ("Hapus menu 'Kampus'?" untuk dua menu). String "Verifikasi Capil/Kampus/Kesra" di `app/Support/VerifikasiAntrean.php`, `app/Notifications/DataVerificationChanged.php`, dan `DashboardController::actorLabel()` adalah nama tahap/aktor, bukan label menu -- sengaja tidak ikut diubah.
+
+## Seed data harus konsisten dengan satu-keputusan-satu-pendaftaran
+`verif_kesra` di seeder harus diturunkan dari status `pendaftar` (ada yang `diterima`/`ditolak` => `setuju`), sama seperti `KeputusanPadderanController::update()`, dan `diputuskan_at` diisi hanya untuk yang sudah diputuskan. Menulis kedua nilai secara terpisah menghasilkan mahasiswa dengan pendaftaran `diterima` tapi `verif_kesra = 'menunggu'` — kombinasi yang mustahil terjadi di aplikasi tapi langsung merusak angka dasbor. Perhatikan juga: `UserSeeder` TIDAK dipanggil `DatabaseSeeder` (sengaja dikomentari di sana), jadi test konsistensinya harus memanggil `UserSeeder` secara eksplisit setelah `DatabaseSeeder`.

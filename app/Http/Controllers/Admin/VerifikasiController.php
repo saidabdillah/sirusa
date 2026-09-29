@@ -9,6 +9,7 @@ use App\Exports\VerifikasiExport;
 use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VerifikasiProfilRequest;
+use App\Models\Applicant;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Notifications\DataVerificationChanged;
@@ -40,7 +41,21 @@ class VerifikasiController extends Controller
     public function index(string $stage): View
     {
         $stage = $this->validStage($stage);
-        $filter = $this->validFilter();
+        $filter = $this->validFilter($stage);
+
+        // Kesra tidak punya daftar profil sendiri. Satu keputusan Kesra ada di baris
+        // `pendaftar`, jadi daftar kerja Kesra adalah daftar pendaftaran yang perlu
+        // diputuskan -- bukan daftar orang yang profilnya belum disentuh. Halamannya
+        // terpisah karena bentuk datanya memang berbeda (kolom, aksi, dan filter
+        // status), bukan karena salah satu dari keduanya perlu dialihkan.
+        if ($stage === 'kesra') {
+            return view('admin.verifikasi.kesra', [
+                'stage' => $stage,
+                'pendaftaran' => $this->antrean($stage)->pendaftaran($filter),
+                'filter' => $filter,
+            ]);
+        }
+
         $antrean = $this->antrean($stage);
 
         return view('admin.verifikasi.index', [
@@ -73,6 +88,16 @@ class VerifikasiController extends Controller
 
         if (! $profile || ! $profile->canVerifStage($stage)) {
             abort(403);
+        }
+
+        // Tahap Kesra tidak punya verdict profil sendiri lagi. Satu keputusan
+        // Kesra ada di baris `pendaftar` dan ditulis lewat
+        // `KeputusanPendaftaranController::update()`, yang sekaligus menutup
+        // tahap ini. Endpoint di sini sengaja ditutup supaya tidak ada jalur
+        // tulis kedua yang bisa memberi dua keputusan berbeda untuk satu
+        // pendaftaran.
+        if ($stage === 'kesra') {
+            abort(403, 'Keputusan Kesra diambil dari decision Beasiswa pada halaman yang sama.');
         }
 
         if ($stage === 'kampus' && $this->diLuarKampus($profile)) {
@@ -124,7 +149,7 @@ class VerifikasiController extends Controller
 
         $export = new (self::EXPORTS[$stage])(
             $this->antrean($stage),
-            $this->validFilter(),
+            $this->validFilter($stage),
         );
 
         return ExcelDownload::response($export->toSpreadsheet(), $export->fileName());
@@ -141,12 +166,35 @@ class VerifikasiController extends Controller
 
     /**
      * Filter status pada daftar verifikasi. Null berarti tidak difilter.
+     *
+     * Untuk Capil dan Kampus, statusnya milik profil (`menunggu`/`revisi`/`setuju`/
+     * `tolak`). Kesra memakai status yang sama dengan `Applicant` (`verifikasi`/
+     * `diterima`/`ditolak`/`dibatalkan`), jadi daftar yang diizinkan berbeda per
+     * tahap -- filter `setuju` tidak akan cocok dengan apa pun di Kesra.
+     *
+     * Tanpa `filter` sama sekali, Kesra menampilkan yang masih menunggu putusan.
+     * Itu default, bukan sekadar fallback: antrean Kesra adalah daftar pekerjaan
+     * yang belum selesai, sedangkan keputusan lama tetap bisa dicari lewat filter.
+     * "Semua status" memakai nilai `Applicant::FILTER_ALL` karena `?filter=` sudah
+     * diubah jadi `null` oleh `ConvertEmptyStringsToNull` sebelum sampai sini.
      */
-    private function validFilter(): ?string
+    private function validFilter(string $stage): ?string
     {
         $filter = request('filter');
 
-        return in_array($filter, self::FILTERS, true) ? $filter : null;
+        if ($filter === null) {
+            return $stage === 'kesra' ? Applicant::PENDING_STATUS : null;
+        }
+
+        if ($filter === Applicant::FILTER_ALL) {
+            return null;
+        }
+
+        $allowed = $stage === 'kesra'
+            ? array_keys(Applicant::STATUS_LABELS)
+            : self::FILTERS;
+
+        return in_array($filter, $allowed, true) ? $filter : null;
     }
 
     private function antrean(string $stage): VerifikasiAntrean
