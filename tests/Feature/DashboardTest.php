@@ -223,14 +223,54 @@ test('kesra queue count matches the applicant list its menu opens', function () 
 });
 
 test('the campus column on a stage dashboard shows the real campus name', function () {
-    mahasiswaTahap('capil', 'Ani Capil');
+    $user = mahasiswaTahap('kesra', 'Ani Kesra');
+
+    Applicant::factory()->create([
+        'user_id' => $user->id,
+        'beasiswa_id' => Scholarship::factory()->create([
+            'kampus_id' => $this->kampus->id,
+            'tanggal_selesai' => now()->addMonth(),
+        ])->id,
+    ]);
 
     // `kampus` punya kolom `nama_kampus`. Menulis `kampus->nama` membuat Eloquent
     // membalas `null` dan kolomnya tampil sebagai "-", padahal relasinya lengkap.
-    actingAs($this->capilAdmin)
+    actingAs($this->kesraAdmin)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSeeInOrder(['Ani Capil', 'Teknik Informatika', 'Universitas Lambung Mangkurat'], false);
+        ->assertSeeInOrder(['Ani Kesra', 'Teknik Informatika', 'Universitas Lambung Mangkurat'], false);
+});
+
+test('kolom antrean di dasbor mengikuti tahap yang memverifikasi', function () {
+    $capil = mahasiswaTahap('capil', 'Ani Capil');
+    $capil->profile->update(['nik' => '6302000000000001', 'no_kk' => '6302000000000002', 'desil' => 2]);
+
+    $html = actingAs($this->capilAdmin)->get(route('dashboard'))->assertOk()->getContent();
+
+    // Capil memeriksa kependudukan, jadi NIK/KK/desil yang tampil. Prodi dan
+    // kampus tidak pernah jadi dasar keputusan di tahap ini -- kemunculannya di
+    // kartu ini cuma menambah kolom yang tidak dibaca.
+    expect($html)->toContain('NIK')
+        ->and($html)->toContain('No. Kartu Keluarga')
+        ->and($html)->toContain('Desil')
+        ->and($html)->toContain('6302000000000001')
+        ->and($html)->toContain('Desil 2')
+        ->and($html)->not->toContain('Program Studi')
+        ->and($html)->not->toContain($this->kampus->nama_kampus);
+
+    $kampus = mahasiswaTahap('kampus', 'Budi Kampus');
+    $kampus->profile->update(['nim' => '201000000001', 'ipk' => 3.75]);
+
+    $html = actingAs($this->kampusAdmin)->get(route('dashboard'))->assertOk()->getContent();
+
+    // Kampus memeriksa status mahasiswa, jadi NIM/prodi/IPK.
+    expect($html)->toContain('NIM')
+        ->and($html)->toContain('IPK')
+        ->and($html)->toContain('201000000001')
+        ->and($html)->toContain('3.75')
+        ->and($html)->toContain('Program Studi')
+        ->and($html)->not->toContain('No. Kartu Keluarga')
+        ->and($html)->not->toContain('Desil');
 });
 
 test('the cross-stage table marks statuses that do not apply to a stage', function () {

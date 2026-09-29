@@ -46,12 +46,6 @@
             </div>
           </div>
           <div class="card-body">
-            <div class="alert alert-primary">
-              <i class="fas fa-info-circle mr-1"></i>
-              Kesra memutuskan pendaftaran, bukan profil mahasiswa. Satu keputusan di
-              sini menutup tahap Kesra untuk mahasiswa tersebut, dan keputusannya
-              bisa diubah selama pendaftaran belum dibatalkan mahasiswa.
-            </div>
             <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
               <div class="col-md-4 mb-2 mb-md-0">
                 <label for="filter">Status Pendaftaran</label>
@@ -70,11 +64,15 @@
                   <i class="fas fa-filter mr-1"></i> Terapkan
                 </button>
               </div>
-              @if($filter !== \App\Models\Applicant::PENDING_STATUS)
+              {{-- Reset selalu ada, sama seperti di daftar pendaftar, dan tidak
+                   bergantung pada filter aktif. Antrean Kesra default-nya sudah
+                   `verifikasi`, jadi menyembunyikan tombol berdasarkan nilai
+                   filter akan membuat tombol hilang tepat saat paling dibutuhkan. --}}
               <div class="col-md-2 mb-2 mb-md-0">
-                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary btn-block">Reset</a>
+                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary btn-block">
+                  <i class="fas fa-redo"></i> Reset
+                </a>
               </div>
-              @endif
             </form>
             <div class="table-responsive">
               <table class="table table-striped" id="verifikasiTable">

@@ -87,11 +87,15 @@ $filterOptions = [
                   <i class="fas fa-filter mr-1"></i> Terapkan
                 </button>
               </div>
-              @if($filter)
+              {{-- Reset selalu ada, sama seperti di daftar pendaftar. Filter
+                   kosong bukan kondisi yang perlu dibetulkan, jadi tidak ada
+                   alasan tombolnya hilang-hilang -- form-nya jadi tidak stabil
+                   dan pengguna mencari tombol yang sebenarnya ada. --}}
               <div class="col-md-2 mb-2 mb-md-0">
-                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary btn-block">Reset</a>
+                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary btn-block">
+                  <i class="fas fa-redo"></i> Reset
+                </a>
               </div>
-              @endif
             </form>
             <div class="table-responsive">
               <table class="table table-striped" id="verifikasiTable">

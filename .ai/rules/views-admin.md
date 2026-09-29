@@ -13,3 +13,6 @@ paths:
 
 ## Role-conditional form blocks must disable their inputs, not just hide them
 `d-none` is CSS-only: inputs inside a hidden block stay enabled and the browser STILL submits them, so their stale values get validated against a role that does not own them (symptom: a mahasiswa create fails with "Kata sandi minimal 8 karakter" / "Konfirmasi kata sandi tidak cocok" / "Username sudah digunakan" after switching peran away from a staff role). `admin/pengguna/buat` and `ubah` therefore toggle `disabled` in `toggleAkun()` alongside `d-none` — `syncBlock(block, isVisible)` in buat, `akunKampus.find('select').prop('disabled', ...)` in ubah. Any new conditional block must do the same, and a test asserts the rendered form still contains `prop('disabled'`.
+
+## Tombol Reset filter admin selalu tampil, gaya seragam
+Tombol Reset pada form filter admin (daftar pendaftar, antrean verifikasi Capil/Kampus/Kesra) selalu tampil, tanpa `@if` pada filter aktif, dan memakai `btn btn-secondary btn-block` + ikon `fas fa-redo`. Jangan menyembunyikannya berdasarkan filter: default Kesra sudah `verifikasi` sehingga tiap halaman akan menampilkan bentuk tombol yang berbeda. `VerifikasiProfilTest` mengunci bentuk ini lewat regex jangkar Reset.
