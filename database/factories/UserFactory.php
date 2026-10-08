@@ -58,10 +58,10 @@ class UserFactory extends Factory
         });
     }
 
-    public function capil(): static
+    public function catpil(): static
     {
         return $this->afterCreating(function (User $user) {
-            $user->assignRole('capil');
+            $user->assignRole('catpil');
         });
     }
 

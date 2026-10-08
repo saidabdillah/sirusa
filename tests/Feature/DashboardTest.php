@@ -18,7 +18,7 @@ beforeEach(function () {
         ->fakultas()->create(['nama' => 'Fakultas Teknik'])
         ->prodi()->create(['nama' => 'Teknik Informatika']);
 
-    $this->capilAdmin = User::factory()->capil()->create(['email' => 'capil@test.com']);
+    $this->catpilAdmin = User::factory()->catpil()->create(['email' => 'catpil@test.com']);
     $this->kampusAdmin = User::factory()->kampusAdmin()->create(['email' => 'kampus@test.com']);
     $this->kesraAdmin = User::factory()->admin()->create(['email' => 'kesra@test.com']);
     $this->superAdmin = User::factory()->superAdmin()->create(['email' => 'super@test.com']);
@@ -30,9 +30,9 @@ beforeEach(function () {
 function mahasiswaTahap(string $tahap, string $nama): User
 {
     $stages = [
-        'capil' => ['verif_capil' => 'menunggu', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
-        'kampus' => ['verif_capil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
-        'kesra' => ['verif_capil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'],
+        'catpil' => ['verif_catpil' => 'menunggu', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
+        'kampus' => ['verif_catpil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
+        'kesra' => ['verif_catpil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'],
     ];
 
     $user = User::factory()->standardUser()->create();
@@ -77,15 +77,15 @@ function mahasiswaTahap(string $tahap, string $nama): User
     return $user;
 }
 
-test('capil sees the capil queue dashboard, not the student dashboard', function () {
-    mahasiswaTahap('capil', 'Ani Capil');
+test('catpil sees the catpil queue dashboard, not the student dashboard', function () {
+    mahasiswaTahap('catpil', 'Ani Catpil');
 
-    actingAs($this->capilAdmin)
+    actingAs($this->catpilAdmin)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('Dasbor Capil')
+        ->assertSee('Dasbor Catpil')
         ->assertSee('Menunggu Tindakan')
-        ->assertSee('Ani Capil');
+        ->assertSee('Ani Catpil');
 });
 
 test('kampus admin sees the kampus queue dashboard', function () {
@@ -115,7 +115,7 @@ test('kesra sees the kesra dashboard with the pending registration queue', funct
 });
 
 test('super admin sees the cross-stage overview', function () {
-    mahasiswaTahap('capil', 'Ani Capil');
+    mahasiswaTahap('catpil', 'Ani Catpil');
     mahasiswaTahap('kampus', 'Budi Kampus');
     mahasiswaTahap('kesra', 'Citra Kesra');
 
@@ -124,13 +124,13 @@ test('super admin sees the cross-stage overview', function () {
         ->assertOk()
         ->assertSee('Sebaran Antrean per Tahap')
         ->assertSee('Alur Penerimaan')
-        ->assertSee('Verifikasi Capil')
+        ->assertSee('Verifikasi Catpil')
         ->assertSee('Verifikasi Kampus')
         ->assertSee('Verifikasi Kesra');
 });
 
 test('student sees the student dashboard', function () {
-    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+    $user = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
 
     actingAs($user)
         ->get(route('dashboard'))
@@ -141,21 +141,21 @@ test('student sees the student dashboard', function () {
 });
 
 test('stage dashboard count matches the stage queue the admin actually opens', function () {
-    mahasiswaTahap('capil', 'Ani Capil');
-    mahasiswaTahap('capil', 'Budi Capil');
+    mahasiswaTahap('catpil', 'Ani Catpil');
+    mahasiswaTahap('catpil', 'Budi Catpil');
     // Sudah terverifikasi penuh, tidak ada yang perlu ditinjau di tahap manapun.
     $selesai = mahasiswaTahap('kesra', 'Citra Sudah Selesai');
     $selesai->profile->update(['verif_kesra' => 'setuju']);
 
-    $response = actingAs($this->capilAdmin)->get(route('dashboard'))->assertOk();
+    $response = actingAs($this->catpilAdmin)->get(route('dashboard'))->assertOk();
 
     expect($response->viewData('ringkasan')['menunggu'])->toBe(2);
 
-    actingAs($this->capilAdmin)
-        ->get(route('admin.capil.index'))
+    actingAs($this->catpilAdmin)
+        ->get(route('admin.catpil.index'))
         ->assertOk()
-        ->assertSee('Ani Capil')
-        ->assertSee('Budi Capil')
+        ->assertSee('Ani Catpil')
+        ->assertSee('Budi Catpil')
         ->assertDontSee('Citra Sudah Selesai');
 });
 
@@ -179,7 +179,7 @@ test('campus admin dashboard is scoped to its own campus', function () {
 test('mahasiswa dashboard shows the blocking application', function () {
     $user = mahasiswaTahap('kesra', 'Dewi Pendaftar');
     $user->profile->update([
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'setuju',
     ]);

@@ -210,16 +210,17 @@ test('sidebarMenus returns only top level menus with children nested', function 
         expect($topLevel->pluck('id'))->not->toContain($childId);
     }
 
-    // Role kesra hanya diberi grant `admin.kesra`, jadi dari tiga menu
-    // verifikasi di section "Verifikasi" hanya itu yang boleh muncul. Dicocokkan
-    // lewat `scope`, bukan `label`: sejak label dipersingkat, "Kampus" dipakai
-    // dua menu (antrean verifikasi di section Verifikasi dan master data di
-    // section Administrasi) dan tidak bisa dibedakan dari label saja.
-    $verifikasiKesra = $topLevel->firstWhere('scope', 'admin.kesra');
-    expect($verifikasiKesra)->not->toBeNull()
-        ->and($verifikasiKesra->label)->toBe('Kesra')
-        ->and($topLevel->firstWhere('scope', 'admin.capil'))->toBeNull()
+    // Role kesra hanya diberi grant anak-anak dropdown "Kesra" (`admin.kesra`
+    // + `admin.penerima`) plus parent-nya (kunci grant `kesra`). Parent tidak
+    // punya `scope` murni untuk tampilan, jadi dicocokkan lewat `label`.
+    $kesraDropdown = $topLevel->firstWhere('label', 'Kesra');
+    expect($kesraDropdown)->not->toBeNull()
+        ->and($kesraDropdown->scope)->toBeNull()
+        ->and($kesraDropdown->children->pluck('scope')->all())
+        ->toBe(['admin.kesra', 'admin.penerima'])
+        ->and($topLevel->firstWhere('scope', 'admin.catpil'))->toBeNull()
         ->and($topLevel->firstWhere('scope', 'admin.kampusverif'))->toBeNull()
+        ->and($topLevel->firstWhere('scope', 'admin.kesra'))->toBeNull()
         // "Verifikasi" bukan menu, melainkan section -- tidak punya `scope`
         // dan tidak boleh ikut terambil sebagai item sidebar.
         ->and($topLevel->firstWhere('label', 'Verifikasi'))->toBeNull();

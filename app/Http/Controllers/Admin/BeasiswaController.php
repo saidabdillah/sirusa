@@ -9,8 +9,6 @@ use App\Http\Requests\Scholarship\UpdateScholarshipRequest;
 use App\Models\Kampus;
 use App\Models\Prodi;
 use App\Models\Scholarship;
-use App\Models\User;
-use App\Notifications\NewScholarship;
 use App\Support\DataTablesProcessor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -90,8 +88,6 @@ class BeasiswaController extends Controller
         $scholarship = Scholarship::create($data);
 
         $this->syncFakultas($scholarship, $prodiIds);
-
-        User::role('user')->lazy()->each->notify(new NewScholarship($scholarship));
 
         return $this->ajaxOk($request, 'Beasiswa berhasil ditambahkan', route('admin.beasiswa.index'));
     }

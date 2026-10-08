@@ -21,8 +21,8 @@ beforeEach(function () {
     ]);
 
     // Role tanpa grant `admin.pengguna`.
-    $this->capil = User::factory()->capil()->create([
-        'email' => 'capil@test.com',
+    $this->catpil = User::factory()->catpil()->create([
+        'email' => 'catpil@test.com',
     ]);
 
     $this->mahasiswa = User::factory()->standardUser()->create([
@@ -120,14 +120,14 @@ test('kesra melihat tombol ubah untuk pengguna biasa', function () {
 
 test('role tanpa grant admin.pengguna ditolak', function (string $role) {
     $viewer = match ($role) {
-        'capil' => $this->capil,
+        'catpil' => $this->catpil,
         'user' => $this->mahasiswa,
     };
 
     actingAs($viewer)
         ->get(route('admin.pengguna.lihat', $this->admin))
         ->assertForbidden();
-})->with(['capil', 'user']);
+})->with(['catpil', 'user']);
 
 test('akun staf tanpa profil menampilkan catatan, bukan Data Diri kosong', function () {
     expect($this->admin->profile)->toBeNull();
@@ -165,6 +165,6 @@ test('daftar pengguna memuat aksi Lihat untuk setiap baris termasuk super admin'
         ->get(route('admin.pengguna.index'))
         ->assertOk()
         ->assertSee(route('admin.pengguna.lihat', $this->mahasiswa), false)
-        ->assertSee(route('admin.pengguna.lihat', $this->capil), false)
+        ->assertSee(route('admin.pengguna.lihat', $this->catpil), false)
         ->assertSee(route('admin.pengguna.lihat', $otherSuper), false);
 });

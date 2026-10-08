@@ -39,9 +39,39 @@
           @endif
 
           @if($profile)
-            <div class="text-muted">
-              Data profil Anda sudah tersimpan. Status verifikasi tidak ditampilkan
-              di sini;hubungi petugas bila ada yang perlu diperbaiki.
+            @php
+              $statusKeseluruhan = match ($profile->verifStatus()) {
+                'terverifikasi' => ['Terverifikasi', 'success'],
+                'revisi' => ['Perlu Perbaikan', 'warning'],
+                'tolak' => ['Ditolak', 'danger'],
+                default => ['Dalam Proses', 'info'],
+              };
+            @endphp
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="text-muted">Status verifikasi data Anda:</div>
+              <span class="badge badge-{{ $statusKeseluruhan[1] }}">{{ $statusKeseluruhan[0] }}</span>
+            </div>
+
+            @foreach(\App\Models\UserProfile::verifStageOrder() as $stage)
+              @php
+                $decision = $profile->verifStageDecision($stage);
+                $catatanTahap = $profile->{'catatan_'.$stage};
+              @endphp
+              <div class="d-flex align-items-start justify-content-between border-bottom py-2">
+                <div>
+                  <div class="font-weight-bold">{{ $profile->verifStageLabels()[$stage] }}</div>
+                  @if(in_array($decision['status'], ['revisi', 'tolak']) && $catatanTahap)
+                    <div class="text-small text-muted">Catatan: {{ $catatanTahap }}</div>
+                  @endif
+                </div>
+                <span class="badge badge-{{ $decision['badge'] }}">{{ $decision['label'] }}</span>
+              </div>
+            @endforeach
+
+            <div class="text-muted text-small mt-3">
+              Pendaftaran beasiswa tidak perlu menunggu verifikasi: begitu profil lengkap,
+              Anda sudah bisa mendaftar. Hubungi petugas bila ada data yang perlu diperbaiki.
             </div>
           @else
             <div class="text-muted">Anda belum membuat profil. <a href="{{ route('profile') }}">Buat profil sekarang</a>.</div>

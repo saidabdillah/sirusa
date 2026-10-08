@@ -50,7 +50,7 @@ expect()->extend('toBeOne', function () {
 function seedAkses()
 {
     Role::firstOrCreate(['name' => 'super_admin']);
-    Role::firstOrCreate(['name' => 'capil']);
+    Role::firstOrCreate(['name' => 'catpil']);
     Role::firstOrCreate(['name' => 'kampus']);
     Role::firstOrCreate(['name' => 'kesra']);
     Role::firstOrCreate(['name' => 'user']);

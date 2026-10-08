@@ -1,6 +1,6 @@
 <?php
 
-use App\Exports\CapilVerifikasiExport;
+use App\Exports\CatpilVerifikasiExport;
 use App\Exports\KampusVerifikasiExport;
 use App\Exports\KesraVerifikasiExport;
 use App\Models\Applicant;
@@ -34,7 +34,7 @@ beforeEach(function () {
         ->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
         ->prodi()->create(['nama' => 'Akuntansi']);
 
-    $this->capilAdmin = User::factory()->capil()->create(['email' => 'capil@test.com']);
+    $this->catpilAdmin = User::factory()->catpil()->create(['email' => 'catpil@test.com']);
     $this->kampusAdmin = User::factory()->kampusAdmin()->create([
         'email' => 'kampus@test.com',
         'kampus_id' => $this->kampus->id,
@@ -53,9 +53,9 @@ beforeEach(function () {
 function buatPemohon(User $user, string $stage, Prodi $prodi, ?string $nama = null): UserProfile
 {
     $stages = [
-        'capil' => ['verif_capil' => 'menunggu', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
-        'kampus' => ['verif_capil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
-        'kesra' => ['verif_capil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'],
+        'catpil' => ['verif_catpil' => 'menunggu', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
+        'kampus' => ['verif_catpil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'],
+        'kesra' => ['verif_catpil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'],
     ];
 
     $suffix = str_pad((string) $user->id, 6, '0', STR_PAD_LEFT);
@@ -84,7 +84,7 @@ function buatPemohon(User $user, string $stage, Prodi $prodi, ?string $nama = nu
         'pekerjaan_ayah' => 'Petani',
     ], $stages[$stage]));
 
-    if ($stage !== 'capil') {
+    if ($stage !== 'catpil') {
         Applicant::create([
             'user_id' => $user->id,
             'beasiswa_id' => beasiswaUntukEkspor()->id,
@@ -186,21 +186,21 @@ function indeksKolom(Worksheet $sheet, string $judul): int
     return $index + 1;
 }
 
-test('unduhan capil memuat kolom identitas dan mengabaikan data akademik', function () {
-    buatPemohon(User::factory()->standardUser()->create(['email' => 'mhs@test.com']), 'capil', $this->prodi, 'Capil Satu');
+test('unduhan catpil memuat kolom identitas dan mengabaikan data akademik', function () {
+    buatPemohon(User::factory()->standardUser()->create(['email' => 'mhs@test.com']), 'catpil', $this->prodi, 'Catpil Satu');
 
-    $rows = bacaSheet(actingAs($this->capilAdmin)->get(route('admin.capil.export')));
+    $rows = bacaSheet(actingAs($this->catpilAdmin)->get(route('admin.catpil.export')));
 
     expect($rows)->toHaveCount(1)
-        ->and($rows[0]['Nama Lengkap'])->toBe('Capil Satu')
+        ->and($rows[0]['Nama Lengkap'])->toBe('Catpil Satu')
         ->and($rows[0]['NIK'])->toStartWith('6302000000')
         ->and($rows[0]['No. Kartu Keluarga'])->toStartWith('6302000001')
         ->and($rows[0]['Tanggal Lahir'])->toBe('01/01/2000')
         ->and($rows[0]['Desil'])->toBe('3')
         ->and($rows[0]['Kartu Keluarga Diikuti'])->toBe('Ayah')
         ->and($rows[0]['Email'])->toBe('mhs@test.com')
-        ->and($rows[0]['Status Capil'])->toBe('Menunggu')
-        // Tahap Capil tidak menilai IPK, NIM, UKT, maupun dokumen kampus.
+        ->and($rows[0]['Status Catpil'])->toBe('Menunggu')
+        // Tahap Catpil tidak menilai IPK, NIM, UKT, maupun dokumen kampus.
         ->and(array_keys($rows[0]))->not->toContain('IPK', 'NIM', 'UKT/SPP', 'Bukti Pembayaran UKT/SPP');
 });
 
@@ -216,7 +216,7 @@ test('unduhan kampus memprioritaskan kolom akademik dan UKT ditulis sebagai angk
         ->and($rows[0]['Program Studi'])->toBe('Teknik Informatika')
         ->and($rows[0]['Fakultas'])->toBe('Fakultas Teknik')
         ->and($rows[0]['Kampus'])->toBe('Universitas Lambung Mangkurat')
-        ->and($rows[0]['Status Capil'])->toBe('Disetujui')
+        ->and($rows[0]['Status Catpil'])->toBe('Disetujui')
         ->and($rows[0]['Status Kampus'])->toBe('Menunggu')
         ->and($rows[0]['UKT/SPP'])->toBe('1500000')
         // UKT harus sel numerik, bukan teks "Rp 1.500.000", supaya masih bisa
@@ -245,39 +245,36 @@ test('unduhan kesra menambah data pendaftaran dan statusnya', function () {
 });
 
 test('setiap tahap mengunduh antrean tahapnya sendiri', function () {
-    buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Masih Menunggu Capil');
+    buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Masih Menunggu Catpil');
     buatPemohon(User::factory()->standardUser()->create(), 'kampus', $this->prodi, 'Menunggu Kampus');
     buatPemohon(User::factory()->standardUser()->create(), 'kesra', $this->prodi, 'Menunggu Kesra');
 
-    $capil = namaDiekspor(actingAs($this->capilAdmin)->get(route('admin.capil.export')));
+    $catpil = namaDiekspor(actingAs($this->catpilAdmin)->get(route('admin.catpil.export')));
     $kampus = namaDiekspor(actingAs($this->kampusAdmin)->get(route('admin.kampusverif.export')));
     $kesra = namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export')));
 
-    // Capil masih boleh menarik kembali keputusannya selama tahap berikutnya
-    // belum diputuskan, jadi mahasiswa yang menunggu di Campus ikut terlihat.
-    // Yang sudah diputuskan sampai Campus selesai, sebaliknya, tidak muncul
-    // lagi di Capil karena mengubahnya akan membatalkan kerjaan hilir.
-    expect($capil)->toContain('Masih Menunggu Capil', 'Menunggu Kampus')
-        ->and($capil)->not->toContain('Menunggu Kesra')
-        // Sebaliknya, tidak ada yang bisa naik ke tahap yang lebih tinggi
-        // sebelum lewat tahap sebelumnya. Yang paling butuh tindakan mahasiswa
-        // (perlu perbaikan, lalu masih menunggu) muncul lebih dulu.
+    // Catpil dan Kampus paralel: satu-satunya tahap hilir adalah Kesra. Selama
+    // Kesra belum memutuskan, Catpil masih boleh mengoreksi keputusannya -- jadi
+    // ketiga profil terlihat di ekspor Catpil.
+    expect($catpil)->toContain('Masih Menunggu Catpil', 'Menunggu Kampus', 'Menunggu Kesra')
+        // Yang paling butuh tindakan mahasiswa (perlu perbaikan, lalu masih
+        // menunggu) muncul lebih dulu.
         ->and($kampus)->toBe(['Menunggu Kampus', 'Menunggu Kesra'])
         ->and($kesra)->toBe(['Menunggu Kesra']);
 });
 
 test('urutan antrean menempatkan yang perlu diperbaiki lebih dulu', function () {
-    $perlu = buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Budi Perlu Perbaikan');
-    $menunggu = buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Ani Menunggu');
-    $ditolak = buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Citra Ditolak');
-    $disetujui = buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Dewi Disetujui');
+    $perlu = buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Budi Perlu Perbaikan');
+    $menunggu = buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Ani Menunggu');
+    $ditolak = buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Citra Ditolak');
+    $disetujui = buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Dewi Disetujui');
 
-    $perlu->update(['verif_capil' => 'revisi']);
-    $ditolak->update(['verif_capil' => 'tolak']);
-    $disetujui->update(['verif_capil' => 'setuju']);
+    $perlu->update(['verif_catpil' => 'revisi']);
+    $ditolak->update(['verif_catpil' => 'tolak']);
+    $disetujui->update(['verif_catpil' => 'setuju']);
 
     // Rank antrean: perlu perbaikan 0, menunggu 1, tolak 2, disetujui 3.
-    expect(namaDiekspor(actingAs($this->capilAdmin)->get(route('admin.capil.export'))))
+    expect(namaDiekspor(actingAs($this->catpilAdmin)->get(route('admin.catpil.export'))))
         ->toBe(['Budi Perlu Perbaikan', 'Ani Menunggu', 'Citra Ditolak', 'Dewi Disetujui']);
 });
 
@@ -291,29 +288,29 @@ test('unduhan admin kampus dibatasi pada kampusnya sendiri', function () {
 });
 
 test('unduhan mengikuti filter status yang sedang aktif', function () {
-    $disetujui = buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Sudah Disetujui');
-    $disetujui->update(['verif_capil' => 'setuju']);
-    buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Masih Menunggu');
+    $disetujui = buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Sudah Disetujui');
+    $disetujui->update(['verif_catpil' => 'setuju']);
+    buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Masih Menunggu');
 
-    $semuaFilter = bacaSheet(actingAs($this->capilAdmin)->get(route('admin.capil.export')));
-    $hanyaSetuju = bacaSheet(actingAs($this->capilAdmin)->get(route('admin.capil.export', ['filter' => 'setuju'])));
+    $semuaFilter = bacaSheet(actingAs($this->catpilAdmin)->get(route('admin.catpil.export')));
+    $hanyaSetuju = bacaSheet(actingAs($this->catpilAdmin)->get(route('admin.catpil.export', ['filter' => 'setuju'])));
 
     expect(array_column($semuaFilter, 'Nama Lengkap'))
         ->toContain('Sudah Disetujui', 'Masih Menunggu')
         ->and(array_column($hanyaSetuju, 'Nama Lengkap'))->toBe(['Sudah Disetujui'])
-        ->and($hanyaSetuju[0]['Status Capil'])->toBe('Disetujui');
+        ->and($hanyaSetuju[0]['Status Catpil'])->toBe('Disetujui');
 });
 
 test('unduhan hanya bisa diakses tahap yang punya grant menu', function () {
-    buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi);
+    buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi);
 
-    actingAs($this->capilAdmin)->get(route('admin.kampusverif.export'))->assertForbidden();
-    actingAs($this->kampusAdmin)->get(route('admin.capil.export'))->assertForbidden();
-    actingAs($this->kesraAdmin)->get(route('admin.capil.export'))->assertForbidden();
+    actingAs($this->catpilAdmin)->get(route('admin.kampusverif.export'))->assertForbidden();
+    actingAs($this->kampusAdmin)->get(route('admin.catpil.export'))->assertForbidden();
+    actingAs($this->kesraAdmin)->get(route('admin.catpil.export'))->assertForbidden();
     actingAs($this->kampusAdmin)->get(route('admin.kesra.export'))->assertForbidden();
 
     // Yang punya grant tetap boleh mengunduh.
-    actingAs($this->capilAdmin)->get(route('admin.capil.export'))->assertOk();
+    actingAs($this->catpilAdmin)->get(route('admin.catpil.export'))->assertOk();
     actingAs($this->kampusAdmin)->get(route('admin.kampusverif.export'))->assertOk();
     actingAs($this->kesraAdmin)->get(route('admin.kesra.export'))->assertOk();
 });
@@ -334,12 +331,12 @@ test('unduhan mengirim file xlsx dengan nama sesuai tahap dan filter', function 
 });
 
 test('halaman verifikasi menampilkan tombol unduh sesuai grant menu', function () {
-    actingAs($this->capilAdmin)->get(route('admin.capil.index'))
+    actingAs($this->catpilAdmin)->get(route('admin.catpil.index'))
         ->assertOk()
         ->assertSee('Unduh Excel')
-        ->assertSee(route('admin.capil.export'), false);
+        ->assertSee(route('admin.catpil.export'), false);
 
-    actingAs($this->capilAdmin)->get(route('admin.kampusverif.index'))->assertForbidden();
+    actingAs($this->catpilAdmin)->get(route('admin.kampusverif.index'))->assertForbidden();
 });
 
 // ─── Perluasan kolom (spesifikasi batch 2, poin 23) ──────────────────────
@@ -348,8 +345,8 @@ test('halaman verifikasi menampilkan tombol unduh sesuai grant menu', function (
 // yang tidak punya sumber data TIDAK dikarang: kolom kosong lebih jujur
 // daripada kolom yang selalu berisi "-".
 
-test('ekspor capil memuat seluruh kolom yang tersedia di database', function () {
-    expect(judulSheet(actingAs($this->capilAdmin)->get(route('admin.capil.export'))))->toBe([
+test('ekspor catpil memuat seluruh kolom yang tersedia di database', function () {
+    expect(judulSheet(actingAs($this->catpilAdmin)->get(route('admin.catpil.export'))))->toBe([
         'No',
         'Nama Lengkap',
         'NIK',
@@ -370,7 +367,7 @@ test('ekspor capil memuat seluruh kolom yang tersedia di database', function () 
         'NIK Orang Tua/Wali',
         'Pekerjaan Orang Tua/Wali',
         'Desil',
-        'Status Capil',
+        'Status Catpil',
         'Catatan Verifikasi',
     ]);
 });
@@ -404,7 +401,7 @@ test('ekspor kampus memuat seluruh kolom yang tersedia di database', function ()
         'Nama Orang Tua/Wali',
         'NIK Orang Tua/Wali',
         'Pekerjaan Orang Tua/Wali',
-        'Status Capil',
+        'Status Catpil',
         'Status Kampus',
         'Catatan Verifikasi',
     ]);
@@ -443,7 +440,7 @@ test('ekspor kesra menggabungkan identitas, akademik, dan pendaftaran', function
         'Beasiswa',
         'Status Pendaftaran',
         'Catatan Pendaftaran',
-        'Status Capil',
+        'Status Catpil',
         'Status Kampus',
         'Status Kesra',
         'Catatan Verifikasi',
@@ -475,7 +472,7 @@ test('tidak ada kolom yang tidak punya sumber data di database', function (strin
 
     expect(array_keys($rows[0] ?? []))->not->toContain(...$tanpaSumberData);
 })->with([
-    'capil' => ['admin.capil.export', 'capilAdmin'],
+    'catpil' => ['admin.catpil.export', 'catpilAdmin'],
     'kampus' => ['admin.kampusverif.export', 'kampusAdmin'],
     'kesra' => ['admin.kesra.export', 'kesraAdmin'],
 ]);
@@ -487,7 +484,7 @@ test('setiap tahap menampilkan keputusan tahap sebelumnya sebagai kolom sendiri'
 
     // Pemutus tahap akhir perlu tahu dasar keputusannya, dan "Status" tanpa
     // nama tahap akan ambigu begitu ada lebih dari satu kolom status.
-    expect($rows[0]['Status Capil'])->toBe('Disetujui')
+    expect($rows[0]['Status Catpil'])->toBe('Disetujui')
         ->and($rows[0]['Status Kampus'])->toBe('Disetujui')
         ->and($rows[0]['Status Kesra'])->toBe('Menunggu');
 });
@@ -505,7 +502,7 @@ test('lewat 26 kolom, gaya header tetap benar-benar diterapkan', function () {
 });
 
 test('judul kolom tidak ada yang kosong atau kembar', function () {
-    foreach ([CapilVerifikasiExport::class, KampusVerifikasiExport::class, KesraVerifikasiExport::class] as $class) {
+    foreach ([CatpilVerifikasiExport::class, KampusVerifikasiExport::class, KesraVerifikasiExport::class] as $class) {
         $headings = (new $class(new VerifikasiAntrean('kesra')))->headings();
 
         expect($headings)->not->toContain('')
@@ -538,10 +535,10 @@ test('nomor identitas ditulis sebagai teks, bukan angka', function (string $rout
     expect($cell->getDataType())->toBe(DataType::TYPE_STRING)
         ->and($cell->getValue())->toBe($profile->{$atribut});
 })->with([
-    'NIK di ekspor capil' => ['admin.capil.export', 'capilAdmin', 'NIK', 'nik', 'capil'],
+    'NIK di ekspor catpil' => ['admin.catpil.export', 'catpilAdmin', 'NIK', 'nik', 'catpil'],
     'NIK di ekspor kesra' => ['admin.kesra.export', 'kesraAdmin', 'NIK', 'nik', 'kesra'],
     'NIM di ekspor kesra' => ['admin.kesra.export', 'kesraAdmin', 'NIM', 'nim', 'kesra'],
-    'Nomor KK di ekspor capil' => ['admin.capil.export', 'capilAdmin', 'No. Kartu Keluarga', 'no_kk', 'capil'],
+    'Nomor KK di ekspor catpil' => ['admin.catpil.export', 'catpilAdmin', 'No. Kartu Keluarga', 'no_kk', 'catpil'],
 ]);
 
 test('angka yang memang harus dihitung tetap ditulis sebagai angka', function (string $judul) {
@@ -578,7 +575,7 @@ test('dokumen yang belum diunggah ditulis sebagai pagar, bukan sel kosong', func
 });
 
 test('blok orang tua mengikuti pilihan kartu keluarga mahasiswa', function (string $ikut, string $label, string $nama, string $nik, string $pekerjaan) {
-    $profile = buatPemohon(User::factory()->standardUser()->create(), 'capil', $this->prodi, 'Blok Orang Tua');
+    $profile = buatPemohon(User::factory()->standardUser()->create(), 'catpil', $this->prodi, 'Blok Orang Tua');
     $profile->update([
         'ikut_kk' => $ikut,
         'nama_ayah' => 'Ayah Ahmad',
@@ -594,7 +591,7 @@ test('blok orang tua mengikuti pilihan kartu keluarga mahasiswa', function (stri
         'pekerjaan_wali' => 'Wiraswasta',
     ]);
 
-    $rows = bacaSheet(actingAs($this->capilAdmin)->get(route('admin.capil.export')));
+    $rows = bacaSheet(actingAs($this->catpilAdmin)->get(route('admin.catpil.export')));
 
     // NAMA harus ikut NIK: kalau tidak, pembaca tidak tahu nik itu milik siapa.
     // Ketiganya harus berasal dari orang yang sama. Kalau tidak, baris bisa

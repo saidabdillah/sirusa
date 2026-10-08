@@ -138,7 +138,7 @@
           </div>
           <div class="card-body">
             <p class="text-muted mb-3">
-              Urutan verifikasi: Capil &rarr; Kampus &rarr; Kesra. Mahasiswa baru muncul di tahap
+              Urutan verifikasi: Catpil &rarr; Kampus &rarr; Kesra. Mahasiswa baru muncul di tahap
               berikutnya setelah tahap ini disetujui.
             </p>
             @foreach(UserProfile::verifStageOrder() as $urutan)

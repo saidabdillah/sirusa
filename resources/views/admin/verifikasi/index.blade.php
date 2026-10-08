@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
 @php
-$routePrefix = $stage === 'capil' ? 'admin.capil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
-$stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
+$routePrefix = $stage === 'catpil' ? 'admin.catpil' : ($stage === 'kampus' ? 'admin.kampusverif' : 'admin.kesra');
+$stageLabels = ['catpil' => 'Catpil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
 $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
 
-// Kolom peruntukan per tahap verifikasi. Capil fokus data kependudukan, Kampus
+// Kolom peruntukan per tahap verifikasi. Catpil fokus data kependudukan, Kampus
 // fokus data mahasiswa, Kesra (tahap akhir) menampilkan seluruh data.
 $stageColumns = [
-'capil' => [
+'catpil' => [
 ['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
 ['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
 ['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
@@ -78,7 +78,7 @@ $filterOptions = [
           <div class="card-body">
             <div class="alert alert-primary">
               <i class="fas fa-info-circle mr-1"></i>
-              Verifikasi berjalan berurutan: <strong>Capil &rarr; Kampus &rarr; Kesra</strong>.
+              Verifikasi berjalan berurutan: <strong>Catpil &rarr; Kampus &rarr; Kesra</strong>.
               Anda hanya dapat memverifikasi profil yang seluruh tahap sebelumnya sudah disetujui.
               Profil yang sudah Anda putuskan tetap ditampilkan agar keputusannya bisa diubah kembali.
             </div>

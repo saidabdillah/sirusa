@@ -5,12 +5,12 @@ use App\Http\Controllers\Admin\KampusController;
 use App\Http\Controllers\Admin\KeputusanPendaftaranController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PendaftarController;
+use App\Http\Controllers\Admin\PenerimaBeasiswaController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
-use App\Http\Controllers\Notifications\NotificationController;
 use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\User\BeasiswaController as UserBeasiswaController;
@@ -61,14 +61,6 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
     Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');
     Route::put('/pengaturan', [SettingsController::class, 'updateAccount'])->name('settings.update');
 
-    // Notifikasi
-    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
-    Route::delete('/notifikasi', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
-    Route::delete('/notifikasi/sudah-dibaca', [NotificationController::class, 'destroyRead'])->name('notifications.destroy-read');
-    Route::delete('/notifikasi/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-    Route::get('/notifikasi/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
-
     // Admin routes (akses via menu, bukan role)
     Route::prefix('admin')->name('admin.')->group(function () {
         // Kampus (termasuk fakultas & prodi)
@@ -116,16 +108,32 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         // Verifikasi data profil
         // Rute `unduh` diletakkan sebelum `{user}` supaya tidak tertangkap
         // sebagai parameter pengguna.
-        Route::get('/verifikasi/capil', [VerifikasiController::class, 'index'])->defaults('stage', 'capil')->name('capil.index');
-        Route::get('/verifikasi/capil/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'capil')->name('capil.export');
-        Route::get('/verifikasi/capil/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'capil')->name('capil.lihat');
-        Route::put('/verifikasi/capil/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'capil')->name('capil.verifikasi');
+        Route::get('/verifikasi/catpil', [VerifikasiController::class, 'index'])->defaults('stage', 'catpil')->name('catpil.index');
+        Route::get('/verifikasi/catpil/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'catpil')->name('catpil.export');
+        Route::get('/verifikasi/catpil/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'catpil')->name('catpil.lihat');
+        Route::put('/verifikasi/catpil/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'catpil')->name('catpil.verifikasi');
         Route::get('/verifikasi/kampus', [VerifikasiController::class, 'index'])->defaults('stage', 'kampus')->name('kampusverif.index');
         Route::get('/verifikasi/kampus/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'kampus')->name('kampusverif.export');
         Route::get('/verifikasi/kampus/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kampus')->name('kampusverif.lihat');
         Route::put('/verifikasi/kampus/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kampus')->name('kampusverif.verifikasi');
         Route::get('/verifikasi/kesra', [VerifikasiController::class, 'index'])->defaults('stage', 'kesra')->name('kesra.index');
         Route::get('/verifikasi/kesra/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'kesra')->name('kesra.export');
+
+        // Penerima beasiswa (pendaftar yang disetujui Kesra). Nama route
+        // SENGAJA tidak berawalan `admin.kesra.` -- `EnsureMenuAccess`
+        // mencocokkan route dengan prefix `scope.` menu, jadi kalau namanya
+        // `admin.kesra.*`, grant menu Verifikasi Kesra otomatis membuka
+        // halaman ini dan matriks Akses Menu jadi menyesatkan.
+        //
+        // Didaftarkan SEBELUM `/verifikasi/kesra/{user}`: sama seperti
+        // `unduh` di atas, kalau `{user}` lebih dulu, URL
+        // `/verifikasi/kesra/penerima` tertangkap sebagai parameter pengguna
+        // dan seluruh modul ini 404.
+        Route::get('/verifikasi/kesra/penerima', [PenerimaBeasiswaController::class, 'index'])->name('penerima.index');
+        Route::get('/verifikasi/kesra/penerima/unduh', [PenerimaBeasiswaController::class, 'export'])->name('penerima.export');
+        Route::get('/verifikasi/kesra/penerima/cetak', [PenerimaBeasiswaController::class, 'cetak'])->name('penerima.cetak');
+        Route::put('/verifikasi/kesra/penerima/{applicant}', [PenerimaBeasiswaController::class, 'tarik'])->name('penerima.tarik');
+
         Route::get('/verifikasi/kesra/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kesra')->name('kesra.lihat');
         Route::put('/verifikasi/kesra/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kesra')->name('kesra.verifikasi');
         Route::put('/verifikasi/kesra/{user}/pendaftaran/{applicant}', [KeputusanPendaftaranController::class, 'update'])->defaults('stage', 'kesra')->name('kesra.pendaftaran.keputusan');

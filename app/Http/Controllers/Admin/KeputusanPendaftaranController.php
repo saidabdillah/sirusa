@@ -8,7 +8,6 @@ use App\Http\Requests\Admin\KeputusanPendaftaranRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
-use App\Notifications\ApplicationDecision;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -75,8 +74,6 @@ class KeputusanPendaftaranController extends Controller
         } else {
             $applicant->update($attributes);
         }
-
-        $applicant->user->notify(new ApplicationDecision($applicant, $attributes['status'], $attributes['catatan']));
 
         return $this->ajaxOk(
             $request,

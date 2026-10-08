@@ -8,7 +8,6 @@ use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
-use App\Notifications\NewApplication;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,9 +75,6 @@ class PendaftaranController extends Controller
             ]);
         }
 
-        User::usersGrantedMenu('admin.pendaftar')
-            ->each->notify(new NewApplication($applicant, $profile?->nama_lengkap ?: $user->username));
-
         return $this->ajaxOk($request, 'Pendaftaran berhasil dikirim', route('user.pendaftaran.index'));
     }
 
@@ -135,18 +131,16 @@ class PendaftaranController extends Controller
     /**
      * Syarat profil, dipisah dari syarat beasiswa supaya `create` dan `store`
      * menolak dengan alasan yang sama dan mengarahkan ke halaman profil.
+     *
+     * Pendaftaran TIDAK menunggu verifikasi. Mahasiswa cukup melengkapi profil
+     * lalu langsung mendaftar; tahap Catpil → Kampus → Kesra memeriksa data
+     * SETELAH pendaftaran masuk (tahap kampus dan kesra bahkan tidak punya
+     * apa pun untuk diperiksa sebelum ada pendaftarannya).
      */
     private function profilError(User $user, ?UserProfile $profile): ?string
     {
         if (! $user->isProfileComplete()) {
             return 'Profil belum lengkap. Silakan lengkapi profil terlebih dahulu.';
-        }
-
-        // Cukup disetujui Capil. Menunggu tahap kampus dan kesra membuat
-        // pendaftaran mustahil, karena kedua tahap itu baru dikerjakan setelah
-        // ada pendaftarannya.
-        if (! $profile?->isCapilVerified()) {
-            return 'Data dasar Anda belum disetujui Capil. Silakan tunggu hasil verifikasi Capil terlebih dahulu.';
         }
 
         return null;

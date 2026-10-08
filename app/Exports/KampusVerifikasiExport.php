@@ -51,7 +51,7 @@ class KampusVerifikasiExport extends VerifikasiExport
             'Nama Orang Tua/Wali',
             'NIK Orang Tua/Wali',
             'Pekerjaan Orang Tua/Wali',
-            'Status Capil',
+            'Status Catpil',
             'Status Kampus',
             'Catatan Verifikasi',
         ];
@@ -93,7 +93,7 @@ class KampusVerifikasiExport extends VerifikasiExport
             $this->teks($orangTua['nama']),
             $this->teks($orangTua['nik']),
             $this->teks($orangTua['pekerjaan']),
-            $profile->verifStageDecision('capil')['label'],
+            $profile->verifStageDecision('catpil')['label'],
             $profile->verifStageDecision('kampus')['label'],
             $this->teks($profile->catatan_kampus),
         ];

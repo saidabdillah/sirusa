@@ -55,10 +55,10 @@ class MenuSeeder extends Seeder
             // "Akses Menu" tidak ambigu karena menampilkan `(section)` di
             // samping label.
             [
-                'label' => 'Dukcapil',
+                'label' => 'Catpil',
                 'icon' => 'fas fa-id-card',
-                'route' => 'admin.capil.index',
-                'scope' => 'admin.capil',
+                'route' => 'admin.catpil.index',
+                'scope' => 'admin.catpil',
                 'section' => 'Verifikasi',
                 'urutan' => 25,
             ],
@@ -71,12 +71,18 @@ class MenuSeeder extends Seeder
                 'urutan' => 26,
             ],
             [
+                // "Kesra" jadi dropdown dua anak: antrean verifikasi dan daftar
+                // penerima (pendaftar berstatus `diterima`) tempat cetak dan
+                // ekspor. Parent tanpa route/scope murni untuk tampilan;
+                // akses tetap lewat grant dua anaknya.
                 'label' => 'Kesra',
                 'icon' => 'fas fa-clipboard-check',
-                'route' => 'admin.kesra.index',
-                'scope' => 'admin.kesra',
                 'section' => 'Verifikasi',
                 'urutan' => 27,
+                'children' => [
+                    ['label' => 'Verifikasi', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra'],
+                    ['label' => 'Penerima Beasiswa', 'route' => 'admin.penerima.index', 'scope' => 'admin.penerima'],
+                ],
             ],
             [
                 'label' => 'Master Data',
@@ -174,9 +180,15 @@ class MenuSeeder extends Seeder
                 'beasiswa',
                 'admin.beasiswa',
                 'admin.pendaftar',
-                'admin.capil',
+                'admin.catpil',
                 'admin.kampusverif',
+                // `kesra` = parent dropdown "Kesra" (tanpa scope, kuncinya
+                // `Str::kebab($label)`). Tanpa ini parent tidak ter-grant dan
+                // seluruh dropdown (Verifikasi + Penerima Beasiswa) hilang dari
+                // sidebar -- sidebarMenus() hanya mengambil menu parent_id null.
+                'kesra',
                 'admin.kesra',
+                'admin.penerima',
                 'master-data',
                 'admin.kampus',
                 'kelola-akses',
@@ -185,9 +197,9 @@ class MenuSeeder extends Seeder
                 'admin.menu',
                 'admin.menukelola',
             ],
-            'capil' => [
+            'catpil' => [
                 'dasbor',
-                'admin.capil',
+                'admin.catpil',
                 'admin.pendaftar',
             ],
             'kampus' => [
@@ -200,11 +212,14 @@ class MenuSeeder extends Seeder
                 'beasiswa',
                 'admin.beasiswa',
                 'admin.pendaftar',
+                // `kesra` (parent dropdown) + `kelola-akses` (parent) ikut
+                // di-grant supaya dropdown itu sendiri muncul di sidebar —
+                // sidebarMenus() hanya query menu parent_id null.
+                'kesra',
                 'admin.kesra',
+                'admin.penerima',
                 'master-data',
                 'admin.kampus',
-                // `kelola-akses` (parent) ikut di-grant supaya item "Pengguna" muncul di
-                // sidebar — sidebarMenus() hanya query menu parent_id null.
                 'kelola-akses',
                 'admin.pengguna',
             ],

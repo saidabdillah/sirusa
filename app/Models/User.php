@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, HasRoles;
 
     /**
      * The only role names the app recognises, mapped to their display label.
@@ -25,7 +24,7 @@ class User extends Authenticatable
         'super_admin' => 'Super Admin',
         'kesra' => 'Kesra',
         'kampus' => 'Kampus',
-        'capil' => 'Capil',
+        'catpil' => 'Catpil',
         'user' => 'User',
     ];
 
@@ -181,7 +180,7 @@ class User extends Authenticatable
 
     /**
      * Hanya akun `user` (mahasiswa) yang punya baris profil isian + dokumen.
-     * `super_admin`/`kesra`/`kampus`/`capil` tidak punya profil, jadi halaman
+     * `super_admin`/`kesra`/`kampus`/`catpil` tidak punya profil, jadi halaman
      * profil untuk mereka hanya menampilkan informasi akun.
      */
     public function isMahasiswa(): bool
@@ -193,7 +192,7 @@ class User extends Authenticatable
      * Credential yang boleh dipakai untuk masuk, sesuai aturan SIRUSA.
      *
      * Mahasiswa punya NIK *dan* username, jadi bebas memakai salah satu. Akun
-     * staf (super_admin/kesra/kampus/capil) tidak punya baris profil, jadi
+     * staf (super_admin/kesra/kampus/catpil) tidak punya baris profil, jadi
      * NIK-nya kosong -- menampilkan "login dengan NIK" untuk mereka hanya
      * membingungkan. Resolver backend sudah benar (NIK dari `profil_pengguna`
      * -> `users.username` -> `users.email`); ini cuma teks untuk ditampilkan.

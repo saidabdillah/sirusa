@@ -91,7 +91,7 @@
              status per tahap tidak lagi ditampilkan di halaman pengguna.
              Data statusnya tetap ada di database dan dipakai untuk penyaringan
              antrean, audit, dan alur kerja verifikator. --}}
-        @if($profile && ($profile->catatan_capil || $profile->catatan_kampus || $profile->catatan_kesra))
+        @if($profile && ($profile->catatan_catpil || $profile->catatan_kampus || $profile->catatan_kesra))
         <div class="card">
           <div class="card-header">
             <h4>Catatan Verifikator</h4>

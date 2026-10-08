@@ -5,42 +5,6 @@
     </ul>
   </form>
   <ul class="navbar-nav navbar-right">
-    <li class="dropdown dropdown-list-toggle"><a href="#" data-toggle="dropdown"
-        class="nav-link notification-toggle nav-link-lg {{ $unreadCount > 0 ? 'beep' : '' }}"><i class="far fa-bell"></i></a>
-      <div class="dropdown-menu dropdown-list dropdown-menu-right">
-        <div class="dropdown-header">Notifikasi
-          @if($unreadCount > 0)
-            <span class="badge badge-primary ml-1">{{ $unreadCount }}</span>
-          @endif
-          <div class="float-right">
-            <form action="{{ route('notifications.read-all') }}" method="POST" data-ajax-form class="d-inline">
-              @csrf
-              <button type="submit" class="btn btn-link p-0" data-loading-text="Menandai...">Tandai Semua Sudah Dibaca</button>
-            </form>
-          </div>
-        </div>
-        <div class="dropdown-list-content dropdown-list-icons">
-          @forelse($notifications as $notification)
-            @php $data = $notification->data; @endphp
-            <a href="{{ route('notifications.show', $notification) }}"
-               class="dropdown-item {{ $notification->read() ? '' : 'dropdown-item-unread' }}">
-              <div class="dropdown-item-icon bg-{{ $notification->read() ? 'secondary' : 'primary' }} text-white">
-                <i class="fas {{ data_get($data, 'icon', 'fa-bell') }}"></i>
-              </div>
-              <div class="dropdown-item-desc">
-                {{ data_get($data, 'title', 'Notifikasi') }}
-                <div class="time text-muted">{{ data_get($data, 'message', '') }}</div>
-              </div>
-            </a>
-          @empty
-            <div class="text-center text-muted py-4">Tidak ada notifikasi</div>
-          @endforelse
-        </div>
-        <div class="dropdown-footer text-center">
-          <a href="{{ route('notifications.index') }}">Lihat Semua <i class="fas fa-chevron-right"></i></a>
-        </div>
-      </div>
-    </li>
     <li class="dropdown"><a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
         @if(Auth::user()->profile?->foto_profil)
           <img alt="image" src="{{ route('dokumen.show', Auth::user()->profile->foto_profil) }}" class="rounded-circle mr-1" width="30" height="30" style="object-fit:cover;">

@@ -30,8 +30,8 @@ beforeEach(function () {
 
     // Role tanpa grant `admin.pengguna` — harus tetap tertutup walau pun modul ini
     // dibuka lewat grant menu (bukan hardcode role).
-    $this->capil = User::factory()->capil()->create([
-        'email' => 'capil@test.com',
+    $this->catpil = User::factory()->catpil()->create([
+        'email' => 'catpil@test.com',
         'password' => bcrypt('password'),
     ]);
 
@@ -290,7 +290,7 @@ test('staff creation ignores the disabled mahasiswa and kampus blocks', function
         'username' => 'stafnodanik',
         'password' => 'password123',
         'password_confirmation' => 'password123',
-        'peran' => 'capil',
+        'peran' => 'catpil',
         'status' => 'aktif',
         'nik' => '6302000000000003',
         'kampus_id' => $kampus->id,
@@ -299,7 +299,7 @@ test('staff creation ignores the disabled mahasiswa and kampus blocks', function
     $newUser = User::where('username', 'stafnodanik')->first();
 
     expect($newUser)->not->toBeNull()
-        ->and($newUser->hasRole('capil'))->toBeTrue()
+        ->and($newUser->hasRole('catpil'))->toBeTrue()
         // `store()` tetap mengabaikan kampus_id untuk peran selain `kampus`.
         ->and($newUser->kampus_id)->toBeNull()
         ->and(UserProfile::where('user_id', $newUser->id)->exists())->toBeFalse();
@@ -445,7 +445,7 @@ test('super admin can toggle user status', function () {
 // ─── Tanpa grant admin.pengguna: Tertutup ────────────────────────
 
 test('role without the admin.pengguna grant cannot view user list', function () {
-    $this->actingAs($this->capil);
+    $this->actingAs($this->catpil);
 
     get(route('admin.pengguna.index'))->assertForbidden();
 });
@@ -453,7 +453,7 @@ test('role without the admin.pengguna grant cannot view user list', function () 
 // ─── Tanpa grant admin.pengguna: Cannot Create ───────────────────
 
 test('role without the admin.pengguna grant cannot access create user form', function () {
-    $this->actingAs($this->capil);
+    $this->actingAs($this->catpil);
 
     $response = get(route('admin.pengguna.buat'));
 
@@ -461,7 +461,7 @@ test('role without the admin.pengguna grant cannot access create user form', fun
 });
 
 test('role without the admin.pengguna grant cannot store user', function () {
-    $this->actingAs($this->capil);
+    $this->actingAs($this->catpil);
 
     $response = post(route('admin.pengguna.simpan'), [
         'username' => 'hackuser',
@@ -479,7 +479,7 @@ test('role without the admin.pengguna grant cannot store user', function () {
 // ─── Tanpa grant admin.pengguna: Cannot Edit ─────────────────────
 
 test('role without the admin.pengguna grant cannot access edit user form', function () {
-    $this->actingAs($this->capil);
+    $this->actingAs($this->catpil);
 
     $response = get(route('admin.pengguna.ubah', $this->user));
 
@@ -487,7 +487,7 @@ test('role without the admin.pengguna grant cannot access edit user form', funct
 });
 
 test('role without the admin.pengguna grant cannot update user', function () {
-    $this->actingAs($this->capil);
+    $this->actingAs($this->catpil);
 
     $response = put(route('admin.pengguna.perbarui', $this->user), [
         'peran' => 'kesra',
@@ -591,7 +591,7 @@ test('kesra can access create user form without the super admin option', functio
     $response->assertViewIs('admin.pengguna.buat');
     $response->assertDontSee('Super Admin');
     $response->assertSee('Kesra');
-    $response->assertSee('Capil');
+    $response->assertSee('Catpil');
     $response->assertSee('Kampus');
 });
 
@@ -636,11 +636,11 @@ test('kesra can edit a non super admin user', function () {
         ->assertViewIs('admin.pengguna.ubah');
 
     put(route('admin.pengguna.perbarui', $this->user), [
-        'peran' => 'capil',
+        'peran' => 'catpil',
         'status' => 'aktif',
     ])->assertRedirect(route('admin.pengguna.index'));
 
-    expect($this->user->fresh()->hasRole('capil'))->toBeTrue();
+    expect($this->user->fresh()->hasRole('catpil'))->toBeTrue();
 });
 
 test('kesra cannot edit a super admin user', function () {
@@ -664,7 +664,7 @@ test('kesra cannot change their own role', function () {
     $this->actingAs($this->admin);
 
     put(route('admin.pengguna.perbarui', $this->admin), [
-        'peran' => 'capil',
+        'peran' => 'catpil',
         'status' => 'aktif',
     ])->assertRedirect(route('admin.pengguna.index'))->assertSessionHas('error');
 

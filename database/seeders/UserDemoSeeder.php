@@ -24,7 +24,7 @@ use Spatie\Permission\Models\Role;
  *    menjalankan seeder berkali-kali tidak menduplikasi akun, profil,
  *    pendaftar, atau role.
  *  - Tidak menabrak akun admin. Kunci `users` adalah `username`, yang berbeda
- *    dari username admin (`superadmin`, `kesra`, `kampus`, `capil`).
+ *    dari username admin (`superadmin`, `kesra`, `kampus`, `catpil`).
  *  - Butuh master data. Kalau kampus/prodi/beasiswa belum ada, seeder
  *    `KampusSeeder` dan `ScholarshipSeeder` dipanggil sendiri, sehingga
  *    seeder ini bisa dijalankan sendiri tanpa urutan tertentu.
@@ -71,7 +71,7 @@ class UserDemoSeeder extends Seeder
         $profile = $this->profile($user, $prodi);
 
         // Status `verifikasi` (bukan `diterima`) supaya akun demo melewati
-        // gerbang "sudah disetujui Capil" tanpa menunggu keputusan manual,
+        // gerbang "sudah disetujui Catpil" tanpa menunggu keputusan manual,
         // tapi tetap membuka jalan pendaftaran beasiswa.
         $this->pendaftar($user, $profile, $this->beasiswaAktif());
     }

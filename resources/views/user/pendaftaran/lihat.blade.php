@@ -41,12 +41,22 @@
           </div>
           <div class="card-body text-center">
             <div class="mb-3">
+              {{-- @break WAJIB di barisnya sendiri: menempel pada teks tanpa
+                   spasi di depannya membuat direktif itu tidak terkompilasi
+                   Blade dan muncul apa adanya di halaman. --}}
               <span class="badge badge-{{ $applicant->statusBadge() }} p-2">
                 @switch($applicant->status)
-                  @case('verifikasi')<i class="fas fa-clock"></i> Verifikasi@break
-                  @case('diterima')<i class="fas fa-check-circle"></i> Diterima@break
-                  @case('ditolak')<i class="fas fa-times-circle"></i> Ditolak@break
-                  @default<i class="fas fa-ban"></i> {{ $applicant->statusLabel() }}
+                  @case('verifikasi')
+                    <i class="fas fa-clock"></i> Verifikasi
+                  @break
+                  @case('diterima')
+                    <i class="fas fa-check-circle"></i> Diterima
+                  @break
+                  @case('ditolak')
+                    <i class="fas fa-times-circle"></i> Ditolak
+                  @break
+                  @default
+                    <i class="fas fa-ban"></i> {{ $applicant->statusLabel() }}
                 @endswitch
               </span>
             </div>
@@ -72,14 +82,14 @@
         {{-- Kartu status per tahap dihapus. Yang ditampilkan hanya catatan
              verifikator, karena itu umpan balik yang harus ditindaklanjuti
              mahasiswastatus tahapnya sendiri tidak ditampilkan. --}}
-        @if($profile->catatan_capil || $profile->catatan_kampus || $profile->catatan_kesra)
+        @if($profile->catatan_catpil || $profile->catatan_kampus || $profile->catatan_kesra)
         <div class="card">
           <div class="card-header">
             <h4>Catatan Verifikator</h4>
           </div>
           <div class="card-body">
-            @if($profile->catatan_capil)
-            <small class="text-muted d-block mb-1"><strong>Catatan Capil:</strong> {{ $profile->catatan_capil }}</small>
+            @if($profile->catatan_catpil)
+            <small class="text-muted d-block mb-1"><strong>Catatan Catpil:</strong> {{ $profile->catatan_catpil }}</small>
             @endif
             @if($profile->catatan_kampus)
             <small class="text-muted d-block mb-1"><strong>Catatan Kampus:</strong> {{ $profile->catatan_kampus }}</small>

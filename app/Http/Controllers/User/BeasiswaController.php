@@ -33,11 +33,13 @@ class BeasiswaController extends Controller
         $profile = $user->profile;
         $application = $user->applicants()->where('beasiswa_id', $scholarship->id)->first();
         $profileComplete = $user->isProfileComplete();
-        $capilVerified = $profile?->isCapilVerified() ?? false;
         $eligibilityError = $scholarship->eligibilityIssueFor($profile);
         $blocking = $user->blockingApplicant();
+
+        // Pendaftaran tidak menunggu verifikasi Catpil: mahasiswa cukup
+        // melengkapi profil. Tahap verifikasi baru berjalan setelah
+        // pendaftaran masuk.
         $canApply = $profileComplete
-            && $capilVerified
             && ! $application
             && ! $blocking
             && $eligibilityError === null
@@ -47,7 +49,6 @@ class BeasiswaController extends Controller
             'scholarship',
             'application',
             'profileComplete',
-            'profileVerified',
             'eligibilityError',
             'blocking',
             'canApply',

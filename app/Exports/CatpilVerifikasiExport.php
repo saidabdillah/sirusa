@@ -6,17 +6,17 @@ use App\Models\User;
 use App\Models\UserProfile;
 
 /**
- * Unduhan untuk tahap Capil: yang diperiksa adalah identitas dan data
+ * Unduhan untuk tahap Catpil: yang diperiksa adalah identitas dan data
  * kependudukan, jadi kolom akademiknya (NIM, IPK, UKT, dokumen kampus)
  * sengaja tidak ikut. Yang ditambahkan justru rincian wilayah -- provinsi
  * sampai desa -- dan data orang tua/wali yang dipilih, karena keduanya bahan
- * yang dibandingkan pemeriksa Capil dengan berkas KTP dan KK.
+ * yang dibandingkan pemeriksa Catpil dengan berkas KTP dan KK.
  */
-class CapilVerifikasiExport extends VerifikasiExport
+class CatpilVerifikasiExport extends VerifikasiExport
 {
     public function slug(): string
     {
-        return 'verifikasi-capil';
+        return 'verifikasi-catpil';
     }
 
     public function headings(): array
@@ -42,7 +42,7 @@ class CapilVerifikasiExport extends VerifikasiExport
             'NIK Orang Tua/Wali',
             'Pekerjaan Orang Tua/Wali',
             'Desil',
-            'Status Capil',
+            'Status Catpil',
             'Catatan Verifikasi',
         ];
     }
@@ -74,8 +74,8 @@ class CapilVerifikasiExport extends VerifikasiExport
             $this->teks($orangTua['nik']),
             $this->teks($orangTua['pekerjaan']),
             $profile->desil ?: '-',
-            $profile->verifStageDecision('capil')['label'],
-            $this->teks($profile->catatan_capil),
+            $profile->verifStageDecision('catpil')['label'],
+            $this->teks($profile->catatan_catpil),
         ];
     }
 }

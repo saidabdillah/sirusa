@@ -10,13 +10,13 @@
   $stage = $stage ?? null;
 
   $stageCards = [
-      'capil' => ['diri', 'ortu', 'dokumen'],
+      'catpil' => ['diri', 'ortu', 'dokumen'],
       'kampus' => ['diri', 'kampus', 'dokumen'],
       'diri' => ['diri'],
   ];
 
   $stageDocSections = [
-      'capil' => ['Dokumen Diri Sendiri', 'Dokumen Orang Tua / Wali'],
+      'catpil' => ['Dokumen Diri Sendiri', 'Dokumen Orang Tua / Wali'],
       'kampus' => ['Dokumen untuk Kampus'],
   ];
 
@@ -45,7 +45,7 @@
   $visibleCards = $stageCards[$stage] ?? ['diri', 'kampus', 'ortu', 'dokumen'];
   $visibleDocSections = $stageDocSections[$stage] ?? array_keys($documentSections);
   $visibleSections = array_intersect_key($documentSections, array_flip($visibleDocSections));
-  $showPrestasi = ! in_array($stage, ['capil', 'kampus'], true);
+  $showPrestasi = ! in_array($stage, ['catpil', 'kampus'], true);
 @endphp
 
 {{-- Card: Data Diri --}}

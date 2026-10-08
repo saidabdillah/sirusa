@@ -8,7 +8,6 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\Kampus;
 use App\Models\User;
-use App\Notifications\UserActivated;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -169,10 +168,6 @@ class PenggunaController extends Controller
 
         $newStatus = $user->status === 'aktif' ? 'non-aktif' : 'aktif';
         $user->update(['status' => $newStatus]);
-
-        if ($newStatus === 'aktif') {
-            $user->notify(new UserActivated($user->username, $user->loginCredentialLabel()));
-        }
 
         $label = $newStatus === 'aktif' ? 'diaktifkan' : 'dinonaktifkan';
 

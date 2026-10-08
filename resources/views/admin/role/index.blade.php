@@ -57,7 +57,7 @@
                       'super_admin' => 'Super Admin',
                       'kesra' => 'Kesra',
                       'kampus' => 'Kampus',
-                      'capil' => 'Capil',
+                      'catpil' => 'Catpil',
                       'user' => 'User',
                   ];
                 @endphp

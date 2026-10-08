@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         // Buat roles
         Role::firstOrCreate(['name' => 'super_admin']);
-        Role::firstOrCreate(['name' => 'capil']);
+        Role::firstOrCreate(['name' => 'catpil']);
         Role::firstOrCreate(['name' => 'kampus']);
         Role::firstOrCreate(['name' => 'kesra']);
         Role::firstOrCreate(['name' => 'user']);
@@ -54,16 +54,16 @@ class DatabaseSeeder extends Seeder
         );
         $adminKampus->assignRole('kampus');
 
-        // Buat user admin capil
-        $adminCapil = User::firstOrCreate(
-            ['email' => 'capil@sirusa.com'],
+        // Buat user admin catpil
+        $adminCatpil = User::firstOrCreate(
+            ['email' => 'catpil@sirusa.com'],
             [
-                'username' => 'capil',
+                'username' => 'catpil',
                 'password' => '12345678',
                 'status' => 'aktif',
             ]
         );
-        $adminCapil->assignRole('capil');
+        $adminCatpil->assignRole('catpil');
 
         // Akun mahasiswa siap pakai untuk pengujian: username `user`, NIK
         // `6300000000000001`, password `password`. Profil, prodi, dan

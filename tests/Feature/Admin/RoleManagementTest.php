@@ -145,11 +145,11 @@ test('database seeder creates exactly the five canonical roles', function () {
     $this->seed();
 
     $this->assertDatabaseCount('roles', 5);
-    $this->assertDatabaseMissing('roles', ['name' => 'admin_capil']);
+    $this->assertDatabaseMissing('roles', ['name' => 'admin_catpil']);
     $this->assertDatabaseMissing('roles', ['name' => 'admin_kampus']);
     $this->assertDatabaseMissing('roles', ['name' => 'admin_kesra']);
 
     expect(User::where('username', 'kesra')->firstOrFail()->hasRole('kesra'))->toBeTrue();
     expect(User::where('username', 'kampus')->firstOrFail()->hasRole('kampus'))->toBeTrue();
-    expect(User::where('username', 'capil')->firstOrFail()->hasRole('capil'))->toBeTrue();
+    expect(User::where('username', 'catpil')->firstOrFail()->hasRole('catpil'))->toBeTrue();
 });

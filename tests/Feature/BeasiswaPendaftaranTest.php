@@ -6,9 +6,7 @@ use App\Models\Prodi;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
-use App\Notifications\ApplicationDecision;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 
 use function Pest\Laravel\actingAs;
 
@@ -77,7 +75,7 @@ function beasiswaTersedia(int $kampusId, array $extra = []): Scholarship
 function sudahTerverifikasi(User $user, Prodi $prodi): User
 {
     mhsBeasiswa($user, $prodi, [
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'setuju',
     ]);
@@ -94,7 +92,7 @@ beforeEach(function () {
     $this->prodiLain = $this->kampusLain->fakultas()->create(['nama' => 'Fakultas Ekonomi'])->prodi()->create(['nama' => 'Akuntansi']);
     $this->mahasiswa = User::factory()->standardUser()->create(['email' => 'mhs@test.com']);
     $this->kesra = User::factory()->admin()->create(['email' => 'kesra@test.com']);
-    $this->kapil = User::factory()->capil()->create(['email' => 'capil@test.com']);
+    $this->kapil = User::factory()->catpil()->create(['email' => 'catpil@test.com']);
 });
 
 /*
@@ -279,9 +277,7 @@ test('mahasiswa tidak bisa mendaftar beasiswa yang kuotanya penuh', function () 
 |--------------------------------------------------------------------------
 */
 
-test('kesra bisa menerima pendaftaran dan mahasiswa diberi tahu', function () {
-    Notification::fake();
-
+test('kesra bisa menerima pendaftaran dan menyimpan catatan', function () {
     $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);
     $applicant = Applicant::create([
@@ -300,13 +296,9 @@ test('kesra bisa menerima pendaftaran dan mahasiswa diberi tahu', function () {
 
     expect($applicant->refresh()->status)->toBe('diterima')
         ->and($applicant->catatan)->toBe('Selamat, Anda lolos.');
-
-    Notification::assertSentTo($user, ApplicationDecision::class);
 });
 
 test('kesra tidak bisa menerima pendaftaran yang kuotanya habis', function () {
-    Notification::fake();
-
     $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id, ['kuota' => 1]);
 
@@ -329,7 +321,6 @@ test('kesra tidak bisa menerima pendaftaran yang kuotanya habis', function () {
         ->assertSessionHasErrors('pendaftaran_status');
 
     expect($applicant->refresh()->status)->toBe('verifikasi');
-    Notification::assertNothingSent();
 });
 
 test('kesra tidak bisa memutuskan pendaftaran tanpa alasan saat menolak', function () {
@@ -352,7 +343,7 @@ test('kesra tidak bisa memutuskan pendaftaran tanpa alasan saat menolak', functi
 test('kesra tidak bisa memutuskan pendaftaran yang profilnya belum disetujui di tahap kesra', function () {
     $user = User::factory()->standardUser()->create();
     mhsBeasiswa($user, $this->prodi, [
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'menunggu',
     ]);
@@ -432,8 +423,6 @@ test('kesra tidak bisa memutuskan pendaftaran yang sudah dibatalkan mahasiswa', 
 */
 
 test('ditolak di ronde 1 lalu mendaftar ronde 2 tidak otomatis diterima', function () {
-    Notification::fake();
-
     $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
 
     $rondeSatu = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Ronde Satu']);
@@ -457,15 +446,9 @@ test('ditolak di ronde 1 lalu mendaftar ronde 2 tidak otomatis diterima', functi
     $kedua = Applicant::where('beasiswa_id', $rondeDua->id)->firstOrFail();
     expect($kedua->status)->toBe('verifikasi')
         ->and($user->profile->verif_kesra)->toBe('setuju');
-
-    // Hanya penolakan ronde 1 yang dikabari; pendaftaran ronde 2 belum
-    // pernah diputuskan, jadi tidak boleh ada kabar kedua.
-    Notification::assertSentToTimes($user, ApplicationDecision::class, 1);
 });
 
 test('penerimaan satu pendaftaran tidak otomatis pendaftaran lain', function () {
-    Notification::fake();
-
     $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
 
     $satu = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Satu']);

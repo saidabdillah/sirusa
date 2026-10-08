@@ -21,7 +21,7 @@ class UserProfile extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'verif_capil' => 'menunggu',
+        'verif_catpil' => 'menunggu',
         'verif_kampus' => 'menunggu',
         'verif_kesra' => 'menunggu',
     ];
@@ -73,10 +73,10 @@ class UserProfile extends Model
         'ktp_ibu',
         'ktp_wali',
         'kk_wali',
-        'verif_capil',
+        'verif_catpil',
         'verif_kampus',
         'verif_kesra',
-        'catatan_capil',
+        'catatan_catpil',
         'catatan_kampus',
         'catatan_kesra',
     ];
@@ -99,7 +99,7 @@ class UserProfile extends Model
     public static function verifStages(): array
     {
         return [
-            'capil' => ['verif_capil', 'catatan_capil'],
+            'catpil' => ['verif_catpil', 'catatan_catpil'],
             'kampus' => ['verif_kampus', 'catatan_kampus'],
             'kesra' => ['verif_kesra', 'catatan_kesra'],
         ];
@@ -113,7 +113,7 @@ class UserProfile extends Model
     public static function verifRoutePrefixes(): array
     {
         return [
-            'capil' => 'capil',
+            'catpil' => 'catpil',
             'kampus' => 'kampusverif',
             'kesra' => 'kesra',
         ];
@@ -186,15 +186,15 @@ class UserProfile extends Model
 
     public function isVerified(): bool
     {
-        return $this->verif_capil === 'setuju'
+        return $this->verif_catpil === 'setuju'
             && $this->verif_kampus === 'setuju'
             && $this->verif_kesra === 'setuju';
     }
 
     /**
-     * Data dasar mahasiswa sudah disetujui Capil.
+     * Data dasar mahasiswa sudah disetujui Catpil.
      *
-     * Ini bukan berarti terverifikasi penuh. Verifikasi Capil hanya menyatakan
+     * Ini bukan berarti terverifikasi penuh. Verifikasi Catpil hanya menyatakan
      * bahwa identitas dan data dasar sudah benar, dan itu sudah cukup untuk
      * boleh mendaftar beasiswa. Campus dan Kesra memeriksa hal yang berbeda --
      * eligibility akademik dan kelayakan pendaftar -- dan baru bisa diperiksa
@@ -202,9 +202,9 @@ class UserProfile extends Model
      * `isVerified()`, tidak akan pernah ada yang bisa mendaftar, karena tahap
      * kampus dan kesra tidak akan pernah disentuh.
      */
-    public function isCapilVerified(): bool
+    public function isCatpilVerified(): bool
     {
-        return $this->verif_capil === 'setuju';
+        return $this->verif_catpil === 'setuju';
     }
 
     public function verifStatus(): string
@@ -231,7 +231,7 @@ class UserProfile extends Model
     public function verifStageLabels(): array
     {
         return [
-            'capil' => 'Verifikasi Capil',
+            'catpil' => 'Verifikasi Catpil',
             'kampus' => 'Verifikasi Kampus',
             'kesra' => 'Verifikasi Kesra',
         ];
@@ -280,37 +280,53 @@ class UserProfile extends Model
     }
 
     /**
+     * Tahap hilir yang keputusannya bergantung pada tahap ini.
+     *
+     * Catpil dan Kampus berjalan paralel dan tidak saling menunggu, jadi
+     * satu-satunya tahap hilir adalah Kesra -- tahap keputusan akhir yang
+     * menunggu keduanya setuju.
+     *
+     * @return list<string>
+     */
+    public function verifDownstreamStages(string $stage): array
+    {
+        return $stage === 'kesra' ? [] : ['kesra'];
+    }
+
+    /**
      * Apakah tahap ini masih relevan untuk ditangani oleh admin tahap tersebut.
      *
-     * Syaratnya hanya urutan — semua tahap sebelumnya harus disetujui lebih dulu.
-     * Keputusan tahap ini sendiri tidak dikunci, sehingga admin masih dapat
-     * mengubah keputusan yang sudah dibuat. Namun, begitu tahap berikutnya sudah
-     * diputuskan, mengubah kembali tahap ini akan membatalkan pekerjaan tahap
-     * tersebut, jadi barisnya disembunyikan.
+     * Catpil dan Kampus berjalan PARALEL: keduanya bisa bekerja tanpa menunggu
+     * tahap lain selesai. Hanya Kesra -- tahap keputusan akhir -- yang menunggu
+     * semua tahap sebelumnya setuju. Keputusan pada satu tahap tetap tidak
+     * dikunci, dan tahap yang sudah diputuskan masih bisa dikoreksi selama
+     * tahap hilirnya (Kesra) belum memutuskan.
      */
     public function canVerifStage(string $stage): bool
     {
         $stages = self::verifStages();
-        $order = self::verifStageOrder();
-        $index = array_search($stage, $order, true);
 
-        if ($index === false) {
+        if (! isset($stages[$stage])) {
             return false;
         }
 
-        foreach (array_slice($order, 0, $index) as $previous) {
-            if ($this->{$stages[$previous][0]} !== 'setuju') {
-                return false;
+        if ($stage === 'kesra') {
+            foreach (self::verifStageOrder() as $previous) {
+                if ($previous === 'kesra') {
+                    break;
+                }
+
+                if ($this->{$stages[$previous][0]} !== 'setuju') {
+                    return false;
+                }
             }
         }
 
-        // Disetujui Capil bukan berarti otomatis terverifikasi di kampus.
         // Verifikasi kampus memeriksa kelayakan akademik mahasiswa yang sedang
         // mendaftar beasiswa, jadi tidak ada yang perlu diverifikasi sebelum
         // ada pendaftaran. Tanpa syarat ini semua mahasiswa masuk antrean
         // kampus padahal belum punya apa pun untuk diperiksa.
-        if ($stage === 'kampus' && $this->isCapilVerified()
-            && ! $this->user?->applicants()->exists()) {
+        if ($stage === 'kampus' && ! $this->user?->applicants()->exists()) {
             return false;
         }
 
@@ -318,7 +334,7 @@ class UserProfile extends Model
             return true;
         }
 
-        foreach (array_slice($order, $index + 1) as $downstream) {
+        foreach ($this->verifDownstreamStages($stage) as $downstream) {
             if ($this->{$stages[$downstream][0]} !== 'menunggu') {
                 return false;
             }
@@ -338,112 +354,20 @@ class UserProfile extends Model
     }
 
     /**
-     * Reset semua tahap setelah tahap tertentu, karena urutan verifikasinya
-     * jadi tidak berlaku lagi (mis. Capil ditarik kembali saat Kampus sudah
-     * disetujui).
+     * Reset tahap hilir setelah keputusan tahap ini berubah, karena dasar
+     * keputusannya tidak berlaku lagi.
+     *
+     * Catpil dan Kampus paralel: keputusan yang satu TIDAK membatalkan yang
+     * lain. Kesra menunggu keduanya, jadi revisi/tolak/tarik kembali di tahap
+     * mana pun mengembalikan Kesra ke menunggu (catatannya ikut kosong).
      */
     public function resetDownstreamStages(string $stage): void
     {
         $stages = self::verifStages();
-        $order = self::verifStageOrder();
-        $index = array_search($stage, $order, true);
 
-        if ($index === false) {
-            return;
-        }
-
-        foreach (array_slice($order, $index + 1) as $downstream) {
+        foreach ($this->verifDownstreamStages($stage) as $downstream) {
             $this->{$stages[$downstream][0]} = 'menunggu';
             $this->{$stages[$downstream][1]} = null;
         }
-    }
-
-    public function syncVerifStatusFromTables(): void
-    {
-        $verifKampus = VerifikasiKampus::where('mahasiswa_id', $this->id)
-            ->latest('verified_at')
-            ->first();
-
-        $verifCapil = VerifikasiCapil::where('mahasiswa_id', $this->id)
-            ->latest('verified_at')
-            ->first();
-
-        $verifKesra = VerifikasiKesra::where('mahasiswa_id', $this->id)
-            ->latest('verified_at')
-            ->first();
-
-        if ($verifKampus) {
-            $this->verif_kampus = $verifKampus->status;
-            $this->catatan_kampus = $verifKampus->catatan;
-        }
-
-        if ($verifCapil) {
-            $this->verif_capil = $verifCapil->status;
-            $this->catatan_capil = $verifCapil->catatan;
-        }
-
-        if ($verifKesra) {
-            $this->verif_kesra = $verifKesra->status;
-            $this->catatan_kesra = $verifKesra->catatan;
-        }
-
-        $this->save();
-    }
-
-    public function verifyKampus(string $status, ?string $catatan = null, ?int $verifierId = null): VerifikasiKampus
-    {
-        $verif = VerifikasiKampus::updateOrCreate(
-            ['mahasiswa_id' => $this->id, 'verifier_id' => $verifierId],
-            [
-                'pengajuan_id' => null,
-                'status' => $status,
-                'catatan' => $catatan,
-                'verified_at' => now(),
-            ]
-        );
-
-        $this->verif_kampus = $verif->status;
-        $this->catatan_kampus = $verif->catatan;
-        $this->save();
-
-        return $verif;
-    }
-
-    public function verifyCapil(string $status, ?string $catatan = null, ?int $verifierId = null): VerifikasiCapil
-    {
-        $verif = VerifikasiCapil::updateOrCreate(
-            ['mahasiswa_id' => $this->id, 'verifier_id' => $verifierId],
-            [
-                'pengajuan_id' => null,
-                'status' => $status,
-                'catatan' => $catatan,
-                'verified_at' => now(),
-            ]
-        );
-
-        $this->verif_capil = $verif->status;
-        $this->catatan_capil = $verif->catatan;
-        $this->save();
-
-        return $verif;
-    }
-
-    public function verifyKesra(string $status, ?string $catatan = null, ?int $verifierId = null): VerifikasiKesra
-    {
-        $verif = VerifikasiKesra::updateOrCreate(
-            ['mahasiswa_id' => $this->id, 'verifier_id' => $verifierId],
-            [
-                'pengajuan_id' => null,
-                'status' => $status,
-                'catatan' => $catatan,
-                'verified_at' => now(),
-            ]
-        );
-
-        $this->verif_kesra = $verif->status;
-        $this->catatan_kesra = $verif->catatan;
-        $this->save();
-
-        return $verif;
     }
 }

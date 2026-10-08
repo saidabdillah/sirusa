@@ -33,7 +33,7 @@ class VerifikasiAntrean
     public function label(): string
     {
         return match ($this->stage) {
-            'capil' => 'Verifikasi Capil',
+            'catpil' => 'Verifikasi Catpil',
             'kampus' => 'Verifikasi Kampus',
             default => 'Verifikasi Kesra',
         };
@@ -42,7 +42,7 @@ class VerifikasiAntrean
     public function actorLabel(): string
     {
         return match ($this->stage) {
-            'capil' => 'Capil',
+            'catpil' => 'Catpil',
             'kampus' => 'Kampus',
             default => 'Kesra',
         };

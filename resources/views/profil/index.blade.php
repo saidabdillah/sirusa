@@ -65,7 +65,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     @endif
 
     {{-- Semua blok ini hanya relevan untuk mahasiswa. Akun staf (super_admin,
-    kesra, kampus, capil) tidak punya baris profil, jadi halaman profil
+    kesra, kampus, catpil) tidak punya baris profil, jadi halaman profil
     mereka berhenti di Informasi Akun. --}}
     @if ($isMahasiswa)
     @if(! $profileComplete)

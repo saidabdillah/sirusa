@@ -61,10 +61,10 @@ return new class extends Migration
             $table->string('ktp_wali')->nullable();
             $table->string('kk_wali')->nullable();
 
-            $table->enum('verif_capil', ['menunggu', 'setuju', 'revisi', 'tolak'])->default('menunggu');
+            $table->enum('verif_catpil', ['menunggu', 'setuju', 'revisi', 'tolak'])->default('menunggu');
             $table->enum('verif_kampus', ['menunggu', 'setuju', 'revisi', 'tolak'])->default('menunggu');
             $table->enum('verif_kesra', ['menunggu', 'setuju', 'revisi', 'tolak'])->default('menunggu');
-            $table->text('catatan_capil')->nullable();
+            $table->text('catatan_catpil')->nullable();
             $table->text('catatan_kampus')->nullable();
             $table->text('catatan_kesra')->nullable();
             $table->timestamps();

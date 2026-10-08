@@ -240,14 +240,14 @@ test('kolom bukti ukt menawarkan gambar dan pdf di form', function () {
 test('profil baru selalu mulai dengan ketiga tahap menunggu', function () {
     $profile = $this->user->profile()->create(['nama_lengkap' => 'Ahmad Fauzi']);
 
-    expect($profile->verif_capil)->toBe('menunggu')
+    expect($profile->verif_catpil)->toBe('menunggu')
         ->and($profile->verif_kampus)->toBe('menunggu')
         ->and($profile->verif_kesra)->toBe('menunggu');
 
     // Nilai default juga berlaku di level database, bukan cuma di model.
     $this->assertDatabaseHas('profil_pengguna', [
         'user_id' => $this->user->id,
-        'verif_capil' => 'menunggu',
+        'verif_catpil' => 'menunggu',
         'verif_kampus' => 'menunggu',
         'verif_kesra' => 'menunggu',
     ]);
@@ -262,12 +262,12 @@ test('menyimpan profil tidak mengubah status verifikasi', function () {
 
     $profile = profilLokal($this->user);
 
-    expect($profile->verif_capil)->toBe('menunggu')
+    expect($profile->verif_catpil)->toBe('menunggu')
         ->and($profile->verif_kampus)->toBe('menunggu')
         ->and($profile->verif_kesra)->toBe('menunggu')
         // Belum ada keputusan, jadi belum terverifikasi.
         ->and($profile->isVerified())->toBeFalse()
-        ->and($profile->isCapilVerified())->toBeFalse();
+        ->and($profile->isCatpilVerified())->toBeFalse();
 });
 
 /*
@@ -330,7 +330,7 @@ test('dropdown keputusan verifikasi mengikuti keputusan yang tersimpan', functio
 
     $user->profile()->create([
         'nama_lengkap' => 'Ahmad Fauzi',
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'revisi',
     ]);

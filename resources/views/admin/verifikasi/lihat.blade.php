@@ -2,7 +2,7 @@
 
 @php
   $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()[$stage];
-  $stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
+  $stageLabels = ['catpil' => 'Catpil', 'kampus' => 'Kampus', 'kesra' => 'Kesra'];
   $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
   $decision = $profile->verifStageDecision($stage);
 
@@ -17,7 +17,7 @@
       $statusTerpilih = '';
   }
   $verifNotes = array_filter([
-    'Capil' => $profile->catatan_capil,
+    'Catpil' => $profile->catatan_catpil,
     'Kampus' => $profile->catatan_kampus,
     'Kesra' => $profile->catatan_kesra,
   ]);

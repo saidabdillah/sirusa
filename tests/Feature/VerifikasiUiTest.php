@@ -24,7 +24,7 @@ beforeEach(function () {
     $this->profile = $this->mahasiswa->profile()->create([
         'nama_lengkap' => 'Ahmad Fauzi',
         'prodi_id' => $this->prodi->id,
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'menunggu',
     ]);

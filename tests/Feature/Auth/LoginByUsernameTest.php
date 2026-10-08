@@ -113,7 +113,7 @@ test('semua peran bisa masuk dengan username', function (string $factory) {
     ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($staff);
-})->with(['capil', 'kampusAdmin', 'admin', 'superAdmin']);
+})->with(['catpil', 'kampusAdmin', 'admin', 'superAdmin']);
 
 test('mahasiswa bisa masuk dengan NIK maupun username', function () {
     $mahasiswa = User::factory()->standardUser()->create([
@@ -146,12 +146,15 @@ test('mahasiswa bisa masuk dengan NIK maupun username', function () {
     $this->assertAuthenticatedAs($mahasiswa);
 });
 
-test('login page keeps the combined label, explains it, and drops the reset hint', function () {
+test('login page keeps the combined label and drops the hint and bootstrap alerts', function () {
     $this->get(route('login'))
         ->assertOk()
         ->assertSee('NIK atau Username')
-        // Petunjuk singkat bahwa semua peran bisa memakai NIK maupun username.
-        ->assertSee('Mahasiswa dapat memakai NIK atau username')
+        // Teks petunjuk di bawah input dihapus: labelnya sudah cukup jelas.
+        ->assertDontSee('Mahasiswa dapat memakai NIK atau username')
+        // Pesan sesi tidak lagi memakai alert bootstrap -- invalid-feedback
+        // per field saja yang tersisa.
+        ->assertDontSee('alert-dismissible', false)
         // Tidak ada lagi teks "reset kata sandi" di halaman masuk.
         ->assertDontSee('Lupa kata sandi')
         ->assertDontSee('Hubungi admin untuk reset');

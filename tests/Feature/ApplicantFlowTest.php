@@ -48,7 +48,7 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
         'ktp_ayah' => 'profil/1/ktp_ayah.pdf',
         'ktp_ibu' => 'profil/1/ktp_ibu.pdf',
-        'verif_capil' => $verified ? 'setuju' : 'menunggu',
+        'verif_catpil' => $verified ? 'setuju' : 'menunggu',
         'verif_kampus' => $verified ? 'setuju' : 'menunggu',
         'verif_kesra' => $verified ? 'setuju' : 'menunggu',
     ]);
@@ -182,7 +182,7 @@ test('application rejected when profile has no prodi', function () {
         'user_id' => $this->user->id,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'setuju',
     ]);
@@ -212,35 +212,17 @@ test('application rejected when profile incomplete', function () {
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
 
-test('application rejected while capil has not approved the profile yet', function () {
+test('application accepted without waiting for catpil verification', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
     $scholarship = createEligibleScholarship($this->kampus->id);
 
-    // Hanya persetujuan Capil yang dibutuhkan untuk mendaftar. Menunggu tahap
-    // kampus dan kesra membuat pendaftaran mustahil, karena kedua tahap itu
-    // baru dikerjakan setelah ada pendaftarannya.
-    expect($this->user->profile->isCapilVerified())->toBeFalse()
-        ->and($this->user->profile->isVerified())->toBeFalse();
-
-    actingAs($this->user)
-        ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
-        ->assertRedirect(route('profile'))
-        ->assertSessionHas('error', 'Data dasar Anda belum disetujui Capil. Silakan tunggu hasil verifikasi Capil terlebih dahulu.');
-
-    $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
-});
-
-test('application accepted once capil approves the profile, without waiting for later stages', function () {
-    createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
-    $this->user->profile->update(['verif_capil' => 'setuju']);
-    $scholarship = createEligibleScholarship($this->kampus->id);
-
+    // Pendaftaran tidak menunggu verifikasi. Profil yang lengkap cukup untuk
+    // mendaftar; tahap Catpil → Kampus → Kesra memeriksa data SETELAH
+    // pendaftaran masuk.
     $profile = $this->user->profile;
 
-    expect($profile->isCapilVerified())->toBeTrue()
-        // Belum terverifikasi penuh, tapi itu tidak menghalangi pendaftaran.
-        ->and($profile->isVerified())->toBeFalse()
-        ->and($profile->verif_kampus)->toBe('menunggu');
+    expect($profile->isCatpilVerified())->toBeFalse()
+        ->and($profile->isVerified())->toBeFalse();
 
     actingAs($this->user)
         ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
@@ -253,7 +235,7 @@ test('application accepted once capil approves the profile, without waiting for 
     ]);
 
     // Pendaftaran itulah yang membuat tahap kampus jadi bisa dikerjakan.
-    expect($profile->canVerifStage('kampus'))->toBeTrue();
+    expect($profile->canVerifStage('catpil'))->toBeTrue();
 });
 
 test('application rejected when wali data incomplete and kk ikut wali', function () {
@@ -312,14 +294,17 @@ test('confirmation page shows profile summary without upload fields', function (
         ->assertDontSee('Upload', false);
 });
 
-test('confirmation page redirects to profile when profile unverified', function () {
+test('confirmation page shows even when profile not yet verified', function () {
+    // Verifikasi profil bukan lagi prasyarat mendaftar: profil lengkap sudah
+    // cukup. Verifikasi Catpil/Kampus/Kesra berjalan setelah pendaftaran
+    // dikirim -- bukan sebelum.
     createCompleteProfile($this->user, $this->prodi, 3.5, 5, verified: false);
     $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
         ->get(route('user.pendaftaran.buat', ['beasiswa_id' => $scholarship->id]))
-        ->assertRedirect(route('profile'))
-        ->assertSessionHas('error');
+        ->assertOk()
+        ->assertSee('Konfirmasi Pendaftaran', false);
 });
 
 test('confirmation page redirects when application already submitted', function () {

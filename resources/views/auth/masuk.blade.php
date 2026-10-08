@@ -16,39 +16,17 @@
           </div>
 
           <div class="card-body">
-            @if (session('success'))
-              <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-            @endif
-
-            @if (session('error'))
-              <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-            @endif
-
             <form action="{{ route('login.store') }}" method="POST">
               @csrf
               <div class="form-group">
-                <label for="login">NIK atau Username</label>
+                <label for="login">NIK atau Username <span class="text-danger">*</span></label>
                 <input id="login" type="text" class="form-control @error('login') is-invalid @enderror" name="login" value="{{ old('login') }}" tabindex="1" autofocus>
                 @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                {{-- Semua peran bisa masuk dengan NIK maupun username. Mahasiswa
-                     punya keduanya, jadi bebas memakai salah satu; akun staf tidak
-                     punya NIK, sehingga otomatis memakai username. --}}
-                <small class="text-muted">Mahasiswa dapat memakai NIK atau username. Akun staf memakai username.</small>
               </div>
 
               <div class="form-group">
                 <div class="d-block">
-                  <label for="password" class="control-label">Kata Sandi</label>
+                  <label for="password" class="control-label">Kata Sandi <span class="text-danger">*</span></label>
                 </div>
                 <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" tabindex="2">
                 @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror

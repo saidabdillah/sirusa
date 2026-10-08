@@ -145,23 +145,42 @@ test('kegagalan bisnis lewat ajax dibalas success false dengan status 422', func
 */
 
 test('endpoint tanpa tujuan eksplisit memakai header referer sebagai tujuan', function () {
+    $applicant = penerimaDiterima();
+
     $response = actingAs($this->admin)
-        ->from(route('notifications.index'))
-        ->postJson(route('notifications.read-all'));
+        ->from(route('admin.penerima.index'))
+        ->putJson(route('admin.penerima.tarik', $applicant));
 
     // Kalau tujuan tidak diberikan, `back()` diterjemahkan dari `Referer`.
     $response->assertOk()
         ->assertJsonPath('success', true)
-        ->assertJsonPath('redirect', route('notifications.index'));
+        ->assertJsonPath('redirect', route('admin.penerima.index'));
 });
 
 test('endpoint tanpa tujuan eksplisit dan tanpa referer mengembalikan null', function () {
+    $applicant = penerimaDiterima();
+
     actingAs($this->admin)
-        ->postJson(route('notifications.read-all'))
+        ->putJson(route('admin.penerima.tarik', $applicant))
         ->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonPath('redirect', null);
 });
+
+/**
+ * Pendaftar berstatus `diterima` milik satu mahasiswa standar.
+ */
+function penerimaDiterima(): Applicant
+{
+    $mahasiswa = User::factory()->standardUser()->create(['email' => 'mhs-penerima@test.com']);
+    $beasiswa = Scholarship::factory()->create(['kampus_id' => test()->kampus->id]);
+
+    return Applicant::create([
+        'user_id' => $mahasiswa->id,
+        'beasiswa_id' => $beasiswa->id,
+        'status' => 'diterima',
+    ]);
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -191,7 +210,15 @@ test('form admin memakai penanda ajax agar submit tanpa reload', function (strin
         ->assertSee('data-ajax-form', false);
 })->with([
     'buat beasiswa' => [fn () => route('admin.beasiswa.buat')],
-    'daftar beasiswa' => [fn () => route('admin.beasiswa.index')],
+    // Halaman index hanya punya `data-ajax-form` di baris aksi per data
+    // (`_aksi.blade.php`). Dulunya form "tandai notifikasi" di navbar
+    // menutupi halaman kosong, tapi lonceng notifikasi sudah dihapus -- jadi
+    // buat satu baris data agar penanda ajax tetap teruji di halaman ini.
+    'daftar beasiswa' => [function () {
+        Scholarship::factory()->create(['kampus_id' => test()->kampus->id]);
+
+        return route('admin.beasiswa.index');
+    }],
     'buat pengguna' => [fn () => route('admin.pengguna.buat')],
     'kelola role' => [fn () => route('admin.role.index')],
     'kelola menu' => [fn () => route('admin.menukelola.index')],

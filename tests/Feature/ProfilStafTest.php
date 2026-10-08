@@ -25,7 +25,7 @@ beforeEach(function () {
 
 /**
  * Hanya akun `user` (mahasiswa) yang punya baris profil isian + dokumen.
- * `super_admin`/`kesra`/`kampus`/`capil` tidak punya profil sama sekali, jadi
+ * `super_admin`/`kesra`/`kampus`/`catpil` tidak punya profil sama sekali, jadi
  * halaman profil untuk mereka harus berhenti di Informasi Akun.
  */
 function stafFactory(string $peran): User
@@ -34,13 +34,13 @@ function stafFactory(string $peran): User
         'super_admin' => User::factory()->superAdmin(),
         'kesra' => User::factory()->admin(),
         'kampus' => User::factory()->kampusAdmin(),
-        'capil' => User::factory()->capil(),
+        'catpil' => User::factory()->catpil(),
     };
 
     return $factory->create(['email' => $peran.'@test.com']);
 }
 
-dataset('peran staf', ['super_admin', 'kesra', 'kampus', 'capil']);
+dataset('peran staf', ['super_admin', 'kesra', 'kampus', 'catpil']);
 
 test('halaman profil akun staf hanya menampilkan informasi akun', function (string $peran) {
     $user = stafFactory($peran);

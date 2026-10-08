@@ -87,7 +87,7 @@ test('setiap role melihat grup section yang memang untuknya', function () {
         ->getContent();
 
     // Grup "Administrasi" = back-office, "Layanan Mahasiswa" = menu milik user.
-    expect($section('capil'))->toContain('Administrasi')->not->toContain('Layanan Mahasiswa')
+    expect($section('catpil'))->toContain('Administrasi')->not->toContain('Layanan Mahasiswa')
         ->and($section('standardUser'))->toContain('Layanan Mahasiswa')->not->toContain('Administrasi');
 });
 
@@ -113,8 +113,9 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         'Pendaftar' => 'Administrasi',
         'Master Data' => 'Administrasi',
         // SECTION 2 -- VERIFIKASI
-        'Dukcapil' => 'Verifikasi',
+        'Catpil' => 'Verifikasi',
         'Kampus' => 'Verifikasi',
+        // "Kesra" sekarang dropdown dua anak: antrean verifikasi + penerima.
         'Kesra' => 'Verifikasi',
         // SECTION 3 -- ADMINISTRATOR
         'Kelola Akses' => 'Administrator',
@@ -132,6 +133,17 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         expect($menu)->not->toBeNull()
             ->and($menu->section)->toBe($section);
     }
+
+    // Anak dropdown Kesra ikut bagian "Verifikasi". Keduanya berada di bawah
+    // parent "Kesra", jadi tidak masuk pasangan top-level di atas.
+    $anakKesra = Menu::query()
+        ->whereHas('parent', fn ($query) => $query->where('label', 'Kesra'))
+        ->orderBy('urutan')
+        ->get();
+
+    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Penerima Beasiswa'])
+        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra', 'admin.penerima'])
+        ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Verifikasi']);
 
     // Tidak boleh ada menu di luar section yang dikenal: sidebar tidak akan
     // merendernya sama sekali.
@@ -181,12 +193,12 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
         expect($user)->not->toContain('<li class="menu-header">'.$section.'</li>');
     }
 
-    // Role capil: has "Administrasi" and "Verifikasi" (its own queue), but
+    // Role catpil: has "Administrasi" and "Verifikasi" (its own queue), but
     // not "Administrator".
-    $capil = $html('capil');
-    expect($capil)
+    $catpil = $html('catpil');
+    expect($catpil)
         ->toContain('<li class="menu-header">Verifikasi</li>')
-        ->toContain(route('admin.capil.index'))
+        ->toContain(route('admin.catpil.index'))
         ->not->toContain('<li class="menu-header">Administrator</li>')
         ->not->toContain(route('admin.role.index'));
 
@@ -197,7 +209,7 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
         ->toContain('<li class="menu-header">Administrator</li>')
         ->toContain(route('admin.pengguna.index'))
         ->toContain(route('admin.kesra.index'))
-        ->not->toContain(route('admin.capil.index'))
+        ->not->toContain(route('admin.catpil.index'))
         ->not->toContain(route('admin.kampusverif.index'))
         ->not->toContain(route('admin.role.index'));
 });
@@ -214,11 +226,11 @@ test('grant yang tidak cocok dengan menu mana pun membuat seeding gagal keras', 
     $pasangGrant->setAccessible(true);
 
     // Kunci `scope` yang benar tetap lolos.
-    $pasangGrant->invoke($seeder, ['capil' => ['admin.capil']], $keyToId);
+    $pasangGrant->invoke($seeder, ['catpil' => ['admin.catpil']], $keyToId);
 
     // Kunci yang tidak ada harus melempar, bukan dilewati diam-diam: inilah
     // yang menahan bug "ganti label menu tapi grant-nya hilang".
-    expect(fn () => $pasangGrant->invoke($seeder, ['capil' => ['scope-hantu']], $keyToId))
+    expect(fn () => $pasangGrant->invoke($seeder, ['catpil' => ['scope-hantu']], $keyToId))
         ->toThrow(RuntimeException::class, 'scope-hantu');
 });
 
@@ -238,8 +250,9 @@ test('menuseeder idempoten: dua kali jalan menghasilkan pohon dan grant yang sam
 
     expect($kedua['menu'])->toEqual($pertama['menu'])
         ->and($kedua['grant'])->toEqual($pertama['grant'])
-        // 9 top-level + 8 anak = 17
-        ->and(count($pertama['menu']))->toBe(17);
+        // 9 top-level + 10 anak = 19 ("Kesra" punya dua anak: Verifikasi +
+        // Penerima Beasiswa).
+        ->and(count($pertama['menu']))->toBe(19);
 });
 
 test('menuseeder tidak menggandakan grant di pivot role menu', function () {
@@ -371,7 +384,7 @@ test('akun demo user punya satu pendaftar saja dan status verifikasi menunggu', 
 
     // Default `menunggu` di level database, jadi akun baru tidak pernah mulai
     // dari `terverifikasi` tanpa keputusan verifikator.
-    expect($profile->verif_capil)->toBe('menunggu')
+    expect($profile->verif_catpil)->toBe('menunggu')
         ->and($profile->verif_kampus)->toBe('menunggu')
         ->and($profile->verif_kesra)->toBe('menunggu');
 });

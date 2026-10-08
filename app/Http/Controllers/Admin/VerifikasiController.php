@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exports\CapilVerifikasiExport;
+use App\Exports\CatpilVerifikasiExport;
 use App\Exports\KampusVerifikasiExport;
 use App\Exports\KesraVerifikasiExport;
 use App\Exports\VerifikasiExport;
@@ -11,7 +11,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VerifikasiProfilRequest;
 use App\Models\User;
 use App\Models\UserProfile;
-use App\Notifications\DataVerificationChanged;
 use App\Support\ExcelDownload;
 use App\Support\VerifikasiAntrean;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +31,7 @@ class VerifikasiController extends Controller
      * @var array<string, class-string<VerifikasiExport>>
      */
     private const EXPORTS = [
-        'capil' => CapilVerifikasiExport::class,
+        'catpil' => CatpilVerifikasiExport::class,
         'kampus' => KampusVerifikasiExport::class,
         'kesra' => KesraVerifikasiExport::class,
     ];
@@ -93,8 +92,6 @@ class VerifikasiController extends Controller
 
         $profile->save();
 
-        $user->notify(new DataVerificationChanged($profile, $stage, $data['status'], $data['catatan'] ?? null));
-
         $successAction = match ($data['status']) {
             'setuju' => 'setujui',
             'revisi' => 'minta perbaikan',
@@ -113,7 +110,7 @@ class VerifikasiController extends Controller
      * Unduhan Excel antrean tahap ini.
      *
      * Otorisasi tetap datang dari `akses.menu`: nama route mengikuti prefix
-     * tahap (`admin.capil.*`, `admin.kampusverif.*`, `admin.kesra.*`) sehingga
+     * tahap (`admin.catpil.*`, `admin.kampusverif.*`, `admin.kesra.*`) sehingga
      * grant menu yang sudah ada otomatis berlaku tanpa pengecualian baru.
      * Cakupan data diambil dari `VerifikasiAntrean`, jadi admin kampus tetap
      * hanya melihat kampusnya sendiri.

@@ -32,7 +32,11 @@ test('kesra sidebar shows admin menus plus Pengguna but not role and menu manage
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSee('<span>Pendaftar</span>', false)
+        // "Kesra" sekarang dropdown dua anak: antrean verifikasi dan daftar
+        // penerima (cetak/ekspor/tarik).
         ->assertSee('<span>Kesra</span>', false)
+        ->assertSee(route('admin.kesra.index'), false)
+        ->assertSee(route('admin.penerima.index'), false)
         // Halaman Kampus (Master Data) dikelola role kesra. Diuji lewat href,
         // bukan `<span>Kampus</span>`, karena sejak menu verifikasi dipersingkat
         // jadi "Kampus" ada dua menu dengan label yang sama di sidebar.
@@ -119,17 +123,20 @@ test('sidebar groups menu ke section yang sesuai', function () {
         ->toContain(route('admin.beasiswa.index'))
         ->toContain(route('admin.pendaftar.index'))
         ->toContain(route('admin.kampus.index'))
-        ->not->toContain(route('admin.capil.index'))
+        ->not->toContain(route('admin.catpil.index'))
         ->not->toContain(route('admin.role.index'));
 
-    // SECTION 2 -- VERIFIKASI: tiga antrean verifikasi, tanpa prefiks
-    // "Verifikasi" pada label karena section-nya sudah menyebut prosesnya.
+    // SECTION 2 -- VERIFIKASI: dua antrean verifikasi tunggal (Catpil, Kampus)
+    // plus dropdown Kesra berisi dua anak (Verifikasi, Penerima Beasiswa),
+    // tanpa prefiks "Verifikasi" pada label karena section-nya sudah
+    // menyebut prosesnya.
     $verifikasi = $bagian('Verifikasi');
     expect($verifikasi)
-        ->toContain(route('admin.capil.index'))
+        ->toContain(route('admin.catpil.index'))
         ->toContain(route('admin.kampusverif.index'))
         ->toContain(route('admin.kesra.index'))
-        ->toContain('<span>Dukcapil</span>')
+        ->toContain(route('admin.penerima.index'))
+        ->toContain('<span>Catpil</span>')
         ->toContain('<span>Kampus</span>')
         ->toContain('<span>Kesra</span>')
         ->not->toContain(route('admin.beasiswa.index'))

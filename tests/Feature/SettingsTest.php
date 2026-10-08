@@ -175,6 +175,6 @@ test('settings page never claims the initial password is the NIM', function () {
 test('mahasiswa is told NIK or username, staff only username', function () {
     actingAs($this->user)->get(route('settings'))->assertSee('NIK atau username');
 
-    $capil = User::factory()->capil()->create(['email' => 'capil-setting@test.com']);
-    actingAs($capil)->get(route('settings'))->assertSee('username')->assertDontSee('NIK atau username');
+    $catpil = User::factory()->catpil()->create(['email' => 'catpil-setting@test.com']);
+    actingAs($catpil)->get(route('settings'))->assertSee('username')->assertDontSee('NIK atau username');
 });
