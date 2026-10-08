@@ -194,12 +194,14 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
         expect($user)->not->toContain('<li class="menu-header">'.$section.'</li>');
     }
 
-    // Role catpil: has "Administrasi" and "Verifikasi" (its own queue), but
-    // not "Administrator".
+    // Role catpil: has "Administrasi" and "Verifikasi" (its own queue) plus the
+    // "Status Verifikasi" leaf (rekap untuk semua verifikator), but not
+    // "Administrator".
     $catpil = $html('catpil');
     expect($catpil)
         ->toContain('<li class="menu-header">Verifikasi</li>')
         ->toContain(route('admin.catpil.index'))
+        ->toContain(route('admin.kesra.status'))
         ->not->toContain('<li class="menu-header">Administrator</li>')
         ->not->toContain(route('admin.role.index'));
 
@@ -210,6 +212,7 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
         ->toContain('<li class="menu-header">Administrator</li>')
         ->toContain(route('admin.pengguna.index'))
         ->toContain(route('admin.kesra.index'))
+        ->toContain(route('admin.kesra.status'))
         ->not->toContain(route('admin.catpil.index'))
         ->not->toContain(route('admin.kampusverif.index'))
         ->not->toContain(route('admin.role.index'));
@@ -251,9 +254,10 @@ test('menuseeder idempoten: dua kali jalan menghasilkan pohon dan grant yang sam
 
     expect($kedua['menu'])->toEqual($pertama['menu'])
         ->and($kedua['grant'])->toEqual($pertama['grant'])
-        // 9 top-level + 10 anak = 19 ("Kesra" punya dua anak: Verifikasi +
-        // Penerima Beasiswa).
-        ->and(count($pertama['menu']))->toBe(19);
+        // 10 top-level + 11 anak = 21. "Kesra" punya TIGA anak (Verifikasi +
+        // Penerima Beasiswa + Keputusan) dan "Status Verifikasi" keluar dari
+        // anak Kesra menjadi leaf top-level, sehingga totalnya 21.
+        ->and(count($pertama['menu']))->toBe(21);
 });
 
 test('menuseeder tidak menggandakan grant di pivot role menu', function () {
@@ -266,6 +270,55 @@ test('menuseeder tidak menggandakan grant di pivot role menu', function () {
     // Punya primary key (role_id, menu_id); kalau tidak `insertOrIgnore`,
     // jalankan kedua akan kena violate unique key.
     expect($sesudah)->toBe($sebelum);
+});
+
+/**
+ * Menu "Kesra" adalah satu-satunya antrean verifikasi berbentuk dropdown:
+ * induk tanpa route (scope `admin.kesra` menutupi `admin.kesra.*`) plus dua
+ * anak ber-route (Keputusan, Verifikasi). "Status Verifikasi" bukan anak Kesra
+ * lagi -- permintaan pengguna memindahkannya jadi leaf mandiri supaya Catpil
+ * dan Kampus bisa melihat halaman itu juga. Anak wajib di-grant sendiri ke
+ * role kesra -- `sidebarMenus()` hanya me-render anak yang grant-nya sendiri
+ * terisi, jadi induk ter-grant tapi anak tidak = dropdown hilang dan jadi
+ * `<span>` mati.
+ */
+test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi', function () {
+    seedAkses();
+
+    $kesra = Menu::query()->whereNull('parent_id')->where('label', 'Kesra')->firstOrFail();
+
+    expect($kesra->route)->toBeNull()
+        ->and($kesra->scope)->toBe('admin.kesra');
+
+    $anak = Menu::query()
+        ->where('parent_id', $kesra->id)
+        ->orderBy('urutan')
+        ->get();
+
+    expect($anak->pluck('label')->all())->toBe(['Keputusan', 'Verifikasi'])
+        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.disetujui', 'admin.kesra.index'])
+        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.disetujui', 'admin.kesra.index']);
+
+    $kesraRoleId = Role::where('name', 'kesra')->firstOrFail()->id;
+    $grantKesra = DB::table('role_menu')->where('role_id', $kesraRoleId)->pluck('menu_id');
+
+    expect($grantKesra)->toContain($kesra->id, ...$anak->pluck('id')->all());
+
+    // Status Verifikasi kini leaf top-level di section "Administrasi", scopenya
+    // tetap `admin.kesra.status` untuk menjaga nama route.
+    $status = Menu::query()->whereNull('parent_id')->where('label', 'Status Verifikasi')->firstOrFail();
+
+    expect($status->section)->toBe('Administrasi')
+        ->and($status->route)->toBe('admin.kesra.status')
+        ->and($status->scope)->toBe('admin.kesra.status')
+        ->and($grantKesra)->toContain($status->id);
+
+    foreach (['catpil', 'kampus'] as $role) {
+        $roleId = Role::where('name', $role)->firstOrFail()->id;
+
+        expect(DB::table('role_menu')->where('role_id', $roleId)->pluck('menu_id'))
+            ->toContain($status->id);
+    }
 });
 
 test('semua route yang direferensikan menu benar-benar terdaftar', function () {

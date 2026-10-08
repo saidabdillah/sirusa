@@ -102,7 +102,9 @@ class KesraVerifikasiExport extends VerifikasiExport
             $this->teks($pendaftaran->pluck('catatan')->filter()->implode('; ')),
             $profile->verifStageDecision('catpil')['label'],
             $profile->verifStageDecision('kampus')['label'],
-            $profile->verifStageDecision('kesra')['label'],
+            // Kesra dari baris `pendaftar`, bukan `verif_kesra` (yang selalu
+            // `setuju` walau pendaftarannya ditolak).
+            $user->kesraDecision()['label'],
             $this->teks($profile->catatan_kesra),
         ];
     }
@@ -111,7 +113,7 @@ class KesraVerifikasiExport extends VerifikasiExport
      * Baris unduhan Kesra diambil dari antrean PENDAFTARAN, bukan antrean profil.
      *
      * `VerifikasiExport::users()` bawaannya memfilter profil lewat
-     * `canVerifStage()`, yang hanya berarti "sudah lolos Capil dan Kampus" --
+     * `canVerifStage()`, yang hanya berarti "sudah lolos verifikasi Kampus" --
      * termasuk pendaftaran yang keputusannya sudah dicetak berminggu lalu. Itu
      * bukan isi antrean Kesra, dan unduhan yang berbeda dari daftar yang dibaca
      * admin adalah sumber kesalahan yang mahal.

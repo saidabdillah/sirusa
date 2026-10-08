@@ -36,26 +36,52 @@ body {
   max-width: calc(100vw - 1rem);
 }
 
-/* Inputs: prevent vertical clipping of text caused by Stisla's fixed 42px
-   height + 10px vertical padding (14px text needs ~21px at line-height 1.5,
-   but only ~20px of content space remained). Let height autosize so the
-   typed text is never cut off, across every form in the app. */
+/* Inputs: every control rests at 38px so it lines up level with the 38px
+   buttons and the toolbar/DataTables controls pinned lower in this file.
+   height stays auto so long text is never clipped by a fixed box; min-height
+   only sets the resting size. */
 .form-control:not(.form-control-sm):not(.form-control-lg),
 .input-group-text,
 select.form-control:not([size]):not([multiple]) {
   height: auto;
-  min-height: 46px;
-  padding: 10px 15px;
+  min-height: calc(1.5em + 0.75rem + 2px);
+  padding: 0.375rem 0.75rem;
   line-height: 1.5;
 }
 
 /* iOS Safari mengabaikan line-height pada <select> native, sehingga dengan
-   height:auto dropdown ter-render lebih pendek dari input teks dan
-   min-height: 46px tidak menyelamatkannya. Pin tinggi eksplisit agar sama
-   persis dengan input teks (46px) di semua browser. -sm/-lg dikecualikan
-   agar select kecil di admin/verifikasi/lihat tetap ukurannya. */
+   height:auto dropdown ter-render lebih pendek dari input teks. Pin tinggi
+   eksplisit agar sama persis dengan input teks (38px) di semua browser.
+   -sm/-lg tetap dikecualikan kalau dipakai di masa depan. */
 select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not([multiple]) {
-  height: 46px;
+  height: calc(1.5em + 0.75rem + 2px);
+}
+
+/* DataTables tidak memakai kelas `.form-control`, jadi kotak cari ("Cari:") dan
+   dropdown panjang baris ("Tampilkan N data") tetap tinggi native browser
+   (~30px) -- dan harus disamakan dengan tinggi global 38px lewat pin di bawah.
+   Rule `.form-row.align-items-end` (select filter di atas tabel) kini redundan
+   dengan tinggi global, tapi dipertahankan agar id #filter/#status/#beasiswa_id
+   tetap aman bila dipakai di konteks lain. */
+.form-row.align-items-end #filter,
+.form-row.align-items-end #status,
+.form-row.align-items-end #beasiswa_id,
+.dataTables_filter input,
+.dataTables_length select {
+  height: calc(1.5em + 0.75rem + 2px);
+  min-height: calc(1.5em + 0.75rem + 2px);
+  padding: 0.375rem 0.75rem;
+  line-height: 1.5;
+}
+
+/* Kotak cari dan dropdown panjang DataTables adalah elemen native, bukan
+   `.form-control`, jadi perlu border/rounding/background eksplisit. */
+.dataTables_filter input,
+.dataTables_length select {
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  background-color: #fff;
+  color: #495057;
 }
 
 /* Small screens: reduce main-content side padding (30px is wasteful below 576px) */

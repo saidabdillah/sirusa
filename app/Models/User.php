@@ -189,6 +189,36 @@ class User extends Authenticatable
     }
 
     /**
+     * Keputusan tahap Kesra untuk ditampilkan, diturunkan dari baris `pendaftar`.
+     *
+     * `verif_kesra` HANYA menandai "sudah diputuskan" (kunci tahap Kampus) dan
+     * nilainya selalu `setuju` walau pendaftarannya DITOLAK. Karena itu label
+     * tahap Kesra tidak boleh dibaca dari `verif_kesra` -- kalau dibaca dari
+     * sana, penolakan tampil sebagai "Disetujui" di halaman Status Verifikasi,
+     * dasbor mahasiswa, dan export. Sumber kebenarannya baris `pendaftar.status`.
+     *
+     * Satu mahasiswa bisa punya beberapa pendaftaran: `diterima` menang, lalu
+     * `ditolak`, dan selain itu (belum ada pendaftaran / masih `verifikasi` /
+     * semua `dibatalkan`) berarti "Menunggu".
+     *
+     * @return array{status: string, label: string, badge: string, decided: bool}
+     */
+    public function kesraDecision(): array
+    {
+        $applicants = $this->relationLoaded('applicants')
+            ? $this->applicants
+            : $this->applicants()->get();
+
+        $status = match (true) {
+            $applicants->contains('status', 'diterima') => 'setuju',
+            $applicants->contains('status', 'ditolak') => 'tolak',
+            default => 'menunggu',
+        };
+
+        return UserProfile::decisionForStatus($status);
+    }
+
+    /**
      * Credential yang boleh dipakai untuk masuk, sesuai aturan SIRUSA.
      *
      * Mahasiswa punya NIK *dan* username, jadi bebas memakai salah satu. Akun

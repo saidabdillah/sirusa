@@ -10,6 +10,9 @@ use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VerifikasiProfilRequest;
 use App\Models\Applicant;
+use App\Models\Fakultas;
+use App\Models\Kampus;
+use App\Models\Prodi;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Support\ExcelDownload;
@@ -69,7 +72,10 @@ class VerifikasiController extends Controller
         $stage = $this->validStage($stage);
         $profile = $user->profile;
 
-        if (! $profile || ! $profile->canVerifStage($stage)) {
+        // `inVerifQueue()`, bukan `canVerifStage()`: baris Kampus yang sudah
+        // dikunci Kesra tetap bisa dibuka -- halamannya tampil read-only, bukan
+        // 403. Gerbang tulis tetap di `canVerifStage()` (lihat `verifikasi()`).
+        if (! $profile || ! $profile->inVerifQueue($stage)) {
             abort(403);
         }
 
@@ -109,12 +115,9 @@ class VerifikasiController extends Controller
         $profile->{$stages[$stage][0]} = $data['status'];
         $profile->{$stages[$stage][1]} = $data['catatan'] ?? null;
 
-        // Keputusan pada tahap ini tidak lagi disetujui, maka urutan ke tahap
-        // berikutnya tidak berlaku dan harus diulang dari awal.
-        if ($data['status'] !== 'setuju') {
-            $profile->resetDownstreamStages($stage);
-        }
-
+        // Tahap-tahap lain sengaja tidak disentuh: Catpil dan Kampus berjalan
+        // paralel, jadi keputusan revisi/tolak di satu tahap tidak boleh
+        // menghapus pekerjaan tahap lain yang sedang berjalan.
         $profile->save();
 
         $successAction = match ($data['status']) {
@@ -152,6 +155,94 @@ class VerifikasiController extends Controller
         return ExcelDownload::response($export->toSpreadsheet(), $export->fileName());
     }
 
+    /**
+     * Halaman "Status Verifikasi": rekap status Catpil, Kampus, dan Kesra semua
+     * profil, terbuka untuk Kesra, super_admin, Catpil, dan Kampus (menu leaf
+     * mandiri, bukan anak dropdown Kesra, di section "Administrasi"). Bukan
+     * antrean dan tidak punya kolom aksi: tidak ada tahap yang dikerjakan di
+     * sini, hanya melihat status.
+     *
+     * Filter (server-side) dipecah jadi dua grup dengan jarak: status per
+     * tahap (`verif_catpil` / `verif_kampus`) lalu lokasi `kampus_id` /
+     * `fakultas_id` / `jurusan_id` (di mana "Jurusan" adalah Prodi -- tidak
+     * ada tabel jurusan terpisah). Ketiga filter lokasi tidak pernah disabled
+     * dan opsinya dinamis: Fakultas hanya memuat milik kampus yang terpilih,
+     * Jurusan hanya milik fakultas yang terpilih, dan tanpa induk terpilih
+     * daftarnya tampil penuh. Nilai yang tidak konsisten dengan induk yang
+     * TURUT dipilih jatuh ke null (semua) agar kombinasi yang salah tidak
+     * mengosongkan daftar -- tapi memilih fakultas/jurusan tanpa induknya
+     * tetap valid, dan hanya `kampus_id` yang benar-benar menyaring daftar
+     * pengguna sebagai induk tidak langsung Fakultas.
+     */
+    public function status(): View
+    {
+        $filterCatpil = $this->validStatusFilter('catpil');
+        $filterKampus = $this->validStatusFilter('kampus');
+
+        $kampusId = $this->validChoice('kampus_id');
+        $fakultasId = $this->validChoice('fakultas_id');
+        $jurusanId = $this->validChoice('jurusan_id');
+
+        // Soft coherence: level bawah hanya dicek terhadap induknya JIKA induk
+        // itu ikut dipilih. Memilih fakultas tanpa kampus (atau jurusan tanpa
+        // fakultas) tetap sah karena itu "memilih salah satu" filter; nilai yang
+        // bertentangan dengan induk yang terpilih diabaikan, bukan mengosongkan
+        // daftar.
+        if ($kampusId !== null && $fakultasId !== null && ! Fakultas::query()
+            ->where('id', $fakultasId)
+            ->where('kampus_id', $kampusId)
+            ->exists()) {
+            $fakultasId = null;
+        }
+
+        if ($fakultasId !== null && $jurusanId !== null && ! Prodi::query()
+            ->where('id', $jurusanId)
+            ->where('fakultas_id', $fakultasId)
+            ->exists()) {
+            $jurusanId = null;
+        }
+
+        $users = User::role('user')
+            ->where('status', 'aktif')
+            ->whereHas('profile')
+            ->with(['profile' => fn ($query) => $query->with('prodi.fakultas.kampus'), 'applicants'])
+            ->when($kampusId, fn ($query) => $query->whereHas('profile.prodi.fakultas', fn ($fakultas) => $fakultas->where('kampus_id', $kampusId)))
+            ->when($fakultasId, fn ($query) => $query->whereHas('profile.prodi', fn ($prodi) => $prodi->where('fakultas_id', $fakultasId)))
+            ->when($jurusanId, fn ($query) => $query->whereHas('profile.prodi', fn ($prodi) => $prodi->where('id', $jurusanId)))
+            ->get()
+            ->filter(fn (User $user) => $filterCatpil === null
+                || $user->profile->verifStageDecision('catpil')['status'] === $filterCatpil)
+            ->filter(fn (User $user) => $filterKampus === null
+                || $user->profile->verifStageDecision('kampus')['status'] === $filterKampus)
+            ->sortBy(fn (User $user) => $user->profile->nama_lengkap)
+            ->values();
+
+        // Dropdown lokasi dinamis (bertingkat): Fakultas hanya memuat fakultas milik
+        // kampus yang terpilih; Jurusan (Prodi) hanya memuat jurusan milik fakultas
+        // yang terpilih, atau milik fakultas mana pun di kampus terpilih selama
+        // fakultasnya belum dipilih. Tanpa induk terpilih, daftarnya tampil penuh
+        // supaya admin bebas memilih filter apa pun.
+        $kampusOptions = Kampus::query()->orderBy('nama_kampus')->get(['id', 'nama_kampus']);
+
+        $fakultasOptions = Fakultas::query()
+            ->when($kampusId, fn ($query) => $query->where('kampus_id', $kampusId))
+            ->orderBy('nama')
+            ->get(['id', 'nama']);
+
+        $jurusanOptions = Prodi::query()
+            ->when($fakultasId, fn ($query) => $query->where('fakultas_id', $fakultasId))
+            ->when($fakultasId === null && $kampusId !== null,
+                fn ($query) => $query->whereHas('fakultas', fn ($fakultas) => $fakultas->where('kampus_id', $kampusId)))
+            ->orderBy('nama')
+            ->get(['id', 'nama']);
+
+        return view('admin.verifikasi.status', compact(
+            'users', 'filterCatpil', 'filterKampus',
+            'kampusId', 'fakultasId', 'jurusanId',
+            'kampusOptions', 'fakultasOptions', 'jurusanOptions',
+        ));
+    }
+
     private function validStage(string $stage): string
     {
         if (! in_array($stage, UserProfile::verifStageOrder(), true)) {
@@ -162,25 +253,47 @@ class VerifikasiController extends Controller
     }
 
     /**
+     * Nilai filter status profil yang diizinkan; null berarti semua status.
+     *
+     * Nama param memakai `verif_catpil`/`verif_kampus` (bukan `kampus`), karena
+     * `kampus_id` sudah dipakai filter lokasi pada halaman yang sama.
+     */
+    private function validStatusFilter(string $stage): ?string
+    {
+        $param = $stage === 'catpil' ? 'verif_catpil' : 'verif_kampus';
+        $value = request($param);
+
+        return in_array($value, self::FILTERS, true) ? $value : null;
+    }
+
+    private function validChoice(string $param): ?int
+    {
+        $value = filter_var(request($param), FILTER_VALIDATE_INT);
+
+        return $value === false || $value < 1 ? null : $value;
+    }
+
+    /**
      * Filter status pada daftar verifikasi. Null berarti tidak difilter.
      *
-     * Untuk Capil dan Kampus, statusnya milik profil (`menunggu`/`revisi`/`setuju`/
+     * Untuk Catpil dan Kampus, statusnya milik profil (`menunggu`/`revisi`/`setuju`/
      * `tolak`). Kesra memakai status yang sama dengan `Applicant` (`verifikasi`/
      * `diterima`/`ditolak`/`dibatalkan`), jadi daftar yang diizinkan berbeda per
      * tahap -- filter `setuju` tidak akan cocok dengan apa pun di Kesra.
      *
-     * Tanpa `filter` sama sekali, Kesra menampilkan yang masih menunggu putusan.
-     * Itu default, bukan sekadar fallback: antrean Kesra adalah daftar pekerjaan
-     * yang belum selesai, sedangkan keputusan lama tetap bisa dicari lewat filter.
-     * "Semua status" memakai nilai `Applicant::FILTER_ALL` karena `?filter=` sudah
-     * diubah jadi `null` oleh `ConvertEmptyStringsToNull` sebelum sampai sini.
+     * Semua tahap mulai dari "tanpa filter" (= semua status). Dulu Kesra bias ke
+     * `verifikasi` (antrean putusan) sebagai default, tapi itu tidak lagi
+     * (permintaan pengguna): halaman antrean Kesra kini menampilkan seluruh
+     * pendaftaran, filter status tinggal mempersempitnya. "Semua status" memakai
+     * nilai `Applicant::FILTER_ALL` karena `?filter=` sudah diubah jadi `null`
+     * oleh `ConvertEmptyStringsToNull` sebelum sampai sini.
      */
     private function validFilter(string $stage): ?string
     {
         $filter = request('filter');
 
         if ($filter === null) {
-            return $stage === 'kesra' ? Applicant::PENDING_STATUS : null;
+            return null;
         }
 
         if ($filter === Applicant::FILTER_ALL) {

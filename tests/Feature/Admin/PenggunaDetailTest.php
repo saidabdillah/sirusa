@@ -139,8 +139,8 @@ test('akun staf tanpa profil menampilkan catatan, bukan Data Diri kosong', funct
         ->assertSee('tidak membuat data profil')
         ->assertDontSee('Nama Lengkap')
         ->assertDontSee('Data Diri')
-        // Kartu Status Verifikasi juga tidak ada tanpa profil.
-        ->assertDontSee('Status Verifikasi');
+        // Tanpa profil tidak ada catatan verifikator yang bisa dirender.
+        ->assertDontSee('Catatan Verifikator');
 });
 
 test('kolom kampus tampil untuk akun berperan kampus', function () {

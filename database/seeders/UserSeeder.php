@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
     ];
 
     /**
-     * Status verifikasi profil per mahasiswa, berurutan `[capil, kampus]`.
+     * Status verifikasi profil per mahasiswa, berurutan `[catpil, kampus]`.
      *
      * `verif_kesra` sengaja tidak ada di sini. Kesra tidak memverifikasi profil --
      * yang diputuskan ada di baris `pendaftar` -- jadi `verif_kesra` cuma
@@ -139,10 +139,10 @@ class UserSeeder extends Seeder
                     'ktp_ibu' => "profil/{$key}/ktp_ibu.jpg",
                     'ktp_wali' => $data['kk_ikut_wali'] ? "profil/{$key}/ktp_wali.jpg" : null,
                     'kk_wali' => $data['kk_ikut_wali'] ? "profil/{$key}/kk_wali.jpg" : null,
-                    'verif_capil' => $verif[0],
+                    'verif_catpil' => $verif[0],
                     'verif_kampus' => $verif[1],
                     'verif_kesra' => $this->verifKesra($data['applicants']),
-                    'catatan_capil' => $verif[0] === 'revisi' ? 'NIK dan nama tidak sesuai dengan data KK' : null,
+                    'catatan_catpil' => $verif[0] === 'revisi' ? 'NIK dan nama tidak sesuai dengan data KK' : null,
                 ],
             );
 
@@ -288,7 +288,7 @@ class UserSeeder extends Seeder
                     'dokumen_bukti_ukt' => "profil/{$key}/dokumen_bukti_ukt.pdf",
                     'ktp_ayah' => "profil/{$key}/ktp_ayah.jpg",
                     'ktp_ibu' => "profil/{$key}/ktp_ibu.jpg",
-                    'verif_capil' => 'setuju',
+                    'verif_catpil' => 'setuju',
                     'verif_kampus' => 'setuju',
                     'verif_kesra' => 'setuju',
                 ],

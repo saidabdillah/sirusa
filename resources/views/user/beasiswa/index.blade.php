@@ -10,13 +10,6 @@
       </div>
     </div>
 
-    @if(session('success'))
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success') }}
-        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-      </div>
-    @endif
-
     @unless($kampusId)
       <div class="alert alert-warning" role="alert">
         <i class="fas fa-exclamation-triangle"></i>
@@ -90,11 +83,11 @@
                     </strong>
                   </div>
                 </div>
-              </div>
-              <div class="card-footer">
-                <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm btn-block">
-                  <i class="fas fa-eye"></i> Lihat Detail
-                </a>
+                <div class="mt-3">
+                  <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm btn-block">
+                    <i class="fas fa-eye"></i> Lihat Detail
+                  </a>
+                </div>
               </div>
             </div>
           </div>

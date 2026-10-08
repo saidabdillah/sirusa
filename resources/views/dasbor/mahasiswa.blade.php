@@ -9,18 +9,29 @@
     </div>
   </div>
 
-  @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-      {{ session('success') }}
-      <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-    </div>
-  @endif
-
-  @if($missingFields)
-    <div class="alert alert-warning">
-      <i class="fas fa-exclamation-triangle"></i>
-      <strong>Profil belum lengkap.</strong> Isi dulu: {{ implode(', ', $missingFields) }}.
-      <a href="{{ route('profile') }}" class="alert-link">Lengkapi profil sekarang</a>.
+@if($profile)
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4>Status Verifikasi</h4>
+          </div>
+          <div class="card-body">
+{{-- Satu blok per tahap. Catpil/Kampus dari `verifStageDecision()`, --}}
+            {{-- Kesra dari `$kesraDecision` (turunan baris `pendaftar`) supaya --}}
+            {{-- label di dasbor dan di halaman verifikasi tidak bisa berbeda. --}}
+            <div class="row">
+@foreach($profile->verifStageLabels() as $stage => $stageLabel)
+                @php $decision = $stage === 'kesra' ? $kesraDecision : $profile->verifStageDecision($stage); @endphp
+                <div class="col-md-4 mb-3 mb-md-0">
+                  <div class="text-muted small">{{ $stageLabel }}</div>
+                  <span class="badge badge-{{ $decision['badge'] }} mt-1">{{ $decision['label'] }}</span>
+                </div>
+              @endforeach
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   @endif
 

@@ -6,7 +6,6 @@ use App\Models\Menu;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Validator;
 
 class StoreMenuRequest extends FormRequest
 {
@@ -32,15 +31,6 @@ class StoreMenuRequest extends FormRequest
             'aktif' => ['boolean'],
             'wajib' => ['boolean'],
         ];
-    }
-
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function ($validator) {
-            if (! $this->input('route') && ! $this->input('scope')) {
-                $validator->errors()->add('route', 'Isi nama route atau scope.');
-            }
-        });
     }
 
     public function messages(): array

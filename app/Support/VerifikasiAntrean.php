@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 /**
  * Sumber tunggal untuk hitungan antrean verifikasi dan pendaftaran.
  *
- * Semua angka memakai `UserProfile::canVerifStage()` yang sama dengan pemfilteran
+ * Semua angka memakai `UserProfile::inVerifQueue()` yang sama dengan pemfilteran
  * antrean di `VerifikasiController`. Menyalin aturan itu ke SQL dijamin membuat
  * dasbor berbeda dengan daftar yang benar-benar dibuka admin, jadi pemfilteran
  * tetap di PHP meski menambah query.
@@ -72,7 +72,7 @@ class VerifikasiAntrean
      *
      * Sengaja lebih sedikit dan berbeda dari halaman queue. Dua alasannya: kartu
      * dasbor hanya muat untuk tiga kolom, dan isinya harus yang jadi dasar
-     * keputusan tahap tersebut. Capil memeriksa data kependudukan, jadi prodi dan
+     * keputusan tahap tersebut. Catpil memeriksa data kependudukan, jadi prodi dan
      * kampus tidak relevan di sana -- menampilkannya membuat antrean itu terbaca
      * seperti daftar yang informasinya tidak pernah dipakai untuk memutuskan.
      *
@@ -84,7 +84,7 @@ class VerifikasiAntrean
     public function antreanKolom(): array
     {
         return [
-            'capil' => [
+            'catpil' => [
                 ['label' => 'NIK', 'value' => fn (UserProfile $profile) => $profile->nik ?? '-'],
                 ['label' => 'No. Kartu Keluarga', 'value' => fn (UserProfile $profile) => $profile->no_kk ?? '-'],
                 ['label' => 'Desil', 'value' => fn (UserProfile $profile) => $profile->desil ? 'Desil '.$profile->desil : '-'],
@@ -98,7 +98,11 @@ class VerifikasiAntrean
     }
 
     /**
-     * Antrean profil yang masih boleh ditangani tahap ini, sudah diurutkan.
+     * Antrean profil yang tampil di tahap ini, sudah diurutkan.
+     *
+     * Memakai `inVerifQueue()`, bukan `canVerifStage()`: baris Kampus yang
+     * keputusannya dikunci Kesra tetap tampil di sini (read-only) supaya angka
+     * dasbor, tabel antrean, dan export tidak pernah berbeda cakupan.
      *
      * @return Collection<int, User>
      */
@@ -111,7 +115,7 @@ class VerifikasiAntrean
             ->with(['profile' => fn ($query) => $query->with('prodi.fakultas.kampus')])
             ->when($kampusId, fn (Builder $query) => $query->whereHas('profile.prodi.fakultas', fn ($q) => $q->where('kampus_id', $kampusId)))
             ->get()
-            ->filter(fn (User $user) => $user->profile && $user->profile->canVerifStage($this->stage))
+            ->filter(fn (User $user) => $user->profile && $user->profile->inVerifQueue($this->stage))
             ->filter(fn (User $user) => $filter === null
                 || $user->profile->verifStageDecision($this->stage)['status'] === $filter)
             // `sortBy` menerima satu kunci, jadi pengurutannya dirantai dari yang
@@ -126,12 +130,11 @@ class VerifikasiAntrean
      * Kolom status lintas tahap, untuk tabel "Sebaran Antrean per Tahap".
      *
      * Satu baris tabel merangkai beberapa tahap sekaligus, jadiheader-nya hanya
-     * bisa punya satu daftar kolom -- padahal tahap Capil/Kampus dan tahap Kesra
+     * bisa punya satu daftar kolom -- padahal tahap Catpil/Kampus dan tahap Kesra
      * memakai kumpulan status yang berbeda. Jawabannya: satu daftar kolom tetap
      * dengan lebih dari satu kunci yang mungkin, dan sel yang tidak berlaku untuk
-     * tahap tersebut ditampilkan sebagai tanda hubung, bukan `0`. Angka nol berarti
-     * "tidak ada", sedangkan tanda hubung berarti "tidak berlaku" -- keduanya beda
-     * dan tidak boleh dicampur.
+     * tahap tersebut ditampilkan sebagai `0` (permintaan pengguna; dulu tanda
+     * hubung).
      *
      * @return array<int, array{label: string, keys: list<string>, icon: string, bg: string}>
      */
@@ -255,13 +258,14 @@ class VerifikasiAntrean
     }
 
     /**
-     * Profil yang sudah cukup terverifikasi untuk bisa didaftarkan beasiswa, yaitu
-     * yang lolos Capil dan Kampus.
+     * Profil yang sudah cukup terverifikasi untuk bisa diputuskan Kesra, yaitu
+     * yang lolos verifikasi Kampus. Catpil tidak lagi menghalangi putusan Kesra
+     * (permintaan pengguna: Kesra tidak menunggu Catpil).
      *
      * Ini diterjemahkan ke SQL, bukan disaring lewat `canVerifStage()`, dan itu
      * aman khusus untuk tahap `kesra`: `kesra` adalah tahap terakhir, jadi
      * `canVerifStage()` untuknya tidak punya aturan tambahan apa pun --
-     * hanya dua flag sebelumnya yang harus `setuju`. Kalau suatu hari ada tahap
+     * hanya flag kampus yang harus `setuju`. Kalau suatu hari ada tahap
      * setelah Kesra, aturan ini harus ikut diperbarui di sampingnya.
      */
     public function profilTerverifikasi(): int
@@ -270,15 +274,17 @@ class VerifikasiAntrean
             ? User::role('user')
                 ->where('status', 'aktif')
                 ->whereHas('profile', fn (Builder $query) => $query
-                    ->where('verif_capil', 'setuju')
                     ->where('verif_kampus', 'setuju'))
                 ->count()
             : $this->ringkasan()['setuju'];
     }
 
     /**
-     * Pendaftaran yang masih menjadi pekerjaan tahap `kesra`, default-nya yang
-     * statusnya `verifikasi`.
+     * Pendaftaran tahap `kesra`. Default param-nya status `verifikasi` (antrean
+     * putusan) dan dipakai kartu "Menunggu Tindakan Anda" di dasbor; halaman
+     * antrean Kesra lewat `VerifikasiController` mengirim `null` (= semua status)
+     * supaya daftar default-nya menampilkan seluruh pendaftaran (permintaan
+     * pengguna).
      *
      * Antrean ini tidak lagi mensyaratkan `verif_kesra = 'setuju'`. Dulu itu
      * syarat, padahal tahap profile Kesra ditutup oleh keputusan yang sama seperti
@@ -286,10 +292,8 @@ class VerifikasiAntrean
      * menyembunyikan pendaftar yang justru belum pernah diputuskan. Satu
      * keputusan, satu tempat: antrean ini.
      *
-     * Filter status punya default `verifikasi` dengan sengaja, dan tidak boleh
-     * dipindah ke `pendaftarQuery()`: ringkasan butuh semua status untuk menghitung
-     * kartu Disetujui/Ditolak/Dibatalkan. Tanpa pemisahan itu, tabel "menunggu
-     * putusan" akan ikut menampilkan pendaftaran yang sudah diputuskan.
+     * Filter status tidak dipindah ke `pendaftarQuery()`: ringkasan butuh semua
+     * status untuk menghitung kartu Disetujui/Ditolak/Dibatalkan.
      *
      * @return Collection<int, Applicant>
      */
@@ -343,16 +347,16 @@ class VerifikasiAntrean
 
     /**
      * Audiens kerja tahap `kesra`: baris `pendaftar` milik mahasiswa aktif yang
-     * sudah lolos verifikasi Capil dan Kampus.
+     * sudah lolos verifikasi Kampus. Catpil tidak lagi menghalangi putusan Kesra
+     * (permintaan pengguna).
      *
      * Dipakai oleh daftar antrean, export, maupun hitungan ringkasan supaya
      * statistik dasbor, tabel antrean, dan unduhan tidak pernah menghitung cakupan
      * yang berbeda.
      *
-     * Kedua flag profil itu wajib, bukan hanya `verif_kampus`. Alasannya
-     * `UserProfile::canVerifStage('kesra')` yang dipegang `show()` juga menyyaratkan
-     * keduanya, jadi tanpa syarat Capil di sini daftar bisa menampilkan baris yang
-     * justru membalas 403 saat diklik -- antrean yang isinya tidak bisa dikerjakan.
+     * Syaratnya persis `UserProfile::canVerifStage('kesra')` yang dipegang `show()`
+     * -- hanya `verif_kampus = 'setuju'` -- jadi setiap baris yang tampil selalu
+     * bisa dibuka tanpa membalas 403.
      */
     private function pendaftarQuery(?string $status = null): Builder
     {
@@ -361,7 +365,6 @@ class VerifikasiAntrean
             ->whereHas('user', fn (Builder $query) => $query
                 ->where('status', 'aktif')
                 ->whereHas('profile', fn (Builder $profile) => $profile
-                    ->where('verif_capil', 'setuju')
                     ->where('verif_kampus', 'setuju')));
     }
 
@@ -391,11 +394,12 @@ class VerifikasiAntrean
             ->pluck('total', 'status');
 
         return [
-            // `terverifikasi` dihitung dari profil yang lolos Capil+Kampus, bukan
-            // dari `verif_kesra` seperti semula. `verif_kesra` sekarang hanya
-            // menyatakan bahwa suatu pendaftaran sudah diputuskan, jadi
-            // memakainya di sini akan membuat jumlah "profil terverifikasi" ikut
-            // bergerak setiap kali Kesra memutus pendaftaran.
+            // `terverifikasi` dihitung dari profil yang lolos Kampus, bukan
+            // dari `verif_kesra` seperti semula dan bukan dari Catpil+Kampus
+            // (permintaan pengguna: Kesra tidak menunggu Catpil). `verif_kesra`
+            // sekarang hanya menyatakan bahwa suatu pendaftaran sudah diputuskan,
+            // jadi memakainya di sini akan membuat jumlah "profil terverifikasi"
+            // ikut bergerak setiap kali Kesra memutus pendaftaran.
             'terverifikasi' => $this->profilTerverifikasi(),
             'pendaftar' => Applicant::query()
                 ->whereHas('user', fn (Builder $query) => $query->where('status', 'aktif'))

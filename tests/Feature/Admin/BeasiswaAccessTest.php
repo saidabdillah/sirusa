@@ -45,6 +45,8 @@ test('admin can access scholarship create form and create one', function () {
         ->assertDontSee(' required>', false)
         ->assertSee('>Kampus <span class="text-danger">*</span></label>', false)
         ->assertSee('>Persyaratan <span class="text-danger">*</span></label>', false)
+        // Group checkbox `prodi_ids` (required min:1) ditandai lewat heading card-nya.
+        ->assertSee('Program Studi <span class="text-danger">*</span></h4>', false)
         ->assertSee('data-kampus-id="'.$kampus->id.'"', false)
         ->assertDontSee('value="'.$kampus->id.'" selected', false)
         ->assertSee('placeholder="contoh 3.00"', false)
@@ -75,7 +77,8 @@ test('admin can access scholarship edit form without html5 required attribute', 
 
     actingAs($this->admin)->get(route('admin.beasiswa.ubah', $scholarship))
         ->assertOk()
-        ->assertDontSee(' required>', false);
+        ->assertDontSee(' required>', false)
+        ->assertSee('Program Studi <span class="text-danger">*</span></h4>', false);
 });
 
 test('create scholarship form links to add kampus when none exists', function () {

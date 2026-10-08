@@ -208,13 +208,15 @@ test('kesra queue count matches the applicant list its menu opens', function () 
         ->getContent();
 
     expect($ringkasan['verifikasi'])->toBe(3)
-        // Tabel di dasbor boleh menampilkan semua pendaftaran yang masih
-        // `verifikasi`, bukan hanya 8 pertama, jadi yang diperiksa di sini hanya
-        // bahwa yang sudah diputuskan tidak bocor ke kartu "menunggu".
+        // Kartu dasbor hanya berisi yang belum diputuskan; yang sudah diputuskan
+        // tidak boleh bocor ke kartu "menunggu" itu.
         ->and($dashboard)->toContain('Citra Antre 1')
         ->and($dashboard)->not->toContain('Citra Sudah Diterima')
+        // Halaman antrean Kesra default-nya SEMUA status (permintaan pengguna),
+        // jadi yang sudah diputuskan ikut tampil di sana -- cakupan tabelnya
+        // memang lebih lebar dari kartu dasbor.
         ->and($antrean)->toContain('Citra Antre 1')
-        ->and($antrean)->not->toContain('Citra Sudah Diterima')
+        ->and($antrean)->toContain('Citra Sudah Diterima')
         // "Lihat Semua" harus mengarah ke antrean Kesra itu juga. Kalau masih ke
         // daftar pendaftar, angkanya benar tapi tempat kerjanya bukan antrean
         // yang sedang dikerjakan admin.
@@ -242,12 +244,12 @@ test('the campus column on a stage dashboard shows the real campus name', functi
 });
 
 test('kolom antrean di dasbor mengikuti tahap yang memverifikasi', function () {
-    $capil = mahasiswaTahap('capil', 'Ani Capil');
-    $capil->profile->update(['nik' => '6302000000000001', 'no_kk' => '6302000000000002', 'desil' => 2]);
+    $catpil = mahasiswaTahap('catpil', 'Ani Catpil');
+    $catpil->profile->update(['nik' => '6302000000000001', 'no_kk' => '6302000000000002', 'desil' => 2]);
 
-    $html = actingAs($this->capilAdmin)->get(route('dashboard'))->assertOk()->getContent();
+    $html = actingAs($this->catpilAdmin)->get(route('dashboard'))->assertOk()->getContent();
 
-    // Capil memeriksa kependudukan, jadi NIK/KK/desil yang tampil. Prodi dan
+    // Catpil memeriksa kependudukan, jadi NIK/KK/desil yang tampil. Prodi dan
     // kampus tidak pernah jadi dasar keputusan di tahap ini -- kemunculannya di
     // kartu ini cuma menambah kolom yang tidak dibaca.
     expect($html)->toContain('NIK')
@@ -273,7 +275,7 @@ test('kolom antrean di dasbor mengikuti tahap yang memverifikasi', function () {
         ->and($html)->not->toContain('Desil');
 });
 
-test('the cross-stage table marks statuses that do not apply to a stage', function () {
+test('the cross-stage table shows zero for statuses that do not apply to a stage', function () {
     mahasiswaTahap('kesra', 'Citra Kesra');
 
     $html = actingAs($this->superAdmin)
@@ -281,11 +283,15 @@ test('the cross-stage table marks statuses that do not apply to a stage', functi
         ->assertOk()
         ->getContent();
 
-    // "Perlu Perbaikan" hanya milik Capil dan Kampus. Di baris Kesra selnya harus
-    // tanda hubung -- angka nol akan berarti "tidak ada yang perlu perbaikan",
-    // padahal status itu memang tidak berlaku di sana.
+    // "Perlu Perbaikan" hanya milik Catpil dan Kampus. Di baris Kesra status itu
+    // tidak berlaku, dan atas permintaan pengguna selnya ditampilkan 0 (dulu
+    // tanda hubung, lalu literal "&mdash;" yang ter-escape dua kali). Fixture
+    // kesra tidak punya pendaftaran, jadi kelima sel baris Kesra bernilai 0.
     expect($html)->toContain('Perlu Perbaikan')
-        ->and($html)->toContain('&mdash;');
+        ->and(preg_match('/text-capitalize">Verifikasi Kesra<\/td>\s*((?:<td class="text-center">\d+<\/td>\s*){5})/', $html, $cells))->toBe(1)
+        ->and(substr_count($cells[1], '<td class="text-center">0</td>'))->toBe(5)
+        ->and($cells[1])->not->toContain('—')
+        ->and($html)->not->toContain('&amp;mdash;');
 });
 
 test('super admin sees the cross-stage overview', function () {
@@ -304,13 +310,13 @@ test('super admin sees the cross-stage overview', function () {
 });
 
 test('tidak ada dasbor yang menampilkan widget tahapan berikutnya', function () {
-    mahasiswaTahap('capil', 'Ani Capil');
+    mahasiswaTahap('catpil', 'Ani Catpil');
     mahasiswaTahap('kampus', 'Budi Kampus');
     mahasiswaTahap('kesra', 'Citra Kesra');
-    $mahasiswa = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+    $mahasiswa = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
 
     $dasbor = [
-        'capil' => actingAs($this->capilAdmin)->get(route('dashboard'))->assertOk()->getContent(),
+        'catpil' => actingAs($this->catpilAdmin)->get(route('dashboard'))->assertOk()->getContent(),
         'kampus' => actingAs($this->kampusAdmin)->get(route('dashboard'))->assertOk()->getContent(),
         'kesra' => actingAs($this->kesraAdmin)->get(route('dashboard'))->assertOk()->getContent(),
         'super admin' => actingAs($this->superAdmin)->get(route('dashboard'))->assertOk()->getContent(),
@@ -318,7 +324,7 @@ test('tidak ada dasbor yang menampilkan widget tahapan berikutnya', function () 
     ];
 
     foreach ($dasbor as $nama => $html) {
-        // Widget ini hanya pernah muncul di tahap Capil dan Kampus, tapi
+        // Widget ini hanya pernah muncul di tahap Catpil dan Kampus, tapi
         // pemeriksaan dilakukan di kelima dasbor supaya widget yang strolling
         // ke halaman lain ikut ketahuan.
         expect($html, $nama)->not->toContain('Tahapan Berikutnya');
@@ -326,7 +332,7 @@ test('tidak ada dasbor yang menampilkan widget tahapan berikutnya', function () 
 });
 
 test('statistik antrean tetap ada di dasbor tahap', function () {
-    actingAs($this->capilAdmin)
+    actingAs($this->catpilAdmin)
         ->get(route('dashboard'))
         ->assertOk()
         // Angka dan tabelnya tetap; yang dihapus hanya kartu "Tahapan
@@ -343,9 +349,8 @@ test('statistik antrean tetap ada di dasbor tahap', function () {
 |
 | Kartu itu menampilkan nama dan kalimat "Data profil Anda sudah tersimpan.
 | Status verifikasi tidak ditampilkan di sini", yang keduanya tidak memberi
-| tindakan apa pun. Alert profil belum lengkap dipindah keluar kartu supaya
-| pengingatnya tetap ada, dan link ke Profil sekarang ada di alert tersebut
-| serta di sidebar.
+| tindakan apa pun. Alert profil belum lengkap ikut dihapus dari dasbor
+| (keputusan Okt-2026): pengingat kelengkapan profil cukup lewat Profil/sidebar.
 */
 
 test('student sees the student dashboard', function () {
@@ -359,7 +364,7 @@ test('student sees the student dashboard', function () {
 });
 
 test('student dashboard does not repeat the profile name back to the student', function () {
-    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+    $user = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
 
     actingAs($user)
         ->get(route('dashboard'))
@@ -368,22 +373,23 @@ test('student dashboard does not repeat the profile name back to the student', f
         ->assertDontSee('Status verifikasi tidak ditampilkan');
 });
 
-test('student dashboard still warns about the incomplete profile', function () {
-    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+test('student dashboard no longer shows a warning about the incomplete profile', function () {
+    $user = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
 
     // Fixture `mahasiswaTahap()` tidak mengisi UKT, desil, dan dokumen, jadi
-    // daftar field yang kurang harus non-empty dan alert-nya harus tampil.
+    // daftar field yang kurang tetap non-empty -- namun alert dasbor sudah
+    // dihapus, jadi kalimat pengingatnya tidak boleh muncul lagi.
     expect($user->getMissingProfileFields())->not->toBeEmpty();
 
     actingAs($user)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('Profil belum lengkap.')
-        ->assertSee('Lengkapi profil sekarang');
+        ->assertDontSee('Profil belum lengkap.')
+        ->assertDontSee('Lengkapi profil sekarang');
 });
 
 test('student dashboard drops the warning once the profile is complete', function () {
-    $user = mahasiswaTahap('capil', 'Dewi Mahasiswa');
+    $user = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
 
     $user->profile->update([
         'nik' => '6302000000000001',
@@ -418,23 +424,71 @@ test('student dashboard drops the warning once the profile is complete', functio
         ->assertDontSee('Profil belum lengkap.');
 });
 
-test('stage dashboard count matches the stage queue the admin actually opens', function () {
+test('stage dashboard counts only undecided profiles while the queue keeps decided rows visible', function () {
     mahasiswaTahap('catpil', 'Ani Catpil');
     mahasiswaTahap('catpil', 'Budi Catpil');
-    // Sudah terverifikasi penuh, tidak ada yang perlu ditinjau di tahap manapun.
+    // Sudah terverifikasi penuh: tidak lagi dihitung sebagai menunggu, tapi
+    // tetap terbuka di antrean Catpil supaya keputusannya masih bisa diubah.
     $selesai = mahasiswaTahap('kesra', 'Citra Sudah Selesai');
     $selesai->profile->update(['verif_kesra' => 'setuju']);
 
     $response = actingAs($this->catpilAdmin)->get(route('dashboard'))->assertOk();
 
-    expect($response->viewData('ringkasan')['menunggu'])->toBe(2);
+    expect($response->viewData('ringkasan')['menunggu'])->toBe(2)
+        ->and($response->viewData('ringkasan')['setuju'])->toBe(1);
 
     actingAs($this->catpilAdmin)
         ->get(route('admin.catpil.index'))
         ->assertOk()
         ->assertSee('Ani Catpil')
         ->assertSee('Budi Catpil')
-        ->assertDontSee('Citra Sudah Selesai');
+        ->assertSee('Citra Sudah Selesai');
+});
+
+test('student dashboard shows the status of every verification stage', function () {
+    $user = mahasiswaTahap('kampus', 'Dewi Mahasiswa');
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Status Verifikasi')
+        // Satu blok per tahap, badge diambil dari keputusan yang sama dengan
+        // yang dipakai antrean admin.
+        ->assertSeeInOrder([
+            'Verifikasi Catpil',
+            'badge badge-success mt-1">Disetujui',
+            'Verifikasi Kampus',
+            'badge badge-secondary mt-1">Menunggu',
+            'Verifikasi Kesra',
+        ], false)
+        ->assertDontSee('Catpil dan Kampus berjalan paralel');
+});
+
+test('student dashboard shows Kesra as rejected when the application was rejected', function () {
+    $user = mahasiswaTahap('kesra', 'Eka Kesra Ditolak');
+
+    // `verif_kesra` `setuju` (penanda "sudah diputuskan") tapi pendaftarannya
+    // ditolak: kartu status tidak boleh melaporkan "Disetujui".
+    $beasiswa = Scholarship::factory()->create([
+        'kampus_id' => $this->kampus->id,
+        'status' => 'aktif',
+        'tanggal_mulai' => now()->subDay(),
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+    Applicant::create([
+        'user_id' => $user->id,
+        'beasiswa_id' => $beasiswa->id,
+        'status' => 'ditolak',
+    ]);
+    $user->profile->update(['verif_kesra' => 'setuju']);
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'Verifikasi Kesra',
+            'badge badge-danger mt-1">Ditolak',
+        ], false);
 });
 
 test('campus admin dashboard is scoped to its own campus', function () {

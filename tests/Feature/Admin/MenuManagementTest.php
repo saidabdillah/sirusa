@@ -73,10 +73,44 @@ test('menu store rejects invalid section', function () {
         ->assertSessionHasErrors('section');
 });
 
-test('menu store requires route or scope', function () {
+/**
+ * Route & scope keduanya nullable di Tambah. Di Edit, guard "Isi nama route
+ * atau scope" hanya berlaku untuk menu DAUN (menu induk boleh kosong), dan
+ * bantuan di modal justru menyuruh mengosongkan route untuk menu induk berisi
+ * sub-menu. Test ini mengunci kesetaraan Tambah dengan perilaku itu -- tanpa
+ * test, teks bantuan modal berbohong soal form Tambah.
+ */
+test('menu store accepts empty route and scope', function () {
     actingAs($this->superAdmin)
         ->post(route('admin.menukelola.simpan'), menuPayload(['route' => null, 'scope' => null]))
-        ->assertSessionHasErrors('route');
+        ->assertRedirect(route('admin.menukelola.index'))
+        ->assertSessionHas('success');
+
+    $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
+    expect($menu->route)->toBeNull()
+        ->and($menu->scope)->toBeNull();
+});
+
+/**
+ * Field wajib ditandai bintang secara VISUAL saja (span `text-danger`) --
+ * `required` HTML dilarang rules form aplikasi ini. Route/Scope sengaja
+ * TANPA bintang: keduanya nullable (lihat test di atas).
+ */
+test('form tambah menu menandai field wajib dengan bintang', function () {
+    $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
+
+    $tambah = Str::betweenFirst($html, 'id="modal-tambah-menu"', 'id="modal-ubah-menu-');
+    expect($tambah)->toBeString();
+
+    foreach (['Label Menu', 'Section', 'Urutan'] as $wajib) {
+        expect($tambah)->toContain('>'.$wajib.' <span class="text-danger">*</span></label>');
+    }
+
+    expect($tambah)
+        ->toContain('>Route</label>')
+        ->toContain('>Scope</label>')
+        ->not->toContain('>Route <span class="text-danger">*</span></label>')
+        ->not->toContain('>Scope <span class="text-danger">*</span></label>');
 });
 
 test('super admin can update a menu label and section', function () {
@@ -210,20 +244,26 @@ test('sidebarMenus returns only top level menus with children nested', function 
         expect($topLevel->pluck('id'))->not->toContain($childId);
     }
 
-    // Role kesra hanya diberi grant anak-anak dropdown "Kesra" (`admin.kesra`
-    // + `admin.penerima`) plus parent-nya (kunci grant `kesra`). Parent tidak
-    // punya `scope` murni untuk tampilan, jadi dicocokkan lewat `label`.
-    $kesraDropdown = $topLevel->firstWhere('label', 'Kesra');
+    // Role kesra diberi grant `admin.kesra` (scope induk dropdown) plus tiga
+    // scope anak `admin.kesra.index`, `admin.penerima`, dan
+    // `admin.kesra.disetujui`. "Status Verifikasi" (scope `admin.kesra.status`)
+    // adalah leaf mandiri di section "Administrasi", terpisah dari dropdown
+    // Kesra. Dicocokkan lewat `scope`, bukan `label`: sejak label dipersingkat,
+    // "Kampus" dipakai dua menu (antrean verifikasi di section Verifikasi dan
+    // master data di section Administrasi) dan tidak bisa dibedakan dari label.
+    $kesraDropdown = $topLevel->firstWhere('scope', 'admin.kesra');
     expect($kesraDropdown)->not->toBeNull()
-        ->and($kesraDropdown->scope)->toBeNull()
+        ->and($kesraDropdown->label)->toBe('Kesra')
         ->and($kesraDropdown->children->pluck('scope')->all())
-        ->toBe(['admin.kesra', 'admin.penerima'])
+        ->toEqualCanonicalizing(['admin.kesra.index', 'admin.penerima', 'admin.kesra.disetujui'])
         ->and($topLevel->firstWhere('scope', 'admin.catpil'))->toBeNull()
         ->and($topLevel->firstWhere('scope', 'admin.kampusverif'))->toBeNull()
-        ->and($topLevel->firstWhere('scope', 'admin.kesra'))->toBeNull()
-        // "Verifikasi" bukan menu, melainkan section -- tidak punya `scope`
-        // dan tidak boleh ikut terambil sebagai item sidebar.
-        ->and($topLevel->firstWhere('label', 'Verifikasi'))->toBeNull();
+        // "Verifikasi" kini memang ADA sebagai menu anak (di bawah Kesra),
+        // tapi `sidebarMenus()` hanya mengembalikan `parent_id` null, jadi
+        // item top-level tidak boleh pernah berlabel "Verifikasi".
+        ->and($topLevel->firstWhere('label', 'Verifikasi'))->toBeNull()
+        // Leaf "Status Verifikasi" mandiri ikut di sidebar role kesra.
+        ->and($topLevel->firstWhere('scope', 'admin.kesra.status'))->not->toBeNull();
 });
 
 test('sidebar renders child menu label only once (no duplicate)', function () {
@@ -287,7 +327,10 @@ test('form tambah menu selalu kosong dan dropdownnya tidak preselect', function 
  * menu sehingga error dari satu modal tidak bocor ke modal lain.
  */
 test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function () {
-    $menu = Menu::query()->where('label', 'Kesra')->firstOrFail();
+    // Sampelnya Catpil, bukan Kesra: menu Kesra kini induk dropdown tanpa
+    // route, jadi `route`-nya null dan tidak bisa dipakai untuk mengunci
+    // format `value="..."` pada input Route.
+    $menu = Menu::query()->where('label', 'Catpil')->firstOrFail();
 
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
 

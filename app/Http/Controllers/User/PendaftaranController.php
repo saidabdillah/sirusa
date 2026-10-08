@@ -23,7 +23,7 @@ class PendaftaranController extends Controller
         $profile = $user->profile;
         $scholarship = Scholarship::findOrFail($request->input('beasiswa_id'));
 
-        if ($error = $this->profilError($user, $profile)) {
+        if ($error = $this->profilError($user)) {
             return redirect()->route('profile')->with('error', $error);
         }
 
@@ -40,7 +40,7 @@ class PendaftaranController extends Controller
         $profile = $user->profile;
         $scholarship = Scholarship::findOrFail($request->integer('beasiswa_id'));
 
-        if ($error = $this->profilError($user, $profile)) {
+        if ($error = $this->profilError($user)) {
             return $this->ajaxFail($request, $error, route('profile'));
         }
 
@@ -134,12 +134,11 @@ class PendaftaranController extends Controller
      * Syarat profil, dipisah dari syarat beasiswa supaya `create` dan `store`
      * menolak dengan alasan yang sama dan mengarahkan ke halaman profil.
      *
-     * Pendaftaran TIDAK menunggu verifikasi. Mahasiswa cukup melengkapi profil
-     * lalu langsung mendaftar; tahap Catpil → Kampus → Kesra memeriksa data
-     * SETELAH pendaftaran masuk (tahap kampus dan kesra bahkan tidak punya
-     * apa pun untuk diperiksa sebelum ada pendaftarannya).
+     * Profil yang lengkap sudah cukup: pendaftaran langsung masuk antrean
+     * verifikasi Catpil, jadi menunggu keputusan tahap mana pun di sini hanya
+     * akan menutup pendaftaran yang justru dibutuhkan antrean tersebut.
      */
-    private function profilError(User $user, ?UserProfile $profile): ?string
+    private function profilError(User $user): ?string
     {
         if (! $user->isProfileComplete()) {
             return 'Profil belum lengkap. Silakan lengkapi profil terlebih dahulu.';

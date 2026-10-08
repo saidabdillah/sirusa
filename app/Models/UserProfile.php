@@ -200,22 +200,6 @@ class UserProfile extends Model
             && $this->verif_kesra === 'setuju';
     }
 
-    /**
-     * Data dasar mahasiswa sudah disetujui Catpil.
-     *
-     * Ini bukan berarti terverifikasi penuh. Verifikasi Catpil hanya menyatakan
-     * bahwa identitas dan data dasar sudah benar, dan itu sudah cukup untuk
-     * boleh mendaftar beasiswa. Campus dan Kesra memeriksa hal yang berbeda --
-     * eligibility akademik dan kelayakan pendaftar -- dan baru bisa diperiksa
-     * setelah mahasiswa benar-benar mendaftar. Kalau pendaftaran ikut menunggu
-     * `isVerified()`, tidak akan pernah ada yang bisa mendaftar, karena tahap
-     * kampus dan kesra tidak akan pernah disentuh.
-     */
-    public function isCatpilVerified(): bool
-    {
-        return $this->verif_catpil === 'setuju';
-    }
-
     public function verifStatus(): string
     {
         if ($this->isVerified()) {
@@ -256,6 +240,20 @@ class UserProfile extends Model
         $statusField = self::verifStages()[$stage][0] ?? null;
         $status = $statusField ? $this->{$statusField} : 'menunggu';
 
+        return self::decisionForStatus($status);
+    }
+
+    /**
+     * Pemetaan status verifikasi mentah -> label/warna tampilan.
+     *
+     * Satu sumber untuk `verifStageDecision()` (tahap profil) dan
+     * `User::kesraDecision()` (keputusan Kesra yang diturunkan dari baris
+     * `pendaftar`), supaya istilah dan warna tidak pernah berbeda antar tampilan.
+     *
+     * @return array{status: string, label: string, badge: string, decided: bool}
+     */
+    public static function decisionForStatus(string $status): array
+    {
         return [
             'status' => $status,
             'label' => match ($status) {
@@ -289,67 +287,51 @@ class UserProfile extends Model
     }
 
     /**
-     * Tahap hilir yang keputusannya bergantung pada tahap ini.
+     * Apakah tahap ini masih boleh dikerjakan (ditulis) oleh admin tahap tersebut.
      *
-     * Catpil dan Kampus berjalan paralel dan tidak saling menunggu, jadi
-     * satu-satunya tahap hilir adalah Kesra -- tahap keputusan akhir yang
-     * menunggu keduanya setuju.
+     * Tidak ada lagi urutan antar tahap: Catpil dan Kampus berjalan paralel
+     * sejak profil mahasiswa lengkap, jadi keduanya tidak menunggu siapa pun.
+     * Dua pengecualian yang tersisa:
      *
-     * @return list<string>
-     */
-    public function verifDownstreamStages(string $stage): array
-    {
-        return $stage === 'kesra' ? [] : ['kesra'];
-    }
-
-    /**
-     * Apakah tahap ini masih relevan untuk ditangani oleh admin tahap tersebut.
+     * - `kampus` butuh pendaftaran, karena memang tidak ada yang bisa diperiksa
+     *   sebelum ada pendaftar. Barisnya juga DIKUNCI begitu Kesra memutuskan
+     *   (`verif_kesra = 'setuju'`), supaya keputusan yang sudah ada tidak lagi
+     *   bisa diubah lewat jalur profil. Baris yang terkunci tetap tampil di
+     *   antrean (lihat `inVerifQueue()`) sebagai read-only, bukan disembunyikan.
+     * - `kesra` mensyaratkan verifikasi Kampus (permintaan pengguna: Kesra
+     *   tidak lagi menunggu Catpil; begitu Kampus setuju, Kesra boleh
+     *   memutuskan). Sama persis dengan audiens
+     *   `VerifikasiAntrean::pendaftarQuery()`.
      *
-     * Catpil dan Kampus berjalan PARALEL: keduanya bisa bekerja tanpa menunggu
-     * tahap lain selesai. Hanya Kesra -- tahap keputusan akhir -- yang menunggu
-     * semua tahap sebelumnya setuju. Keputusan pada satu tahap tetap tidak
-     * dikunci, dan tahap yang sudah diputuskan masih bisa dikoreksi selama
-     * tahap hilirnya (Kesra) belum memutuskan.
+     * Keputusan tahap ini sendiri tidak dikunci oleh tahap lain: admin masih
+     * bebas mengubah keputusan yang sudah dibuat selama aturan di atas terpenuhi.
      */
     public function canVerifStage(string $stage): bool
     {
-        $stages = self::verifStages();
+        return match ($stage) {
+            'catpil' => true,
+            'kampus' => $this->verif_kesra !== 'setuju'
+                && (bool) $this->user?->applicants()->exists(),
+            'kesra' => $this->verif_kampus === 'setuju',
+            default => false,
+        };
+    }
 
-        if (! isset($stages[$stage])) {
-            return false;
-        }
-
-        if ($stage === 'kesra') {
-            foreach (self::verifStageOrder() as $previous) {
-                if ($previous === 'kesra') {
-                    break;
-                }
-
-                if ($this->{$stages[$previous][0]} !== 'setuju') {
-                    return false;
-                }
-            }
-        }
-
-        // Verifikasi kampus memeriksa kelayakan akademik mahasiswa yang sedang
-        // mendaftar beasiswa, jadi tidak ada yang perlu diverifikasi sebelum
-        // ada pendaftaran. Tanpa syarat ini semua mahasiswa masuk antrean
-        // kampus padahal belum punya apa pun untuk diperiksa.
-        if ($stage === 'kampus' && ! $this->user?->applicants()->exists()) {
-            return false;
-        }
-
-        if ($this->{$stages[$stage][0]} === 'menunggu') {
-            return true;
-        }
-
-        foreach ($this->verifDownstreamStages($stage) as $downstream) {
-            if ($this->{$stages[$downstream][0]} !== 'menunggu') {
-                return false;
-            }
-        }
-
-        return true;
+    /**
+     * Apakah baris ini tampil di antrean tahap tersebut (bisa dibuka read-only).
+     *
+     * Sama dengan `canVerifStage()` kecuali untuk `kampus`: begitu Kesra
+     * memutuskan, keputusannya dikunci (`canVerifStage()` false) tapi barisnya
+     * TETAP tampil supaya Kampus masih bisa membuka dan meninjau datanya. Karena
+     * itu `VerifikasiAntrean::antrean()` memakai metode ini -- angka dasbor,
+     * tabel antrean, dan export tidak boleh punya cakupan yang berbeda.
+     */
+    public function inVerifQueue(string $stage): bool
+    {
+        return match ($stage) {
+            'kampus' => (bool) $this->user?->applicants()->exists(),
+            default => $this->canVerifStage($stage),
+        };
     }
 
     public function resetVerification(): void
@@ -359,24 +341,6 @@ class UserProfile extends Model
         foreach ($stages as $stage) {
             $this->{$stage[0]} = 'menunggu';
             $this->{$stage[1]} = null;
-        }
-    }
-
-    /**
-     * Reset tahap hilir setelah keputusan tahap ini berubah, karena dasar
-     * keputusannya tidak berlaku lagi.
-     *
-     * Catpil dan Kampus paralel: keputusan yang satu TIDAK membatalkan yang
-     * lain. Kesra menunggu keduanya, jadi revisi/tolak/tarik kembali di tahap
-     * mana pun mengembalikan Kesra ke menunggu (catatannya ikut kosong).
-     */
-    public function resetDownstreamStages(string $stage): void
-    {
-        $stages = self::verifStages();
-
-        foreach ($this->verifDownstreamStages($stage) as $downstream) {
-            $this->{$stages[$downstream][0]} = 'menunggu';
-            $this->{$stages[$downstream][1]} = null;
         }
     }
 }

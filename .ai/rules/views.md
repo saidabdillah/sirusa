@@ -6,8 +6,14 @@ paths:
 
 # Views
 
+## No Bootstrap flash alerts rendered
+Do not render `session('success')`/`session('error')` as Bootstrap `.alert` boxes in ANY view (decision Oct-2026: all ~24 flash blocks removed). Success feedback is handled by the global SweetAlert in `custom.js` (`submitAjax`), so a flash block is pure noise. Keep STATIC/informative alerts (info panels, status badges, "Program Studi belum terisi", missing-upload warnings, landing infos). A failed login still shows its message because `AuthController` uses `withErrors(['login' => ...])` + inline `@error`, not a flash. Server-side `session('success')` may still be SET (tests assert `assertSessionHas('success')`), it just must not be RENDERED.
+
+## Tombol aksi kartu ditaruh di dalam card-body, bukan card-footer
+Kartu grid memakai `h-100` (equal-height), jadi `card-footer` mepet ke dasar kartu dan tombol aksi tampak "jauh turun". Pada `user/beasiswa/index.blade.php` (dan kartu mahasiswa serupa) tombol "Lihat Detail" ditaruh di dalam `card-body` setelah baris "Periode Pendaftaran" (`<div class="mt-3">`), pola yang sama seperti dasbor. Jangan mengembalikan `card-footer` untuk tombol semacam ini.
+
 ## No HTML required attribute in forms
-Do not add the HTML `required` attribute to form fields. Validation is enforced server-side via Form Requests (wali/guardian fields on the profil form are conditional via `required_if:ikut_kk,<ayah|ibu|wali>`). Keep the red `*` span in labels as a visual hint only.
+Do not add the HTML `required` attribute to form fields. Validation is enforced server-side via Form Requests (wali/guardian fields on the profil form are conditional via `required_if:ikut_kk,<ayah|ibu|wali>`). Keep the red `*` span in labels as a visual hint only. Convention after the required-field audit (Oct 2026): every label of a server-side-required field carries `<span class="text-danger">*</span>`; conditionally-required fields (e.g. `kampus_id`, `required_if ... ditolak`) keep a STATIC star; nullable/optional fields and filter/search forms stay starless. Two documented exceptions: `auth/masuk` (login — user decision: login pages stay plain) and checkbox GROUPS, which star their heading instead (see `.ai/rules/beasiswa.md`).
 
 ## Pendaftaran has no upload form anymore
 The `user/pendaftaran/buat` page is a CONFIRMATION page (profile summary + note about verified status), NOT an upload form. It has no file inputs, no `@push('script')` block, and no client-side file validation. All documents come from the profil; the pendaftaran request accepts only `beasiswa_id`.

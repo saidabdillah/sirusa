@@ -8,10 +8,13 @@ use App\Http\Requests\Admin\KeputusanPendaftaranRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
+use App\Support\VerifikasiAntrean;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class KeputusanPendaftaranController extends Controller
 {
@@ -49,7 +52,9 @@ class KeputusanPendaftaranController extends Controller
         $data = $request->validated();
         $attributes = [
             'status' => $data['pendaftaran_status'],
-            'catatan' => $data['pendaftaran_catatan'] ?? null,
+            // Catatan tidak lagi dikumpulkan dari tahap Kesra (permintaan
+            // pengguna), jadi keputusan baru tidak menulis `pendaftar.catatan`.
+            'catatan' => null,
             // Momen keputusan dicatat terpisah dari `updated_at`, yang ikut berubah
             // saat baris lain disentuh. Revisi keputusan lewat form yang sama akan
             // menimpa nilai ini, jadi yang tampil selalu keputusan terakhir.
@@ -95,6 +100,78 @@ class KeputusanPendaftaranController extends Controller
             $request,
             "Pendaftaran Beasiswa {$applicant->beasiswa?->nama} berhasil di{$this->successVerb($attributes['status'])}.",
             route('admin.kesra.lihat', $user)
+        );
+    }
+
+    /**
+     * Daftar pendaftaran yang sudah disetujui Kesra.
+     *
+     * Antrean di `admin.kesra.index` defaultnya hanya menampilkan yang menunggu
+     * putusan, jadi keputusan yang sudah diambil tenggelam di balik filter. Halaman
+     * ini menaruhnya di layar terpisah supaya arsip "sudah selesai" bisa dibaca
+     * tanpa mengubah antrean kerja, dan supaya keputusan yang keliru punya satu
+     * tempat jelas untuk dibatalkan lewat aksi Hapus.
+     */
+    public function disetujui(): View
+    {
+        abort_unless(auth()->user()->hasMenuAccess('admin.kesra.index'), 403);
+
+        return view('admin.verifikasi.kesra-disetujui', [
+            'pendaftaran' => (new VerifikasiAntrean('kesra'))->pendaftaran('diterima'),
+        ]);
+    }
+
+    /**
+     * Membatalkan keputusan "disetujui" dan mengembalikan pendaftaran ke antrean.
+     *
+     * Hapus di sini bukan menghapus baris: pendaftaran mahasiswa tetap ada dan
+     * kembali ke status `verifikasi`, sehingga slot kuota yang tadi terpakai ikut
+     * dilepas dan keputusan bisa diambil ulang. Karena itu aksi ini hanya berlaku
+     * untuk baris `diterima` -- baris `ditolak` masih memakai form keputusan yang
+     * sama seperti biasa, dan membuang catatannya lewat sini hanya menambah
+     * jalur tulis kedua untuk satu keputusan.
+     */
+    public function batalkan(Request $request, User $user, Applicant $applicant): RedirectResponse|JsonResponse
+    {
+        abort_unless(auth()->user()->hasMenuAccess('admin.kesra.index'), 403);
+
+        if ($applicant->user_id !== $user->id) {
+            abort(404);
+        }
+
+        if ($applicant->status !== 'diterima') {
+            return $this->ajaxFail(
+                $request,
+                'Hanya pendaftaran yang disetujui yang bisa dihapus dari daftar ini.',
+                route('admin.kesra.disetujui'),
+            );
+        }
+
+        DB::transaction(function () use ($applicant, $user) {
+            $applicant->update([
+                'status' => Applicant::PENDING_STATUS,
+                'catatan' => null,
+                'diputuskan_at' => null,
+                'diputuskan_oleh' => null,
+            ]);
+
+            // `verif_kesra` hanya menyatakan "mahasiswa ini pernah diputuskan",
+            // jadi nilainya diturunkan ulang dari baris yang tersisa, bukan
+            // di-reset buta: satu mahasiswa bisa punya beberapa pendaftaran, dan
+            // menghapus satu tidak boleh membuka kembali tahap Kesra selama
+            // pendaftaran lain masih menyimpan keputusannya.
+            $masihAdaKeputusan = $user->applicants()
+                ->whereKeyNot($applicant->getKey())
+                ->whereIn('status', ['diterima', 'ditolak'])
+                ->exists();
+
+            $user->profile?->forceFill(['verif_kesra' => $masihAdaKeputusan ? 'setuju' : 'menunggu'])->save();
+        });
+
+        return $this->ajaxOk(
+            $request,
+            "Pendaftaran Beasiswa {$applicant->beasiswa?->nama} dihapus dari daftar disetujui dan dikembalikan ke antrean putusan.",
+            route('admin.kesra.disetujui'),
         );
     }
 

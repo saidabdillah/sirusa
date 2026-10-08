@@ -147,7 +147,20 @@
       block.find('input, select, textarea').prop('disabled', !isVisible);
     }
 
+    // Ganti peran artinya rangkaian field yang relevan ikut berganti. Error
+    // lama -- baik pesan validasi server-render maupun hasil `paintFieldError`
+    // AJAX -- wajib dibersihkan supaya tidak nyangkut di field yang bukan
+    // milik peran baru (mis. "Username wajib" di blok staf saat pindah ke user).
+    function clearErrors() {
+      $('#formPengguna')
+        .find('.is-invalid').removeClass('is-invalid').removeAttr('aria-invalid');
+      $('#formPengguna')
+        .find('.invalid-feedback').remove();
+    }
+
     function toggleAkun() {
+      clearErrors();
+
       var isUser = peran.val() === 'user';
       var isKampus = peran.val() === 'kampus';
 

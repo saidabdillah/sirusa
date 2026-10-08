@@ -13,7 +13,7 @@ class KeputusanPendaftaranRequest extends FormRequest
 
     /**
      * Nama input memakai awalan `pendaftaran_` karena halaman detail verifikasi
-     * masih bisa memuat form verifikasi profil (Capil, Kampus) di sebelah
+     * masih bisa memuat form verifikasi profil (Catpil, Kampus) di sebelah
      * keputusan pendaftaran. Kalau keduanya memakai `status`, satu error bag
      * akan menandai form yang salah.
      *
@@ -22,13 +22,16 @@ class KeputusanPendaftaranRequest extends FormRequest
      * dikosongkan tanpa sengaja. Mengubah keputusan berarti memilih ulang
      * `diterima` atau `ditolak` lewat form yang sama.
      *
+     * Catatan sengaja TIDAK dikumpulkan dari tahap Kesra (permintaan pengguna:
+     * "di verifikasi kesra tidak perlu ada catatan"), jadi tidak ada aturan
+     * `pendaftaran_catatan` lagi di sini.
+     *
      * @return array<string, array<int, string>>
      */
     public function rules(): array
     {
         return [
             'pendaftaran_status' => ['required', 'in:diterima,ditolak'],
-            'pendaftaran_catatan' => ['nullable', 'string', 'max:500', 'required_if:pendaftaran_status,ditolak'],
         ];
     }
 
@@ -37,8 +40,6 @@ class KeputusanPendaftaranRequest extends FormRequest
         return [
             'pendaftaran_status.required' => 'Keputusan pendaftaran harus dipilih.',
             'pendaftaran_status.in' => 'Keputusan pendaftaran tidak valid.',
-            'pendaftaran_catatan.required_if' => 'Alasan wajib diisi jika pendaftaran ditolak.',
-            'pendaftaran_catatan.max' => 'Alasan maksimal 500 karakter.',
         ];
     }
 }

@@ -245,7 +245,30 @@ test('unduhan kesra menambah data pendaftaran dan statusnya', function () {
         ->and($rows[0]['Status Pendaftaran'])->toBe('Disetujui')
         ->and($rows[0]['Nama Orang Tua/Wali'])->toBe('Ayah Ahmad')
         ->and($rows[0]['UKT/SPP'])->toBe('1500000')
-        ->and($rows[0]['Status Kesra'])->toBe('Menunggu');
+        // Status Kesra mengikuti keputusan pendaftaran (`diterima`), bukan
+        // `verif_kesra` yang cuma penanda "sudah diputuskan".
+        ->and($rows[0]['Status Kesra'])->toBe('Disetujui');
+});
+
+test('kolom status kesra mengikuti keputusan pendaftaran, bukan verif_kesra', function () {
+    $diterima = User::factory()->standardUser()->create(['email' => 'kesra-terima@test.com']);
+    buatPemohon($diterima, 'kesra', $this->prodi, 'Kesra Diterima');
+    Applicant::where('user_id', $diterima->id)->update(['status' => 'diterima']);
+
+    // `verif_kesra` `setuju` untuk keduanya -- penanda "sudah diputuskan"
+    // (kunci tahap Kampus) yang sama, tidak peduli hasilnya apa.
+    $diterima->profile->update(['verif_kesra' => 'setuju']);
+
+    $ditolak = User::factory()->standardUser()->create(['email' => 'kesra-tolak@test.com']);
+    buatPemohon($ditolak, 'kesra', $this->prodi, 'Kesra Ditolak');
+    Applicant::where('user_id', $ditolak->id)->update(['status' => 'ditolak']);
+    $ditolak->profile->update(['verif_kesra' => 'setuju']);
+
+    $rows = collect(bacaSheet(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'semua']))))
+        ->keyBy('Nama Lengkap');
+
+    expect($rows['Kesra Diterima']['Status Kesra'])->toBe('Disetujui')
+        ->and($rows['Kesra Ditolak']['Status Kesra'])->toBe('Ditolak');
 });
 
 test('unduhan kesra memuat persis isi antrean kesra yang sedang dibuka', function () {
@@ -256,9 +279,11 @@ test('unduhan kesra memuat persis isi antrean kesra yang sedang dibuka', functio
     buatPemohon($diterima, 'kesra', $this->prodi, 'Antrean Disetujui');
     Applicant::where('user_id', $diterima->id)->update(['status' => 'diterima']);
 
-    // Tanpa filter: yang menunggu, sama seperti tabelnya.
+    // Tanpa filter: semua status (permintaan pengguna; dulu yang menunggu saja),
+    // sama seperti tabelnya.
     expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export'))))
-        ->toBe(['Antrean Menunggu']);
+        ->toHaveCount(2)
+        ->toContain('Antrean Menunggu', 'Antrean Disetujui');
 
     // Filter keputusan: kebalikannya.
     expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'diterima']))))
@@ -279,6 +304,10 @@ test('unduhan kesra memuat persis isi antrean kesra yang sedang dibuka', functio
         ->toContain('Antrean Dibatalkan')
         ->and(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'dibatalkan']))))
         ->toBe(['Antrean Dibatalkan']);
+
+    // Default (tanpa filter) kini juga mencakup yang dibatalkan.
+    expect(namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export'))))
+        ->toContain('Antrean Dibatalkan');
 });
 
 test('setiap tahap mengunduh antrean tahapnya sendiri', function () {
@@ -290,12 +319,11 @@ test('setiap tahap mengunduh antrean tahapnya sendiri', function () {
     $kampus = namaDiekspor(actingAs($this->kampusAdmin)->get(route('admin.kampusverif.export')));
     $kesra = namaDiekspor(actingAs($this->kesraAdmin)->get(route('admin.kesra.export')));
 
-    // Catpil dan Kampus paralel: satu-satunya tahap hilir adalah Kesra. Selama
-    // Kesra belum memutuskan, Catpil masih boleh mengoreksi keputusannya -- jadi
-    // ketiga profil terlihat di ekspor Catpil.
+    // Catpil selalu terbuka: keputusan di tahap manapun masih boleh diubah,
+    // jadi seluruh antrean profil ikut terlihat di ekspor Catpil.
     expect($catpil)->toContain('Masih Menunggu Catpil', 'Menunggu Kampus', 'Menunggu Kesra')
-        // Yang paling butuh tindakan mahasiswa (perlu perbaikan, lalu masih
-        // menunggu) muncul lebih dulu.
+        // Sebaliknya, tahap lain tetap menyaring: Kampus hanya menerima yang
+        // sudah mendaftar, Kesra hanya yang sudah lolos Kampus.
         ->and($kampus)->toBe(['Menunggu Kampus', 'Menunggu Kesra'])
         ->and($kesra)->toBe(['Menunggu Kesra']);
 });
@@ -374,6 +402,19 @@ test('halaman verifikasi menampilkan tombol unduh sesuai grant menu', function (
         ->assertSee(route('admin.catpil.export'), false);
 
     actingAs($this->catpilAdmin)->get(route('admin.kampusverif.index'))->assertForbidden();
+
+    // Kesra: tombol Unduh Excel ada di halaman antrean (Kesra -> Verifikasi)
+    // dan membawa filter yang sedang dibuka (`request()->only('filter')`,
+    // default semua status), mengikuti pola Catpil/Kampus.
+    actingAs($this->kesraAdmin)->get(route('admin.kesra.index'))
+        ->assertOk()
+        ->assertSee('Unduh Excel')
+        ->assertSee(route('admin.kesra.export'), false);
+
+    // Arsip keputusan kini tanpa tombol apa pun.
+    actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui'))
+        ->assertOk()
+        ->assertDontSee('Unduh Excel');
 });
 
 // ─── Perluasan kolom (spesifikasi batch 2, poin 23) ──────────────────────

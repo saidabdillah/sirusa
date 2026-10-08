@@ -12,19 +12,6 @@
     </div>
 
     <div class="section-body">
-      @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-          {{ session('success') }}
-          <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-        </div>
-      @endif
-
-      @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          {{ session('error') }}
-          <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-        </div>
-      @endif
 
       <div class="row">
         <div class="col-lg-8">
@@ -149,7 +136,7 @@
             {{-- Section: Fakultas & Program Studi --}}
             <div class="card mb-4">
               <div class="card-header">
-                <h4 class="mb-0"><i class="fas fa-graduation-cap mr-2"></i>Fakultas & Program Studi</h4>
+                <h4 class="mb-0"><i class="fas fa-graduation-cap mr-2"></i>Fakultas &amp; Program Studi <span class="text-danger">*</span></h4>
               </div>
               <div class="card-body">
                 <div class="alert alert-info mb-3">

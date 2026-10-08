@@ -8,8 +8,7 @@
   // kumpulan status sendiri (lihat `VerifikasiAntrean::ringkasanKolom()`).
   // Karena itu header dibuat sekali dari daftar lintas tahap, dan setiap sel
   // mencari kunci status apa yang berlaku untuk tahap baris itu. Status yang
-  // tidak berlaku ditampilkan sebagai tanda hubung -- bukan `0`, karena "0"
-  // berarti tidak ada sedangkan tanda hubung berarti tidak berlaku.
+  // tidak berlaku ditampilkan 0 -- permintaan pengguna (dulu tanda hubung).
   $kolom = VerifikasiAntrean::ringkasanKolom();
 @endphp
 
@@ -42,7 +41,7 @@
                 @php
                   $key = current(array_intersect($column['keys'], $kunci));
                 @endphp
-                <td class="text-center">{{ $key === false ? '&mdash;' : ($counts[$key] ?? 0) }}</td>
+                <td class="text-center">{{ $key === false ? 0 : ($counts[$key] ?? 0) }}</td>
               @endforeach
               <td class="text-right">
                 <a href="{{ route($antrean->routeName()) }}" class="btn btn-sm btn-outline-primary">Buka</a>

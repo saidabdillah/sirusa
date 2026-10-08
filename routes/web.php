@@ -134,9 +134,17 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::get('/verifikasi/kesra/penerima/cetak', [PenerimaBeasiswaController::class, 'cetak'])->name('penerima.cetak');
         Route::put('/verifikasi/kesra/penerima/{applicant}', [PenerimaBeasiswaController::class, 'tarik'])->name('penerima.tarik');
 
+        // `disetujui` harus terdaftar sebelum `/verifikasi/kesra/{user}`:
+        // kalau sesudah, string itu tertangkap binding model sebagai id user
+        // dan balasannya 404 ModelNotFoundException, bukan halaman arsip.
+        Route::get('/verifikasi/kesra/disetujui', [KeputusanPendaftaranController::class, 'disetujui'])->defaults('stage', 'kesra')->name('kesra.disetujui');
+        // `status` juga harus terdaftar sebelum `/verifikasi/kesra/{user}`,
+        // sama seperti `disetujui` (lihat komentar di atas).
+        Route::get('/verifikasi/kesra/status', [VerifikasiController::class, 'status'])->defaults('stage', 'kesra')->name('kesra.status');
         Route::get('/verifikasi/kesra/{user}', [VerifikasiController::class, 'show'])->defaults('stage', 'kesra')->name('kesra.lihat');
         Route::put('/verifikasi/kesra/{user}', [VerifikasiController::class, 'verifikasi'])->defaults('stage', 'kesra')->name('kesra.verifikasi');
         Route::put('/verifikasi/kesra/{user}/pendaftaran/{applicant}', [KeputusanPendaftaranController::class, 'update'])->defaults('stage', 'kesra')->name('kesra.pendaftaran.keputusan');
+        Route::delete('/verifikasi/kesra/{user}/pendaftaran/{applicant}', [KeputusanPendaftaranController::class, 'batalkan'])->defaults('stage', 'kesra')->name('kesra.pendaftaran.hapus');
 
         // Pengguna
         Route::get('/pengguna', [PenggunaController::class, 'index'])->name('pengguna.index');

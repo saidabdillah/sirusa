@@ -55,7 +55,7 @@ class DashboardController extends Controller
             // Stat card dan tabel per tahap membaca deklarasi kolom yang sama, jadi
             // label "menunggu" di keduanya tidak mungkin berbeda definisi.
             'ringkasanColumns' => $antrean->ringkasanColumns(),
-            // Daftar antrean profil hanya dipakai tahap Capil dan Campus. Kesra
+            // Daftar antrean profil hanya dipakai tahap Catpil dan Campus. Kesra
             // bekerja pada baris `pendaftar`, jadi memindai seluruh user untuk
             // tahap itu hanya membuang-buang query.
             'antrean' => $stage === 'kesra' ? collect() : $antrean->antrean('menunggu')->take(8),
@@ -94,8 +94,11 @@ class DashboardController extends Controller
         $kampusId = $profile?->prodi?->fakultas?->kampus_id;
 
         return view('dasbor.mahasiswa', [
+            'profile' => $profile,
             'kampusId' => $kampusId,
-            'missingFields' => $user->getMissingProfileFields(),
+            // Tahap Kesra diturunkan dari baris `pendaftar` (bukan `verif_kesra`,
+            // yang selalu `setuju` walau pendaftarannya ditolak).
+            'kesraDecision' => $user->kesraDecision(),
             'applications' => $user->applicants()->with('beasiswa')->latest()->take(5)->get(),
             'totalApplications' => $user->applicants()->count(),
             'activeApplication' => $user->blockingApplicant(),

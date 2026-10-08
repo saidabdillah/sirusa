@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-  // Kesra punya bentuk data yang berbeda dari Capil dan Kampus, jadi halaman ini
+  // Kesra punya bentuk data yang berbeda dari Catpil dan Kampus, jadi halaman ini
   // terpisah dari `index.blade.php`: yang diantrekan bukan profil melainkan baris
   // `pendaftar`, dan yang diputuskan adalah pendaftaran bukan tahap verifikasi
   // profil. Kolom, aksi, dan filter status di bawah semuanya mengikuti itu.
@@ -24,19 +24,17 @@
     </div>
   </div>
 
-  @if(session('success'))
-  <div class="alert alert-success alert-dismissible fade show" role="alert">
-    {{ session('success') }}
-    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-  </div>
-  @endif
-
   <div class="section-body">
     <div class="row">
       <div class="col-12">
         <div class="card">
           <div class="card-header">
-            <h4>Pendaftaran Menunggu Putusan</h4>
+<h4>Daftar Pendaftaran</h4>
+            {{-- Unduh Excel di sini mengikuti pola Catpil/Kampus: unduhan berisi --}}
+            {{-- status yang sedang dibuka (`request()->only('filter')`). Tanpa --}}
+            {{-- filter berarti semua status (permintaan pengguna; dulu default --}}
+            {{-- antrean `verifikasi`). Tombol "Disetujui" tetap tidak ada: arsip --}}
+            {{-- keputusan dibuka lewat dropdown sidebar Kesra (menu "Keputusan"). --}}
             <div class="card-header-action">
               @if(auth()->user()->hasMenuAccess($routePrefix.'.export'))
               <a href="{{ route($routePrefix.'.export', request()->only('filter')) }}" class="btn btn-outline-success">
@@ -50,9 +48,9 @@
               <div class="col-md-4 mb-2 mb-md-0">
                 <label for="filter">Status Pendaftaran</label>
                 <select class="form-control" name="filter" id="filter">
-                  {{-- "Semua status" harus punya nilai sendiri, bukan `value=""`.
-                       `ConvertEmptyStringsToNull` membuat `?filter=`menjadi
-                       `null`, yang justru berarti "pakai default antrean". --}}
+{{-- "Semua status" harus punya nilai sendiri, bukan `value=""`.
+                       `ConvertEmptyStringsToNull` membuat `?filter=` menjadi
+                       `null`, yang artinya "tanpa filter" (= semua status). --}}
                   <option value="{{ $semuaStatus }}" {{ $filter === null ? 'selected' : '' }}>-- Semua Status --</option>
                   @foreach($statusOptions as $value => $label)
                   <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -64,10 +62,10 @@
                   <i class="fas fa-filter mr-1"></i> Terapkan
                 </button>
               </div>
-              {{-- Reset selalu ada, sama seperti di daftar pendaftar, dan tidak
-                   bergantung pada filter aktif. Antrean Kesra default-nya sudah
-                   `verifikasi`, jadi menyembunyikan tombol berdasarkan nilai
-                   filter akan membuat tombol hilang tepat saat paling dibutuhkan. --}}
+{{-- Reset selalu ada, sama seperti di daftar pendaftar, dan tidak
+                   bergantung pada filter aktif. Default halaman kini semua
+                   status, jadi menyembunyikan tombol berdasarkan nilai filter
+                   akan membuat tombol hilang tepat saat paling dibutuhkan. --}}
               <div class="col-md-2 mb-2 mb-md-0">
                 <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary btn-block">
                   <i class="fas fa-redo"></i> Reset
@@ -105,11 +103,8 @@
                     <td>{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
                     <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
                     <td>{{ $applicant->ipk ?? $profile?->ipk ?? '-' }}</td>
-                    <td>
+<td>
                       <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
-                    @if($applicant->catatan)
-                      <small class="text-muted">{{ Str::limit($applicant->catatan, 40) }}</small>
-                    @endif
                     </td>
                     <td>
                       {{-- Pendaftaran `dibatalkan` bukan keputusan Kesra dan

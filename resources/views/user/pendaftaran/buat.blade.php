@@ -28,8 +28,7 @@
 
               <div class="alert alert-success">
                 <i class="fas fa-shield-alt"></i>
-                Data pada profil Anda <strong>akan diverifikasi oleh Catpil, Kampus, dan Kesra</strong>
-                setelah pendaftaran ini dikirim, jadi Anda tidak perlu menunggu untuk mendaftar.
+                <strong>Data profil Anda sudah lengkap</strong> dan akan digunakan sebagai dasar pendaftaran, lalu diverifikasi oleh Catpil.
               </div>
 
               <h5 class="mb-3">Data yang Dikirim</h5>

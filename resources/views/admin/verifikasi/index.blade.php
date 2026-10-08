@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
 @php
-// Hanya Capil dan Campus yang punya daftar verifikasi profil. Tahap Kesra punya
+// Hanya Catpil dan Campus yang punya daftar verifikasi profil. Tahap Kesra punya
 // halaman sendiri di `kesra.blade.php` karena yang diantrekan dan diputuskan
 // adalah baris `pendaftar`, bukan profil -- `VerifikasiController::index()`
 // memilih view-nya sebelum sampai ke sini, jadi `$stage` tidak pernah `kesra`.
 $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()[$stage];
-$stageLabels = ['capil' => 'Capil', 'kampus' => 'Kampus'];
+$stageLabels = ['catpil' => 'Catpil', 'kampus' => 'Kampus'];
 $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
 
-// Kolom peruntukan per tahap verifikasi. Capil fokus data kependudukan, Kampus
+// Kolom peruntukan per tahap verifikasi. Catpil fokus data kependudukan, Kampus
 // fokus data mahasiswa.
 $stageColumns = [
-    'capil' => [
+    'catpil' => [
         ['label' => 'NIK', 'value' => fn ($p) => $p->nik ?? '-'],
         ['label' => 'No. Kartu Keluarga', 'value' => fn ($p) => $p->no_kk ?? '-'],
         ['label' => 'Desil', 'value' => fn ($p) => $p->desil ? 'Desil '.$p->desil : '-'],
@@ -46,13 +46,6 @@ $filterOptions = [
     </div>
   </div>
 
-  @if(session('success'))
-  <div class="alert alert-success alert-dismissible fade show" role="alert">
-    {{ session('success') }}
-    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-  </div>
-  @endif
-
   <div class="section-body">
     <div class="row">
       <div class="col-12">
@@ -67,11 +60,7 @@ $filterOptions = [
               @endif
             </div>
           </div>
-          <div class="card-body">
-            <div class="alert alert-primary">
-              <i class="fas fa-info-circle mr-1"></i>
-              Anda hanya dapat memverifikasi profil yang seluruh tahap sebelumnya sudah disetujui.
-            </div>
+<div class="card-body">
             <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
               <div class="col-md-4 mb-2 mb-md-0">
                 <label for="filter">Status Keputusan</label>
@@ -128,12 +117,23 @@ $filterOptions = [
                       <small class="text-muted">{{ Str::limit($p->{'catatan_'.$stage}, 40) }}</small>
                     @endif
                     </td>
-                    <td>
+<td>
+                      @php($terkunci = $stage === 'kampus' && ! $user->profile->canVerifStage('kampus'))
+                      @if($terkunci)
+                      {{-- Kunci Kampus: Kesra sudah memutuskan, jadi keputusan
+                           Kampus tidak bisa diubah lagi. Barisnya tetap tampil
+                           agar masih bisa ditinjau, tapi aksinya read-only. --}}
+                      <a href="{{ route($routePrefix.'.lihat', $user) }}"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                      </a>
+                      @else
                       <a href="{{ route($routePrefix.'.lihat', $user) }}"
                         class="btn btn-sm {{ $decision['decided'] ? 'btn-outline-primary' : 'btn-info' }}">
                         <i class="fas {{ $decision['decided'] ? 'fa-edit' : 'fa-eye' }}"></i>
                         {{ $decision['decided'] ? 'Ubah Keputusan' : 'Verifikasi' }}
                       </a>
+                      @endif
                     </td>
                   </tr>
                   @endforeach

@@ -50,19 +50,6 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   </div>
 
   <div class="section-body">
-    @if (session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-      {{ session('success') }}
-      <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-    </div>
-    @endif
-
-    @if (session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      {{ session('error') }}
-      <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-    </div>
-    @endif
 
     {{-- Semua blok ini hanya relevan untuk mahasiswa. Akun staf (super_admin,
     kesra, kampus, catpil) tidak punya baris profil, jadi halaman profil

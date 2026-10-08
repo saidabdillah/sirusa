@@ -90,6 +90,9 @@ test('super admin can access create user form', function () {
     $response->assertOk();
     $response->assertViewIs('admin.pengguna.buat');
     $response->assertDontSee(' required>', false);
+
+    // Ganti peran wajib membersihkan error lama (`@error` maupun hasil AJAX).
+    $response->assertSee(".find('.invalid-feedback').remove()", false);
 });
 
 test('super admin can access edit user form without html5 required attribute', function () {

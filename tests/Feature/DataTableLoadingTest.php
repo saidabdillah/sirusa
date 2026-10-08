@@ -78,7 +78,7 @@ test('ada tabel yang memakai DataTable untuk diuji', function () {
     // Penjaga: kalau filter di atas salah, semua test lain di file ini lulus
     // tanpa memeriksa apa pun. Angkanya harus ikut naik setiap kali ada view
     // baru yang menginisialisasi DataTable.
-    expect($this->tabel)->toHaveCount(10);
+    expect($this->tabel)->toHaveCount(11);
 });
 
 test('setiap tabel punya flag processing', function (string $path) {

@@ -6,6 +6,12 @@
   $stageLabel = $stageLabels[$stage] ?? ucfirst($stage);
   $decision = $profile->verifStageDecision($stage);
 
+  // Kunci Kampus: begitu Kesra memutuskan, baris Kampus tetap tampil di antrean
+  // (lihat `UserProfile::inVerifQueue()`) tapi halamannya read-only. `false`
+  // untuk Catpil (selalu bisa dikerjakan) dan untuk tahap Kesra yang punya
+  // percabangan sendiri di bawah.
+  $terkunci = $stage === 'kampus' && ! $profile->canVerifStage('kampus');
+
   // Dropdown keputusan selalu dibuka di "— Pilih —", termasuk saat keputusan
   // lama masih tersimpan. Menjadikan nilai lama sebagai pilihan default
   // berisiko: admin bisa cuma membuka halaman lalu menekan simpan, dan keputusan
@@ -26,14 +32,14 @@
   // tersimpan memanggilnya; tanpa ini satu query per pendaftaran yang sudah
   // diputuskan.
   $applications = $stage === 'kesra'
-      ? $user->applicants()->with(['beasiswa', 'diputuskanOleh'])->latest()->get()
+      ? $user->applicants()->with(['beasiswa.kampus', 'diputuskanOleh'])->latest()->get()
       : collect();
 @endphp
 
 @section('content')
 <section class="section">
   <div class="section-header">
-    <h1>{{ $stage === 'kesra' ? 'Keputusan Beasiswa' : 'Verifikasi Profil' }} - {{ $stageLabel }}</h1>
+    <h1>{{ $stage === 'kesra' ? 'Detail Beasiswa' : 'Verifikasi Profil' }} - {{ $stageLabel }}</h1>
     <div class="section-header-breadcrumb">
       <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dasbor</a></div>
       <div class="breadcrumb-item active"><a href="{{ route($routePrefix.'.index') }}">Verifikasi {{ $stageLabel }}</a></div>
@@ -57,7 +63,7 @@
                `KeputusanPendaftaranController::update()`. --}}
           <div class="card">
             <div class="card-header">
-              <h4>Keputusan Beasiswa</h4>
+              <h4>Keputusan Kesra</h4>
             </div>
             <div class="card-body">
               @if($verifNotes)
@@ -76,29 +82,23 @@
               @else
                 @foreach($applications as $applicant)
                   @php
-                    // Ringkasan data yang dibaca admin sebelum memutuskan. Satu
-                    // array supaya urutan baris tidak ditentukan oleh urutan
-                    // penulisan di tiap blok.
-                    $dataPendaftaran = [
-                      ['label' => 'Nama Pendaftar', 'value' => $profile->nama_lengkap ?? '-'],
-                      ['label' => 'NIK', 'value' => $profile->nik ?? '-'],
-                      ['label' => 'Kampus', 'value' => $profile->prodi?->fakultas?->kampus?->nama_kampus ?? '-'],
-                      ['label' => 'Program Studi', 'value' => $profile->prodi?->nama ?? '-'],
-                      ['label' => 'Beasiswa', 'value' => $applicant->beasiswa?->nama ?? '-'],
-                      ['label' => 'UKT/SPP', 'value' => $profile->ukt ? 'Rp '.number_format($profile->ukt, 0, ',', '.') : '-'],
-                      ['label' => 'IPK', 'value' => $applicant->ipk ?? $profile->ipk ?? '-'],
-                      ['label' => 'Semester', 'value' => $applicant->semester ?? $profile->semester ?? '-'],
-                    ];
-                    $syaratBeasiswa = collect([
-                      'Kuota '.$applicant->beasiswa?->kuota,
-                      'IPK minimal '.number_format($applicant->beasiswa?->ipk_minimal ?? 0, 2),
-                      'Semester minimal '.$applicant->beasiswa?->semester_minimal,
-                    ])->filter()->implode(' · ');
+                    $beasiswa = $applicant->beasiswa;
 
-                    // `pendaftar.catatan` dipakai ulang sebagai isi field form
-                    // supaya revisi keputusan tidak menghapus catatan lama tanpa
-                    // admin menyadarinya.
-                    //
+                    // Kartu ini menampilkan detail BEASISWA yang dilamar, bukan
+                    // mengulang data pendaftar: data diri, kampus, dan dokumen
+                    // sudah lengkap di kolom kiri (`partials.profil-detail`),
+                    // jadi peninjauan di sini fokus ke ketentuan beasiswanya.
+                    $detailBeasiswa = [
+                      ['label' => 'Kampus', 'value' => $beasiswa?->kampus?->nama_kampus ?? $beasiswa?->kampus ?? '-'],
+                      ['label' => 'Kuota', 'value' => $beasiswa?->kuota ?? '-'],
+                      ['label' => 'IPK Minimal', 'value' => $beasiswa ? number_format((float) $beasiswa->ipk_minimal, 2) : '-'],
+                      ['label' => 'Semester Minimal', 'value' => $beasiswa?->semester_minimal ?? '-'],
+                      ['label' => 'Tingkat Gelar', 'value' => $beasiswa?->tingkat_gelar ?? '-'],
+                      ['label' => 'Status Beasiswa', 'value' => $beasiswa ? ($beasiswa->status === 'aktif' ? 'Aktif' : 'Non-Aktif') : '-'],
+                      ['label' => 'Tanggal Mulai', 'value' => $beasiswa?->tanggal_mulai?->translatedFormat('d F Y') ?? '-'],
+                      ['label' => 'Tanggal Selesai', 'value' => $beasiswa?->tanggal_selesai?->translatedFormat('d F Y') ?? '-'],
+                    ];
+
                     // Sama seperti dropdown profil, nilai pendaftaran yang sudah
                     // ada TIDAK dijadikan pilihan default. "Ubah Keputusan" yang
                     // tertulis di judul form hanya bermakna kalau admin benar-benar
@@ -116,14 +116,13 @@
                     <div class="d-flex justify-content-between align-items-start flex-wrap mb-3">
                       <div>
                         <strong>{{ $applicant->beasiswa?->nama }}</strong>
-                        <div class="text-muted small">{{ $syaratBeasiswa }}</div>
                       </div>
                       <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
                     </div>
 
-                    <div class="text-muted small text-uppercase mb-1">Data Pendaftaran Beasiswa</div>
+                    <div class="text-muted small text-uppercase mb-1">Detail Beasiswa</div>
                     <div class="row small mb-3">
-                      @foreach($dataPendaftaran as $field)
+                      @foreach($detailBeasiswa as $field)
                         <div class="col-6">
                           <div class="text-muted">{{ $field['label'] }}</div>
                           <div class="font-weight-bold">{{ $field['value'] }}</div>
@@ -149,7 +148,9 @@
                           Status:
                           <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
                         </div>
-                        <div class="mb-1"><strong>Catatan:</strong> {{ $applicant->catatan ?: '—' }}</div>
+                        {{-- Catatan tidak dikumpulkan lagi dari tahap Kesra
+                             (permintaan pengguna), jadi tak ada baris catatan
+                             di ringkasan keputusan. --}}
                         <div class="mb-1">
                           <strong>Tanggal:</strong>
                           {{ $applicant->diputuskan_at?->translatedFormat('d F Y H:i') ?? '—' }}
@@ -168,9 +169,10 @@
                         <i class="fas fa-ban mr-1"></i> Dibatalkan mahasiswa, tidak bisa diputuskan lagi.
                       </div>
                     @else
-                      <div class="text-muted small text-uppercase mb-1">
+                      <label for="pendaftaran_status" class="text-muted small text-uppercase mb-1 d-block">
                         {{ $sudahDiputuskan ? 'Ubah Keputusan' : 'Keputusan Kesra' }}
-                      </div>
+                        <span class="text-danger">*</span>
+                      </label>
                       <form action="{{ route($routePrefix.'.pendaftaran.keputusan', [$user, $applicant]) }}" method="POST" data-ajax-form>
                         @csrf
                         @method('PUT')
@@ -180,21 +182,13 @@
                              Kalau "Terima"/"Tolak" otomatis terpilih, admin bisa
                              menekan simpan tanpa memilih apa pun dan keputusan
                              lama justru terkonfirmasi ulang. --}}
-                        <select class="form-control form-control-sm @error('pendaftaran_status') is-invalid @enderror"
-                                name="pendaftaran_status">
+                        <select class="form-control @error('pendaftaran_status') is-invalid @enderror"
+                                name="pendaftaran_status" id="pendaftaran_status">
                           <option value="" {{ $statusPendaftaran === '' ? 'selected' : '' }}>&mdash; Pilih &mdash;</option>
                             <option value="diterima" {{ $statusPendaftaran === 'diterima' ? 'selected' : '' }}>Terima</option>
                             <option value="ditolak" {{ $statusPendaftaran === 'ditolak' ? 'selected' : '' }}>Tolak</option>
                           </select>
                           @error('pendaftaran_status')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                        </div>
-                        <div class="form-group mb-2">
-                          <input type="text" class="form-control form-control-sm @error('pendaftaran_catatan') is-invalid @enderror"
-                                 name="pendaftaran_catatan" placeholder="Alasan (wajib jika ditolak)"
-                                 value="{{ old('pendaftaran_catatan', $applicant->catatan) }}">
-                          @error('pendaftaran_catatan')
                           <div class="invalid-feedback">{{ $message }}</div>
                           @enderror
                         </div>
@@ -228,6 +222,19 @@
               </div>
               @endif
 
+              @if($terkunci)
+              {{-- Kunci Kampus: Kesra sudah memutuskan, jadi keputusan Kampus
+                   read-only. Form dan tombol simpan tidak ditampilkan sama
+                   sekali supaya tidak ada jalur yang mengubah keputusan lama. --}}
+              <div class="alert alert-warning">
+                <i class="fas fa-lock mr-1"></i>
+                Verifikasi Kampus terkunci karena Kesra sudah memutuskan pendaftaran
+                mahasiswa ini. Keputusan Kampus tidak bisa diubah lagi lewat halaman ini.
+                @if($decision['decided'])
+                Keputusan Kampus saat ini: <strong>{{ $decision['label'] }}</strong>.
+                @endif
+              </div>
+              @else
               @if($decision['decided'])
               <div class="alert alert-info">
                 <i class="fas fa-info-circle mr-1"></i>
@@ -276,9 +283,11 @@
                   <i class="fas fa-save"></i> Simpan Keputusan
                 </button>
               </form>
+              @endif
             </div>
           </div>
 
+          @unless($terkunci)
           @push('script')
           <script>
             $(document).ready(function () {
@@ -351,6 +360,7 @@
             });
           </script>
           @endpush
+          @endunless
         @endif
       </div>
     </div>

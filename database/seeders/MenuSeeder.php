@@ -70,19 +70,48 @@ class MenuSeeder extends Seeder
                 'section' => 'Verifikasi',
                 'urutan' => 26,
             ],
+            // Kesra adalah satu-satunya antrean verifikasi berbentuk dropdown:
+            // halaman kerjanya dua daftar yang terpisah (antrean putusan + arsip
+            // keputusan), jadi menunya jadi induk tanpa route -- sidebar merender
+            // induk beranak sebagai dropdown. `scope` induk TETAP `admin.kesra`
+            // karena dialah yang menutup `admin.kesra.*` untuk `hasMenuAccess()`
+            // dan `EnsureMenuAccess`; scope anak harus unik supaya `keyToId`
+            // tidak menimpa kunci grant induk (induk wajib tetap di-grant,
+            // `sidebarMenus()` hanya mengambil `parent_id` null).
             [
-                // "Kesra" jadi dropdown dua anak: antrean verifikasi dan daftar
+                // "Kesra" jadi dropdown tiga anak: antrean verifikasi, daftar
                 // penerima (pendaftar berstatus `diterima`) tempat cetak dan
-                // ekspor. Parent tanpa route/scope murni untuk tampilan;
-                // akses tetap lewat grant dua anaknya.
+                // ekspor, serta arsip keputusan. Parent tanpa route karena
+                // `scope` induk `admin.kesra` menutup seluruh `admin.kesra.*`;
+                // tiap anak tetap punya scope unik sendiri untuk sidebar.
                 'label' => 'Kesra',
                 'icon' => 'fas fa-clipboard-check',
+                'scope' => 'admin.kesra',
                 'section' => 'Verifikasi',
                 'urutan' => 27,
                 'children' => [
-                    ['label' => 'Verifikasi', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra'],
+                    ['label' => 'Verifikasi', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra.index'],
                     ['label' => 'Penerima Beasiswa', 'route' => 'admin.penerima.index', 'scope' => 'admin.penerima'],
+                    ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
                 ],
+            ],
+            // Status Verifikasi MENJADI leaf mandiri, bukan anak dropdown Kesra
+            // (permintaan pengguna): Catpil dan Kampus harus bisa melihat rekap
+            // status semua profil, jadi menempatkannya di dalam dropdown Kesra
+            // akan menyembunyikannya dari sidebar mereka -- `sidebarMenus()`
+            // hanya merender anak yang grant-nya sendiri dipegang role.
+            //
+            // Berada di section "Administrasi" (bukan "Verifikasi", permintaan
+            // pengguna): semua role sudah melihat section itu lewat menu
+            // Pendaftar, dan section "Verifikasi" jadi murni antrean kerja.
+            // Urutannya ditempatkan setelah "Master Data" (30).
+            [
+                'label' => 'Status Verifikasi',
+                'icon' => 'fas fa-clipboard-list',
+                'route' => 'admin.kesra.status',
+                'scope' => 'admin.kesra.status',
+                'section' => 'Administrasi',
+                'urutan' => 31,
             ],
             [
                 'label' => 'Master Data',
@@ -182,13 +211,17 @@ class MenuSeeder extends Seeder
                 'admin.pendaftar',
                 'admin.catpil',
                 'admin.kampusverif',
-                // `kesra` = parent dropdown "Kesra" (tanpa scope, kuncinya
-                // `Str::kebab($label)`). Tanpa ini parent tidak ter-grant dan
-                // seluruh dropdown (Verifikasi + Penerima Beasiswa) hilang dari
+                // `kesra` = parent dropdown "Kesra" (kunci labelnya
+                // `Str::kebab($label)`), sedangkan `admin.kesra` = scope induk.
+                // Tanpa keduanya parent tidak ter-grant dan seluruh dropdown
+                // (Verifikasi + Penerima Beasiswa + Keputusan) hilang dari
                 // sidebar -- sidebarMenus() hanya mengambil menu parent_id null.
                 'kesra',
                 'admin.kesra',
                 'admin.penerima',
+                'admin.kesra.disetujui',
+                'admin.kesra.index',
+                'admin.kesra.status',
                 'master-data',
                 'admin.kampus',
                 'kelola-akses',
@@ -201,11 +234,13 @@ class MenuSeeder extends Seeder
                 'dasbor',
                 'admin.catpil',
                 'admin.pendaftar',
+                'admin.kesra.status',
             ],
             'kampus' => [
                 'dasbor',
                 'admin.kampusverif',
                 'admin.pendaftar',
+                'admin.kesra.status',
             ],
             'kesra' => [
                 'dasbor',
@@ -218,6 +253,9 @@ class MenuSeeder extends Seeder
                 'kesra',
                 'admin.kesra',
                 'admin.penerima',
+                'admin.kesra.disetujui',
+                'admin.kesra.index',
+                'admin.kesra.status',
                 'master-data',
                 'admin.kampus',
                 'kelola-akses',

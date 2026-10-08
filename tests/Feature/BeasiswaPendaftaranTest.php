@@ -578,7 +578,7 @@ test('detail tanpa persyaratan menampilkan kalimat pengganti, bukan kotak kosong
 | Daftar "Syarat Otomatis" pernah dirender di halaman detail. Isinya bukan
 | informasi baru: sidebar "Daftar Sekarang" sudah menampilkan satu pesan
 | pemblokir yang spesifik lewat `$eligibilityError`, plus alert terpisah untuk
-| profil belum lengkap, Capil belum setuju, dan pendaftaran lain yang jalan.
+| profil belum lengkap, Catpil belum setuju, dan pendaftaran lain yang jalan.
 | Daftar per poin hanya mengulang pesan yang sama dalam bentuk yang lebih
 | panjang, jadi sudah dihapus dari view.
 |
@@ -588,7 +588,7 @@ test('detail tanpa persyaratan menampilkan kalimat pengganti, bukan kotak kosong
 
 test('detail tidak menampilkan daftar syarat otomatis', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi, [
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'setuju',
     ]);
@@ -613,7 +613,7 @@ test('detail tidak menampilkan daftar syarat otomatis', function () {
 
 test('sidebar tetap memberi tahu satu alasan pemblokir yang spesifik', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi, [
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'setuju',
     ]);
@@ -657,8 +657,8 @@ test('jumlah query daftar tidak tumbuh saat kartu bertambah', function () {
     }
     $delapanKartu = $ukurDaftar();
 
-    // Yang diuji adalah selisihnya, bukan jumlah absolut: layout, navbar, dan
-    // notifikasi memang menjalankan querynya sendiri. Kalau `sisaKuota()` atau
+    // Yang diuji adalah selisihnya, bukan jumlah absolut: layout dan navbar
+    // memang menjalankan querynya sendiri. Kalau `sisaKuota()` atau
     // `cakupanLabel()` menembak per kartu, selisihnya ikut bertambah seiring
     // jumlah kartu.
     expect($delapanKartu - $satuKartu)->toBe(0);
@@ -706,32 +706,36 @@ test('jumlah query detail tidak tumbuh saat prodi cakupan bertambah', function (
 |
 | `BeasiswaController::show()` pernah mengirim `compact('profileVerified')`
 | untuk nama variabel yang tidak pernah didefinisikan, sekaligus lupa
-| mengirim `$capilVerified` yang dipakai view. `compact()` melempar
+| mengirim `$catpilVerified` yang kala itu dipakai view. `compact()` melempar
 | E_WARNING di PHP 8.x, `HandleExceptions` mengubahnya jadi ErrorException,
 | jadi seluruh halaman detail beasiswa 500. Tidak ada test yang melakukan
 | GET ke route ini -- semuanya hanya `assertRedirect` ke sana -- sehingga
-| bug itu lolos. Test di bawah menutup celah itu.
+| bug itu lolos. Test di bawah menutup celah itu. Gerbang verifikasi di
+| halaman ini sudah dihapus sepenuhnya: satu-satunya syarat tampilnya tombol
+| ajukan adalah profil yang lengkap.
 */
 
-test('halaman detail beasiswa terbuka untuk mahasiswa yang profilnya belum disetujui Capil', function () {
+test('halaman detail beasiswa terbuka tanpa menunggu persetujuan Catpil', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    // Profil lengkap tapi belum diverifikasi tahap manapun: tombol ajukan
+    // tetap ada, karena verifikasi bukan lagi syarat untuk mendaftar.
+    expect($this->mahasiswa->profile->verif_catpil)->toBe('menunggu');
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
         ->assertOk()
         ->assertSee($beasiswa->nama)
-        ->assertSee('Data dasar belum disetujui Capil')
-        ->assertDontSee('Ajukan Sekarang');
+        ->assertSee('Ajukan Sekarang');
 });
 
-test('halaman detail beasiswa menampilkan tombol ajukan setelah Capil menyetujui', function () {
-    mhsBeasiswa($this->mahasiswa, $this->prodi, ['verif_capil' => 'setuju']);
+test('halaman detail beasiswa menampilkan tombol ajukan setelah Catpil menyetujui', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi, ['verif_catpil' => 'setuju']);
     $beasiswa = beasiswaTersedia($this->kampus->id);
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
         ->assertOk()
-        ->assertSee('Ajukan Sekarang')
-        ->assertDontSee('Data dasar belum disetujui Capil');
+        ->assertSee('Ajukan Sekarang');
 });
 
 test('halaman detail beasiswa terbuka untuk mahasiswa yang profilnya belum lengkap', function () {
@@ -774,7 +778,7 @@ test('mahasiswa tidak bisa mendaftar beasiswa yang kuotanya penuh', function () 
 |--------------------------------------------------------------------------
 */
 
-test('kesra bisa menerima pendaftaran dan menyimpan catatan', function () {
+test('kesra bisa menerima pendaftaran', function () {
     $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);
     $applicant = Applicant::create([
@@ -786,13 +790,14 @@ test('kesra bisa menerima pendaftaran dan menyimpan catatan', function () {
     actingAs($this->kesra)
         ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
             'pendaftaran_status' => 'diterima',
-            'pendaftaran_catatan' => 'Selamat, Anda lolos.',
         ])
         ->assertRedirect(route('admin.kesra.lihat', $user))
         ->assertSessionHas('success');
 
+    // Catatan tidak dikumpulkan lagi dari tahap Kesra (permintaan pengguna),
+    // jadi keputusan baru selalu bersih tanpa `pendaftar.catatan`.
     expect($applicant->refresh()->status)->toBe('diterima')
-        ->and($applicant->catatan)->toBe('Selamat, Anda lolos.');
+        ->and($applicant->catatan)->toBeNull();
 });
 
 test('kesra tidak bisa menerima pendaftaran yang kuotanya habis', function () {
@@ -820,7 +825,9 @@ test('kesra tidak bisa menerima pendaftaran yang kuotanya habis', function () {
     expect($applicant->refresh()->status)->toBe('verifikasi');
 });
 
-test('kesra tidak bisa memutuskan pendaftaran tanpa alasan saat menolak', function () {
+test('kesra bisa menolak pendaftaran tanpa catatan', function () {
+    // Catatan sengaja tidak diminta dari tahap Kesra (permintaan pengguna):
+    // menolak tanpa alasan tertulis adalah keputusan yang sah.
     $user = sudahTerverifikasi(User::factory()->standardUser()->create(), $this->prodi);
     $applicant = Applicant::create([
         'user_id' => $user->id,
@@ -832,15 +839,17 @@ test('kesra tidak bisa memutuskan pendaftaran tanpa alasan saat menolak', functi
         ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
             'pendaftaran_status' => 'ditolak',
         ])
-        ->assertSessionHasErrors('pendaftaran_catatan');
+        ->assertRedirect(route('admin.kesra.lihat', $user))
+        ->assertSessionHas('success');
 
-    expect($applicant->refresh()->status)->toBe('verifikasi');
+    expect($applicant->refresh()->status)->toBe('ditolak')
+        ->and($applicant->catatan)->toBeNull();
 });
 
 test('kesra bisa memutuskan pendaftaran tanpa langkah verifikasi profil kesra lebih dulu', function () {
     $user = User::factory()->standardUser()->create();
     mhsBeasiswa($user, $this->prodi, [
-        'verif_capil' => 'setuju',
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'menunggu',
     ]);
@@ -880,7 +889,6 @@ test('keputusan kesra menutup tahap kesra pada profilnya, termasuk saat ditolak'
     actingAs($this->kesra)
         ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
             'pendaftaran_status' => 'ditolak',
-            'pendaftaran_catatan' => 'Dokumen tidak memenuhi syarat',
         ]);
 
     // Identitas sudah ditinjau -- itu yang dilakukan keputusan ini -- jadi tahap
@@ -929,7 +937,6 @@ test('keputusan kesra bisa direvisi dari diterima menjadi ditolak tanpa menabrak
     actingAs($this->kesra)
         ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
             'pendaftaran_status' => 'ditolak',
-            'pendaftaran_catatan' => 'Terdapat ketidaksesuaian data',
         ])
         ->assertRedirect(route('admin.kesra.lihat', $user));
 
@@ -1029,7 +1036,6 @@ test('ditolak di ronde 1 lalu mendaftar ronde 2 tidak otomatis diterima', functi
 
     actingAs($this->kesra)->put(route('admin.kesra.pendaftaran.keputusan', [$user, $pertama]), [
         'pendaftaran_status' => 'ditolak',
-        'pendaftaran_catatan' => 'Kuota sudah terisi.',
     ])->assertRedirect(route('admin.kesra.lihat', $user));
 
     // Ronde 2: profil masih terverifikasi penuh, termasuk tahap Kesra.

@@ -120,7 +120,7 @@ test('halaman kesra hanya punya satu form keputusan, tanpa verdict profil', func
         ->and($html)->not->toContain('formVerifikasi')
         ->and($html)->not->toContain('Minta Perbaikan')
         ->and(substr_count($html, 'name="pendaftaran_status"'))->toBe(1)
-        ->and($html)->toContain('Data Pendaftaran Beasiswa');
+        ->and($html)->toContain('Detail Beasiswa');
 });
 
 test('opsi tarik kembali tidak lagi muncul di halaman kesra', function () {
@@ -166,28 +166,45 @@ test('dropdown keputusan kesra selalu dibuka di "— pilih —"', function (stri
         ->and($html)->not->toContain('<option value="ditolak" selected>');
 })->with(['diterima', 'ditolak', 'verifikasi']);
 
-test('pilihan keputusan kesra tidak hilang saat validasi gagal', function () {
-    // `ditolak` tanpa alasan ditolak server, jadi admin dipaksa mengulang. Pilihannya
-    // harus masih terisi supaya dia tidak perlu memilih ulang dari nol.
+test('keputusan kesra wajib dipilih, dan catatan tidak lagi diminta', function () {
+    // Catatan sengaja TIDAK dikumpulkan dari tahap Kesra (permintaan pengguna),
+    // jadi `ditolak` tanpa `pendaftaran_catatan` adalah keputusan yang sah.
+    // Satu-satunya hal yang diwajibkan adalah memilih statusnya.
     actingAs(User::factory()->admin()->create(['email' => 'kesra@test.com']))
         ->from(route('admin.kesra.lihat', $this->mahasiswa))
         ->put(route('admin.kesra.pendaftaran.keputusan', [$this->mahasiswa, $this->applicant]), [
             'pendaftaran_status' => 'ditolak',
-            'pendaftaran_catatan' => '',
         ])
         ->assertRedirect(route('admin.kesra.lihat', $this->mahasiswa))
-        ->assertSessionHasErrors('pendaftaran_catatan');
+        ->assertSessionHasNoErrors();
 
+    actingAs(User::factory()->admin()->create(['email' => 'kesra2@test.com']))
+        ->from(route('admin.kesra.lihat', $this->mahasiswa))
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$this->mahasiswa, $this->applicant]), [
+            'pendaftaran_status' => '',
+        ])
+        ->assertRedirect(route('admin.kesra.lihat', $this->mahasiswa))
+        ->assertSessionHasErrors('pendaftaran_status');
+});
+
+test('form keputusan kesra menandai field wajib dengan bintang', function () {
+    // Heading "Keputusan Kesra" kini <label> sungguhan (for + bintang, sebagai
+    // ganti div styling). Textarea Catatan sudah tidak ada di form keputusan
+    // Kesra -- satu-satunya keputusan yang diminta adalah statusnya.
     $html = preg_replace(
         '/\s+/',
         ' ',
-        actingAs(User::factory()->admin()->create(['email' => 'kesra2@test.com']))
+        actingAs(User::factory()->admin()->create(['email' => 'kesra@test.com']))
             ->get(route('admin.kesra.lihat', $this->mahasiswa))
             ->assertOk()
             ->getContent(),
     );
 
-    expect($html)->toContain('<option value="ditolak" selected>');
+    expect($html)
+        ->toContain('<label for="pendaftaran_status"')
+        ->toContain('Keputusan Kesra <span class="text-danger">*</span>')
+        ->toContain('name="pendaftaran_status" id="pendaftaran_status"')
+        ->not->toContain('name="pendaftaran_catatan"');
 });
 
 test('keputusan kesra yang sudah tersimpan ditampilkan lengkap sebagai read only', function () {
@@ -210,7 +227,6 @@ test('keputusan kesra yang sudah tersimpan ditampilkan lengkap sebagai read only
     expect($html)->toContain('Keputusan Kesra')
         ->and($html)->toContain('Diputuskan oleh')
         ->and($html)->toContain('Tanggal')
-        ->and($html)->toContain('Dokumen lengkap.')
         // Revisi tetap mungkin: label kolom berubah, formnya tetap ada.
         ->and($html)->toContain('Ubah Keputusan');
 });
