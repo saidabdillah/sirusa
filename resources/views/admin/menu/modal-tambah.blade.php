@@ -5,16 +5,20 @@
   $parentVal = $isTarget ? old('parent_id') : '';
   $iconVal = $isTarget ? old('icon', 'fas fa-list') : 'fas fa-list';
   $sectionVal = $isTarget ? old('section') : '';
-  $routeVal = $isTarget ? old('route') : '';
-  $scopeVal = $isTarget ? old('scope') : '';
+  // `route`/`scope` TIDAK lagi punya input (permintaan pengguna, Okt 2026):
+  // keduanya tetap ada di tabel dan tetap divalidasi request bila dikirim,
+  // tapi tidak bisa diisi lewat form -- lihat `MenuController::store()` yang
+  // membiarkan kolomnya null untuk menu buatan admin.
   // Default sengaja kosong, bukan 0. `urutan` wajib diisi di server, dan
   // prefilling "0" membuat admin menekan Simpan tanpa pernah memilih posisi
   // menu, padahal 0 berarti anak pertama -- keputusan yang tidak pernah
   // dibuat. Setelah validasi gagal, nilai yang diketik admin dikembalikan lewat
   // old() supaya tidak hilang.
   $urutanVal = $isTarget ? old('urutan', '') : '';
-  $aktifVal = $isTarget ? old('aktif', true) : true;
-  $wajibVal = $isTarget ? old('wajib', false) : false;
+  // `aktif`/`wajib` sengaja TIDAK punya input: kedua kolom tetap ada di tabel
+  // tapi sudah tidak diedit lewat form (keputusan pengguna, Okt 2026). `store()`
+  // selalu menulis `aktif=true, wajib=false`, dan `update()` tidak menyentuh
+  // keduanya sama sekali supaya nilai tersimpan tidak pernah tertimpa.
 @endphp
 <div class="modal fade" id="modal-tambah-menu" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
@@ -35,7 +39,12 @@
             </div>
             <div class="form-group col-md-6">
               <label for="parent_id-tambah">Induk Menu</label>
-              <select class="form-control {{ $isTarget && $errors->has('parent_id') ? 'is-invalid' : '' }}" id="parent_id-tambah" name="parent_id">
+              {{-- Select2 `tags`: memilih opsi yang ada memakai id menunya,
+                   mengetik nama baru lalu Enter membuat menu induk top-level
+                   (lihat `MenuController::resolveParentId()`). Opsi kosong tetap
+                   wajib ada supaya `allowClear` punya tujuan dan supaya select
+                   tidak diam-diam memilih opsi pertama. --}}
+              <select class="form-control select2-baru {{ $isTarget && $errors->has('parent_id') ? 'is-invalid' : '' }}" id="parent_id-tambah" name="parent_id" data-placeholder="— Menu Utama (tanpa induk) —">
                 <option value="">— Menu Utama (tanpa induk) —</option>
                 @foreach($parents as $parent)
                 <option value="{{ $parent->id }}" {{ (string) $parentVal === (string) $parent->id ? 'selected' : '' }}>{{ $parent->label }}</option>
@@ -52,7 +61,10 @@
             </div>
             <div class="form-group col-md-6">
               <label for="section-tambah">Section <span class="text-danger">*</span></label>
-              <select class="form-control {{ $isTarget && $errors->has('section') ? 'is-invalid' : '' }}" id="section-tambah" name="section">
+              {{-- Select2 `tags` juga di sini: section baru tidak perlu ditambahkan
+                   ke kode. `Menu::sections()` menurunkan daftarnya dari isi tabel
+                   `menus`, jadi section yang diketik langsung tampil di sidebar. --}}
+              <select class="form-control select2-baru {{ $isTarget && $errors->has('section') ? 'is-invalid' : '' }}" id="section-tambah" name="section" data-placeholder="— Pilih —">
                 {{-- Wajib ada opsi kosong: `$sectionVal` selalu string kosong
                      saat modal ini dibuka bersih, dan `<select>` tanpa
                      `<option value="">` akan diam-diam memilih opsi pertama
@@ -70,39 +82,9 @@
 
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label for="route-tambah">Route</label>
-              <input type="text" class="form-control {{ $isTarget && $errors->has('route') ? 'is-invalid' : '' }}" id="route-tambah" name="route" value="{{ $routeVal }}" placeholder="contoh: admin.beasiswa.index">
-              @if($isTarget && $errors->has('route'))<div class="invalid-feedback">{{ $errors->first('route') }}</div>@endif
-              <small class="text-muted">Nama route harus terdaftar. Kosongkan jika ini menu induk berisi sub-menu.</small>
-            </div>
-            <div class="form-group col-md-6">
-              <label for="scope-tambah">Scope</label>
-              <input type="text" class="form-control {{ $isTarget && $errors->has('scope') ? 'is-invalid' : '' }}" id="scope-tambah" name="scope" value="{{ $scopeVal }}" placeholder="contoh: admin.beasiswa">
-              @if($isTarget && $errors->has('scope'))<div class="invalid-feedback">{{ $errors->first('scope') }}</div>@endif
-              <small class="text-muted">Prefix akses route, contoh <code>admin.beasiswa</code> mengganti akses <code>admin.beasiswa.*</code>.</small>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
               <label for="urutan-tambah">Urutan <span class="text-danger">*</span></label>
               <input type="number" min="0" class="form-control {{ $isTarget && $errors->has('urutan') ? 'is-invalid' : '' }}" id="urutan-tambah" name="urutan" value="{{ $urutanVal }}">
               @if($isTarget && $errors->has('urutan'))<div class="invalid-feedback">{{ $errors->first('urutan') }}</div>@endif
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="aktif-tambah" name="aktif" value="1" {{ $aktifVal ? 'checked' : '' }}>
-                <label class="custom-control-label" for="aktif-tambah">Aktif (tampil di sidebar)</label>
-              </div>
-            </div>
-            <div class="form-group col-md-6">
-              <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="wajib-tambah" name="wajib" value="1" {{ $wajibVal ? 'checked' : '' }}>
-                <label class="custom-control-label" for="wajib-tambah">Wajib (selalu digrant ke semua role)</label>
-              </div>
             </div>
           </div>
         </div>

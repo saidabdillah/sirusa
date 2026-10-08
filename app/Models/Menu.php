@@ -13,6 +13,22 @@ class Menu extends Model
 {
     use HasFactory;
 
+    /**
+     * Section bawaan: selalu tersedia walau belum dipakai menu mana pun,
+     * supaya form Tambah/Ubah tidak pernah kehabisan pilihan awal.
+     *
+     * @var list<string>
+     */
+    private const DEFAULT_SECTIONS = [
+        'Menu Utama',
+        'Administrasi',
+        'Verifikasi',
+        'Administrator',
+        'Layanan Mahasiswa',
+        'Pengaturan',
+        'Manajemen',
+    ];
+
     protected $fillable = [
         'parent_id',
         'label',
@@ -49,40 +65,67 @@ class Menu extends Model
      *
      * Dipakai tiga tempat sekaligus: `layouts/partials/sidebar.blade.php`
      * (urutan + teks `menu-header`), `StoreMenuRequest`/`UpdateMenuRequest`
-     * (`Rule::in`), dan `MenuSeeder`. Karena bukan foreign key, mengganti
-     * string di sini TIDAK memperbaiki baris `menus.section` yang sudah ada --
-     * `MenuSeeder` yang memindahkannya (idempoten lewat
-     * `updateOrCreate(['section', 'label', 'parent_id'])` + `buangMenuLama()`).
+     * (`required|string` -- `Rule::in` sudah DIHAPUS karena admin boleh membuat
+     * section baru langsung dari form), dan `MenuSeeder`.
      *
-     * PENTING: sidebar hanya mengiterasi daftar ini. Menu dengan `section`
-     * yang tidak terdaftar di sini TIDAK AKAN muncul sama sekali, bukan hanya
-     * salah tempat -- jadi setiap section baru wajib ditambah ke daftar ini,
-     * bukan cuma dipakai di seeder.
+     * Bukan foreign key, dan bukan lagi allow-list: hasilnya = `DEFAULT_SECTIONS`
+     * (urutannya tetap) digabung section yang benar-benar dipakai baris
+     * `menus`, sehingga section yang dibuat admin otomatis ikut tampil di
+     * sidebar tanpa menyentuh kode. Bagian DB diurutkan kemunculan pertama
+     * (menu diurutkan `urutan` lalu `label`) supaya urutannya deterministik.
      *
-     * Urutan mengikuti alur kerja: operasional harian (Administrasi) ->
-     * antrean verifikasi -> alat sistem (Administrator) -> menu mahasiswa.
-     * `Administrasi` sengaja masih memuat "Master Data": data master
-     * kampus adalah back-office, sama seperti Beasiswa dan Pendaftar.
-     * `Pengaturan` dan `Manajemen` belum dipakai `MenuSeeder`; keduanya tetap
-     * disimpan karena bisa dipilih saat menambah menu baru.
+     * TANPA cache `static`: suite Pest berjalan dalam satu proses PHP, jadi
+     * cache statis akan membawa section dari database test sebelumnya
+     * (RefreshDatabase). Tabelnya kecil, query distinct per panggilan murah.
+     *
+     * Sidebar tetap HANYA mengiterasi daftar ini, jadi union dengan isi
+     * database inilah yang menjamin menu tidak pernah "hilang tanpa error"
+     * hanya karena section-nya tidak terdaftar.
      *
      * @return list<string>
      */
     public static function sections(): array
     {
-        return [
-            'Menu Utama',
-            'Administrasi',
-            'Verifikasi',
-            'Administrator',
-            'Layanan Mahasiswa',
-            'Pengaturan',
-            'Manajemen',
-        ];
+        $dariDatabase = static::query()
+            ->orderBy('urutan')
+            ->orderBy('label')
+            ->pluck('section')
+            ->filter()
+            ->unique()
+            ->values();
+
+        return array_values(array_unique(array_merge(
+            self::DEFAULT_SECTIONS,
+            $dariDatabase->all(),
+        )));
     }
 
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_menu');
+    }
+
+    /**
+     * Apakah `$value` angka yang menunjuk baris `menus` yang benar-benar ada?
+     *
+     * Dipakai `StoreMenuRequest`/`UpdateMenuRequest` untuk membedakan dua bentuk
+     * `parent_id`: id menu yang sudah ada (dipakai apa adanya) versus nama menu
+     * induk BARU yang diketik lewat Select2 `tags`. Nilai yang bukan angka atau
+     * angka yang tidak menunjuk menu mana pun dianggap nama baru, bukan id yang
+     * rusak -- `prepareForValidation()` sudah mem-trim menjadi string, jadi id
+     * satu digit ("5") harus tetap dikenali walaupun `ctype_digit()` tidak
+     * cocok dengan integer mentah.
+     */
+    public static function isExistingMenuId(mixed $value): bool
+    {
+        if (is_int($value)) {
+            return static::query()->whereKey($value)->exists();
+        }
+
+        if (! is_string($value) || ! ctype_digit($value)) {
+            return false;
+        }
+
+        return static::query()->whereKey((int) $value)->exists();
     }
 }

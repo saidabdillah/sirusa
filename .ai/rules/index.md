@@ -18,6 +18,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | .env | .ai/rules/general.md |
 | public/assets/js/custom.js | .ai/rules/js.md |
 | app/Http/Requests/Kampus/** | .ai/rules/kampus.md |
+| resources/views/admin/menu/** | .ai/rules/menu.md |
 | database/migrations/** | .ai/rules/migrations.md |
 | routes/web.php, app/Http/Controllers/Admin/PenggunaController.php, resources/views/admin/pengguna/**, resources/views/partials/profil-detail.blade.php | .ai/rules/partials.md |
 | resources/views/user/pendaftaran/** | .ai/rules/pendaftaran.md |

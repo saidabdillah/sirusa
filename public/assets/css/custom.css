@@ -127,6 +127,23 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   white-space: nowrap;
 }
 
+/* Select2: jarak antara ikon hapus (×) dan panah dropdown.
+
+   `components.css` melebarkan `.select2-selection__arrow` sampai 40px tapi
+   segitiganya tetap di-centre dalam kotak itu, jadi panah berhenti sekitar
+   25px dari tepi kanan. `padding-right` `.select2-selection__rendered` cuma
+   20px dan `.select2-selection__clear` tidak punya `margin` sama sekali,
+   sehingga × (float: right) mendarat di sekitar 12-20px dari tepi -- menempel
+   bahkan tumpang tindih dengan segitiganya.
+
+   Cukup melebarkan padding rendered: itu sekaligus (a) menggeser × ke kiri
+   sampai bebas dari kotak panah dan (b) memberi teks ruang berhenti sebelum
+   × supaya keduanya tidak berebut tempat. Posisi panah sendiri sudah pas,
+   jadi tidak disentuh. */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  padding-right: 46px;
+}
+
 /* ==============================
    Skeleton loading screen
    ============================== */

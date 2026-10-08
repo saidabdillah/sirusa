@@ -5,6 +5,9 @@ paths:
 
 # Js
 
+## Select2 init di kelola menu: `tags` + `dropdownParent` modal
+Select2 4.0.13 (bundled di `layouts/app.blade.php`, CSS L21 / JS L74) dipakai PERTAMA KALI di `resources/views/admin/menu/kelola.blade.php` — dua select `.select2-baru` (`parent_id` + `section`) di dalam kedua modal. Init ada di `@push('script')` existing (atas blok, `.each()`), bentuknya terkunci test: `dropdownParent: $select.closest('.modal')` (WAJIB — tanpa ini dropdown terpotong `overflow` modal dan tidak bisa diklik), `placeholder: $select.data('placeholder')`, `tags: true` (admin bisa mengetik menu induk/section BARU langsung), `allowClear: true` (butuh `<option value="">` yang tetap ada di markup), `width: '100%'`. Jangan pindahkan init ke `resources/js/app.js` (import select2 di sana tidak dipakai layout mana pun) dan jangan init global di `custom.js` — halaman lain belum tentu memuat modalnya. Komentar JS di blok itu tetap wajib bebas direktif Blade (rule di bawah).
+
 ## Success WAIT timer 1500 tanpa tombol OK, dan refresh HANYA di dalam `.then()`
 `submitAjax()` punya satu `Swal.fire` success untuk seluruh aplikasi (35 form di 34 view), jadi bentuknya dipin di sini: `timer: 1500` + `showConfirmButton: false` + `timerProgressBar: true`, `text` dari `payload.message`, dan `refreshAfterSave($form, payload)` DI DALAM `.then()`.
 

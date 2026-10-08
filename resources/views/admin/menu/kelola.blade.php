@@ -137,6 +137,27 @@
 @push('script')
 <script>
   $(document).ready(function() {
+    // Select2 untuk "Induk Menu" dan "Section". Keduanya memakai `tags` supaya
+    // admin bisa mengetik nama grup/section yang belum ada lalu menekan Enter --
+    // nilai yang dikirim jadi teks itu, dan server menerjemahkannya lewat
+    // `MenuController::resolveParentId()` / menyimpannya apa adanya.
+    //
+    // `dropdownParent` WAJIB untuk select2 di dalam modal Bootstrap: tanpanya
+    // dropdown dirender di dalam modal dan terpotong/tertahan stacking context
+    // `.modal-content`. `placeholder` juga diset eksplisit dari atribut
+    // `data-placeholder` supaya tidak bergantung pada pembacaan data attribute.
+    $('.select2-baru').each(function () {
+      const $select = $(this);
+
+      $select.select2({
+        dropdownParent: $select.closest('.modal'),
+        placeholder: $select.data('placeholder'),
+        tags: true,
+        allowClear: true,
+        width: '100%',
+      });
+    });
+
     const openModal = @json(old('modal_target'));
     if (openModal && document.getElementById(openModal)) {
       $('#' + openModal).modal('show');
