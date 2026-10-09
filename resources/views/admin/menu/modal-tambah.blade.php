@@ -3,8 +3,13 @@
   $isTarget = old('modal_target') === $modalTarget;
   $labelVal = $isTarget ? old('label') : '';
   $parentVal = $isTarget ? old('parent_id') : '';
-  $iconVal = $isTarget ? old('icon', 'fas fa-list') : 'fas fa-list';
+  $iconVal = $isTarget ? old('icon') : '';
   $sectionVal = $isTarget ? old('section') : '';
+  // `route`/`scope` OPSIONAL -- boleh dikosongkan. Kalau diisi, `route` bebas
+  // teks (input teks biasa, TANPA datalist) dan tidak harus sudah terdaftar di
+  // `routes/`: menu tetap tampil (berujung 404 sampai route-nya didaftarkan).
+  $routeVal = $isTarget ? old('route') : '';
+  $scopeVal = $isTarget ? old('scope') : '';
   // Default sengaja kosong, bukan 0. `urutan` wajib diisi di server, dan
   // prefilling "0" membuat admin menekan Simpan tanpa pernah memilih posisi
   // menu, padahal 0 berarti anak pertama -- keputusan yang tidak pernah
@@ -73,6 +78,19 @@
                 @endforeach
               </select>
               @if($isTarget && $errors->has('section'))<div class="invalid-feedback">{{ $errors->first('section') }}</div>@endif
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="route-tambah">Nama Route</label>
+              <input type="text" class="form-control {{ $isTarget && $errors->has('route') ? 'is-invalid' : '' }}" id="route-tambah" name="route" value="{{ $routeVal }}" placeholder="contoh: admin.beasiswa.index">
+              @if($isTarget && $errors->has('route'))<div class="invalid-feedback">{{ $errors->first('route') }}</div>@endif
+            </div>
+            <div class="form-group col-md-6">
+              <label for="scope-tambah">Scope</label>
+              <input type="text" class="form-control {{ $isTarget && $errors->has('scope') ? 'is-invalid' : '' }}" id="scope-tambah" name="scope" value="{{ $scopeVal }}" placeholder="contoh: admin.beasiswa">
+              @if($isTarget && $errors->has('scope'))<div class="invalid-feedback">{{ $errors->first('scope') }}</div>@endif
             </div>
           </div>
 

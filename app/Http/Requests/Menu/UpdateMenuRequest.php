@@ -43,12 +43,15 @@ class UpdateMenuRequest extends FormRequest
             ],
             'label' => ['required', 'string', 'max:100'],
             'icon' => ['nullable', 'string', 'max:100'],
-            // `route`/`scope` BUKAN field form: superadmin hanya membuat menu
-            // tampilan, arah link-nya diisi developer lewat koding
-            // (`MenuSeeder`/`tinker`). Karena tidak divalidasi, `validated()`
-            // tidak pernah memuat keduanya sehingga `update()` selalu
-            // mempertahankan nilai tersimpan -- request yang tetap mengirimnya
-            // akan diabaikan.
+            // `route`/`scope` OPSIONAL untuk semua menu (daun maupun induk).
+            // Induk dropdown memang tidak punya route sendiri, dan menu daun
+            // yang route-nya dikosongkan tetap tampil sebagai link 404 sampai
+            // diisi (lihat `Menu::linkUrl()`). `route` tidak divalidasi
+            // `Route::has`: teks bebas apa pun diterima. `scope` berpola huruf
+            // kecil/titik karena dipakai `EnsureMenuAccess` (prefix
+            // `str_starts_with`).
+            'route' => ['nullable', 'string', 'max:150'],
+            'scope' => ['nullable', 'string', 'max:100', 'regex:/^[a-z][a-z0-9._-]*$/'],
             // `Rule::in(Menu::sections())` DIHAPUS: section baru boleh diketik
             // langsung (Select2 `tags`) dan `Menu::sections()` kini menurunkan
             // daftarnya dari isi tabel `menus`.
@@ -65,7 +68,7 @@ class UpdateMenuRequest extends FormRequest
     {
         $bersih = [];
 
-        foreach (['parent_id', 'label', 'section'] as $kunci) {
+        foreach (['parent_id', 'label', 'icon', 'route', 'scope', 'section'] as $kunci) {
             if (is_scalar($this->input($kunci))) {
                 $bersih[$kunci] = trim((string) $this->input($kunci));
             }
@@ -84,6 +87,8 @@ class UpdateMenuRequest extends FormRequest
         return [
             'label.required' => 'Label menu harus diisi.',
             'label.max' => 'Label menu maksimal 100 karakter.',
+            'route.max' => 'Nama route maksimal 150 karakter.',
+            'scope.regex' => 'Scope harus huruf kecil, angka, titik, atau garis bawah.',
             'section.required' => 'Section menu harus diisi.',
             'section.max' => 'Section menu maksimal 100 karakter.',
             'urutan.required' => 'Urutan menu harus diisi.',

@@ -162,6 +162,15 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   min-height: calc(1.5em + 0.75rem + 2px);
 }
 
+/* Error validasi pada field select2: `.is-invalid` ditaruh di `<select>`
+   tersembunyi (`display:none`), jadi kotak yang terlihat tidak ikut merah.
+   Warna dipindah lewat class `.is-invalid` pada `.select2-container` -- class
+   itu dipasang `paintFieldError()` (jalur AJAX) dan blok inisialisasi
+   `.select2-baru` (jalur render-server setelah reload). */
+.select2-container.is-invalid .select2-selection--single {
+  border-color: #dc3545;
+}
+
 /* ==============================
    Skeleton loading screen
    ============================== */

@@ -31,17 +31,20 @@
           <div class="alert alert-primary">
             <i class="fas fa-info-circle mr-1"></i>
             Menu di bawah tersusun sesuai pohon sidebar. Menu baru otomatis digrant ke role <strong>Super Admin</strong>.
-            Pemberian akses ke role lain dilakukan di halaman <strong>Akses Menu</strong>.
+            Pemberian akses ke role lain dilakukan di halaman <strong>Akses Menu</strong>. <strong>Route</strong> dan
+            <strong>Scope</strong> boleh diisi (atau dikosongkan) di form Tambah/Ubah — nama route tidak harus sudah
+            terdaftar; menu yang route-nya belum terdaftar atau kosong tetap tampil dan mengarah ke URL 404 sampai
+            route-nya didaftarkan di koding.
           </div>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead>
                 <tr>
                   <th>Menu</th>
-                  <th>Route</th>
-                  <th>Scope</th>
                   <th>Section</th>
                   <th>Urutan</th>
+                  <th>Route</th>
+                  <th>Scope</th>
                   <th class="text-center">Status</th>
                   <th>Aksi</th>
                 </tr>
@@ -55,10 +58,10 @@
                     @if($menu->wajib)<span class="badge badge-warning ml-1">wajib</span>@endif
                     @if(! $menu->aktif)<span class="badge badge-danger ml-1">nonaktif</span>@endif
                   </td>
-                  <td><code>{{ $menu->route ?? '-' }}</code></td>
-                  <td><code>{{ $menu->scope ?? '-' }}</code></td>
                   <td>{{ $menu->section }}</td>
                   <td>{{ $menu->urutan }}</td>
+                  <td>@if($menu->route)<code>{{ $menu->route }}</code>@else<span class="text-muted">—</span>@endif</td>
+                  <td>@if($menu->scope)<code>{{ $menu->scope }}</code>@else<span class="text-muted">—</span>@endif</td>
                   <td class="text-center">{{ $menu->aktif ? 'Aktif' : 'Nonaktif' }}</td>
                   <td class="text-nowrap">
                     <button type="button" class="btn btn-primary btn-sm mr-1" title="Ubah"
@@ -86,10 +89,10 @@
                     {{ $child->label }}
                     @if(! $child->aktif)<span class="badge badge-danger ml-1">nonaktif</span>@endif
                   </td>
-                  <td><code>{{ $child->route ?? '-' }}</code></td>
-                  <td><code>{{ $child->scope ?? '-' }}</code></td>
                   <td>{{ $child->section }}</td>
                   <td>{{ $child->urutan }}</td>
+                  <td>@if($child->route)<code>{{ $child->route }}</code>@else<span class="text-muted">—</span>@endif</td>
+                  <td>@if($child->scope)<code>{{ $child->scope }}</code>@else<span class="text-muted">—</span>@endif</td>
                   <td class="text-center">{{ $child->aktif ? 'Aktif' : 'Nonaktif' }}</td>
                   <td class="text-nowrap">
                     <button type="button" class="btn btn-primary btn-sm mr-1" title="Ubah"
@@ -156,6 +159,14 @@
         allowClear: true,
         width: '100%',
       });
+
+      // Error render-server (fallback `old('modal_target')` setelah page
+      // reload): `.is-invalid` terpasang di `<select>` tersembunyi, jadi kotak
+      // select2 yang terlihat tidak ikut merah. Bawa class ke kotaknya supaya
+      // jalur reload menampilkan border merah yang sama dengan jalur AJAX.
+      if ($select.hasClass('is-invalid')) {
+        $select.next('.select2-container').addClass('is-invalid');
+      }
     });
 
     const openModal = @json(old('modal_target'));

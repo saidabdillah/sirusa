@@ -59,10 +59,11 @@ test('menu buatan super admin dengan route dirender sebagai link di sidebar', fu
 });
 
 /**
- * Menu yang route-nya belum dikoding (`route` NULL) TETAP dirender sebagai
- * `<a>` yang bisa diklik, diarahkan ke URL sentinel yang berujung 404 -- bukan
- * `<span>` mati. Link tujuan diisi developer di koding; sebelum itu menu tetap
- * tampil dan bisa diklik.
+ * Menu yang route-nya masih kosong (NULL) TETAP dirender sebagai
+ * `<a>` dengan `href="#"` (inert, tanpa navigasi ke 404), bukan
+ * link sentinel `/__menu__/{id}` dan bukan `<span>` mati. Link tujuan
+ * diisi developer di koding; sebelum itu menu tetap tampil dan bisa
+ * diklik, hanya scroll ke atas saat ditekan.
  */
 test('menu tanpa route tetap dirender sebagai link, bukan span inert', function () {
     $superAdmin = User::factory()->superAdmin()->create(['email' => 'sidebar-span-@test.com']);
@@ -87,8 +88,8 @@ test('menu tanpa route tetap dirender sebagai link, bukan span inert', function 
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSee('<span>Tanpa Tautan</span>', false)
-        // Link sentinel yang pasti 404, bukan `<span>` mati.
-        ->assertSee('<a href="'.url('/__menu__/'.$menu->id).'" class="nav-link">', false)
+        // Link inert #, bukan link sentinel 404.
+        ->assertSee('<a href="#" class="nav-link">', false)
         ->assertDontSee('<span class="nav-link"><i class="fas fa-folder"></i><span>Tanpa Tautan</span></span>', false);
 });
 

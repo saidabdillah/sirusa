@@ -47,12 +47,16 @@ class StoreMenuRequest extends FormRequest
             ],
             'label' => ['required', 'string', 'max:100'],
             'icon' => ['nullable', 'string', 'max:100'],
-            // `route`/`scope` BUKAN field form: superadmin hanya membuat menu
-            // untuk tampil di sidebar, sedangkan arah link-nya diisi developer
-            // lewat koding (`MenuSeeder`/`tinker`). Karena tidak divalidasi,
-            // `validated()` tidak memuat keduanya -- request yang tetap
-            // mengirimnya akan diabaikan dan kolomnya lahir NULL sampai
-            // diisi di koding.
+            // `route`/`scope` OPSIONAL (boleh dikosongkan di form -- menu yang
+            // belum punya tujuan tetap tampil dan link-nya berujung 404 sampai
+            // route diisi; lihat `Menu::linkUrl()`). Saat terisi, `route`
+            // boleh teks bebas apa pun dan TIDAK divalidasi `Route::has` --
+            // mengetiknya adalah janji bahwa route akan didaftarkan developer,
+            // bukan syarat route itu sudah ada. `scope` dibatasi pola huruf
+            // kecil/titik karena `EnsureMenuAccess` mencocokkan prefix
+            // `str_starts_with($routeName, $scope.'.')`.
+            'route' => ['nullable', 'string', 'max:150'],
+            'scope' => ['nullable', 'string', 'max:100', 'regex:/^[a-z][a-z0-9._-]*$/'],
             // `Rule::in(Menu::sections())` DIHAPUS: admin boleh membuat section
             // baru langsung dari form (Select2 `tags`). `Menu::sections()` kini
             // turunan default + isi database, jadi section baru langsung tampil
@@ -70,7 +74,7 @@ class StoreMenuRequest extends FormRequest
     {
         $bersih = [];
 
-        foreach (['parent_id', 'label', 'section'] as $kunci) {
+        foreach (['parent_id', 'label', 'icon', 'route', 'scope', 'section'] as $kunci) {
             if (is_scalar($this->input($kunci))) {
                 $bersih[$kunci] = trim((string) $this->input($kunci));
             }
@@ -89,6 +93,8 @@ class StoreMenuRequest extends FormRequest
         return [
             'label.required' => 'Label menu harus diisi.',
             'label.max' => 'Label menu maksimal 100 karakter.',
+            'route.max' => 'Nama route maksimal 150 karakter.',
+            'scope.regex' => 'Scope harus huruf kecil, angka, titik, atau garis bawah.',
             'section.required' => 'Section menu harus diisi.',
             'section.max' => 'Section menu maksimal 100 karakter.',
             'urutan.required' => 'Urutan menu harus diisi.',

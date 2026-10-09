@@ -72,8 +72,8 @@ class Menu extends Model
      * 2. `route` terisi tapi belum terdaftar (koding belum lengkap) -> URL
      *    diturunkan dari nama route (`admin.x.y` -> `/admin/x/y`) yang akan
      *    berujung 404 -- menu tetap bisa diklik, bukan `<span>` mati;
-     * 3. `route` masih NULL (belum dikoding) -> URL sentinel
-     *    `/__menu__/{id}` yang juga menghasilkan 404.
+     * 3. `route` masih NULL (belum dikoding) -> `href="#"`; link tidak
+     *    melakukan navigasi (inert), bukan ke halaman 404.
      *
      * Sengaja mengembalikan string (bukan null): sidebar selalu merender `<a>`.
      */
@@ -85,7 +85,7 @@ class Menu extends Model
 
         $slug = trim(str_replace('.', '/', (string) $this->route), '/');
 
-        return $slug === '' ? url('/__menu__/'.$this->id) : url('/'.$slug);
+        return $slug === '' ? '#' : url('/'.$slug);
     }
 
     /**

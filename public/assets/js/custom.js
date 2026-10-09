@@ -226,15 +226,23 @@ $(function () {
     // .select2-container supaya tetap muncul di bawah input seperti semua
     // field lain. Input normal tetap memakai $anchor.after().
     var $after = $anchor;
+    var $select2 = $();
     if ($anchor.is("select") && $anchor.hasClass("select2-hidden-accessible")) {
-      var $container = $anchor.next(".select2-container");
-      if ($container.length) {
-        $after = $container;
+      $select2 = $anchor.next(".select2-container");
+      if ($select2.length) {
+        $after = $select2;
       }
     }
 
     $el.addClass("is-invalid").attr("aria-invalid", "true");
     $group.addClass("is-invalid");
+    // `<select>` aslinya disembunyikan select2 (`display:none`), jadi
+    // `.is-invalid` di atas tidak akan pernah mewarnai kotak yang terlihat.
+    // Bawa class error ke `.select2-container` (kotak); border merahnya
+    // datang dari `.select2-container.is-invalid` di custom.css.
+    if ($select2.length) {
+      $select2.addClass("is-invalid");
+    }
     cerminIsInvalid($el);
 
     var $feedback = $anchor.parent().children('.invalid-feedback[data-ajax]');
@@ -456,6 +464,7 @@ $(function () {
 
     $el.removeClass("is-invalid").removeAttr("aria-invalid");
     $el.closest(".input-group").removeClass("is-invalid");
+    $el.next(".select2-container").removeClass("is-invalid");
     $el.parent()
       .children('.invalid-feedback[data-ajax]')
       .css("display", "none")

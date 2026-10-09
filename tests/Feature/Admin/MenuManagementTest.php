@@ -18,12 +18,12 @@ beforeEach(function () {
 });
 
 /**
- * Mewakili penyimpanan menu dari modal Tambah/Ubah. Superadmin hanya membuat
- * menu tampilan: payload dasar = label, icon, section, urutan. `route`/`scope`
- * BUKAN bidang form -- arah link-nya diisi developer lewat koding
- * (`MenuSeeder`/`tinker`), jadi request yang tetap mengirimnya diabaikan
- * `validated()`. `aktif`/`wajib` juga tanpa input: nilainya diset server
- * (aktif=true, wajib=false saat buat).
+ * Mewakili penyimpanan menu dari modal Tambah/Ubah. Form = 7 field: label,
+ * parent_id, icon, section, urutan, route, scope. `route`/`scope` OPSIONAL
+ * (teks bebas): boleh dikosongkan, dan kalau diisi tidak harus route yang
+ * sudah terdaftar -- menu tetap tampil sebagai link 404 sampai route-nya ada.
+ * `aktif`/`wajib` tidak punya input: nilainya diset server (aktif=true,
+ * wajib=false saat buat).
  *
  * @return array<string, mixed>
  */
@@ -34,6 +34,10 @@ function menuPayload(array $overrides = []): array
         'icon' => 'fas fa-star',
         'section' => 'Administrasi',
         'urutan' => 99,
+        // Route sengaja memakai nama yang TIDAK terdaftar di `routes/` untuk
+        // membuktikan store menerima teks bebas -- bukan hanya route yang ada.
+        'route' => 'admin.kelola.baru',
+        'scope' => 'admin.kelola',
     ], $overrides);
 }
 
@@ -59,10 +63,9 @@ test('super admin can create a menu and it is auto granted to super admin', func
 
     $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
     expect($menu->section)->toBe('Administrasi')
-        // Payload tidak membawa route/scope (form tidak punya inputnya): menu
-        // lahir sebagai tampilan; route/scope diisi developer di koding.
-        ->and($menu->route)->toBeNull()
-        ->and($menu->scope)->toBeNull()
+        // route/scope ikut tersimpan apa adanya (teks bebas, tidak harus terdaftar).
+        ->and($menu->route)->toBe('admin.kelola.baru')
+        ->and($menu->scope)->toBe('admin.kelola')
         // `aktif`/`wajib` tidak punya input: nilainya ditulis server.
         ->and($menu->aktif)->toBeTrue()
         ->and($menu->wajib)->toBeFalse();
@@ -74,23 +77,23 @@ test('super admin can create a menu and it is auto granted to super admin', func
 });
 
 /**
- * route/scope bukan bagian form (superadmin hanya membuat menu tampilan); rule
- * keduanya tidak ada, jadi request yang masih mengirim nilainya DIABAIKAN
- * `store()` -- tersimpan null. Satu-satunya jalur mengisinya adalah koding
- * (`MenuSeeder`/`tinker`), bukan UI.
+ * `route`/`scope` BISA diisi dan diketik bebas -- nilai apa pun (termasuk nama
+ * route yang sama sekali belum terdaftar) diterima dan disimpan apa adanya.
+ * Route tidak divalidasi `Route::has`: mengetiknya adalah janji bahwa calon
+ * route akan didaftarkan developer, bukan syarat bahwa route itu sudah ada.
  */
-test('menu store mengabaikan route dan scope yang dikirim', function () {
+test('menu store menyimpan route dan scope teks bebas', function () {
     actingAs($this->superAdmin)
         ->post(route('admin.menukelola.simpan'), menuPayload([
-            'route' => 'admin.beasiswa.index',
-            'scope' => 'admin.beasiswa',
+            'route' => 'keuangan.laporan.pdf',
+            'scope' => 'keuangan.laporan',
         ]))
         ->assertRedirect(route('admin.menukelola.index'))
         ->assertSessionHas('success');
 
     $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
-    expect($menu->route)->toBeNull()
-        ->and($menu->scope)->toBeNull();
+    expect($menu->route)->toBe('keuangan.laporan.pdf')
+        ->and($menu->scope)->toBe('keuangan.laporan');
 });
 
 /**
@@ -112,11 +115,11 @@ test('menu store accepts a brand new section', function () {
 });
 
 /**
- * Modal Ubah juga tidak mengirim route/scope: `update()` memakai `validated()`
- * dan rule keduanya sudah dihilangkan, jadi route/scope apa pun yang dikirim
- * DIABAIKAN dan nilai tersimpan tetap utuh (koding-only).
+ * Modal Ubah juga membawa route/scope: `update()` memakai `validated()` dan rule
+ * keduanya ada, jadi nilai yang dikirim disimpan -- menu daun wajib mengisinya,
+ * dan route boleh berupa teks bebas yang belum terdaftar.
  */
-test('menu update mengabaikan route dan scope yang dikirim', function () {
+test('menu update menyimpan route dan scope yang dikirim', function () {
     $menu = Menu::create([
         'label' => 'Tautan Lama',
         'icon' => 'fas fa-star',
@@ -136,36 +139,43 @@ test('menu update mengabaikan route dan scope yang dikirim', function () {
         ->assertRedirect(route('admin.menukelola.index'))
         ->assertSessionHas('success');
 
-    expect($menu->fresh()->route)->toBe('admin.beasiswa.index')
-        ->and($menu->fresh()->scope)->toBe('admin.beasiswa')
+    expect($menu->fresh()->route)->toBe('admin.catpil.index')
+        ->and($menu->fresh()->scope)->toBe('admin.catpil')
         ->and($menu->fresh()->label)->toBe('Menu Baru')
         ->and($menu->fresh()->section)->toBe('Administrasi');
 });
 
 /**
- * Route dan Scope TIDAK punya input di kedua modal: superadmin hanya membuat
- * menu untuk tampil di sidebar, dan keduanya diisi DEVELOPER via koding
- * (`MenuSeeder`/`tinker`) -- form sengaja tidak menawarkannya. `aktif` dan
- * `wajib` juga tetap tanpa input: keduanya diset server (aktif=true,
- * wajib=false saat buat) dan tidak pernah diedit lewat form.
+ * Route dan Scope KEDUANYA punya input teks biasa di modal Tambah & Ubah (wajib
+ * untuk menu daun), TANPA datalist -- admin mengetik bebas, tidak memilih dari
+ * daftar route terdaftar. `aktif` dan `wajib` tetap tanpa input: keduanya diset
+ * server (aktif=true, wajib=false saat buat) dan tidak pernah diedit lewat form.
  */
-test('form menu tidak menampilkan route dan scope, juga tidak aktif dan wajib', function () {
+test('form menu menampilkan route dan scope tanpa datalist, dan tidak menampilkan aktif dan wajib', function () {
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
 
     $tambah = Str::betweenFirst($html, 'id="modal-tambah-menu"', 'id="modal-ubah-menu-');
 
-    foreach (['route-tambah', 'scope-tambah', 'aktif-tambah', 'wajib-tambah'] as $idHilang) {
+    foreach (['route-tambah', 'scope-tambah'] as $idInput) {
+        expect($tambah)->toContain('id="'.$idInput.'"');
+    }
+
+    foreach (['aktif-tambah', 'wajib-tambah'] as $idHilang) {
         expect($tambah)->not->toContain('id="'.$idHilang.'"');
     }
 
-    foreach (['name="route"', 'name="scope"', 'name="aktif"', 'name="wajib"', 'daftar-route', 'Aktif (tampil di sidebar)', 'Wajib (selalu digrant ke semua role)'] as $hilang) {
+    foreach (['daftar-route', '<datalist', 'Aktif (tampil di sidebar)', 'Wajib (selalu digrant ke semua role)'] as $hilang) {
         expect($tambah)->not->toContain($hilang);
     }
 
     // Modal Ubah dirender sekali per baris, jadi cukup dicek satu instance.
     $ubah = Str::betweenFirst($html, 'id="modal-ubah-menu-', '</form>');
 
-    foreach (['name="route"', 'name="scope"', 'name="aktif"', 'name="wajib"', 'daftar-route'] as $hilang) {
+    foreach (['name="route"', 'name="scope"'] as $ada) {
+        expect($ubah)->toContain($ada);
+    }
+
+    foreach (['name="aktif"', 'name="wajib"', 'daftar-route', '<datalist'] as $hilang) {
         expect($ubah)->not->toContain($hilang);
     }
 });
@@ -206,15 +216,16 @@ test('menu update mempertahankan aktif dan wajib yang tersimpan', function () {
     expect($menu->fresh()->label)->toBe('Terlihat')
         ->and($menu->fresh()->aktif)->toBeFalse()
         ->and($menu->fresh()->wajib)->toBeTrue()
-        // Route/scope tidak ikut berubah hanya karena form tidak membawanya.
-        ->and($menu->fresh()->route)->toBe('admin.beasiswa.index')
-        ->and($menu->fresh()->scope)->toBe('admin.beasiswa');
+        // Route/scope ikut diperbarui dengan nilai yang dikirim form.
+        ->and($menu->fresh()->route)->toBe('admin.kelola.baru')
+        ->and($menu->fresh()->scope)->toBe('admin.kelola');
 });
 
 /**
  * Field wajib ditandai bintang secara VISUAL saja (span `text-danger`) --
- * `required` HTML dilarang rules form aplikasi ini. Route dan Scope BUKAN field
- * form (koding-only), jadi hanya field tampilan yang berbintang.
+ * `required` HTML dilarang rules form aplikasi ini. Yang berbintang hanya
+ * Label Menu, Section, dan Urutan. Route/Scope OPSIONAL jadi tidak berbintang.
+ * `aktif`/`wajib` tetap tanpa input.
  */
 test('form tambah menu menandai field wajib dengan bintang', function () {
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
@@ -226,9 +237,14 @@ test('form tambah menu menandai field wajib dengan bintang', function () {
         expect($tambah)->toContain('>'.$wajib.' <span class="text-danger">*</span></label>');
     }
 
-    // Route/Scope bukan field form, jadi tidak boleh ada label berbintang.
-    foreach (['Route', 'Scope'] as $bukanField) {
+    // aktif/wajib bukan field form, jadi tidak boleh ada label berbintang.
+    foreach (['Aktif', 'Wajib'] as $bukanField) {
         expect($tambah)->not->toContain('>'.$bukanField.' <span class="text-danger">*</span></label>');
+    }
+
+    // Route/Scope opsional: labelnya tidak berbintang.
+    foreach (['Nama Route', 'Scope'] as $opsional) {
+        expect($tambah)->not->toContain('>'.$opsional.' <span class="text-danger">*</span></label>');
     }
 });
 
@@ -330,6 +346,27 @@ test('super admin can open kelola menu list page', function () {
         ->assertSee('Kelola Menu')
         ->assertSee('Tambah Menu')
         ->assertSee('Daftar Menu Sidebar');
+});
+
+/**
+ * Tabel Kelola Menu menampilkan Route & Scope sebagai kolom (keduanya kini
+ * kolom yang diisi lewat form Tambah/Ubah), lengkap untuk baris induk dan anak.
+ */
+test('tabel kelola menampilkan kolom Route dan Scope', function () {
+    $html = actingAs($this->superAdmin)
+        ->get(route('admin.menukelola.index'))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)
+        ->toContain('<th>Menu</th>')
+        ->toContain('<th>Section</th>')
+        ->toContain('<th>Urutan</th>')
+        ->toContain('<th>Route</th>')
+        ->toContain('<th>Scope</th>')
+        // Nilai scope/route terlihat sebagai <code> di baris menu (mis. induk
+        // Beasiswa ber-scope admin.beasiswa).
+        ->toContain('<code>admin.beasiswa</code>');
 });
 
 test('access menu page filters by role and renders the selected role checklist', function () {
@@ -456,8 +493,10 @@ test('form tambah menu selalu kosong dan dropdownnya tidak preselect', function 
     expect(substr_count($html, 'id="modal-tambah-menu"'))->toBe(1);
 
     // Semua input teks kosong -- tidak ada nilai yang tersisa dari modal
-    // Edit sebelumnya. (route/scope bukan field form, jadi tidak dicek.)
-    expect($html)->toMatch('/id="label-tambah"[^>]*value=""/');
+    // Edit sebelumnya. Route/Scope (yang kini input teks) juga kosong.
+    expect($html)->toMatch('/id="label-tambah"[^>]*value=""/')
+        ->toMatch('/id="route-tambah"[^>]*value=""/')
+        ->toMatch('/id="scope-tambah"[^>]*value=""/');
 
     // Dropdown punya opsi kosong, dan tidak ada opsi yang ter-select. Tanpa
     // `<option value="">` yang ini akan diam-diam memilih "Menu Utama".
@@ -499,6 +538,9 @@ test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function
     expect($ubah)
         ->toMatch('/id="label-'.$menu->id.'"[^>]*value="'.preg_quote($menu->label, '/').'"/')
         ->toMatch('/id="urutan-'.$menu->id.'"[^>]*value="'.$menu->urutan.'"/')
+        // Route/Scope ikut mempertahankan nilai tersimpan.
+        ->toMatch('/id="route-'.$menu->id.'"[^>]*value="'.preg_quote((string) $menu->route, '/').'"/')
+        ->toMatch('/id="scope-'.$menu->id.'"[^>]*value="'.preg_quote((string) $menu->scope, '/').'"/')
         // Dropdown Edit menyeleksi nilai tersimpan, bukan placeholder.
         ->toMatch('/<option value="Verifikasi" selected>/')
         // Target modal Edit harus unik: kalau tidak, `old()` dari Edit satu
@@ -549,6 +591,97 @@ test('blok script kelola menu bebas dari direktif Blade', function () {
     preg_match_all('/@[a-z]+/i', $blok, $direktif);
 
     expect(array_map('strtolower', array_unique($direktif[0])))->each->toBeIn($boleh);
+});
+
+// ─── Route & Scope: opsional di form, teks bebas ─────────────────────────
+
+/**
+ * `route`/`scope` OPSIONAL: request yang terkirim BUKAN field wajib, jadi
+ * mengosongkannya valid dan menu lahir tanpa route/scope (link 404 sampai
+ * route-nya diisi di koding/`tinker`).
+ */
+test('menu store menerima route dan scope kosong', function () {
+    actingAs($this->superAdmin)
+        ->post(route('admin.menukelola.simpan'), menuPayload(['route' => '', 'scope' => '']))
+        ->assertRedirect(route('admin.menukelola.index'))
+        ->assertSessionHas('success');
+
+    $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
+    expect($menu->route)->toBeNull()
+        ->and($menu->scope)->toBeNull();
+});
+
+/**
+ * `scope` dipakai `EnsureMenuAccess` sebagai prefix `str_starts_with`, jadi
+ * polanya dibatasi huruf kecil/angka/titik/garis bawah. `route` TIDAK dibatasi
+ * -- boleh teks apa pun, termasuk yang belum terdaftar.
+ */
+test('scope menolak karakter selain huruf kecil, angka, titik, dan garis bawah', function () {
+    actingAs($this->superAdmin)
+        ->post(route('admin.menukelola.simpan'), menuPayload(['scope' => 'Admin Beasiswa']))
+        ->assertSessionHasErrors(['scope' => 'Scope harus huruf kecil, angka, titik, atau garis bawah.']);
+
+    expect(Menu::where('label', 'Menu Baru')->exists())->toBeFalse();
+});
+
+/**
+ * Menu DAUN juga boleh mengosongkan route/scope saat diubah: nilainya dihapus
+ * (menu tetap tampil sebagai link 404 sampai route diisi kembali).
+ */
+test('menu daun boleh mengosongkan route dan scope saat diupdate', function () {
+    $menu = Menu::create([
+        'label' => 'Daun Kunci',
+        'icon' => 'fas fa-star',
+        'route' => 'admin.beasiswa.index',
+        'scope' => 'admin.beasiswa',
+        'section' => 'Administrasi',
+        'urutan' => 50,
+        'aktif' => true,
+    ]);
+
+    actingAs($this->superAdmin)
+        ->put(route('admin.menukelola.perbarui', $menu), menuPayload(['route' => '', 'scope' => '']))
+        ->assertRedirect(route('admin.menukelola.index'))
+        ->assertSessionHas('success');
+
+    expect($menu->fresh()->route)->toBeNull()
+        ->and($menu->fresh()->scope)->toBeNull();
+});
+
+/**
+ * Induk maupun daun: update tanpa membawa route/scope (kunci tidak ada sama
+ * sekali) tetap valid dan tidak menciptakan baris baru.
+ */
+test('menu induk boleh diupdate tanpa route dan scope', function () {
+    $induk = Menu::whereNull('parent_id')->has('children')->firstOrFail();
+
+    actingAs($this->superAdmin)
+        ->put(route('admin.menukelola.perbarui', $induk), [
+            'label' => 'Induk Diuji',
+            'section' => $induk->section,
+            'urutan' => $induk->urutan,
+        ])
+        ->assertRedirect(route('admin.menukelola.index'))
+        ->assertSessionHas('success');
+
+    expect($induk->fresh()->label)->toBe('Induk Diuji')
+        ->and($induk->fresh()->route)->toBeNull()
+        ->and($induk->fresh()->scope)->toBeNull();
+});
+
+/**
+ * Route/Scope OPSIONAL untuk SEMUA menu (daun maupun induk), jadi tidak boleh
+ * ada bintang `*` di label keduanya di modal mana pun, juga tidak boleh ada
+ * keterangan bersyarat per-menu.
+ */
+test('route dan scope tidak berbintang di modal tambah dan ubah', function () {
+    $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
+
+    foreach (['Nama Route', 'Scope'] as $opsional) {
+        expect($html)->not->toContain('>'.$opsional.' <span class="text-danger">*</span></label>');
+    }
+
+    expect($html)->not->toContain('(opsional untuk menu induk)');
 });
 
 // ─── Select2 `tags`: buat induk & section baru langsung dari form ────────
@@ -746,4 +879,32 @@ test('pesan error ajax select2 disisipkan setelah kotak select2', function () {
         ->toContain('select2-hidden-accessible')
         ->toContain('$anchor.next(".select2-container")')
         ->toContain('$after.after($feedback)');
+});
+
+/**
+ * Border merah error validasi field select2: `.is-invalid` ada di `<select>`
+ * tersembunyi, jadi `paintFieldError()` (AJAX) membawa class itu ke
+ * `.select2-container`, dan CSS di custom.css memetakan `is-invalid` pada
+ * container menjadi warna border merah pada kotak yang terlihat.
+ */
+test('select2 disorot merah saat error validasi', function () {
+    $js = file_get_contents(base_path('public/assets/js/custom.js'));
+    $css = file_get_contents(base_path('public/assets/css/custom.css'));
+    $blade = file_get_contents(resource_path('views/admin/menu/kelola.blade.php'));
+
+    // paintFieldError membawa is-invalid ke kotak select2.
+    expect($js)
+        ->toContain('$select2.addClass("is-invalid")')
+        // Error ikut dibersihkan saat user mengubah nilai field select2.
+        ->toContain('$el.next(".select2-container").removeClass("is-invalid")');
+
+    // Kotak select2 yang error berborder merah.
+    expect($css)
+        ->toContain('.select2-container.is-invalid .select2-selection--single {')
+        ->toContain('border-color: #dc3545;');
+
+    // Jalur render-server (fallback old('modal_target')) ikut menyorot merah.
+    expect($blade)
+        ->toContain("if (\$select.hasClass('is-invalid'))")
+        ->toContain("\$select.next('.select2-container').addClass('is-invalid')");
 });

@@ -6,6 +6,10 @@
   $iconVal = $isTarget ? old('icon', $menu->icon) : $menu->icon;
   $sectionVal = $isTarget ? old('section', $menu->section) : $menu->section;
   $urutanVal = $isTarget ? old('urutan', $menu->urutan) : $menu->urutan;
+  // `route`/`scope` OPSIONAL di semua menu -- boleh dikosongkan; jika diisi,
+  // `route` bebas teks (input TANPA datalist), tidak harus sudah terdaftar.
+  $routeVal = $isTarget ? old('route', $menu->route) : $menu->route;
+  $scopeVal = $isTarget ? old('scope', $menu->scope) : $menu->scope;
   // `aktif`/`wajib` sengaja TIDAK punya input di modal ini: `update()` tidak
   // menyentuh kedua kolom itu sama sekali, jadi status lama menu tetap utuh.
 @endphp
@@ -59,6 +63,19 @@
                 @endforeach
               </select>
               @if($isTarget && $errors->has('section'))<div class="invalid-feedback">{{ $errors->first('section') }}</div>@endif
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="route-{{ $menu->id }}">Nama Route</label>
+              <input type="text" class="form-control {{ $isTarget && $errors->has('route') ? 'is-invalid' : '' }}" id="route-{{ $menu->id }}" name="route" value="{{ $routeVal }}" placeholder="contoh: admin.beasiswa.index">
+              @if($isTarget && $errors->has('route'))<div class="invalid-feedback">{{ $errors->first('route') }}</div>@endif
+            </div>
+            <div class="form-group col-md-6">
+              <label for="scope-{{ $menu->id }}">Scope</label>
+              <input type="text" class="form-control {{ $isTarget && $errors->has('scope') ? 'is-invalid' : '' }}" id="scope-{{ $menu->id }}" name="scope" value="{{ $scopeVal }}" placeholder="contoh: admin.beasiswa">
+              @if($isTarget && $errors->has('scope'))<div class="invalid-feedback">{{ $errors->first('scope') }}</div>@endif
             </div>
           </div>
 
