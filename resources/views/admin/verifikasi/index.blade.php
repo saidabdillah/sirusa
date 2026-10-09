@@ -78,9 +78,7 @@ $filterOptions = [
           <div class="card-body">
             <div class="alert alert-primary">
               <i class="fas fa-info-circle mr-1"></i>
-              Verifikasi berjalan berurutan: <strong>Catpil &rarr; Kampus &rarr; Kesra</strong>.
               Anda hanya dapat memverifikasi profil yang seluruh tahap sebelumnya sudah disetujui.
-              Profil yang sudah Anda putuskan tetap ditampilkan agar keputusannya bisa diubah kembali.
             </div>
             <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
               <div class="col-md-4 mb-2 mb-md-0">
@@ -130,9 +128,9 @@ $filterOptions = [
                     @endforeach
                     <td>
                       <span class="badge badge-{{ $decision['badge'] }}">{{ $decision['label'] }}</span>
-                      @if($p->{'catatan_'.$stage})
-                      <small class="text-muted d-block">{{ Str::limit($p->{'catatan_'.$stage}, 40) }}</small>
-                      @endif
+                    @if($p->{'catatan_'.$stage})
+                      <small class="text-muted">{{ Str::limit($p->{'catatan_'.$stage}, 40) }}</small>
+                    @endif
                     </td>
                     <td>
                       <a href="{{ route($routePrefix.'.lihat', $user) }}"

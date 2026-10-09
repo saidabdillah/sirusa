@@ -66,16 +66,17 @@
         </div>
         <div class="card-body">
           @forelse($deadline as $beasiswa)
-            <div class="d-flex align-items-center mb-3">
-              <div class="mr-3">
-                <div class="badge badge-{{ $beasiswa->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
+            {{-- Versi vertikal dari blok yang sama di dasbor mahasiswa
+                 (`dasbor/mahasiswa.blade.php`), tanpa tombol karena Super Admin
+                 sudah punya tautan "Kelola Beasiswa" di header card. --}}
+            <div class="mb-3 pb-3 border-bottom">
+              <div class="mb-1">
+                <span class="badge badge-{{ $beasiswa->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
                   {{ $beasiswa->tanggal_selesai?->diffForHumans() }}
-                </div>
+                </span>
               </div>
-              <div class="flex-grow-1">
-                <div class="font-weight-bold">{{ $beasiswa->nama }}</div>
-                <div class="text-small text-muted">{{ $beasiswa->kampus }} &middot; sisa kuota {{ $beasiswa->sisaKuota() }}</div>
-              </div>
+              <div class="font-weight-bold">{{ $beasiswa->nama }}</div>
+              <div class="text-small text-muted">{{ $beasiswa->kampus }} &middot; sisa kuota {{ $beasiswa->sisaKuota() }}</div>
             </div>
           @empty
             <div class="text-center text-muted">Tidak ada batas waktu mendatang</div>

@@ -129,6 +129,39 @@ test('setiap field bertanda bintang di form profil wajib diisi', function (strin
     'ktp_ayah', 'ktp_ibu', 'ktp_wali', 'kk_wali',
 ]);
 
+test('cascade kampus, fakultas, dan prodi harus konsisten satu sama lain', function () {
+    $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Ranking Dua']);
+    $fakultasLain = $kampusLain->fakultas()->create(['nama' => 'Fakultas Ekonomi']);
+    $prodiLain = $fakultasLain->prodi()->create(['nama' => 'Akuntansi']);
+
+    // Prodi dari kampus A, tapi nama kampus dikirim dari kampus B.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($prodiLain->id, [
+            'nama_kampus' => $this->kampus->nama_kampus,
+            'fakultas' => $fakultasLain->nama,
+        ]))
+        ->assertSessionHasErrors('prodi_id');
+
+    // Prodi dan kampus benar, tapi fakultas milik kampus lain.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($prodiLain->id, [
+            'nama_kampus' => $kampusLain->nama_kampus,
+            'fakultas' => $this->fakultas->nama,
+        ]))
+        ->assertSessionHasErrors('prodi_id');
+
+    // Kombinasi yang konsisten tetap lolos.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($prodiLain->id, [
+            'nama_kampus' => $kampusLain->nama_kampus,
+            'fakultas' => $fakultasLain->nama,
+        ]))
+        ->assertSessionDoesntHaveErrors();
+
+    expect(UserProfile::where('user_id', $this->user->id)->value('prodi_id'))
+        ->toBe($prodiLain->id);
+});
+
 test('dropdown kampus dan fakultas menolak pilihan kosong', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, ['nama_kampus' => '']))

@@ -558,8 +558,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
             </div>
             @else
             <div class="text-muted small">
-              Akun staf tidak punya data profil. Email dan kata sandi dikelola di
-              <a href="{{ route('settings') }}">Pengaturan</a>.
+              Akun staf tidak punya data profil.
             </div>
             @endif
           </div>
@@ -580,18 +579,28 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   });
 
   if (typeof Cleave !== 'undefined' && document.getElementById('ukt')) {
-    // UKT adalah rupiah bulat, jadi `numeralDecimalScale: 0`. Konfigurasi
-    // sebelumnya set `numeralDecimalMark: ','`; Cleave lalu membuang karakter
-    // apa pun yang bukan digit/koma, termasuk titik. Nilai dari database
-    // (`decimal(10,2)`) adalah "1500000.00" — titiknya hilang tapi "00"-nya
-    // tetap ikut, jadi 1500000 tampil jadi 150.000.000 dan angka itu tersimpan
-    // ulang setiap kali form dikirim. `decimal:0` di cast `UserProfile`
-    // membuat Blade hanya mengirim digit, dan `onValueChanged` menjaga agar
-    // nilai yang sudah di-format tidak dibaca ulang sebagai input mentah.
+    // UKT adalah rupiah bulat, jadi `numeralDecimalScale: 0`.
+    //
+    // `numeralDecimalMark` HARUS tetap berbeda dari `delimiter`. Kalau
+    // diomit, Cleave memakai default '.' yang sama persis dengan delimiter
+    // ribuan, sehingga titik jadi penanda desimal sekaligus pemisah ribuan.
+    // Begitu nilai ter-format seperti "1.000" melewati batas ribuan, Cleave
+    // salah membaca titiknya sebagai desimal dan nilai yang sudah diformat
+    // rusak atau kembali ke nol. Koma aman dipakai karena
+    // `numeralDecimalScale: 0` membuat bagian desimal tidak pernah ada
+    // maupun ditampilkan.
+    //
+    // Tiga lapis ini harus utuh: cast `decimal:0` di `UserProfile` supaya
+    // Blade hanya mengirim digit (bukan "1500000.00" dari kolom
+    // `decimal(10,2)`), konfigurasi Cleave di atas supaya digit yang masuk
+    // dirender berformat Indonesia, dan `normalisasiRupiah()` di
+    // `UpdateProfilRequest` supaya apa pun yang lolos tetap sampai ke aturan
+    // `numeric` sebagai bilangan bulat.
     var uktCleave = new Cleave('#ukt', {
       numeral: true,
       numeralThousandsGroupStyle: 'thousand',
       delimiter: '.',
+      numeralDecimalMark: ',',
       numeralIntegerScale: 15,
       numeralDecimalScale: 0,
       numeralPositiveOnly: true,

@@ -319,10 +319,22 @@ $(function () {
           return;
         }
 
+        // Standar success untuk seluruh aplikasi: alert muncul dulu, menutup
+        // dirinya sendiri setelah 1500 ms, baru halaman disegarkan di dalam
+        // `.then()`.
+        //
+        // `showConfirmButton: false` + `timer` berpasangan: tanpa timer, alert
+        // menunggu klik OK dan user harus menekan dua kali untuk menyelesaikan
+        // satu aksi. `refreshAfterSave()` harus tetap DI DALAM `.then()` -- kalau
+        // dipindah ke luar, navigasi berjalan bersamaan dengan animasi alert
+        // dan success-nya tidak pernah terlihat sama sekali.
         Swal.fire({
           icon: "success",
           title: "Berhasil",
           text: (payload && payload.message) || "Data berhasil disimpan.",
+          timer: 1500,
+          showConfirmButton: false,
+          timerProgressBar: true,
         }).then(function () {
           if (typeof options.onSuccess === "function") {
             options.onSuccess(payload, $form);
@@ -334,6 +346,13 @@ $(function () {
       })
       .fail(function (xhr) {
         var payload = xhr.responseJSON || {};
+
+        // Jalur ini TIDAK BOLEH pernah memanggil `refreshAfterSave()` atau
+        // menavigasi halaman. Error -- 422 validasi, 419 sesi kedaluwarsa, 403
+        // akses, 500, atau koneksi putus (status 0) -- selalu harus meninggalkan
+        // user di form yang sama supaya isinya tidak hilang dan supaya ia bisa
+        // memperbaiki lalu mencoba lagi. Semua cabang di bawah hanya melukis
+        // pesan dan `return`; pemulihan tombol terjadi di `.always()`.
 
         // 422 = validation error Laravel. TETAP digambar di bawah input,
         // bukan diganti SweetAlert, supaya user tahu field mana yang salah.

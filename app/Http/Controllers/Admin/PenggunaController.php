@@ -158,12 +158,27 @@ class PenggunaController extends Controller
         return $this->ajaxOk($request, 'Data pengguna berhasil diperbarui', route('admin.pengguna.index'));
     }
 
+    /**
+     * Mengaktifkan/menonaktifkan akun siapa pun kecuali super_admin.
+     *
+     * Gate memakai `canManageUsers()`, bukan `hasRole('super_admin')`, supaya
+     * konsisten dengan `update()`: peran yang boleh menyunting akun lewat form
+     * Ubah sudah bisa mengubah status di sana juga, jadi aksi ini harus terbuka
+     * untuk peran yang sama. Kalau hanya super_admin, Kesra bisa mengubah status
+     * lewat form Ubah tetapi tidak lewat shortcut di daftar.
+     *
+     * Dua pengecualian yang berlaku untuk semua peran: akun sendiri tidak boleh
+     * dinonaktifkan (mengunci akses) dan akun super_admin tidak boleh disentuh
+     * sama sekali.
+     */
     public function toggleStatus(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        abort_unless(auth()->user()->hasRole('super_admin'), 403);
+        abort_unless(auth()->user()->canManageUsers(), 403);
 
-        if ($user->hasRole('super_admin')) {
-            return $this->ajaxFail($request, 'Anda tidak dapat mengubah status Super Admin', route('admin.pengguna.index'));
+        $this->abortUnlessMayTouch($user);
+
+        if ($user->id === auth()->id()) {
+            return $this->ajaxFail($request, 'Anda tidak dapat menonaktifkan akun sendiri', route('admin.pengguna.index'));
         }
 
         $newStatus = $user->status === 'aktif' ? 'non-aktif' : 'aktif';
@@ -174,15 +189,29 @@ class PenggunaController extends Controller
         return $this->ajaxOk($request, "Pengguna berhasil {$label}", route('admin.pengguna.index'));
     }
 
+    /**
+     * Reset kata sandi ke default awal.
+     *
+     * Sama seperti `toggleStatus()`, gate-nya `canManageUsers()` agar konsisten
+     * dengan hak akses menyunting akun. `abortUnlessMayTouch()` menahan peran
+     * non-super_admin agar tidak bisa mereset kata sandi akun super_admin.
+     */
     public function resetPassword(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        abort_unless(auth()->user()->hasRole('super_admin'), 403);
+        abort_unless(auth()->user()->canManageUsers(), 403);
+
+        $this->abortUnlessMayTouch($user);
 
         $user->update(['password' => '12345678']);
 
         return $this->ajaxOk($request, "Kata sandi '{$user->username}' berhasil direset menjadi 12345678", route('admin.pengguna.index'));
     }
 
+    /**
+     * Menghapus akun adalah aksi destruktif paling berat, jadi tetap khusus
+     * super_admin meski peran lain boleh menyunting, mengubah status, dan
+     * mereset kata sandi. Kesra sengaja tidak diberi akses hapus.
+     */
     public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
         abort_unless(auth()->user()->hasRole('super_admin'), 403);

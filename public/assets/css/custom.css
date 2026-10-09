@@ -82,6 +82,25 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   }
 }
 
+/* Tables never wrap a cell onto a second line: a wrapped value makes the row
+   height jump and the column stops being scannable (a name or a date that
+   breaks mid-word is much harder to read than a horizontal scroll). Every
+   table in the app is already wrapped in `.table-responsive`, so the extra
+   width turns into a horizontal scrollbar inside the card instead of a
+   reflowed, misaligned grid.
+
+   `th`/`td` are scoped to direct children of thead/tbody so nested tables
+   (the mail templates) are not affected, and `caption` is untouched.
+
+   No cell is exempt -- not even `Catatan`. An earlier revision carved out
+   `.catatan-cell` for long verifikator notes, which reintroduced exactly the
+   mid-word column breaks this rule exists to prevent, in the one column that
+   is the most variable. Every table cell now stays on one line. */
+.table > thead > tr > th,
+.table > tbody > tr > td {
+  white-space: nowrap;
+}
+
 /* ==============================
    Skeleton loading screen
    ============================== */

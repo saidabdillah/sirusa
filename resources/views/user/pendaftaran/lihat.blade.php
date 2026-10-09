@@ -41,20 +41,29 @@
           </div>
           <div class="card-body text-center">
             <div class="mb-3">
-              {{-- @break WAJIB di barisnya sendiri: menempel pada teks tanpa
-                   spasi di depannya membuat direktif itu tidak terkompilasi
-                   Blade dan muncul apa adanya di halaman. --}}
+              {{-- `@break` WAJIB di baris sendiri. Scanner Blade memindai
+                   directive dengan pola `\B@`, yaitu "@" tidak boleh berada di
+                   word boundary. Kalau `@break` menempel setelah teks
+                   ("Verifikasi@break"), huruf sebelum "@" yang mengakhiri kata
+                   membuat "@" jadi word boundary, `\B@` gagal, dan `@break`
+                   TIDAK dikompilasi -- ia tercetak literal di badge dan PHP
+                   jatuh ke case berikutnya. Efeknya satu baris status
+                   sekaligus menampilkan semua ikon, semua label, dan teks
+                   "@break". --}}
               <span class="badge badge-{{ $applicant->statusBadge() }} p-2">
                 @switch($applicant->status)
                   @case('verifikasi')
                     <i class="fas fa-clock"></i> Verifikasi
-                  @break
+                    @break
                   @case('diterima')
                     <i class="fas fa-check-circle"></i> Diterima
-                  @break
+                    @break
                   @case('ditolak')
                     <i class="fas fa-times-circle"></i> Ditolak
-                  @break
+                    @break
+                  @case('dibatalkan')
+                    <i class="fas fa-ban"></i> Dibatalkan
+                    @break
                   @default
                     <i class="fas fa-ban"></i> {{ $applicant->statusLabel() }}
                 @endswitch
@@ -67,11 +76,21 @@
             </div>
             @endif
             @if($applicant->canBeCancelled())
+              {{-- Konfirmasi pakai `.btn-confirm-toggle` yang sudah ditangani
+                   global di `custom.js`, bukan `onclick="return confirm()"`.
+                   `confirm()` native milik browser tidak seragam dengan
+                   SweetAlert2 di halaman lain dan tampilannya berbeda
+                   tiap browser. --}}
               <form action="{{ route('user.pendaftaran.batal', $applicant) }}" method="POST" data-ajax-form class="mt-3">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-outline-danger btn-block btn-sm"
-                        onclick="return confirm('Batalkan pendaftaran ini? Anda bisa mendaftar beasiswa lain setelahnya.')">
+                <button type="button" class="btn btn-outline-danger btn-block btn-sm btn-confirm-toggle"
+                        data-confirm-title="Batalkan Pendaftaran?"
+                        data-confirm-text="Pendaftaran Beasiswa {{ $applicant->beasiswa->nama }} akan dibatalkan dan Anda bisa mendaftar beasiswa lain. Lanjutkan?"
+                        data-confirm-icon="warning"
+                        data-confirm-color="#e74c3c"
+                        data-confirm-button="Ya, Batalkan!"
+                        data-loading-text="Membatalkan...">
                   <i class="fas fa-times"></i> Batalkan Pendaftaran
                 </button>
               </form>
@@ -81,7 +100,7 @@
 
         {{-- Kartu status per tahap dihapus. Yang ditampilkan hanya catatan
              verifikator, karena itu umpan balik yang harus ditindaklanjuti
-             mahasiswastatus tahapnya sendiri tidak ditampilkan. --}}
+             mahasiswa; status tahapnya sendiri tidak ditampilkan. --}}
         @if($profile->catatan_catpil || $profile->catatan_kampus || $profile->catatan_kesra)
         <div class="card">
           <div class="card-header">

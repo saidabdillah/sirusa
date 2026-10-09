@@ -42,13 +42,21 @@ class StoreScholarshipRequest extends FormRequest
         return [
             function (Validator $validator) {
                 $kampusId = (int) $this->input('kampus_id');
+                $tersimpan = [];
 
                 foreach ($this->input('prodi_ids', []) as $prodiId) {
-                    $fakultas = Prodi::query()->whereKey($prodiId)->first()?->fakultas;
+                    $prodi = Prodi::query()->whereKey($prodiId)->first();
 
-                    if ($fakultas && $fakultas->kampus_id !== $kampusId) {
-                        $validator->errors()->add('prodi_ids', 'Semua program studi harus berada di kampus tujuan beasiswa.');
+                    if ($prodi && $prodi->fakultas?->kampus_id !== $kampusId) {
+                        $tersimpan[] = $prodi->nama;
                     }
+                }
+
+                if ($tersimpan !== []) {
+                    $validator->errors()->add(
+                        'prodi_ids',
+                        'Program studi berikut tidak berada di kampus tujuan: '.implode(', ', $tersimpan).'.'
+                    );
                 }
             },
         ];

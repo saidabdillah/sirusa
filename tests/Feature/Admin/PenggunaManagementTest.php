@@ -508,21 +508,41 @@ test('kesra cannot delete user', function () {
     $this->assertDatabaseHas('users', ['id' => $this->user->id]);
 });
 
-// ─── Kesra: Toggle Status ────────────────────────────────────────
+// ─── Kesra: Kelola Status ────────────────────────────────────────
+// Kesra boleh mengubah status akun: sebelum ini peran ini bisa mengubah
+// status lewat form Ubah (`update()`) tetapi tidak lewat shortcut di daftar,
+// jadi_shortcutnya ditutup super_admin saja. Gate-nya kini `canManageUsers()`,
+// sama dengan form Ubah.
 
-test('kesra cannot toggle any user status', function () {
+test('kesra can toggle a non super admin user status', function () {
     $this->actingAs($this->admin);
 
-    patch(route('admin.pengguna.toggle-status', $this->user))->assertForbidden();
+    patch(route('admin.pengguna.toggle-status', $this->user))
+        ->assertRedirect(route('admin.pengguna.index'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('users', ['id' => $this->user->id, 'status' => 'non-aktif']);
 });
 
 test('kesra cannot toggle super admin status', function () {
     $this->actingAs($this->admin);
 
     patch(route('admin.pengguna.toggle-status', $this->superAdmin))->assertForbidden();
+
+    $this->assertDatabaseHas('users', ['id' => $this->superAdmin->id, 'status' => 'aktif']);
 });
 
-// ─── Super Admin: Reset Password ─────────────────────────────────
+test('nobody can deactivate their own account from the list', function () {
+    $this->actingAs($this->admin);
+
+    patch(route('admin.pengguna.toggle-status', $this->admin))
+        ->assertRedirect(route('admin.pengguna.index'))
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseHas('users', ['id' => $this->admin->id, 'status' => 'aktif']);
+});
+
+// ─── Super Admin & Kesra: Reset Password ─────────────────────────
 
 test('super admin can reset a user password to 12345678', function () {
     $this->actingAs($this->superAdmin);
@@ -535,10 +555,23 @@ test('super admin can reset a user password to 12345678', function () {
     expect(Hash::check('12345678', $this->user->fresh()->password))->toBeTrue();
 });
 
-test('kesra cannot reset a user password', function () {
+test('kesra can reset a non super admin user password', function () {
     $this->actingAs($this->admin);
 
-    post(route('admin.pengguna.reset-password', $this->user))->assertForbidden();
+    post(route('admin.pengguna.reset-password', $this->user))
+        ->assertRedirect(route('admin.pengguna.index'))
+        ->assertSessionHas('success');
+
+    expect(Hash::check('12345678', $this->user->fresh()->password))->toBeTrue();
+});
+
+test('kesra cannot reset a super admin password', function () {
+    $original = $this->superAdmin->password;
+    $this->actingAs($this->admin);
+
+    post(route('admin.pengguna.reset-password', $this->superAdmin))->assertForbidden();
+
+    expect($this->superAdmin->fresh()->password)->toBe($original);
 });
 
 // ─── Unauthenticated: Cannot Access ──────────────────────────────
@@ -570,16 +603,22 @@ test('kesra can view user list with the Tambah Pengguna button', function () {
         ->assertSee(route('admin.pengguna.buat'));
 });
 
-test('kesra sees only the Ubah action, not delete or reset password', function () {
+test('kesra sees edit, status, and reset actions but not delete', function () {
     $this->actingAs($this->admin);
 
     $response = get(route('admin.pengguna.index'));
 
     $response->assertOk();
     $response->assertSee(route('admin.pengguna.ubah', $this->user));
+    $response->assertSee(route('admin.pengguna.toggle-status', $this->user));
+    $response->assertSee(route('admin.pengguna.reset-password', $this->user));
+    $response->assertSee('Nonaktifkan');
+    // URL hapus (/admin/pengguna/{id}) adalah AWAL dari URL ubah dan status,
+    // jadi `assertDontSee(route(...))` selalu gagal palsu di halaman ini.
+    // Penanda yang benar-benar milik aksi hapus: label tombol dan form
+    // `@method('DELETE')` (kelas `btn-delete` juga muncul di komentar JS).
     $response->assertDontSee('Hapus User');
-    $response->assertDontSee('Reset Password');
-    $response->assertDontSee('Nonaktifkan');
+    $response->assertDontSee('value="DELETE"');
 });
 
 test('kesra can access create user form without the super admin option', function () {

@@ -5,6 +5,16 @@ paths:
 
 # Js
 
+## Success WAIT timer 1500 tanpa tombol OK, dan refresh HANYA di dalam `.then()`
+`submitAjax()` punya satu `Swal.fire` success untuk seluruh aplikasi (35 form di 34 view), jadi bentuknya dipin di sini: `timer: 1500` + `showConfirmButton: false` + `timerProgressBar: true`, `text` dari `payload.message`, dan `refreshAfterSave($form, payload)` DI DALAM `.then()`.
+
+Dua trap yang menjadi penyebab bug di balik rule ini:
+
+- **`showConfirmButton: false` tanpa `timer` tidak menutup apa pun.** Alertnya menggantung dan user harus menekan dua kali untuk menyelesaikan satu aksi. Keduanya harus berpasangan; menambah `showConfirmButton: false` saja adalah regresi.
+- **Refresh harus di dalam `.then()`.** Dipindah ke luar, navigasi berjalan bersamaan dengan animasi alert dan success-nya tidak pernah terlihat -- persis gejala "pesan langsung hilang saat reload".
+
+Jalur `payload.success === false` (backend membalas HTTP 200 dengan `success:false`) TIDAK boleh mewarisi timer itu: pesan error butuh tombol OK karena user harus membacanya dan memperbaikinya. `.fail()` juga tidak boleh pernah memanggil `refreshAfterSave()` atau navigasi -- error (422/419/403/500/status 0) selalu meninggalkan user di form yang sama supaya isinya tidak hilang. `window.location.assign` hidup hanya di dalam `refreshAfterSave()`, dan fungsi itu hanya dipanggil dari `.then()` success. Jaminan bentuknya diuji di `tests/Feature/LoadingStandarTest.php` (bagian "Success: alert dulu, refresh belakangan") -- termasuk bahwa blok `.fail()` tidak mengandung navigasi setelah komentar satu-baris penuh dibuang.
+
 ## submitWithSpinner() dijaga idempoten karena dua handler submit
 Form `data-ajax-form` melewati `submitWithSpinner()` DUA kali per request: handler umum `on("submit", "form")` lalu handler delegasi `on("submit", "form[data-ajax-form]")` yang memanggil `submitAjax()`. Keduanya terikat di `document` secara berurutan dan `preventDefault()` tidak menghentikan handler pertama. Karena itu stash `data-loading-html` hanya ditulis kalau belum ada, dan `releaseSubmit()` membuangnya setelah memulihkan. Tanpa penjaga, pemanggilan kedua menimpa stash dengan HTML spinner sehingga tombolnya `[⟳ Menyimpan...]` selamanya setelah request selesai. Tombol `type="button"` yang submit-nya dipicu handler (mis. `Simpan Keputusan` yang dikunci konfirmasi SweetAlert) harus ditandai `data-loading-button`, karena `tombolSubmit()` mencari `button[type="submit"]` lebih dulu dan tanpa penanda itu formnya jalan tanpa spinner sama sekali.
 

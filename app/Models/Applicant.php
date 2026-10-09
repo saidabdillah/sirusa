@@ -89,9 +89,61 @@ class Applicant extends Model
         return in_array($this->status, self::STATUS_BLOCKING, true);
     }
 
+    /**
+     * Alasan pendaftaran tidak bisa dibatalkan, atau `null` kalau masih boleh.
+     *
+     * Dua syarat, dan itu seluruhnya. Sumber kebenarannya status yang sudah
+     * ada -- tidak ada status atau kolom baru untuk batas pembatalan:
+     *
+     *  1. Pendaftaran masih `verifikasi`. `diterima`/`ditolak` adalah
+     *     keputusan Kesra, dan `dibatalkan` berarti sudah pernah dibatalkan.
+     *  2. Masa pendaftaran beasiswa BELUM ditutup, yaitu
+     *     `now() <= beasiswa.tanggal_selesai`.
+     *
+     * Batas waktu memakai `beasiswa.tanggal_selesai` karena itu batas yang
+     * sama dengan yang sudah dipakai seluruh aplikasi untuk menentukan
+     * "beasiswa ini masih menerima pendaftar" -- dipakai oleh `scopeTersedia()`
+     * untuk daftar beasiswa dan oleh `eligibilityIssueFor()` untuk menolak
+     * pendaftaran baru. Jadi "batas pembatalan" dan "beasiswa masih buka"
+     * tidak mungkin berbeda, dan tidak ada angka baru yang harus dis-tuned.
+     *
+     * `pendaftar.created_at` sengaja TIDAK dipakai: `PendaftaranController::store()`
+     * menghidupkan kembali baris yang dibatalkan alih-alih membuat baris baru
+     * (index unik `[user_id, beasiswa_id]`), jadi `created_at` baris itu
+     * berasal dari pendaftaran pertama dan tidak pernah di-reset. `updated_at`
+     * juga tidak cocok: keputusan Kesra ikut memutusnya, jadi batasnya bisa
+     * bergeser tanpa disengaja.
+     *
+     * Fail-safe: beasiswa yang hilang atau `tanggal_selesai`-nya null dianggap
+     * sudah lewat batas, supaya data rusak tidak membuka jalan membatalkan
+     * pendaftaran yang sebentar lagi diputuskan.
+     */
+    public function cancellationBlockedReason(): ?string
+    {
+        if ($this->isCancelled()) {
+            return 'Pendaftaran ini sudah dibatalkan.';
+        }
+
+        if ($this->isDecided()) {
+            return 'Pendaftaran ini sudah diputuskan sehingga tidak bisa dibatalkan.';
+        }
+
+        if (! $this->isActive()) {
+            return 'Pendaftaran ini tidak sedang diproses sehingga tidak bisa dibatalkan.';
+        }
+
+        $deadline = $this->beasiswa?->tanggal_selesai;
+
+        if ($deadline === null || $deadline->isPast()) {
+            return 'Masa pendaftaran beasiswa ini sudah ditutup sehingga tidak bisa dibatalkan lagi.';
+        }
+
+        return null;
+    }
+
     public function canBeCancelled(): bool
     {
-        return $this->isActive();
+        return $this->cancellationBlockedReason() === null;
     }
 
     /**

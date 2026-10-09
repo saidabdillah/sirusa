@@ -146,12 +146,16 @@ test('mahasiswa bisa masuk dengan NIK maupun username', function () {
     $this->assertAuthenticatedAs($mahasiswa);
 });
 
-test('login page keeps the combined label and drops the hint and bootstrap alerts', function () {
+test('login page keeps the combined label and drops the hints and bootstrap alerts', function () {
     $this->get(route('login'))
         ->assertOk()
+        // Label tetap NIK/username karena dua-duanya cara masuk yang sah.
         ->assertSee('NIK atau Username')
-        // Teks petunjuk di bawah input dihapus: labelnya sudah cukup jelas.
+        // Petunjuk per peran ("Mahasiswa dapat memakai NIK atau username. Akun
+        // staf memakai username.") sudah dihapus: ia cuma menambah kalimat
+        // tanpa mengubah apa pun yang bisa dilakukan pengguna di halaman ini.
         ->assertDontSee('Mahasiswa dapat memakai NIK atau username')
+        ->assertDontSee('Akun staf memakai username')
         // Pesan sesi tidak lagi memakai alert bootstrap -- invalid-feedback
         // per field saja yang tersisa.
         ->assertDontSee('alert-dismissible', false)

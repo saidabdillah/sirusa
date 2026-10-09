@@ -158,17 +158,19 @@
           @endunless
 
           @forelse($beasiswaTersedia as $beasiswa)
-            <div class="d-flex align-items-center mb-3">
-              <div class="mr-3">
-                <div class="badge badge-{{ $beasiswa->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
+            {{-- Satu beasiswa = satu blok vertikal, bukan satu baris horizontal.
+                 Badge sisa waktu di baris paling atas, lalu nama, lalu detail
+                 kampus/kuota. Susunan horizontal membuat baris terlalu rapat di
+                 layar sempit dan nama terpotong di tengah. --}}
+            <div class="mb-3 pb-3 border-bottom">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="badge badge-{{ $beasiswa->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
                   {{ $beasiswa->tanggal_selesai?->diffForHumans() }}
-                </div>
+                </span>
+                <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
               </div>
-              <div class="flex-grow-1">
-                <div class="font-weight-bold">{{ $beasiswa->nama }}</div>
-                <div class="text-small text-muted">{{ $beasiswa->kampus }} &middot; sisa kuota {{ $beasiswa->sisaKuota() }}</div>
-              </div>
-              <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+              <div class="font-weight-bold">{{ $beasiswa->nama }}</div>
+              <div class="text-small text-muted">{{ $beasiswa->kampus }} &middot; sisa kuota {{ $beasiswa->sisaKuota() }}</div>
             </div>
           @empty
             <div class="text-center text-muted">

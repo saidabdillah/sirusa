@@ -82,6 +82,12 @@ class PendaftaranController extends Controller
      * Pembatalan oleh mahasiswa, supaya dia tidak terkunci selamanya pada satu
      * pendaftaran yang salah pilih. Statusnya `dibatalkan`, bukan `ditolak` --
      * yang berarti keputusan Kesra, dan justru membuka jalan mendaftar lagi.
+     *
+     * Syaratnya hidup di `Applicant::cancellationBlockedReason()` supaya tombol
+     * di halaman detail dan penolakan di sini memakai satu aturan yang sama.
+     * `destroy()` tetap memeriksanya sendiri: menyembunyikan tombol tidak
+     * pernah jadi alasan untuk tidak memvalidasi, karena endpointnya bisa
+     * dipanggil langsung.
      */
     public function destroy(Request $request, Applicant $applicant): RedirectResponse|JsonResponse
     {
@@ -89,12 +95,8 @@ class PendaftaranController extends Controller
             abort(403);
         }
 
-        if (! $applicant->canBeCancelled()) {
-            return $this->ajaxFail(
-                $request,
-                'Pendaftaran ini sudah diputuskan sehingga tidak bisa dibatalkan.',
-                route('user.pendaftaran.index')
-            );
+        if ($reason = $applicant->cancellationBlockedReason()) {
+            return $this->ajaxFail($request, $reason, route('user.pendaftaran.index'));
         }
 
         $applicant->update(['status' => 'dibatalkan']);
