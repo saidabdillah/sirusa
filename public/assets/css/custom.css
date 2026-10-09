@@ -144,6 +144,24 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   padding-right: 46px;
 }
 
+/* Select2 single harus setinggi input lain (38px), bukan 42px bawaan Stisla.
+   Stisla memberi .select2-selection--single min-height 42px, line-height 42px,
+   dan arrow min-height 42px; rule di bawah menaikkannya dengan spesifisitas
+   yang sama dan merata setinggi calc(1.5em + 0.75rem + 2px) (rumus yang sama
+   dengan .form-control di atas). Kotak, teks, dan panah diset bareng supaya
+   dropdown dan glyph segitiga tetap sejajar (b di-center lewat top:50%). */
+.select2-container .select2-selection--single {
+  min-height: calc(1.5em + 0.75rem + 2px);
+  height: calc(1.5em + 0.75rem + 2px);
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  min-height: calc(1.5em + 0.75rem + 2px);
+  line-height: calc(1.5em + 0.75rem + 2px);
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  min-height: calc(1.5em + 0.75rem + 2px);
+}
+
 /* ==============================
    Skeleton loading screen
    ============================== */

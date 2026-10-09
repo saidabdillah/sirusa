@@ -712,3 +712,38 @@ test('form ubah bisa membuat menu induk baru lewat parent_id teks', function () 
         ->and($induk->section)->toBe('Administrasi')
         ->and($induk->route)->toBeNull();
 });
+
+/**
+ * Select2 single (Induk Menu & Section) dipin setinggi input lain (38px),
+ * bukan 42px bawaan Stisla. Tiga segmen diset bareng supaya kotak, teks, dan
+ * panah tetap sejajar; hanya memakai rumus calc yang sama dengan `.form-control`
+ * di atasnya.
+ */
+test('select2 single disamakan setinggi input lain di custom.css', function () {
+    $css = file_get_contents(base_path('public/assets/css/custom.css'));
+
+    $blok = Str::betweenFirst($css, '.select2-container .select2-selection--single {', '.page-loader {');
+
+    expect($blok)
+        ->toContain('.select2-container--default .select2-selection--single .select2-selection__rendered')
+        ->toContain('.select2-container--default .select2-selection--single .select2-selection__arrow')
+        ->toContain('min-height: calc(1.5em + 0.75rem + 2px);')
+        ->toContain('height: calc(1.5em + 0.75rem + 2px);')
+        ->toContain('line-height: calc(1.5em + 0.75rem + 2px);');
+});
+
+/**
+ * Pesan error AJAX untuk field select2 harus tampil DI BAWAH kotak, bukan di
+ * atasnya: Select2 menaruh kotak yang terlihat tepat setelah `<select>` yang
+ * tersembunyi, jadi `$anchor.after()` biasa ("setelah <select>") berarti
+ * "sebelum kotak". `paintFieldError()` menyisipkan feedback setelah
+ * `.select2-container` untuk field yang sudah di-select2-kan.
+ */
+test('pesan error ajax select2 disisipkan setelah kotak select2', function () {
+    $js = file_get_contents(base_path('public/assets/js/custom.js'));
+
+    expect($js)
+        ->toContain('select2-hidden-accessible')
+        ->toContain('$anchor.next(".select2-container")')
+        ->toContain('$after.after($feedback)');
+});

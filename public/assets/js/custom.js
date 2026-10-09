@@ -220,6 +220,19 @@ $(function () {
     var $group = $el.closest(".input-group");
     var $anchor = $group.length ? $group : $el;
 
+    // Select2 menyisipkan kotak yang terlihat TEPAT setelah <select> aslinya
+    // ($container.insertAfter(this.$element)), jadi "setelah <select>" adalah
+    // DI ATAS kotak select2. Untuk field select2, sisipkan pesan setelah
+    // .select2-container supaya tetap muncul di bawah input seperti semua
+    // field lain. Input normal tetap memakai $anchor.after().
+    var $after = $anchor;
+    if ($anchor.is("select") && $anchor.hasClass("select2-hidden-accessible")) {
+      var $container = $anchor.next(".select2-container");
+      if ($container.length) {
+        $after = $container;
+      }
+    }
+
     $el.addClass("is-invalid").attr("aria-invalid", "true");
     $group.addClass("is-invalid");
     cerminIsInvalid($el);
@@ -231,7 +244,7 @@ $(function () {
         class: "invalid-feedback",
         "data-ajax": "1",
       });
-      $anchor.after($feedback);
+      $after.after($feedback);
     }
 
     $feedback.text(message).css("display", "block");
