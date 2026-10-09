@@ -18,10 +18,12 @@ beforeEach(function () {
 });
 
 /**
- * Mewakili apa yang BENAR-BENAR dikirim kedua modal sekarang: `route`,
- * `scope`, `aktif`, dan `wajib` sudah dihapus dari form, jadi payload dasar
- * juga tidak membawanya. Test yang butuh `route` menambahkannya lewat
- * `$overrides` -- rule-nya masih ada di request untuk payload di luar form.
+ * Mewakili penyimpanan menu dari modal Tambah/Ubah. Superadmin hanya membuat
+ * menu tampilan: payload dasar = label, icon, section, urutan. `route`/`scope`
+ * BUKAN bidang form -- arah link-nya diisi developer lewat koding
+ * (`MenuSeeder`/`tinker`), jadi request yang tetap mengirimnya diabaikan
+ * `validated()`. `aktif`/`wajib` juga tanpa input: nilainya diset server
+ * (aktif=true, wajib=false saat buat).
  *
  * @return array<string, mixed>
  */
@@ -57,12 +59,11 @@ test('super admin can create a menu and it is auto granted to super admin', func
 
     $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
     expect($menu->section)->toBe('Administrasi')
-        // Route/scope tidak lagi bisa diisi lewat form, jadi menu buatan admin
-        // lahir tanpa tautan. Muncul sebagai `<span>` mati di sidebar (guard
-        // `Route::has()` di `sidebar.blade.php`), bukan link yang rusak.
+        // Payload tidak membawa route/scope (form tidak punya inputnya): menu
+        // lahir sebagai tampilan; route/scope diisi developer di koding.
         ->and($menu->route)->toBeNull()
         ->and($menu->scope)->toBeNull()
-        // `aktif`/`wajib` juga tidak punya input: nilainya ditulis server.
+        // `aktif`/`wajib` tidak punya input: nilainya ditulis server.
         ->and($menu->aktif)->toBeTrue()
         ->and($menu->wajib)->toBeFalse();
 
@@ -72,10 +73,24 @@ test('super admin can create a menu and it is auto granted to super admin', func
     ]);
 });
 
-test('menu store rejects unregistered route', function () {
+/**
+ * route/scope bukan bagian form (superadmin hanya membuat menu tampilan); rule
+ * keduanya tidak ada, jadi request yang masih mengirim nilainya DIABAIKAN
+ * `store()` -- tersimpan null. Satu-satunya jalur mengisinya adalah koding
+ * (`MenuSeeder`/`tinker`), bukan UI.
+ */
+test('menu store mengabaikan route dan scope yang dikirim', function () {
     actingAs($this->superAdmin)
-        ->post(route('admin.menukelola.simpan'), menuPayload(['route' => 'admin.tidak.ada']))
-        ->assertSessionHasErrors('route');
+        ->post(route('admin.menukelola.simpan'), menuPayload([
+            'route' => 'admin.beasiswa.index',
+            'scope' => 'admin.beasiswa',
+        ]))
+        ->assertRedirect(route('admin.menukelola.index'))
+        ->assertSessionHas('success');
+
+    $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
+    expect($menu->route)->toBeNull()
+        ->and($menu->scope)->toBeNull();
 });
 
 /**
@@ -97,30 +112,44 @@ test('menu store accepts a brand new section', function () {
 });
 
 /**
- * Route & scope keduanya nullable di Tambah -- dan sejak kedua inputnya dihapus
- * dari form, payload yang tidak menyentuhnya sama sekali harus tetap diterima
- * (kalau tidak, semua simpan dari modal akan gagal). `route`/`scope` yang tetap
- * dikirim masih divalidasi (lihat test "rejects unregistered route" di atas).
+ * Modal Ubah juga tidak mengirim route/scope: `update()` memakai `validated()`
+ * dan rule keduanya sudah dihilangkan, jadi route/scope apa pun yang dikirim
+ * DIABAIKAN dan nilai tersimpan tetap utuh (koding-only).
  */
-test('menu store accepts empty route and scope', function () {
+test('menu update mengabaikan route dan scope yang dikirim', function () {
+    $menu = Menu::create([
+        'label' => 'Tautan Lama',
+        'icon' => 'fas fa-star',
+        'route' => 'admin.beasiswa.index',
+        'scope' => 'admin.beasiswa',
+        'section' => 'Administrasi',
+        'urutan' => 5,
+        'aktif' => true,
+        'wajib' => false,
+    ]);
+
     actingAs($this->superAdmin)
-        ->post(route('admin.menukelola.simpan'), menuPayload(['route' => null, 'scope' => null]))
+        ->put(route('admin.menukelola.perbarui', $menu), menuPayload([
+            'route' => 'admin.catpil.index',
+            'scope' => 'admin.catpil',
+        ]))
         ->assertRedirect(route('admin.menukelola.index'))
         ->assertSessionHas('success');
 
-    $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
-    expect($menu->route)->toBeNull()
-        ->and($menu->scope)->toBeNull();
+    expect($menu->fresh()->route)->toBe('admin.beasiswa.index')
+        ->and($menu->fresh()->scope)->toBe('admin.beasiswa')
+        ->and($menu->fresh()->label)->toBe('Menu Baru')
+        ->and($menu->fresh()->section)->toBe('Administrasi');
 });
 
 /**
- * Empat kolom ini sudah tidak punya input di kedua modal (keputusan pengguna,
- * Okt 2026). Dikunci di sini supaya penghapusan field tidak bisa dilakukan
- * diam-diam lagi oleh refactor berikutnya: field yang muncul kembali tanpa
- * aturan validasi/kontroler yang mengikutinya akan membuat admin kira nilai itu
- * tersimpan padahal diabaikan.
+ * Route dan Scope TIDAK punya input di kedua modal: superadmin hanya membuat
+ * menu untuk tampil di sidebar, dan keduanya diisi DEVELOPER via koding
+ * (`MenuSeeder`/`tinker`) -- form sengaja tidak menawarkannya. `aktif` dan
+ * `wajib` juga tetap tanpa input: keduanya diset server (aktif=true,
+ * wajib=false saat buat) dan tidak pernah diedit lewat form.
  */
-test('form menu tidak lagi menampilkan route, scope, aktif, dan wajib', function () {
+test('form menu tidak menampilkan route dan scope, juga tidak aktif dan wajib', function () {
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
 
     $tambah = Str::betweenFirst($html, 'id="modal-tambah-menu"', 'id="modal-ubah-menu-');
@@ -129,14 +158,14 @@ test('form menu tidak lagi menampilkan route, scope, aktif, dan wajib', function
         expect($tambah)->not->toContain('id="'.$idHilang.'"');
     }
 
-    foreach (['name="route"', 'name="scope"', 'name="aktif"', 'name="wajib"', 'Aktif (tampil di sidebar)', 'Wajib (selalu digrant ke semua role)'] as $hilang) {
+    foreach (['name="route"', 'name="scope"', 'name="aktif"', 'name="wajib"', 'daftar-route', 'Aktif (tampil di sidebar)', 'Wajib (selalu digrant ke semua role)'] as $hilang) {
         expect($tambah)->not->toContain($hilang);
     }
 
     // Modal Ubah dirender sekali per baris, jadi cukup dicek satu instance.
     $ubah = Str::betweenFirst($html, 'id="modal-ubah-menu-', '</form>');
 
-    foreach (['name="route"', 'name="scope"', 'name="aktif"', 'name="wajib"', '>Route</label>', '>Scope</label>'] as $hilang) {
+    foreach (['name="route"', 'name="scope"', 'name="aktif"', 'name="wajib"', 'daftar-route'] as $hilang) {
         expect($ubah)->not->toContain($hilang);
     }
 });
@@ -184,9 +213,8 @@ test('menu update mempertahankan aktif dan wajib yang tersimpan', function () {
 
 /**
  * Field wajib ditandai bintang secara VISUAL saja (span `text-danger`) --
- * `required` HTML dilarang rules form aplikasi ini. Route/Scope tidak lagi
- * jadi field sama sekali, jadi yang dites di sini bukan "tanpa bintang"
- * melainkan "labelnya sudah tidak ada".
+ * `required` HTML dilarang rules form aplikasi ini. Route dan Scope BUKAN field
+ * form (koding-only), jadi hanya field tampilan yang berbintang.
  */
 test('form tambah menu menandai field wajib dengan bintang', function () {
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
@@ -198,9 +226,10 @@ test('form tambah menu menandai field wajib dengan bintang', function () {
         expect($tambah)->toContain('>'.$wajib.' <span class="text-danger">*</span></label>');
     }
 
-    expect($tambah)
-        ->not->toContain('>Route</label>')
-        ->not->toContain('>Scope</label>');
+    // Route/Scope bukan field form, jadi tidak boleh ada label berbintang.
+    foreach (['Route', 'Scope'] as $bukanField) {
+        expect($tambah)->not->toContain('>'.$bukanField.' <span class="text-danger">*</span></label>');
+    }
 });
 
 test('super admin can update a menu label and section', function () {
@@ -291,7 +320,7 @@ test('non super admin gets forbidden on all menu management routes', function ()
     actingAs($this->admin)->post(route('admin.menukelola.simpan'), menuPayload())->assertForbidden();
     actingAs($this->admin)->put(route('admin.menukelola.perbarui', $menu), menuPayload())->assertForbidden();
     actingAs($this->admin)->delete(route('admin.menukelola.hapus', $menu))->assertForbidden();
-    actingAs($this->admin)->put(route('admin.menu.grants'), ['grants' => []])->assertForbidden();
+    actingAs($this->admin)->put(route('admin.menu.grants'), ['role_id' => Role::where('name', 'kesra')->firstOrFail()->id, 'menus' => []])->assertForbidden();
 });
 
 test('super admin can open kelola menu list page', function () {
@@ -303,25 +332,70 @@ test('super admin can open kelola menu list page', function () {
         ->assertSee('Daftar Menu Sidebar');
 });
 
-test('access menu matrix is rendered as a collapsible tree', function () {
+test('access menu page filters by role and renders the selected role checklist', function () {
+    $kesraId = Role::where('name', 'kesra')->firstOrFail()->id;
+
+    // Nilai awal filter kosong: belum ada role terpilih dan checklist disembunyikan.
     actingAs($this->superAdmin)
         ->get(route('admin.menu.index'))
         ->assertOk()
-        ->assertSee('tree-toggle', false)
-        ->assertSee('data-tree-parent', false)
+        ->assertSee('id="roleFilter"', false)
+        ->assertSee('-- Pilih Role --')
+        ->assertDontSee('name="role_id"', false)
         ->assertDontSee('Tambah Menu');
-});
-
-test('matrix page still saves grants', function () {
-    $roleId = Role::where('name', 'kesra')->firstOrFail()->id;
-    $menuIds = DB::table('menus')->pluck('id')->all();
 
     actingAs($this->superAdmin)
-        ->put(route('admin.menu.grants'), ['grants' => [$roleId => $menuIds]])
-        ->assertRedirect(route('admin.menu.index'))
+        ->get(route('admin.menu.index', ['role' => $kesraId]))
+        ->assertOk()
+        ->assertSee('name="role_id"', false)
+        ->assertSee('value="'.$kesraId.'"', false)
+        ->assertSee('Pilih semua')
+        ->assertSee('Simpan Akses untuk Kesra');
+});
+
+test('saving one role does not wipe other roles', function () {
+    $kesraId = Role::where('name', 'kesra')->firstOrFail()->id;
+    $kampusId = Role::where('name', 'kampus')->firstOrFail()->id;
+    $wajibIds = DB::table('menus')->where('wajib', true)->pluck('id')->all();
+
+    $kesraMenus = DB::table('menus')->where('aktif', true)->limit(3)->pluck('id')->all();
+    DB::table('role_menu')->where('role_id', $kesraId)->delete();
+    foreach ($kesraMenus as $menuId) {
+        DB::table('role_menu')->insert(['role_id' => $kesraId, 'menu_id' => $menuId]);
+    }
+
+    $kampusMenus = DB::table('menus')->where('aktif', true)->limit(2)->pluck('id')->all();
+
+    actingAs($this->superAdmin)
+        ->put(route('admin.menu.grants'), ['role_id' => $kampusId, 'menus' => $kampusMenus])
+        ->assertRedirect(route('admin.menu.index', ['role' => $kampusId]))
         ->assertSessionHas('success');
 
-    expect(DB::table('role_menu')->where('role_id', $roleId)->count())->toBe(count($menuIds));
+    expect(DB::table('role_menu')->where('role_id', $kampusId)->pluck('menu_id')->all())
+        ->toEqualCanonicalizing(array_unique(array_merge($kampusMenus, $wajibIds)));
+
+    // Grant role kesra tidak boleh ikut terhapus oleh penyimpanan role kampus.
+    expect(DB::table('role_menu')->where('role_id', $kesraId)->pluck('menu_id')->all())
+        ->toEqualCanonicalizing($kesraMenus);
+});
+
+test('saving super admin keeps wajib and admin module menus', function () {
+    $superAdminId = Role::where('name', 'super_admin')->firstOrFail()->id;
+
+    actingAs($this->superAdmin)
+        ->put(route('admin.menu.grants'), ['role_id' => $superAdminId, 'menus' => []])
+        ->assertRedirect(route('admin.menu.index', ['role' => $superAdminId]))
+        ->assertSessionHas('success');
+
+    $expected = DB::table('menus')->where('aktif', true)
+        ->where(function ($query) {
+            $query->where('wajib', true)
+                ->orWhereIn('scope', ['admin.role', 'admin.menu', 'admin.menukelola', 'admin.pengguna']);
+        })
+        ->pluck('id')->all();
+
+    expect(DB::table('role_menu')->where('role_id', $superAdminId)->pluck('menu_id')->all())
+        ->toEqualCanonicalizing($expected);
 });
 
 test('sidebarMenus returns only top level menus with children nested', function () {
@@ -382,7 +456,7 @@ test('form tambah menu selalu kosong dan dropdownnya tidak preselect', function 
     expect(substr_count($html, 'id="modal-tambah-menu"'))->toBe(1);
 
     // Semua input teks kosong -- tidak ada nilai yang tersisa dari modal
-    // Edit sebelumnya. (`route-tambah` tidak dicek: inputnya sudah dihapus.)
+    // Edit sebelumnya. (route/scope bukan field form, jadi tidak dicek.)
     expect($html)->toMatch('/id="label-tambah"[^>]*value=""/');
 
     // Dropdown punya opsi kosong, dan tidak ada opsi yang ter-select. Tanpa
@@ -416,9 +490,6 @@ test('form tambah menu selalu kosong dan dropdownnya tidak preselect', function 
  * menu sehingga error dari satu modal tidak bocor ke modal lain.
  */
 test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function () {
-    // Sampelnya Catpil, bukan Kesra: menu Kesra kini induk dropdown tanpa
-    // route, jadi `route`-nya null dan tidak bisa dipakai untuk mengunci
-    // format `value="..."` pada input Route.
     $menu = Menu::query()->where('label', 'Catpil')->firstOrFail();
 
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
@@ -433,11 +504,6 @@ test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function
         // Target modal Edit harus unik: kalau tidak, `old()` dari Edit satu
         // menu bisa muncul di modal Edit menu lain.
         ->toContain('<input type="hidden" name="modal_target" value="modal-ubah-menu-'.$menu->id.'">');
-
-    // `route`/`scope` tidak lagi punya input, tapi nilainya tetap terbaca dari
-    // database dan tidak boleh hilang saat modal disimpan (dicek di test
-    // "memertahankan aktif dan wajib" di atas).
-    expect($menu->route)->toBe('admin.catpil.index');
 });
 
 /**

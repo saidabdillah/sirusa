@@ -4,7 +4,6 @@ namespace App\Http\Requests\Menu;
 
 use App\Models\Menu;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
 
@@ -44,16 +43,12 @@ class UpdateMenuRequest extends FormRequest
             ],
             'label' => ['required', 'string', 'max:100'],
             'icon' => ['nullable', 'string', 'max:100'],
-            // Input route/scope sudah dihapus dari form. Request yang tetap
-            // mengirimnya tetap divalidasi; yang tidak mengirim apa pun
-            // membuat `validated()` tidak memuat keduanya, sehingga
-            // `MenuController::update()` mempertahankan nilai tersimpan.
-            'route' => ['nullable', 'string', 'max:150', function ($attribute, $value, $fail) {
-                if ($value && ! Route::has($value)) {
-                    $fail('Nama route tidak terdaftar.');
-                }
-            }],
-            'scope' => ['nullable', 'string', 'max:100', 'regex:/^[a-z][a-z0-9._-]*$/'],
+            // `route`/`scope` BUKAN field form: superadmin hanya membuat menu
+            // tampilan, arah link-nya diisi developer lewat koding
+            // (`MenuSeeder`/`tinker`). Karena tidak divalidasi, `validated()`
+            // tidak pernah memuat keduanya sehingga `update()` selalu
+            // mempertahankan nilai tersimpan -- request yang tetap mengirimnya
+            // akan diabaikan.
             // `Rule::in(Menu::sections())` DIHAPUS: section baru boleh diketik
             // langsung (Select2 `tags`) dan `Menu::sections()` kini menurunkan
             // daftarnya dari isi tabel `menus`.
@@ -81,14 +76,6 @@ class UpdateMenuRequest extends FormRequest
         }
     }
 
-    // `withValidator()` yang mewajibkan menu DAUN mengisi route ATAU scope
-    // DIHAPUS bersamaan dengan hilangnya kedua input itu dari form. Guard itu
-    // dibaca dari `$this->input()`, bukan dari `validated()`, jadi ketiadaan
-    // nilai di form membuat SETIAP edit menu daun gagal validasi dengan "Isi
-    // nama route atau scope." -- padahal admin tidak lagi bisa mengisinya.
-    // Route/scope menu daun kini ditentukan sepenuhnya oleh seeder; request
-    // yang tetap mengirim keduanya masih divalidasi oleh rules di atas.
-
     /**
      * @return array<string, string>
      */
@@ -103,7 +90,6 @@ class UpdateMenuRequest extends FormRequest
             'urutan.integer' => 'Urutan menu harus berupa angka.',
             'parent_id.max' => 'Nama menu induk maksimal 100 karakter.',
             'parent_id.min' => 'Nama menu induk baru minimal 2 karakter.',
-            'scope.regex' => 'Scope harus huruf kecil, angka, titik, atau garis bawah.',
         ];
     }
 }

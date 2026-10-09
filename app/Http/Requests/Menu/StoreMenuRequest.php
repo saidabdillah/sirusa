@@ -4,7 +4,6 @@ namespace App\Http\Requests\Menu;
 
 use App\Models\Menu;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
 
@@ -48,16 +47,12 @@ class StoreMenuRequest extends FormRequest
             ],
             'label' => ['required', 'string', 'max:100'],
             'icon' => ['nullable', 'string', 'max:100'],
-            // Kedua input ini sudah DIHAPUS dari modal Tambah & Ubah, tapi
-            // rule-nya dipertahankan: payload yang tetap mengirimnya (seeder,
-            // panggilan manual) masih diuji `Route::has`/regex, sementara
-            // request yang tidak mengirim apa pun membuat kolomnya null.
-            'route' => ['nullable', 'string', 'max:150', function ($attribute, $value, $fail) {
-                if ($value && ! Route::has($value)) {
-                    $fail('Nama route tidak terdaftar.');
-                }
-            }],
-            'scope' => ['nullable', 'string', 'max:100', 'regex:/^[a-z][a-z0-9._-]*$/'],
+            // `route`/`scope` BUKAN field form: superadmin hanya membuat menu
+            // untuk tampil di sidebar, sedangkan arah link-nya diisi developer
+            // lewat koding (`MenuSeeder`/`tinker`). Karena tidak divalidasi,
+            // `validated()` tidak memuat keduanya -- request yang tetap
+            // mengirimnya akan diabaikan dan kolomnya lahir NULL sampai
+            // diisi di koding.
             // `Rule::in(Menu::sections())` DIHAPUS: admin boleh membuat section
             // baru langsung dari form (Select2 `tags`). `Menu::sections()` kini
             // turunan default + isi database, jadi section baru langsung tampil
@@ -100,7 +95,6 @@ class StoreMenuRequest extends FormRequest
             'urutan.integer' => 'Urutan menu harus berupa angka.',
             'parent_id.max' => 'Nama menu induk maksimal 100 karakter.',
             'parent_id.min' => 'Nama menu induk baru minimal 2 karakter.',
-            'scope.regex' => 'Scope harus huruf kecil, angka, titik, atau garis bawah.',
         ];
     }
 }

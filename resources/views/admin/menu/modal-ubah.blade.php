@@ -5,9 +5,6 @@
   $parentVal = $isTarget ? old('parent_id', $menu->parent_id) : $menu->parent_id;
   $iconVal = $isTarget ? old('icon', $menu->icon) : $menu->icon;
   $sectionVal = $isTarget ? old('section', $menu->section) : $menu->section;
-  // `route`/`scope` TIDAK lagi punya input: keduanya tidak pernah diubah lewat
-  // form, jadi `update()` yang hanya memakai `validated()` otomatis mempertahankan
-  // nilai tersimpan pada menu ini.
   $urutanVal = $isTarget ? old('urutan', $menu->urutan) : $menu->urutan;
   // `aktif`/`wajib` sengaja TIDAK punya input di modal ini: `update()` tidak
   // menyentuh kedua kolom itu sama sekali, jadi status lama menu tetap utuh.

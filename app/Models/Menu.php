@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
 class Menu extends Model
@@ -58,6 +59,33 @@ class Menu extends Model
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id')->orderBy('urutan');
+    }
+
+    /**
+     * URL yang dipakai sidebar untuk menu daun.
+     *
+     * `route` bukan field form -- superadmin hanya membuat menu tampilan,
+     * arah link-nya diisi developer lewat koding (`MenuSeeder`/`tinker`). Jadi
+     * saat render bisa terjadi tiga kondisi:
+     *
+     * 1. `route` terisi dan terdaftar -> `route()` seperti biasa;
+     * 2. `route` terisi tapi belum terdaftar (koding belum lengkap) -> URL
+     *    diturunkan dari nama route (`admin.x.y` -> `/admin/x/y`) yang akan
+     *    berujung 404 -- menu tetap bisa diklik, bukan `<span>` mati;
+     * 3. `route` masih NULL (belum dikoding) -> URL sentinel
+     *    `/__menu__/{id}` yang juga menghasilkan 404.
+     *
+     * Sengaja mengembalikan string (bukan null): sidebar selalu merender `<a>`.
+     */
+    public function linkUrl(): string
+    {
+        if (filled($this->route) && Route::has($this->route)) {
+            return route($this->route);
+        }
+
+        $slug = trim(str_replace('.', '/', (string) $this->route), '/');
+
+        return $slug === '' ? url('/__menu__/'.$this->id) : url('/'.$slug);
     }
 
     /**

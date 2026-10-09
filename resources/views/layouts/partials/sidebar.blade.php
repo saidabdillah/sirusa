@@ -24,28 +24,18 @@
             @php
               $activePatterns = array_values(array_filter([$menu->route, $menu->scope ? $menu->scope.'.*' : null]));
             @endphp
-            @if($menu->route && \Illuminate\Support\Facades\Route::has($menu->route))
             <li class="{{ $activePatterns && request()->routeIs($activePatterns) ? 'active' : '' }}">
-              <a href="{{ route($menu->route) }}" class="nav-link"><i
+              <a href="{{ $menu->linkUrl() }}" class="nav-link"><i
                   class="{{ $menu->icon }}"></i><span>{{ $menu->label }}</span></a>
             </li>
-            @else
-            <li>
-              <span class="nav-link"><i class="{{ $menu->icon }}"></i><span>{{ $menu->label }}</span></span>
-            </li>
-            @endif
           @else
-            <li class="dropdown {{ $menu->children->contains(fn ($child) => request()->routeIs($child->route) || ($child->scope && request()->routeIs($child->scope.'.*'))) ? 'active' : '' }}">
+            <li class="dropdown {{ $menu->children->contains(fn ($child) => ($child->route && request()->routeIs($child->route)) || ($child->scope && request()->routeIs($child->scope.'.*'))) ? 'active' : '' }}">
               <a href="#" class="nav-link has-dropdown"><i class="{{ $menu->icon }}"></i><span>{{ $menu->label }}</span></a>
               <ul class="dropdown-menu">
                 @foreach($menu->children as $child)
-                  @if($child->route && \Illuminate\Support\Facades\Route::has($child->route))
-                  <li class="{{ request()->routeIs($child->route) || ($child->scope && request()->routeIs($child->scope.'.*')) ? 'active' : '' }}">
-                    <a href="{{ route($child->route) }}" class="nav-link"><span>{{ $child->label }}</span></a>
+                  <li class="{{ ($child->route && request()->routeIs($child->route)) || ($child->scope && request()->routeIs($child->scope.'.*')) ? 'active' : '' }}">
+                    <a href="{{ $child->linkUrl() }}" class="nav-link"><span>{{ $child->label }}</span></a>
                   </li>
-                  @else
-                  <li><span class="nav-link"><span>{{ $child->label }}</span></span></li>
-                  @endif
                 @endforeach
               </ul>
             </li>

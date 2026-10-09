@@ -13,3 +13,6 @@ Stisla's `components.css` renders the single-select arrow in a 40px-wide `.selec
 
 ## Semua input, select, dan group text setinggi 38px
 Height form seragam 38px di seluruh aplikasi. Atur lewat rule global `.form-control`/`.input-group-text`/select di custom.css (`height:auto; min-height & pin = calc(1.5em + 0.75rem + 2px); padding: .375rem .75rem; line-height:1.5`). TIDAK boleh memakai kelas `form-control-sm`/`input-group-sm` (memperkecil ukuran) atau CSS tinggi sendiri. Satu-satunya pengecualian: control asli milik DataTables di toolbar tabel (tapak `toolbar-data-tables`).
+
+## Sidebar selalu `<a>` — tidak ada lagi fallback `<span>`
+Sejak konsep menu "koding-only", `sidebar.blade.php` SELALU me-render menu daun sebagai `<a class="nav-link">` lewat `Menu::linkUrl()` — tidak ada lagi `<span class="nav-link">` inert. Menu yang route-nya belum terdaftar (route terisi tapi belum terdaftar, atau `route` NULL) tetap menghasilkan `<a>` yang menunjuk URL fallback yang berujung 404. Karena itu rule fallback `span.nav-link` (height/padding/`i`/label) yang dulu ditambahkan ke `custom.css` sudah DIHAPUS — Stisla hanya perlu men-style `a.nav-link`, dan semua item kini memang `<a>`. Jangan tambahkan kembali styling untuk `span.nav-link` kecuali perilaku sidebar berubah lagi.

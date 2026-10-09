@@ -3,7 +3,9 @@
 use App\Models\Menu;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
@@ -23,6 +25,71 @@ test('super admin sidebar shows role and menu access but not template surat', fu
         ->assertSee('<span>Role</span>', false)
         ->assertSee('<span>Akses Menu</span>', false)
         ->assertDontSee('<span>Template Surat</span>', false);
+});
+
+/**
+ * `route` diisi developer lewat koding (`MenuSeeder`/`tinker`), bukan form
+ * Kelola Menu. Menu dengan route terdaftar dirender sebagai `<a>` yang bisa
+ * diklik ke halaman aslinya.
+ */
+test('menu buatan super admin dengan route dirender sebagai link di sidebar', function () {
+    $superAdmin = User::factory()->superAdmin()->create(['email' => 'sidebar-tautan-baru@test.com']);
+
+    $menu = Menu::create([
+        'label' => 'Tautan Baru',
+        'icon' => 'fas fa-link',
+        'route' => 'admin.beasiswa.index',
+        'scope' => 'admin.beasiswa',
+        'section' => 'Administrasi',
+        'urutan' => 99,
+        'aktif' => true,
+        'wajib' => false,
+    ]);
+
+    DB::table('role_menu')->insertOrIgnore([
+        'role_id' => Role::where('name', 'super_admin')->firstOrFail()->id,
+        'menu_id' => $menu->id,
+    ]);
+
+    actingAs($superAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('<span>Tautan Baru</span>', false)
+        ->assertSee('<a href="'.route('admin.beasiswa.index').'" class="nav-link">', false);
+});
+
+/**
+ * Menu yang route-nya belum dikoding (`route` NULL) TETAP dirender sebagai
+ * `<a>` yang bisa diklik, diarahkan ke URL sentinel yang berujung 404 -- bukan
+ * `<span>` mati. Link tujuan diisi developer di koding; sebelum itu menu tetap
+ * tampil dan bisa diklik.
+ */
+test('menu tanpa route tetap dirender sebagai link, bukan span inert', function () {
+    $superAdmin = User::factory()->superAdmin()->create(['email' => 'sidebar-span-@test.com']);
+
+    $menu = Menu::create([
+        'label' => 'Tanpa Tautan',
+        'icon' => 'fas fa-folder',
+        'route' => null,
+        'scope' => null,
+        'section' => 'Administrasi',
+        'urutan' => 98,
+        'aktif' => true,
+        'wajib' => false,
+    ]);
+
+    DB::table('role_menu')->insertOrIgnore([
+        'role_id' => Role::where('name', 'super_admin')->firstOrFail()->id,
+        'menu_id' => $menu->id,
+    ]);
+
+    actingAs($superAdmin)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('<span>Tanpa Tautan</span>', false)
+        // Link sentinel yang pasti 404, bukan `<span>` mati.
+        ->assertSee('<a href="'.url('/__menu__/'.$menu->id).'" class="nav-link">', false)
+        ->assertDontSee('<span class="nav-link"><i class="fas fa-folder"></i><span>Tanpa Tautan</span></span>', false);
 });
 
 test('kesra sidebar shows admin menus plus Pengguna but not role and menu management', function () {

@@ -5,10 +5,6 @@
   $parentVal = $isTarget ? old('parent_id') : '';
   $iconVal = $isTarget ? old('icon', 'fas fa-list') : 'fas fa-list';
   $sectionVal = $isTarget ? old('section') : '';
-  // `route`/`scope` TIDAK lagi punya input (permintaan pengguna, Okt 2026):
-  // keduanya tetap ada di tabel dan tetap divalidasi request bila dikirim,
-  // tapi tidak bisa diisi lewat form -- lihat `MenuController::store()` yang
-  // membiarkan kolomnya null untuk menu buatan admin.
   // Default sengaja kosong, bukan 0. `urutan` wajib diisi di server, dan
   // prefilling "0" membuat admin menekan Simpan tanpa pernah memilih posisi
   // menu, padahal 0 berarti anak pertama -- keputusan yang tidak pernah

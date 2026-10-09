@@ -14,9 +14,9 @@ class UpdateMenuAccessRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'grants' => ['nullable', 'array'],
-            'grants.*' => ['array'],
-            'grants.*.*' => ['integer', 'exists:menus,id'],
+            'role_id' => ['required', 'integer', 'exists:roles,id'],
+            'menus' => ['nullable', 'array'],
+            'menus.*' => ['integer', 'exists:menus,id'],
         ];
     }
 }

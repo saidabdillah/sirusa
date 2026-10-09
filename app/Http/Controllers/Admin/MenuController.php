@@ -8,6 +8,7 @@ use App\Http\Requests\Menu\StoreMenuRequest;
 use App\Http\Requests\Menu\UpdateMenuAccessRequest;
 use App\Http\Requests\Menu\UpdateMenuRequest;
 use App\Models\Menu;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,51 +20,79 @@ class MenuController extends Controller
 {
     use RespondsToAjax;
 
-    public function index(): View
+    /**
+     * Scope modul yang selalu dipaksa aktif untuk super_admin di halaman
+     * Akses Menu -- super_admin tidak boleh kehilangan akses mengelola role,
+     * pengguna, menu, dan kelola menu.
+     *
+     * @var list<string>
+     */
+    private const SUPER_ADMIN_MODULE_SCOPES = ['admin.role', 'admin.menu', 'admin.menukelola', 'admin.pengguna'];
+
+    public function index(Request $request): View
     {
         $roles = Role::orderBy('id')->get();
+        $roleLabels = User::ROLE_LABELS;
+
+        // Nilai awal filter sengaja kosong: halaman menampilkan prompt sampai
+        // admin memilih role (tidak ada default super_admin).
+        $activeRole = $request->filled('role')
+            ? $roles->firstWhere('id', (int) $request->query('role'))
+            : null;
+
         $menus = Menu::with('children')->whereNull('parent_id')->orderBy('urutan')->get();
 
-        $grants = [];
-        foreach ($roles as $role) {
-            $grants[$role->id] = DB::table('role_menu')->where('role_id', $role->id)->pluck('menu_id')->all();
+        $grants = $activeRole
+            ? DB::table('role_menu')->where('role_id', $activeRole->id)->pluck('menu_id')->all()
+            : [];
+
+        $lockedMenuIds = DB::table('menus')->where('wajib', true)->pluck('id')->all();
+
+        if ($activeRole?->name === 'super_admin') {
+            $lockedMenuIds = array_merge(
+                $lockedMenuIds,
+                DB::table('menus')->whereIn('scope', self::SUPER_ADMIN_MODULE_SCOPES)->pluck('id')->all(),
+            );
         }
 
-        return view('admin.menu.index', compact('roles', 'menus', 'grants'));
+        return view('admin.menu.index', compact('roles', 'roleLabels', 'activeRole', 'menus', 'grants', 'lockedMenuIds'));
     }
 
     public function perbarui(UpdateMenuAccessRequest $request): RedirectResponse|JsonResponse
     {
-        $grants = $request->validated('grants') ?? [];
+        $role = Role::findOrFail((int) $request->validated('role_id'));
+        $requestedMenuIds = $request->validated('menus') ?? [];
 
         $allMenuIds = DB::table('menus')->where('aktif', true)->pluck('id')->all();
         $wajibMenuIds = DB::table('menus')->where('wajib', true)->pluck('id')->all();
-        $superAdminModuleIds = DB::table('menus')->whereIn('scope', ['admin.role', 'admin.menu', 'admin.menukelola', 'admin.pengguna'])->pluck('id')->all();
+        $superAdminModuleIds = DB::table('menus')->whereIn('scope', self::SUPER_ADMIN_MODULE_SCOPES)->pluck('id')->all();
 
-        foreach (Role::all() as $role) {
-            $menuIds = [];
-            foreach ($grants[$role->id] ?? [] as $menuId) {
-                if (in_array((int) $menuId, $allMenuIds, true)) {
-                    $menuIds[] = (int) $menuId;
-                }
+        $menuIds = [];
+        foreach ($requestedMenuIds as $menuId) {
+            if (in_array((int) $menuId, $allMenuIds, true)) {
+                $menuIds[] = (int) $menuId;
             }
+        }
 
-            foreach ($wajibMenuIds as $menuId) {
+        foreach ($wajibMenuIds as $menuId) {
+            if (! in_array((int) $menuId, $menuIds, true)) {
+                $menuIds[] = (int) $menuId;
+            }
+        }
+
+        if ($role->name === 'super_admin') {
+            foreach ($superAdminModuleIds as $menuId) {
                 if (! in_array((int) $menuId, $menuIds, true)) {
                     $menuIds[] = (int) $menuId;
                 }
             }
+        }
 
-            if ($role->name === 'super_admin') {
-                foreach ($superAdminModuleIds as $menuId) {
-                    if (! in_array((int) $menuId, $menuIds, true)) {
-                        $menuIds[] = (int) $menuId;
-                    }
-                }
-            }
+        $menuIds = array_unique($menuIds);
 
-            $menuIds = array_unique($menuIds);
-
+        // Hanya role terpilih yang disentuh: menyimpan role lain tidak boleh
+        // menghapus grant role ini (dan sebaliknya).
+        DB::transaction(function () use ($role, $menuIds): void {
             DB::table('role_menu')->where('role_id', $role->id)->delete();
 
             foreach ($menuIds as $menuId) {
@@ -72,9 +101,9 @@ class MenuController extends Controller
                     'menu_id' => $menuId,
                 ]);
             }
-        }
+        });
 
-        return $this->ajaxOk($request, 'Akses menu berhasil diperbarui', route('admin.menu.index'));
+        return $this->ajaxOk($request, 'Akses menu berhasil diperbarui', route('admin.menu.index', ['role' => $role->id]));
     }
 
     public function kelola(): View
