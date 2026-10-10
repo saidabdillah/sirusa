@@ -32,9 +32,9 @@
                  dengan daftar penuh dan opsi dinamis -- Fakultas hanya memuat
                  milik kampus terpilih, Program Studi hanya milik fakultas terpilih.
                  Filter status per tahap (verif_catpil/verif_kampus) DIHAPUS atas
-                 permintaan pengguna. Kisi 4 kolom (`col-md-3`, sama dengan halaman
-                 Penerima Beasiswa) merapikan toolbar di atas tabel; tombol
-                 Terapkan/Reset diletakkan di baris terpisah di bawahnya. --}}
+                 permintaan pengguna. Select dibagi rata `col-md-3` (kisi 4 kolom,
+                 sama dengan halaman Penerima Beasiswa) dan tombol Terapkan/Reset
+                 dibuat SEJAJAR di dalam `form-row` yang sama (col-auto, rata bawah). --}}
             <form method="GET" action="{{ route($routePrefix.'.status') }}" class="mb-3">
               <div class="form-row align-items-end">
                 <div class="col-md-3 mb-2 mb-md-0">
@@ -64,8 +64,6 @@
                     @endforeach
                   </select>
                 </div>
-              </div>
-              <div class="form-row align-items-end mt-2">
                 <div class="col-auto mb-2 mb-md-0">
                   <button type="submit" class="btn btn-primary" data-loading-text="Menerapkan filter...">
                     <i class="fas fa-filter mr-1"></i> Terapkan

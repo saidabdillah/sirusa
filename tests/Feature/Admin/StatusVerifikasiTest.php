@@ -300,9 +300,11 @@ test('filter status verifikasi memakai kisi 4 kolom dan tombol Terapkan/Reset di
     expect(substr_count($html, 'class="col-md-3 mb-2 mb-md-0"'))->toBe(3);
     expect($html)->not->toContain('class="col-md-4 mb-2 mb-md-0"');
 
-    // Tombol Terapkan/Reset berada di baris form TERPISAH di bawah kisi
-    // filter (`form-row ... mt-2`), bukan sejajar dengan select.
-    expect($html)->toContain('form-row align-items-end mt-2');
+    // Tombol Terapkan/Reset SEJAJAR dengan select di dalam SATU `form-row`
+    // (bukan baris form terpisah di bawahnya). Tombol tetap setelah select
+    // Program Studi, rata bawah lewat `align-items-end`.
+    expect(substr_count($html, 'form-row align-items-end'))->toBe(1);
+    expect($html)->not->toContain('align-items-end mt-2');
     $response->assertSeeInOrder(['filter-jurusan', 'Terapkan', 'Reset'], false);
 
     // Tabel hanya diinisialisasi SEKALI; penjaga ini mencegah toolbar
