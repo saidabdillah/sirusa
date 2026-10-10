@@ -52,8 +52,8 @@
                     @endforeach
                   </select>
                 </div>
-              </div>
-              <div class="form-row align-items-end mt-2">
+{{-- Hanya dua filter, jadi tombol sejajar dengan select (bukan baris
+                     terpisah bawah). --}}
                 <div class="col-auto mb-2 mb-md-0">
                   <button type="submit" class="btn btn-primary" data-loading-text="Mencari...">
                     <i class="fas fa-search"></i> Cari

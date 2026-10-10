@@ -129,3 +129,6 @@ Halaman Penerima Beasiswa kini murni read-only untuk SEMUA role admin yang memeg
 
 ## status() tanpa filter status per tahap; validStatusFilter dihapus
 VerifikasiController::status() tidak lagi membaca/menyaring verif_catpil/verif_kampus (select di view sudah dihapus atas permintaan pengguna). Param lama di URL diabaikan begitu saja — daftar selalu rekap penuh semua profil. Method private validStatusFilter() dihapus; konstanta FILTERS tetap dipakai validFilter() untuk antrean Catpil/Kampus.
+
+## status() tanpa filter status per tahap; validStatusFilter dihapus
+VerifikasiController::status() tidak lagi membaca/menyaring verif_catpil/verif_kampus (select di view sudah dihapus atas permintaan pengguna). Param lama di URL diabaikan begitu saja — daftar selalu rekap penuh semua profil. Method private validStatusFilter() dihapus; konstanta FILTERS tetap dipakai validFilter() untuk antrean Catpil/Kampus.

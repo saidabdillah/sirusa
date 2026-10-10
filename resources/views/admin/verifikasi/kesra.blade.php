@@ -58,8 +58,8 @@
                     @endforeach
                   </select>
                 </div>
-              </div>
-              <div class="form-row align-items-end mt-2">
+{{-- Filter cuma satu, jadi tombol sejajar dengan select (bukan baris
+                     terpisah bawah) supaya form tidak memakan tinggi. --}}
                 <div class="col-auto mb-2 mb-md-0">
                   <button type="submit" class="btn btn-primary" data-loading-text="Menerapkan filter...">
                     <i class="fas fa-filter mr-1"></i> Terapkan

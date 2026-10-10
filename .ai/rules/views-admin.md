@@ -25,3 +25,6 @@ Semua teks tampil memakai 'Program Studi' (bukan 'Jurusan'). Nama field/param qu
 
 ## Tombol filter admin kompak (col-auto), tidak btn-block
 Semua tombol filter daftar admin (Terapkan/Reset di Status Verifikasi, antrean Kesra, antrean Catpil/Kampus; Cari/Reset di Pendaftar dan Akses Menu) memakai pola halaman Penerima: wrapper `col-auto mb-2 mb-md-0`, kelas `btn btn-primary`/`btn btn-secondary` TANPA `btn-block`, pada baris form sendiri di bawah select (form-row mt-2). Aturan lama 'btn-secondary btn-block' sudah diganti; VerifikasiProfilTest mengunci kelas `btn btn-secondary`. Teks loading (Mencari..., Menerapkan filter..., Memuat...) tidak berubah.
+
+## Tombol filter admin kompak; sejajar dengan select saat filter 1-2
+Tombol filter daftar admin (Terapkan/Reset, Cari/Reset) memakai kelas `btn btn-primary`/`btn btn-secondary` TANPA `btn-block`, wrapper `col-auto mb-2 mb-md-0`. Posisinya sejajar dengan select (dalam satu `form-row align-items-end`, rata bawah) ketika jumlah filter 1-2 (antrean Catpil/Kampus, antrean Kesra, Pendaftar, Akses Menu); saat filter >= 3 (Status Verifikasi, halaman Penerima) tombol ditaruh di baris tersendiri di bawah select (`form-row align-items-end mt-2`). Reset selalu tampil, tidak bergantung filter aktif.

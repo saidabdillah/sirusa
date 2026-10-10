@@ -36,8 +36,7 @@
                   @endforeach
                 </select>
               </div>
-            </div>
-            <div class="form-row align-items-end mt-2">
+{{-- Hanya satu filter, jadi tombol sejajar dengan select. --}}
               <div class="col-auto mb-2 mb-md-0">
                 <button type="submit" class="btn btn-primary" data-loading-text="Memuat...">
                   <i class="fas fa-search"></i> Cari
