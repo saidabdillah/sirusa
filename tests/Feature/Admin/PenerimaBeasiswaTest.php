@@ -107,8 +107,8 @@ test('cetak merender halaman cetak mandiri dengan kop surat tanpa layout aplikas
         // Kop surat: logo + nama instansi (permintaan pengguna).
         ->assertSee('images/logo-balangan.png', false)
         ->assertSee('PEMERINTAH KABUPATEN BALANGAN', false)
-        ->assertSee('BADAN PENGELOLAAN KEUANGAN,', false)
-        ->assertSee('PENDAPATAN DAN ASET DAERAH', false)
+        ->assertSee('SEKRETARIS DAERAH', false)
+        ->assertSee('BAGIAN KESEJAHTERAAN SOSIAL', false)
         ->assertSee('Jl. Jenderal Ahmad Yani Km. 4,5 Telepon 0526-2028360 Paringin 71462', false)
         // Tanda tangan memakai lokasi instansi, bukan Banjarmasin.
         ->assertSee('Paringin Selatan,', false)
@@ -118,7 +118,9 @@ test('cetak merender halaman cetak mandiri dengan kop surat tanpa layout aplikas
     // Halaman cetak tidak memakai layout Stisla: tanpa navbar dan tanpa
     // custom.js supaya `window.print()` menghasilkan lembar yang bersih.
     expect($response->getContent())->not->toContain('main-navbar')
-        ->not->toContain('custom.js');
+        ->not->toContain('custom.js')
+        // Garis kop yang benar: tebal + garis tipis kedua (.kop::after).
+        ->toContain('.kop::after');
 });
 
 test('export mengunduh berkas xlsx dengan nama dan tipe konten yang benar', function () {

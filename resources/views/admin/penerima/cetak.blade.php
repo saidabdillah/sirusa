@@ -9,7 +9,8 @@
     body { font-family: "Segoe UI", Arial, sans-serif; color: #191919; padding: 24px 32px; font-size: 13px; }
     .toolbar { margin-bottom: 16px; }
     .toolbar .btn { display: inline-block; padding: 6px 14px; border: 1px solid #6777ef; color: #6777ef; border-radius: 4px; text-decoration: none; margin-right: 8px; cursor: pointer; background: #fff; font-size: 13px; }
-    .kop { display: flex; align-items: center; gap: 18px; padding-bottom: 10px; margin-bottom: 18px; border-bottom: 3px solid #191919; }
+    .kop { display: flex; align-items: center; gap: 18px; padding-bottom: 10px; margin-bottom: 24px; border-bottom: 3px solid #191919; position: relative; }
+    .kop::after { content: ''; position: absolute; left: 0; right: 0; bottom: -7px; border-bottom: 1px solid #191919; }
     .kop .logo { width: 76px; height: 76px; object-fit: contain; flex-shrink: 0; }
     .kop .teks { flex: 1; text-align: center; }
     .kop .instansi { font-weight: 700; font-size: 17px; letter-spacing: 1px; }
@@ -39,8 +40,8 @@
     <img class="logo" src="{{ asset('images/logo-balangan.png') }}" alt="Logo Kabupaten Balangan">
     <div class="teks">
       <div class="instansi">PEMERINTAH KABUPATEN BALANGAN</div>
-      <div class="badan">BADAN PENGELOLAAN KEUANGAN,</div>
-      <div class="badan">PENDAPATAN DAN ASET DAERAH</div>
+      <div class="badan">SEKRETARIS DAERAH</div>
+      <div class="badan">BAGIAN KESEJAHTERAAN SOSIAL</div>
       <div class="alamat">Jl. Jenderal Ahmad Yani Km. 4,5 Telepon 0526-2028360 Paringin 71462</div>
     </div>
   </div>
