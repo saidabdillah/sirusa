@@ -445,18 +445,19 @@ test('sidebarMenus returns only top level menus with children nested', function 
         expect($topLevel->pluck('id'))->not->toContain($childId);
     }
 
-    // Role kesra diberi grant `admin.kesra` (scope induk dropdown) plus tiga
-    // scope anak `admin.kesra.index`, `admin.penerima`, dan
-    // `admin.kesra.disetujui`. "Status Verifikasi" (scope `admin.kesra.status`)
-    // adalah leaf mandiri di section "Administrasi", terpisah dari dropdown
-    // Kesra. Dicocokkan lewat `scope`, bukan `label`: sejak label dipersingkat,
-    // "Kampus" dipakai dua menu (antrean verifikasi di section Verifikasi dan
-    // master data di section Administrasi) dan tidak bisa dibedakan dari label.
+    // Role kesra diberi grant `admin.kesra` (scope induk dropdown) plus dua
+    // scope anak `admin.kesra.index` dan `admin.kesra.disetujui`. "Status
+    // Verifikasi" (scope `admin.kesra.status`) dan "Penerima Beasiswa" (scope
+    // `admin.penerima`) adalah leaf mandiri -- di section "Administrasi" dan
+    // "Manajemen" -- terpisah dari dropdown Kesra. Dicocokkan lewat `scope`,
+    // bukan `label`: sejak label dipersingkat, "Kampus" dipakai dua menu
+    // (antrean verifikasi di section Verifikasi dan master data di section
+    // Administrasi) dan tidak bisa dibedakan dari label.
     $kesraDropdown = $topLevel->firstWhere('scope', 'admin.kesra');
     expect($kesraDropdown)->not->toBeNull()
         ->and($kesraDropdown->label)->toBe('Kesra')
         ->and($kesraDropdown->children->pluck('scope')->all())
-        ->toEqualCanonicalizing(['admin.kesra.index', 'admin.penerima', 'admin.kesra.disetujui'])
+        ->toEqualCanonicalizing(['admin.kesra.index', 'admin.kesra.disetujui'])
         ->and($topLevel->firstWhere('scope', 'admin.catpil'))->toBeNull()
         ->and($topLevel->firstWhere('scope', 'admin.kampusverif'))->toBeNull()
         // "Verifikasi" kini memang ADA sebagai menu anak (di bawah Kesra),
@@ -464,7 +465,13 @@ test('sidebarMenus returns only top level menus with children nested', function 
         // item top-level tidak boleh pernah berlabel "Verifikasi".
         ->and($topLevel->firstWhere('label', 'Verifikasi'))->toBeNull()
         // Leaf "Status Verifikasi" mandiri ikut di sidebar role kesra.
-        ->and($topLevel->firstWhere('scope', 'admin.kesra.status'))->not->toBeNull();
+        ->and($topLevel->firstWhere('scope', 'admin.kesra.status'))->not->toBeNull()
+        // Leaf "Penerima Beasiswa" mandiri di section "Manajemen", bukan anak
+        // dropdown Kesra lagi, dan tidak punya anak sendiri.
+        ->and($penerima = $topLevel->firstWhere('scope', 'admin.penerima'))->not->toBeNull()
+        ->and($penerima->label)->toBe('Penerima Beasiswa')
+        ->and($penerima->section)->toBe('Manajemen')
+        ->and($penerima->children)->toBeEmpty();
 });
 
 test('sidebar renders child menu label only once (no duplicate)', function () {

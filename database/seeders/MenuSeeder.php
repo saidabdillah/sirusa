@@ -79,11 +79,13 @@ class MenuSeeder extends Seeder
             // tidak menimpa kunci grant induk (induk wajib tetap di-grant,
             // `sidebarMenus()` hanya mengambil `parent_id` null).
             [
-                // "Kesra" jadi dropdown tiga anak: antrean verifikasi, daftar
-                // penerima (pendaftar berstatus `diterima`) tempat cetak dan
-                // ekspor, serta arsip keputusan. Parent tanpa route karena
-                // `scope` induk `admin.kesra` menutup seluruh `admin.kesra.*`;
-                // tiap anak tetap punya scope unik sendiri untuk sidebar.
+                // "Kesra" jadi dropdown dua anak: antrean verifikasi + arsip
+                // keputusan. "Penerima Beasiswa" keluar dari dropdown ini
+                // (permintaan pengguna) menjadi leaf mandiri di section
+                // "Manajemen" -- lihat entri di bawah. Parent tanpa route
+                // karena `scope` induk `admin.kesra` menutup seluruh
+                // `admin.kesra.*`; tiap anak tetap punya scope unik sendiri
+                // untuk sidebar.
                 'label' => 'Kesra',
                 'icon' => 'fas fa-clipboard-check',
                 'scope' => 'admin.kesra',
@@ -91,9 +93,24 @@ class MenuSeeder extends Seeder
                 'urutan' => 27,
                 'children' => [
                     ['label' => 'Verifikasi', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra.index'],
-                    ['label' => 'Penerima Beasiswa', 'route' => 'admin.penerima.index', 'scope' => 'admin.penerima'],
                     ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
                 ],
+            ],
+            // "Penerima Beasiswa" (pendaftar berstatus `diterima`) menjadi LEAF
+            // mandiri, bukan anak dropdown Kesra (permintaan pengguna): daftar
+            // ini adalah hasil/rekap, bukan antrean kerja, dan bisa dibaca
+            // read-only semua role admin (Catpil, Kampus, Kesra). Menempatinya
+            // di section "Manajemen" (permintaan pengguna) membuatnya tampil
+            // sebagai menu sendiri yang tidak terkubur di dropdown Kesra dan
+            // tidak ikut section "Verifikasi" yang murni antrean kerja.
+            // Halaman ini tanpa kolom Aksi: tidak ada aksi tulis dari daftar.
+            [
+                'label' => 'Penerima Beasiswa',
+                'icon' => 'fas fa-user-check',
+                'route' => 'admin.penerima.index',
+                'scope' => 'admin.penerima',
+                'section' => 'Manajemen',
+                'urutan' => 60,
             ],
             // Status Verifikasi MENJADI leaf mandiri, bukan anak dropdown Kesra
             // (permintaan pengguna): Catpil dan Kampus harus bisa melihat rekap
@@ -214,8 +231,8 @@ class MenuSeeder extends Seeder
                 // `kesra` = parent dropdown "Kesra" (kunci labelnya
                 // `Str::kebab($label)`), sedangkan `admin.kesra` = scope induk.
                 // Tanpa keduanya parent tidak ter-grant dan seluruh dropdown
-                // (Verifikasi + Penerima Beasiswa + Keputusan) hilang dari
-                // sidebar -- sidebarMenus() hanya mengambil menu parent_id null.
+                // (Verifikasi + Keputusan) hilang dari sidebar --
+                // sidebarMenus() hanya mengambil menu parent_id null.
                 'kesra',
                 'admin.kesra',
                 'admin.penerima',
@@ -235,9 +252,9 @@ class MenuSeeder extends Seeder
                 'admin.catpil',
                 'admin.pendaftar',
                 'admin.kesra.status',
-                // `admin.penerima` (anak dropdown Kesra) untuk melihat daftar
-                // penerima; parent `kesra` sengaja TIDAK di-grant supaya scope
-                // induk `admin.kesra` tidak membuka antrean/keputusan Kesra.
+                // `admin.penerima` (leaf mandiri di section "Manajemen") untuk melihat
+                // daftar penerima read-only; scope induk `admin.kesra` sengaja
+                // TIDAK di-grant supaya antrean/keputusan Kesra tetap tertutup.
                 'admin.penerima',
             ],
             'kampus' => [

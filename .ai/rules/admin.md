@@ -123,3 +123,6 @@ Catpil & kampus di-grant scope anak 'admin.penerima' TANPA parent 'kesra' (paren
 
 ## Auto-tolak pendaftar saat Catpil/Kampus menolak
 Setelah profile->save(), bila status==='tolak' dan stage catpil/kampus, semua applicants status PENDING di-update jadi 'ditolak'. Alasan: penolakan menutup gerbang Kesra selamanya, baris verifikasi yang menggantung akan memblokir pendaftaran beasiswa lain tanpa henti. verif_kesra TIDAK disentuh; status 'ditolak' adalah pembersihan, bukan keputusan Kesra.
+
+## Penerima Beasiswa read-only penuh: tanpa kolom Aksi, endpoint tarik dihapus
+Halaman Penerima Beasiswa kini murni read-only untuk SEMUA role admin yang memegang grant 'admin.penerima' (super_admin, kesra, catpil, kampus). Kolom Aksi/tombol Hapus DIHAPUS atas permintaan pengguna -- tidak ada aksi tulis sama sekali, controller hanya punya index/cetak/export. Endpoint PUT 'admin.penerima.tarik' + trait RespondsToAjax + method tarik() sudah dihapus dari routes/web.php dan controller (route tidak terdaftar; jangan dipakai lagi di view/test). Karena Penerima Beasiswa kini leaf mandiri di section 'Manajemen', catpil/kampus melihat entri menu di sidebar (bukan lagi 'akses via URL tersembunyi'). Unduh/Cetak membawa request()->query() supaya hasil sesuai filter layar.

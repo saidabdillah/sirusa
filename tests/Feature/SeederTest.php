@@ -117,13 +117,16 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         // SECTION 2 -- VERIFIKASI
         'Catpil' => 'Verifikasi',
         'Kampus' => 'Verifikasi',
-        // "Kesra" sekarang dropdown tiga anak: antrean verifikasi, penerima
-        // beasiswa, dan keputusan.
+        // "Kesra" sekarang dropdown dua anak: antrean verifikasi + arsip
+        // keputusan. "Penerima Beasiswa" jadi leaf mandiri di section
+        // "Manajemen" (permintaan pengguna).
         'Kesra' => 'Verifikasi',
         // SECTION 3 -- ADMINISTRATOR
         'Kelola Akses' => 'Administrator',
         // Layanan Mahasiswa
         'Beasiswa Saya' => 'Layanan Mahasiswa',
+        // SECTION "MANAJEMEN" -- leaf mandiri Penerima Beasiswa
+        'Penerima Beasiswa' => 'Manajemen',
     ];
 
     foreach ($pasangan as $label => $section) {
@@ -137,16 +140,24 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
             ->and($menu->section)->toBe($section);
     }
 
-    // Anak dropdown Kesra ikut bagian "Verifikasi". Ketiganya berada di bawah
+    // Anak dropdown Kesra ikut bagian "Verifikasi". Keduanya berada di bawah
     // parent "Kesra", jadi tidak masuk pasangan top-level di atas.
     $anakKesra = Menu::query()
         ->whereHas('parent', fn ($query) => $query->where('label', 'Kesra'))
         ->orderBy('urutan')
         ->get();
 
-    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Penerima Beasiswa', 'Keputusan'])
-        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.penerima', 'admin.kesra.disetujui'])
+    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan'])
+        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui'])
         ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Verifikasi']);
+
+    // "Penerima Beasiswa" bukan anak Kesra lagi: leaf mandiri di section
+    // "Manajemen" dengan scope/route tetap `admin.penerima`.
+    $penerima = Menu::query()->whereNull('parent_id')->where('label', 'Penerima Beasiswa')->firstOrFail();
+
+    expect($penerima->section)->toBe('Manajemen')
+        ->and($penerima->route)->toBe('admin.penerima.index')
+        ->and($penerima->scope)->toBe('admin.penerima');
 
     // Tidak boleh ada menu di luar section yang dikenal: sidebar tidak akan
     // merendernya sama sekali.
@@ -256,9 +267,10 @@ test('menuseeder idempoten: dua kali jalan menghasilkan pohon dan grant yang sam
 
     expect($kedua['menu'])->toEqual($pertama['menu'])
         ->and($kedua['grant'])->toEqual($pertama['grant'])
-        // 10 top-level + 11 anak = 21. "Kesra" punya TIGA anak (Verifikasi +
-        // Penerima Beasiswa + Keputusan) dan "Status Verifikasi" keluar dari
-        // anak Kesra menjadi leaf top-level, sehingga totalnya 21.
+        // 11 top-level + 10 anak = 21. "Kesra" punya DUA anak (Verifikasi +
+        // Keputusan); "Penerima Beasiswa" keluar dari anak Kesra menjadi leaf
+        // top-level di section "Manajemen", dan "Status Verifikasi" jadi leaf
+        // top-level di "Administrasi", sehingga total tetap 21.
         ->and(count($pertama['menu']))->toBe(21);
 });
 
@@ -276,13 +288,14 @@ test('menuseeder tidak menggandakan grant di pivot role menu', function () {
 
 /**
  * Menu "Kesra" adalah satu-satunya antrean verifikasi berbentuk dropdown:
- * induk tanpa route (scope `admin.kesra` menutupi `admin.kesra.*`) plus tiga
- * anak ber-route (Verifikasi, Penerima Beasiswa, Keputusan). "Status Verifikasi"
- * bukan anak Kesra lagi -- permintaan pengguna memindahkannya jadi leaf mandiri
- * supaya Catpil dan Kampus bisa melihat halaman itu juga. Anak wajib di-grant
- * sendiri ke role kesra -- `sidebarMenus()` hanya me-render anak yang grant-nya
- * sendiri terisi, jadi induk ter-grant tapi anak tidak = dropdown hilang dan
- * jadi `<span>` mati.
+ * induk tanpa route (scope `admin.kesra` menutupi `admin.kesra.*`) plus dua
+ * anak ber-route (Verifikasi, Keputusan). "Status Verifikasi" bukan anak Kesra
+ * lagi -- permintaan pengguna memindahkannya jadi leaf mandiri di section
+ * "Administrasi" supaya Catpil dan Kampus bisa melihat halaman itu juga.
+ * "Penerima Beasiswa" juga keluar dari anak Kesra (permintaan pengguna) menjadi
+ * leaf mandiri di section "Manajemen". Anak wajib di-grant sendiri ke role
+ * kesra -- `sidebarMenus()` hanya me-render anak yang grant-nya sendiri terisi,
+ * jadi induk ter-grant tapi anak tidak = dropdown hilang dan jadi `<span>` mati.
  */
 test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi', function () {
     seedAkses();
@@ -297,9 +310,9 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
         ->orderBy('urutan')
         ->get();
 
-    expect($anak->pluck('label')->all())->toBe(['Verifikasi', 'Penerima Beasiswa', 'Keputusan'])
-        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.penerima.index', 'admin.kesra.disetujui'])
-        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.penerima', 'admin.kesra.disetujui']);
+    expect($anak->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan'])
+        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui'])
+        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui']);
 
     $kesraRoleId = Role::where('name', 'kesra')->firstOrFail()->id;
     $grantKesra = DB::table('role_menu')->where('role_id', $kesraRoleId)->pluck('menu_id');
@@ -315,11 +328,23 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
         ->and($status->scope)->toBe('admin.kesra.status')
         ->and($grantKesra)->toContain($status->id);
 
+    // Penerima Beasiswa kini leaf mandiri di section "Manajemen", route/scope
+    // tetap `admin.penerima.index`/`admin.penerima`. Tidak ada aksi tulis di
+    // halamannya, jadi cukup grant baca untuk semua role admin.
+    $penerima = Menu::query()->whereNull('parent_id')->where('label', 'Penerima Beasiswa')->firstOrFail();
+
+    expect($penerima->parent_id)->toBeNull()
+        ->and($penerima->section)->toBe('Manajemen')
+        ->and($penerima->route)->toBe('admin.penerima.index')
+        ->and($penerima->scope)->toBe('admin.penerima')
+        ->and($grantKesra)->toContain($penerima->id);
+
     foreach (['catpil', 'kampus'] as $role) {
         $roleId = Role::where('name', $role)->firstOrFail()->id;
 
         expect(DB::table('role_menu')->where('role_id', $roleId)->pluck('menu_id'))
-            ->toContain($status->id);
+            ->toContain($status->id)
+            ->toContain($penerima->id);
     }
 });
 

@@ -84,7 +84,9 @@ test('kesra membuka daftar penerima yang hanya berisi pendaftar diterima dari ak
         ->assertSee('Penerima Beasiswa', false)
         ->assertSee(route('admin.penerima.export'), false)
         ->assertSee(route('admin.penerima.cetak'), false)
-        ->assertSee(route('admin.penerima.tarik', $penerima), false)
+        // Halaman ini read-only penuh: tidak ada kolom Aksi (permintaan
+        // pengguna), jadi tidak ada route `admin.penerima.tarik` yang dirender.
+        ->assertDontSee('Aksi', false)
         // Hanya penerima aktif yang tampil; antrean verifikasi dan akun
         // non-aktif tidak ikut. `assertSee('Ahmad Fauzi')` tidak cukup karena
         // semua profil memakai nama sama, jadi yang dibedakan adalah NIM.
@@ -119,70 +121,34 @@ test('export mengunduh berkas xlsx dengan nama dan tipe konten yang benar', func
         ->toContain('.xlsx');
 });
 
-test('tarik mengembalikan penerima ke antrean verifikasi dan mengosongkan catatan', function () {
-    $penerima = penerimaBaru('penerima-tarik@test.com');
-
-    actingAs($this->kesra)
-        ->from(route('admin.penerima.index'))
-        ->putJson(route('admin.penerima.tarik', $penerima))
-        ->assertOk()
-        ->assertJsonPath('success', true)
-        ->assertJsonPath('redirect', route('admin.penerima.index'));
-
-    // Baris pendaftar TIDAK dihapus: statusnya kembali ke `verifikasi` supaya
-    // masuk lagi ke antrean keputusan Kesra.
-    expect($penerima->refresh()->status)->toBe('verifikasi')
-        ->and($penerima->catatan)->toBeNull();
-
-    $this->assertDatabaseHas('pendaftar', [
-        'id' => $penerima->id,
-        'status' => 'verifikasi',
-    ]);
-});
-
-test('tarik menolak pendaftar yang bukan penerima aktif', function () {
-    $bukanPenerima = penerimaBaru('masih-antre@test.com', status: 'verifikasi');
-
-    actingAs($this->kesra)
-        ->putJson(route('admin.penerima.tarik', $bukanPenerima))
-        ->assertStatus(422)
-        ->assertJsonPath('success', false);
-
-    expect($bukanPenerima->refresh()->status)->toBe('verifikasi');
-});
-
-test('catpil dan kampus membaca daftar penerima read-only, tarik tetap milik kesra', function () {
+test('catpil dan kampus membaca daftar penerima read-only tanpa kolom aksi', function () {
     $penerima = penerimaBaru('penerima-baca@test.com');
     $catpil = User::factory()->catpil()->create(['email' => 'penerima-role-catpil@test.com']);
     $kampus = User::factory()->kampusAdmin()->create(['email' => 'penerima-role-kampus@test.com']);
 
     foreach ([$catpil, $kampus] as $pembaca) {
-        // Grant `admin.penerima` (anak dropdown Kesra) membuka daftar, cetak,
-        // dan unduhan.
+        // Grant `admin.penerima` (leaf mandiri di section "Manajemen") membuka
+        // daftar, cetak, dan unduhan.
         actingAs($pembaca)->get(route('admin.penerima.index'))->assertOk();
         actingAs($pembaca)->get(route('admin.penerima.cetak'))->assertOk();
         actingAs($pembaca)->get(route('admin.penerima.export'))->assertOk();
 
-        // Tapi halamannya read-only: tanpa kolom Aksi / tombol Hapus.
+        // Halaman ini read-only untuk SEMUA role: tidak ada kolom Aksi sama
+        // sekali (fitur "kembalikan ke antrean" dihapus atas permintaan
+        // pengguna), jadi tak ada tombol yang dirender.
         actingAs($pembaca)
             ->get(route('admin.penerima.index'))
-            ->assertDontSee(route('admin.penerima.tarik', $penerima), false);
-
-        // `tarik` dijaga terpisah lewat gate role, bukan hanya middleware
-        // `akses.menu` -- dicek dua-duanya.
-        actingAs($pembaca)->putJson(route('admin.penerima.tarik', $penerima))->assertForbidden();
+            ->assertDontSee('Aksi', false);
     }
 
     expect($penerima->refresh()->status)->toBe('diterima');
 });
 
 test('pendaftar biasa tetap tidak bisa membuka menu penerima', function () {
-    $penerima = penerimaBaru('penerima-user@test.com');
     $user = User::factory()->standardUser()->create();
 
     actingAs($user)->get(route('admin.penerima.index'))->assertForbidden();
     actingAs($user)->get(route('admin.penerima.export'))->assertForbidden();
-    actingAs($user)->putJson(route('admin.penerima.tarik', $penerima))->assertForbidden();
 });
 
 test('filter kampus mempersempit daftar penerima', function () {

@@ -132,7 +132,9 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         Route::get('/verifikasi/kesra/penerima', [PenerimaBeasiswaController::class, 'index'])->name('penerima.index');
         Route::get('/verifikasi/kesra/penerima/unduh', [PenerimaBeasiswaController::class, 'export'])->name('penerima.export');
         Route::get('/verifikasi/kesra/penerima/cetak', [PenerimaBeasiswaController::class, 'cetak'])->name('penerima.cetak');
-        Route::put('/verifikasi/kesra/penerima/{applicant}', [PenerimaBeasiswaController::class, 'tarik'])->name('penerima.tarik');
+
+        // Daftar penerima read-only: tanpa aksi tulis apa pun (kolom Aksi
+        // dihapus atas permintaan pengguna), jadi tidak ada route PUT di sini.
 
         // `disetujui` harus terdaftar sebelum `/verifikasi/kesra/{user}`:
         // kalau sesudah, string itu tertangkap binding model sebagai id user

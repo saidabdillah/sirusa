@@ -1,11 +1,8 @@
 @extends('layouts.app')
 
 @php
-  // Catpil dan Kampus punya grant `admin.penerima` untuk MEMBACA daftar ini,
-  // tapi hanya Kesra (dan super_admin) yang boleh mengembalikan penerima ke
-  // antrean. Kolom Aksi + tombol Hapus hanya dirender untuk pengambil
-  // keputusan, bukan pembaca daftar.
-  $bisaTarik = auth()->user()->hasRole(['kesra', 'super_admin']);
+  // Daftar ini read-only untuk semua role admin: tanpa kolom Aksi (permintaan
+  // pengguna), jadi Unduh/Cetak hanyalah aksi yang tersisa.
   // Unduh/Cetak membawa filter yang sedang dibuka, jadi hasilnya persis
   // daftar di layar (pola yang sama dipakai halaman Status Verifikasi).
   $queryString = request()->query();
@@ -55,19 +52,10 @@
             </div>
           </div>
           <div class="card-body">
-            @if($bisaTarik)
-            <div class="alert alert-primary">
-              <i class="fas fa-info-circle mr-1"></i>
-              Daftar ini hanya memuat pendaftar yang <strong>disetujui (diterima)</strong> Kesra.
-              Tombol <strong>Hapus</strong> tidak menghapus data: status pendaftaran dikembalikan ke
-              <strong>Verifikasi</strong> supaya masuk lagi ke antrean keputusan Kesra.
-            </div>
-            @else
             <div class="alert alert-primary">
               <i class="fas fa-info-circle mr-1"></i>
               Daftar ini hanya memuat pendaftar yang <strong>disetujui (diterima)</strong> Kesra.
             </div>
-            @endif
 
             <form method="GET" action="{{ route('admin.penerima.index') }}" class="mb-3">
               <div class="form-row align-items-end">
@@ -135,9 +123,6 @@
                     <th>Beasiswa</th>
                     <th>Tanggal Daftar</th>
                     <th>Status</th>
-                    @if($bisaTarik)
-                    <th>Aksi</th>
-                    @endif
                   </tr>
                 </thead>
                 <tbody>
@@ -157,22 +142,6 @@
                     <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
                     <td>{{ $applicant->created_at?->translatedFormat('d M Y') ?? '-' }}</td>
                     <td><span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span></td>
-                    @if($bisaTarik)
-                    <td>
-                      <form action="{{ route('admin.penerima.tarik', $applicant) }}" method="POST" data-ajax-form>
-                        @csrf
-                        @method('PUT')
-                        <button type="submit"
-                          class="btn btn-sm btn-outline-danger btn-delete"
-                          data-confirm-title="Hapus dari Penerima?"
-                          data-confirm-text="Status pendaftaran {{ $profile?->nama_lengkap ?? 'mahasiswa ini' }} akan dikembalikan ke Verifikasi dan masuk lagi ke antrean keputusan Kesra."
-                          data-confirm-button="Ya, Kembalikan!"
-                          data-loading-text="Memproses...">
-                          <i class="fas fa-trash mr-1"></i> Hapus
-                        </button>
-                      </form>
-                    </td>
-                    @endif
                   </tr>
                   @endforeach
                 </tbody>

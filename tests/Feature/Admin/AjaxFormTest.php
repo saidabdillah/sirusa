@@ -140,50 +140,6 @@ test('kegagalan bisnis lewat ajax dibalas success false dengan status 422', func
 
 /*
 |--------------------------------------------------------------------------
-| Fallback Referer untuk `back()`
-|--------------------------------------------------------------------------
-*/
-
-test('endpoint tanpa tujuan eksplisit memakai header referer sebagai tujuan', function () {
-    $applicant = penerimaDiterima();
-
-    $response = actingAs($this->admin)
-        ->from(route('admin.penerima.index'))
-        ->putJson(route('admin.penerima.tarik', $applicant));
-
-    // Kalau tujuan tidak diberikan, `back()` diterjemahkan dari `Referer`.
-    $response->assertOk()
-        ->assertJsonPath('success', true)
-        ->assertJsonPath('redirect', route('admin.penerima.index'));
-});
-
-test('endpoint tanpa tujuan eksplisit dan tanpa referer mengembalikan null', function () {
-    $applicant = penerimaDiterima();
-
-    actingAs($this->admin)
-        ->putJson(route('admin.penerima.tarik', $applicant))
-        ->assertOk()
-        ->assertJsonPath('success', true)
-        ->assertJsonPath('redirect', null);
-});
-
-/**
- * Pendaftar berstatus `diterima` milik satu mahasiswa standar.
- */
-function penerimaDiterima(): Applicant
-{
-    $mahasiswa = User::factory()->standardUser()->create(['email' => 'mhs-penerima@test.com']);
-    $beasiswa = Scholarship::factory()->create(['kampus_id' => test()->kampus->id]);
-
-    return Applicant::create([
-        'user_id' => $mahasiswa->id,
-        'beasiswa_id' => $beasiswa->id,
-        'status' => 'diterima',
-    ]);
-}
-
-/*
-|--------------------------------------------------------------------------
 | Otorisasi tetap ditegakkan di backend
 |--------------------------------------------------------------------------
 */

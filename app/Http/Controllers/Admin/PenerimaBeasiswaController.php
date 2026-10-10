@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\PenerimaExport;
-use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\Fakultas;
@@ -11,9 +10,6 @@ use App\Models\Kampus;
 use App\Models\Prodi;
 use App\Models\Scholarship;
 use App\Support\ExcelDownload;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -23,15 +19,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Kesra. Halaman ini dipisah dari antrean verifikasi supaya cetak dan
  * ekspor selalu membaca daftar yang sudah disetujui, bukan daftar antrean.
  *
- * Daftarnya bisa dibaca (index/cetak/export) oleh semua role admin dengan
- * grant `admin.penerima`; satu-satunya aksi tulis -- mengembalikan penerima
- * ke antrean -- dijaga terpisah lewat gate role `kesra`/`super_admin`, jadi
- * Catpil dan Kampus melihat halaman ini read-only.
+ * Daftarnya read-only penuh untuk semua role admin dengan grant
+ * `admin.penerima` (Catpil, Kampus, Kesra, super_admin): tidak ada aksi
+ * tulis -- tombol Aksi/hapus dihapus atas permintaan pengguna, jadi tidak
+ * ada yang bisa mengembalikan penerima ke antrean dari halaman ini.
  */
 class PenerimaBeasiswaController extends Controller
 {
-    use RespondsToAjax;
-
     public function index(): View
     {
         return view('admin.penerima.index', [
@@ -70,40 +64,6 @@ class PenerimaBeasiswaController extends Controller
         $export = new PenerimaExport($this->penerima());
 
         return ExcelDownload::response($export->toSpreadsheet(), $export->fileName());
-    }
-
-    public function tarik(Request $request, Applicant $applicant): RedirectResponse|JsonResponse
-    {
-        abort_unless(auth()->user()->hasMenuAccess('admin.penerima.index'), 403);
-
-        // Hanya Kesra (dan super_admin) yang boleh mengembalikan penerima ke
-        // antrean: grant `admin.penerima` sekarang juga dipegang Catpil dan
-        // Kampus supaya mereka bisa melihat daftar, tapi daftar itu read-only
-        // bagi mereka. Mengubah keputusan tetaplah wewenang pengambil
-        // keputusan, bukan pembaca daftar.
-        if (! auth()->user()->hasRole(['kesra', 'super_admin'])) {
-            abort(403);
-        }
-
-        if ($applicant->status !== 'diterima') {
-            return $this->ajaxFail(
-                $request,
-                'Pendaftaran ini bukan penerima aktif, jadi tidak bisa dikembalikan ke antrean.',
-                route('admin.penerima.index')
-            );
-        }
-
-        // Catatan keputusan lama ikut dikosongkan supaya tidak ada alasan
-        // penerimaan usang yang tertinggal saat pendaftaran diputuskan ulang.
-        $applicant->update(['status' => 'verifikasi', 'catatan' => null]);
-
-        return $this->ajaxOk(
-            $request,
-            sprintf(
-                'Pendaftaran %s dikembalikan ke antrean verifikasi.',
-                $applicant->user?->profile?->nama_lengkap ?? 'mahasiswa'
-            ),
-        );
     }
 
     /**

@@ -128,9 +128,6 @@ test('tombol non-simpan punya teks loading yang sesuai aksinya', function () {
         'views/admin/pendaftar/index.blade.php' => 'data-loading-text="Mencari..."',
         'views/admin/verifikasi/index.blade.php' => 'data-loading-text="Menerapkan filter..."',
         'views/auth/masuk.blade.php' => 'data-loading-text="Sedang masuk..."',
-        // Tombol "Hapus" di daftar penerima memakai type="button" (konfirmasi
-        // dulu, baru submit form ajax) sehingga butuh penanda loading sendiri.
-        'views/admin/penerima/index.blade.php' => 'data-loading-text="Memproses..."',
     ];
 
     foreach ($harapan as $relatif => $needle) {
