@@ -592,4 +592,14 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   }
 }
 
+/* Kursor tangan di input tanggal beasiswa (form tambah & edit).
+   Flatpickr dengan `altInput: true` menyembunyikan input asli `.flatpickr`
+   (yang punya `name`/`id`) dan menampilkan input saudara langsung sesudahnya.
+   Flatpickr tidak menyetel `cursor`, jadi elemen yang benar-benar diklik
+   pengguna perlu ditandai di sini. Dibatasi `#formBeasiswa` supaya picker lain
+   (mis. tanggal lahir di profil) tidak ikut berubah. */
+#formBeasiswa input.flatpickr + input {
+  cursor: pointer;
+}
+
 /*# sourceMappingURL=custom.css.map */

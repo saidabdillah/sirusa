@@ -2,19 +2,20 @@
 
 @php
   // Arsip keputusan Kesra. Sumber datanya sama dengan antrean di
-  // `kesra.blade.php` -- baris `pendaftar` -- tapi statusnya dikunci ke
-  // `diterima`, jadi halaman ini murni daftar hasil, bukan daftar kerja.
+  // `kesra.blade.php` -- baris `pendaftar` -- tapi statusnya dibatasi ke
+  // keputusan Kesra (`diterima` dan `ditolak`), jadi halaman ini murni daftar
+  // hasil, bukan daftar kerja. Kolom Status membedakan kedua hasil itu.
   $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()['kesra'];
 @endphp
 
 @section('content')
 <section class="section">
   <div class="section-header">
-    <h1>Pendaftaran Disetujui</h1>
+    <h1>Keputusan Kesra</h1>
     <div class="section-header-breadcrumb">
       <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dasbor</a></div>
       <div class="breadcrumb-item"><a href="{{ route($routePrefix.'.index') }}">Verifikasi Kesra</a></div>
-      <div class="breadcrumb-item">Disetujui</div>
+      <div class="breadcrumb-item">Keputusan</div>
     </div>
   </div>
 
@@ -23,7 +24,7 @@
       <div class="col-12">
         <div class="card">
           <div class="card-header">
-            <h4>Pendaftaran yang Sudah Disetujui</h4>
+            <h4>Daftar Keputusan Kesra</h4>
             {{-- Unduh Excel di halaman Keputusan ini membaca koleksi yang sama
                  dengan tabelnya, jadi unduhan tidak mungkin menyimpang dari
                  daftar yang tampil. --}}
@@ -51,6 +52,7 @@
                     <th>Fakultas</th>
                     <th>Program Studi</th>
                     <th>Beasiswa</th>
+                    <th>Status</th>
                     <th>Diputuskan</th>
                     <th>Aksi</th>
                   </tr>
@@ -71,12 +73,19 @@
                     <td>{{ $applicant->prodi ?? $profile?->prodi?->nama ?? '-' }}</td>
                     <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
                     <td>
+                      <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
+                    </td>
+                    <td>
                       {{ $applicant->diputuskan_at?->format('d/m/Y H:i') ?? '-' }}
                       @if($applicant->diputuskanOleh)
                       <small class="text-muted d-block">oleh {{ $applicant->diputuskanOleh->username }}</small>
                       @endif
                     </td>
-<td>
+                    <td>
+                      {{-- Hapus hanya untuk baris `diterima`: `batalkan()`
+                           menolak status lain, dan keputusan `ditolak` masih
+                           diubah lewat form keputusan biasa. --}}
+                      @if($applicant->status === 'diterima')
                       {{-- Hapus tidak membuang baris: statusnya dikembalikan ke
                            `verifikasi`, jadi pendaftaran muncul lagi di antrean
                            putusan dan slot kuotanya ikut terbuka kembali. --}}
@@ -92,6 +101,7 @@
                           <i class="fas fa-trash mr-1"></i> Hapus
                         </button>
                       </form>
+                      @endif
                     </td>
                   </tr>
                   @endforeach
@@ -117,7 +127,7 @@
         lengthMenu: "Tampilkan _MENU_ data",
         info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
         infoEmpty: "Tidak ada data",
-        emptyTable: "Belum ada pendaftaran yang disetujui Kesra.",
+        emptyTable: "Belum ada keputusan Kesra.",
         infoFiltered: "(disaring dari _MAX_ total data)",
         zeroRecords: "Tidak ada data yang cocok",
         paginate: {

@@ -33,6 +33,25 @@ test('admin can view scholarship index and detail', function () {
     actingAs($this->admin)->get(route('admin.beasiswa.lihat', $scholarship))->assertOk();
 });
 
+test('detail beasiswa admin menampilkan fakultas dan program studi yang dipilih', function () {
+    $scholarship = Scholarship::factory()->create();
+
+    // Cakupan yang dipilih saat membuat/mengubah beasiswa harus terbaca di
+    // halaman detailnya, bukan hanya tersimpan di database.
+    $scholarship->fakultas()->create(['nama' => 'Fakultas Teknik'])
+        ->prodi()->create(['nama' => 'Teknik Informatika']);
+    $scholarship->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->create(['nama' => 'Akuntansi']);
+
+    actingAs($this->admin)->get(route('admin.beasiswa.lihat', $scholarship))
+        ->assertOk()
+        ->assertSee('Program Studi yang Bisa Mendaftar')
+        ->assertSee('Fakultas Teknik')
+        ->assertSee('Teknik Informatika')
+        ->assertSee('Fakultas Ekonomi')
+        ->assertSee('Akuntansi');
+});
+
 // ─── Scholarship: menu-granted roles manage ─────────────────────
 
 test('admin can access scholarship create form and create one', function () {

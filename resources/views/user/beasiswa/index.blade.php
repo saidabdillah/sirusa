@@ -23,7 +23,7 @@
         @forelse($scholarships as $scholarship)
           <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100">
-              <div class="card-body">
+              <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
                   <h5 class="card-title mb-0">{{ $scholarship->nama }}</h5>
                   @if(isset($applications[$scholarship->id]) && $applications[$scholarship->id] !== 'dibatalkan')
@@ -83,7 +83,7 @@
                     </strong>
                   </div>
                 </div>
-                <div class="mt-3">
+                <div class="mt-auto pt-3">
                   <a href="{{ route('user.beasiswa.lihat', $scholarship) }}" class="btn btn-info btn-sm btn-block">
                     <i class="fas fa-eye"></i> Lihat Detail
                   </a>

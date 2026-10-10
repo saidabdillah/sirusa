@@ -540,6 +540,40 @@ test('daftar menandai beasiswa yang kuotanya sudah penuh', function () {
         ->assertSee('0 / 1');
 });
 
+test('kartu beasiswa mengunci tombol Lihat Detail di dasar kartu', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    beasiswaTersedia($this->kampus->id);
+
+    $html = actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))->assertOk()->getContent();
+
+    // `d-flex flex-column` + `mt-auto` menempelkan tombol ke dasar kartu, jadi
+    // tinggi kartu yang berbeda karena panjang teks tetap menghasilkan tombol
+    // yang sejajar antar kartu.
+    expect($html)->toContain('class="card-body d-flex flex-column"')
+        ->toContain('class="mt-auto pt-3"');
+});
+
+test('detail menaruh daftar program studi sebelum deskripsi', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik'])
+        ->prodi()->create(['nama' => 'Teknik Informatika']);
+
+    $html = actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
+        ->assertOk()
+        ->getContent();
+
+    // Cakupan prodi dipromosikan ke dekat info Kampus, bukan disembunyikan di
+    // bawah deskripsi.
+    $posProdi = strpos($html, 'Program Studi yang Bisa Mendaftar');
+    $posDeskripsi = strpos($html, 'Deskripsi:');
+
+    expect($posProdi)->not->toBeFalse()
+        ->and($posDeskripsi)->not->toBeFalse()
+        ->and($posProdi)->toBeLessThan($posDeskripsi);
+});
+
 test('detail menampilkan cakupan fakultas dan prodi', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);

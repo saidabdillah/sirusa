@@ -132,3 +132,6 @@ VerifikasiController::status() tidak lagi membaca/menyaring verif_catpil/verif_k
 
 ## status() tanpa filter status per tahap; validStatusFilter dihapus
 VerifikasiController::status() tidak lagi membaca/menyaring verif_catpil/verif_kampus (select di view sudah dihapus atas permintaan pengguna). Param lama di URL diabaikan begitu saja — daftar selalu rekap penuh semua profil. Method private validStatusFilter() dihapus; konstanta FILTERS tetap dipakai validFilter() untuk antrean Catpil/Kampus.
+
+## Halaman & export Keputusan memuat diterima+ditolak
+disetujui() dan disetujuiExport() memakai pendaftaran(['diterima','ditolak']). batalkan() hanya menerima baris diterima; keputusan ditolak direvisi lewat form keputusan biasa.

@@ -434,6 +434,16 @@ test('ekspor keputusan memuat kolom dan nilai baris yang sudah diputuskan kesra'
         ])
         ->assertRedirect(route('admin.kesra.lihat', $pemohon));
 
+    // Keputusan `ditolak` juga masuk unduhan, dibedakan kolom Status.
+    $ditolak = User::factory()->standardUser()->create();
+    buatPemohon($ditolak, 'kesra', $this->prodi);
+    $applicantDitolak = $ditolak->applicants()->firstOrFail();
+
+    actingAs($this->kesraAdmin)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$ditolak, $applicantDitolak]), [
+            'pendaftaran_status' => 'ditolak',
+        ]);
+
     $response = actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui.export'));
 
     $response->assertOk()
@@ -442,8 +452,8 @@ test('ekspor keputusan memuat kolom dan nilai baris yang sudah diputuskan kesra'
     expect($response->headers->get('Content-Disposition'))->toContain('keputusan-')
         ->toContain('.xlsx');
 
-    // Kolomnya persis baris tabel halaman Keputusan, jadi unduhan tidak
-    // mungkin menyimpang dari yang tampil di layar.
+    // Kolomnya persis baris tabel halaman Keputusan, termasuk Status, jadi
+    // unduhan tidak mungkin menyimpang dari yang tampil di layar.
     expect(judulSheet($response))->toBe([
         'No',
         'Nama',
@@ -452,20 +462,27 @@ test('ekspor keputusan memuat kolom dan nilai baris yang sudah diputuskan kesra'
         'Fakultas',
         'Program Studi',
         'Beasiswa',
+        'Status',
         'Diputuskan',
     ]);
 
-    $baris = bacaSheet($response);
-    expect($baris)->toHaveCount(1)
-        ->and($baris[0]['Nama'])->toBe("Ahmad Fauzi #{$pemohon->id}")
+    $baris = collect(bacaSheet($response))->keyBy('Nama');
+
+    expect($baris)->toHaveCount(2)
+        ->and($baris["Ahmad Fauzi #{$pemohon->id}"]['Status'])->toBe('Disetujui')
+        ->and($baris["Ahmad Fauzi #{$ditolak->id}"]['Status'])->toBe('Ditolak');
+
+    expect($baris["Ahmad Fauzi #{$pemohon->id}"])
         // `buatPemohon()` tidak mengisi NIM, jadi `teks(null)` menulis '-' di
         // kolom identitas, bukan sel kosong.
-        ->and($baris[0]['NIM'])->toBe('-')
-        ->and($baris[0]['Kampus'])->toBe('Universitas Lambung Mangkurat')
-        ->and($baris[0]['Fakultas'])->toBe('Fakultas Teknik')
-        ->and($baris[0]['Program Studi'])->toBe('Teknik Informatika')
-        ->and($baris[0]['Beasiswa'])->toBe('Beasiswa Ekspor')
-        ->and($baris[0]['Diputuskan'])->toStartWith(now()->format('d/m/Y'));
+        ->toMatchArray([
+            'NIM' => '-',
+            'Kampus' => 'Universitas Lambung Mangkurat',
+            'Fakultas' => 'Fakultas Teknik',
+            'Program Studi' => 'Teknik Informatika',
+            'Beasiswa' => 'Beasiswa Ekspor',
+        ])
+        ->and($baris["Ahmad Fauzi #{$pemohon->id}"]['Diputuskan'])->toStartWith(now()->format('d/m/Y'));
 
     // Pendaftaran yang belum diputuskan tidak ikut terunduh.
     $menunggu = User::factory()->standardUser()->create();

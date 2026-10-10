@@ -1,6 +1,7 @@
 ---
 paths:
   - 'resources/views/admin/beasiswa/**'
+  - resources/views/admin/beasiswa/lihat.blade.php
 ---
 
 # Beasiswa
@@ -10,3 +11,6 @@ paths:
 
 ## The prodi_ids group is starred on its card heading
 `prodi_ids` is `required|array|min:1` but the checkbox tree has no single `<label>`; the visual star therefore lives on the card heading: `<h4 class="mb-0"><i ...></i>Fakultas &amp; Program Studi <span class="text-danger">*</span></h4>` in BOTH `buat.blade.php` and `ubah.blade.php` (the `&` is escaped as `&amp;`). The alert below it ("minimal 1") is a hint, not the label. `BeasiswaAccessTest` locks the star on both forms.
+
+## Detail beasiswa admin menampilkan fakultas & prodi
+Blok 'Program Studi yang Bisa Mendaftar' menampilkan fakultas + prodi cakupan (relasi $scholarship->fakultas yang di-eager-load BeasiswaController::show()), diletakkan setelah Periode dan sebelum Deskripsi. Blok yang sama ada di detail user.

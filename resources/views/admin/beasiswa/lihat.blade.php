@@ -70,6 +70,33 @@
               <span class="badge badge-danger ml-2">Telah Berakhir</span>
               @endif
             </div>
+
+            {{-- Cakupan beasiswa (fakultas & program studi yang dipilih saat
+                 dibuat/diubah). Sumbernya relasi yang sudah di-eager-load
+                 `BeasiswaController::show()`, jadi tidak ada query tambahan. --}}
+            <div class="mb-3">
+              <strong>Program Studi yang Bisa Mendaftar:</strong><br>
+              @if($scholarship->fakultas->isEmpty())
+                <span class="text-muted">
+                  Semua Program Studi di {{ $scholarship->kampus }}. Tidak ada pembatasan program studi untuk beasiswa ini.
+                </span>
+              @else
+                @foreach($scholarship->fakultas as $fakultas)
+                  <div class="mt-2">
+                    <i class="fas fa-university text-muted"></i> <strong>{{ $fakultas->nama }}</strong>
+                    @if($fakultas->prodi->isEmpty())
+                      <div class="text-muted ml-4"><small>Seluruh program studi pada fakultas ini</small></div>
+                    @else
+                      <ul class="ml-4 mb-0">
+                        @foreach($fakultas->prodi as $prodi)
+                          <li>{{ $prodi->nama }}</li>
+                        @endforeach
+                      </ul>
+                    @endif
+                  </div>
+                @endforeach
+              @endif
+            </div>
             <hr>
             <div class="mb-3">
               <strong>Deskripsi:</strong><br>

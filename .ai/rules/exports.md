@@ -2,6 +2,7 @@
 paths:
   - 'app/Exports/**'
   - app/Exports/KesraVerifikasiExport.php
+  - app/Exports/KeputusanExport.php
 ---
 
 # Exports
@@ -21,4 +22,5 @@ NIK/NIM/No. KK lewat `teks()` (string) dan TIDAK boleh diberi `number_format` at
 ## Unduhan Kesra harus berisi persis isi antrean yang sedang dibuka
 `KesraVerifikasiExport::users()` wajib baca dari `VerifikasiAntrean::pendaftarUsers($this->filter())`, bukan `parent::users()` yang memfilter profil lewat `canVerifStage()` — yang mengembalikan semua yang lolos Catpil+Kampus termasuk yang keputusannya lama, sehingga unduhan tidak sama dengan tabel yang dibaca admin. `VerifikasiExport` menyediakan accessor `filter()` dan `antrean()` protected untuk itu. Filter yang sama harus diteruskan ke kolom pendaftaran di dalam sel (`pendaftaran($user)`), supaya "Status Pendaftaran" di Excel juga jujur. Pintu UI-nya ada di halaman antrean `kesra.blade.php` (menu Kesra -> Verifikasi): href `route('admin.kesra.export', request()->only('filter'))` — mengikuti pola Catpil/Kampus di `verifikasi/index.blade.php`, sehingga unduhan berisi status yang sedang dibuka (tanpa filter, default antrean `verifikasi`). Kolom **"Status Kesra"** di `KesraVerifikasiExport` memakai `$user->kesraDecision()['label']`, BUKAN `$profile->verifStageDecision('kesra')` — lihat `app/Models/User.php`: `verif_kesra` selalu `setuju` untuk semua keputusan, jadi membacanya akan menampilkan pendaftaran ditolak sebagai "Disetujui". `pendaftarUsers()` sudah eager-load `applicants`, jadi tidak ada query tambahan. Arsip `kesra-disetujui` TIDAK punya tombol lagi (permintaan pengguna). Endpoint tetap menerima semua filter — `VerifikasiExportTest` menguji `semua`/`diterima`/`dibatalkan`/tanpa-filter langsung lewat route.
 
-
+## KeputusanExport punya kolom Status
+headings() memuat 9 kolom; 'Status' disisipkan antara 'Beasiswa' dan 'Diputuskan', nilainya $applicant->statusLabel() ('Disetujui'/'Ditolak'). Wajib menjaga paritas persis dengan kolom tabel kesra-disetujui.blade.php.

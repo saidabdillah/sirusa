@@ -76,12 +76,18 @@ beforeEach(function () {
     $this->mahasiswa = User::factory()->standardUser()->create(['email' => 'mhs@disetujui.test']);
 });
 
-test('halaman disetujui menampilkan pendaftaran yang sudah diputuskan kesra', function () {
+test('halaman keputusan menampilkan pendaftaran yang sudah diputuskan kesra', function () {
     $pemohon = pemohonKesra($this->kampus, beasiswaKesra($this->kampus, 'Beasiswa Utama'));
     $applicant = $pemohon->applicants()->firstOrFail();
 
     putuskanPendaftaran($this->kesraAdmin, $pemohon, $applicant, 'diterima')
         ->assertRedirect(route('admin.kesra.lihat', $pemohon));
+
+    // Keputusan `ditolak` tampil di daftar yang sama, dibedakan kolom Status --
+    // bukan disembunyikan di tab/halaman lain.
+    $ditolak = pemohonKesra($this->kampus, beasiswaKesra($this->kampus, 'Beasiswa Ditolak'));
+    $applicantDitolak = $ditolak->applicants()->firstOrFail();
+    putuskanPendaftaran($this->kesraAdmin, $ditolak, $applicantDitolak, 'ditolak');
 
     // Pendaftar yang belum diputuskan tidak ikut masuk arsip.
     $lain = pemohonKesra($this->kampus, beasiswaKesra($this->kampus, 'Beasiswa Lain'));
@@ -89,16 +95,24 @@ test('halaman disetujui menampilkan pendaftaran yang sudah diputuskan kesra', fu
     $response = actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui'));
 
     $response->assertOk()
-        ->assertSee('Pendaftaran Disetujui')
+        ->assertSee('Keputusan Kesra')
         ->assertSee($pemohon->profile->nama_lengkap)
+        ->assertSee($ditolak->profile->nama_lengkap)
         ->assertSee('Beasiswa Utama')
+        ->assertSee('Beasiswa Ditolak')
         ->assertSee('oleh '.$this->kesraAdmin->username, false)
+        // Kolom Status memakai label dan warna badge yang sama dengan antrean.
+        ->assertSee('Disetujui')
+        ->assertSee('badge-success', false)
+        ->assertSee('Ditolak')
+        ->assertSee('badge-danger', false)
         // Baris yang masih menunggu putusan tetap milik antrean kerja.
         ->assertDontSee($lain->profile->nama_lengkap);
 
-    // Aksi Hapus tertanam di setiap baris; pintu masuk ke halaman arsip
-    // kini dropdown sidebar Kesra (menu "Keputusan"), bukan tombol di antrean.
+    // Aksi Hapus hanya tersedia untuk baris `diterima`; keputusan `ditolak`
+    // diubah lewat form keputusan biasa, bukan dibuang lewat tombol hapus.
     $response->assertSee(route('admin.kesra.pendaftaran.hapus', [$pemohon, $applicant->id]), false)
+        ->assertDontSee(route('admin.kesra.pendaftaran.hapus', [$ditolak, $applicantDitolak->id]), false)
         ->assertDontSee('Antrean Putusan');
 
     // Header antrean sengaja tanpa tombol arsip (permintaan pengguna):
@@ -108,6 +122,34 @@ test('halaman disetujui menampilkan pendaftaran yang sudah diputuskan kesra', fu
         ->assertOk()
         ->assertDontSee('fa-check-double', false)
         ->assertSee(route('admin.kesra.disetujui'), false);
+});
+
+test('filter antrean kesra tetap menawarkan dan menyaring dibatalkan', function () {
+    // Pembatalan adalah pilihan mahasiswa, bukan keputusan Kesra, jadi status
+    // `dibatalkan` TETAP menjadi salah satu opsi filter di antrean Verifikasi
+    // Kesra -- meski halaman Keputusan hanya memuat `diterima` dan `ditolak`.
+    $batal = pemohonKesra($this->kampus, beasiswaKesra($this->kampus, 'Beasiswa Dibatalkan'));
+    $batal->applicants()->firstOrFail()->update(['status' => 'dibatalkan']);
+
+    $menunggu = pemohonKesra($this->kampus, beasiswaKesra($this->kampus, 'Beasiswa Menunggu'));
+
+    actingAs($this->kesraAdmin)->get(route('admin.kesra.index'))
+        ->assertOk()
+        ->assertSee('value="dibatalkan"', false)
+        ->assertSee('Dibatalkan');
+
+    // `?filter=dibatalkan` benar-benar menyaring: hanya baris yang dibatalkan
+    // mahasiswa yang tampil.
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.index', ['filter' => 'dibatalkan']))
+        ->assertOk()
+        ->assertSee($batal->profile->nama_lengkap)
+        ->assertDontSee($menunggu->profile->nama_lengkap);
+
+    // Dan pembatalan tidak pernah bocor ke daftar keputusan Kesra.
+    actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui'))
+        ->assertOk()
+        ->assertDontSee($batal->profile->nama_lengkap);
 });
 
 test('halaman disetujui dan aksinya ditutup untuk yang bukan pengelola kesra', function () {

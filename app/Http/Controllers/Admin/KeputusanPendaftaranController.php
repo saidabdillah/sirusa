@@ -107,25 +107,27 @@ class KeputusanPendaftaranController extends Controller
     }
 
     /**
-     * Daftar pendaftaran yang sudah disetujui Kesra.
+     * Daftar pendaftaran yang sudah diputuskan Kesra -- disetujui dan ditolak.
      *
      * Antrean di `admin.kesra.index` defaultnya hanya menampilkan yang menunggu
      * putusan, jadi keputusan yang sudah diambil tenggelam di balik filter. Halaman
      * ini menaruhnya di layar terpisah supaya arsip "sudah selesai" bisa dibaca
      * tanpa mengubah antrean kerja, dan supaya keputusan yang keliru punya satu
-     * tempat jelas untuk dibatalkan lewat aksi Hapus.
+     * tempat jelas untuk dibatalkan lewat aksi Hapus. Kolom Status membedakan
+     * hasil tiap baris; Hapus hanya tersedia untuk yang `diterima`, karena
+     * `batalkan()` menolak baris `ditolak`.
      */
     public function disetujui(): View
     {
         abort_unless(auth()->user()->hasMenuAccess('admin.kesra.index'), 403);
 
         return view('admin.verifikasi.kesra-disetujui', [
-            'pendaftaran' => (new VerifikasiAntrean('kesra'))->pendaftaran('diterima'),
+            'pendaftaran' => (new VerifikasiAntrean('kesra'))->pendaftaran(['diterima', 'ditolak']),
         ]);
     }
 
     /**
-     * Unduhan Excel daftar keputusan yang disetujui.
+     * Unduhan Excel daftar keputusan Kesra (disetujui dan ditolak).
      *
      * Membaca koleksi yang sama dengan halaman Keputusan, jadi unduhan tidak
      * mungkin menyimpang dari daftar di layar. Route-nya bernama
@@ -137,7 +139,7 @@ class KeputusanPendaftaranController extends Controller
     {
         abort_unless(auth()->user()->hasMenuAccess('admin.kesra.disetujui.export'), 403);
 
-        $export = new KeputusanExport((new VerifikasiAntrean('kesra'))->pendaftaran('diterima'));
+        $export = new KeputusanExport((new VerifikasiAntrean('kesra'))->pendaftaran(['diterima', 'ditolak']));
 
         return ExcelDownload::response($export->toSpreadsheet(), $export->fileName());
     }

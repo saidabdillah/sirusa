@@ -56,11 +56,6 @@
                   @endif
                 </div>
               </div>
-              <hr>
-              <div class="mb-3">
-                <strong>Deskripsi:</strong><br>
-                {!! nl2br(e($scholarship->deskripsi)) !!}
-              </div>
 
               <div class="mb-3">
                 <strong>Program Studi yang Bisa Mendaftar:</strong><br>
@@ -84,6 +79,12 @@
                     </div>
                   @endforeach
                 @endif
+              </div>
+
+              <hr>
+              <div class="mb-3">
+                <strong>Deskripsi:</strong><br>
+                {!! nl2br(e($scholarship->deskripsi)) !!}
               </div>
 
               <div class="mb-3">

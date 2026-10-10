@@ -13,11 +13,13 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
- * Unduhan Excel daftar keputusan Kesra (pendaftar berstatus `diterima`).
+ * Unduhan Excel daftar keputusan Kesra (pendaftar berstatus `diterima` atau
+ * `ditolak`).
  *
  * Isinya dibangun dari koleksi yang sama dengan halaman Keputusan
  * (`KeputusanPendaftaranController::disetujui()`), jadi unduhan tidak mungkin
- * menyimpang dari daftar di layar. Kolomnya persis baris tabel halaman itu.
+ * menyimpang dari daftar di layar. Kolomnya persis baris tabel halaman itu
+ * (termasuk kolom Status).
  */
 class KeputusanExport
 {
@@ -36,6 +38,7 @@ class KeputusanExport
             'Fakultas',
             'Program Studi',
             'Beasiswa',
+            'Status',
             'Diputuskan',
         ];
     }
@@ -102,6 +105,7 @@ class KeputusanExport
             $this->teks($profile?->prodi?->fakultas?->nama),
             $this->teks($applicant->prodi ?? $profile?->prodi?->nama),
             $this->teks($applicant->beasiswa?->nama),
+            $applicant->statusLabel(),
             $applicant->diputuskan_at?->format('d/m/Y H:i') ?? '-',
         ];
     }

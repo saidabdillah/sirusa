@@ -483,3 +483,30 @@ test('semua field flatpickr punya is-invalid dan invalid feedback sendiri', func
     expect(substr_count($buat, "@error('tanggal_mulai')<div class=\"invalid-feedback d-block\">"))->toBe(1)
         ->and(substr_count($buat, "@error('tanggal_selesai')<div class=\"invalid-feedback d-block\">"))->toBe(1);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Kursor tangan pada input tanggal (form tambah & edit)
+|--------------------------------------------------------------------------
+*/
+
+test('input tanggal beasiswa memakai kursor tangan lewat css', function () {
+    // Flatpickr dengan `altInput: true` menyembunyikan input asli `.flatpickr`
+    // dan menampilkan input saudara langsung sesudahnya; flatpickr tidak
+    // menyetel `cursor`, jadi aturan CSS inilah yang membuat elemen yang
+    // benar-benar diklik pengguna terlihat bisa diklik.
+    $css = file_get_contents(base_path('public/assets/css/custom.css'));
+
+    expect($css)->toContain('#formBeasiswa input.flatpickr + input')
+        ->toContain('cursor: pointer;');
+
+    // Id form yang sama di kedua form membuat selector itu berlaku di tambah
+    // maupun edit, dan kedua field tanggal tetap berkelas `flatpickr`.
+    foreach (['buat', 'ubah'] as $form) {
+        $sumber = file_get_contents(resource_path("views/admin/beasiswa/{$form}.blade.php"));
+
+        expect($sumber)->toContain('id="formBeasiswa"')
+            ->and(tagInput($sumber, 'tanggal_mulai'))->toContain('flatpickr')
+            ->and(tagInput($sumber, 'tanggal_selesai'))->toContain('flatpickr');
+    }
+});

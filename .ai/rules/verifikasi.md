@@ -41,3 +41,6 @@ In admin/verifikasi/lihat.blade.php the page H1 stays "Detail Beasiswa" and the 
 
 ## Status Verifikasi tanpa filter per tahap; kesra tanpa @empty di tbody
 Halaman status.blade.php (admin.kesra.status) kini hanya punya filter lokasi Kampus/Fakultas/Program Studi (select verif_catpil/verif_kampus DIHAPUS atas permintaan pengguna) dan tombol Terapkan/Reset kompak di baris bawah. kesra.blade.php memakai `@foreach` polos (bukan @forelse/@empty): baris @empty dengan colspan memecah inisialisasi DataTables 1.10; pesan kosong ditaruh di opsi language.emptyTable ('Tidak ada pendaftaran dengan status ini.').
+
+## Halaman Keputusan: satu daftar + kolom Status, Hapus hanya diterima
+kesra-disetujui.blade.php: judul 'Keputusan Kesra', kolom Status di antara 'Beasiswa' dan 'Diputuskan' (badge via statusBadge()/statusLabel()), tombol Hapus hanya dirender @if($applicant->status === 'diterima') karena batalkan() menolak status lain. Filter status di kesra.blade.php memakai Applicant::STATUS_LABELS lengkap termasuk dibatalkan - jangan dihapus.

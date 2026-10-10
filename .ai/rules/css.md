@@ -1,6 +1,7 @@
 ---
 paths:
   - 'public/assets/css/**'
+  - public/assets/css/custom.css
 ---
 
 # Css
@@ -18,3 +19,6 @@ Height form seragam 38px di seluruh aplikasi. Atur lewat rule global `.form-cont
 
 ## Sidebar selalu `<a>` — tidak ada lagi fallback `<span>`
 Sejak konsep menu "koding-only", `sidebar.blade.php` SELALU me-render menu daun sebagai `<a class="nav-link">` lewat `Menu::linkUrl()` — tidak ada lagi `<span class="nav-link">` inert. Menu yang route-nya belum terdaftar (route terisi tapi belum terdaftar, atau `route` NULL) tetap menghasilkan `<a>` yang menunjuk URL fallback yang berujung 404. Karena itu rule fallback `span.nav-link` (height/padding/`i`/label) yang dulu ditambahkan ke `custom.css` sudah DIHAPUS — Stisla hanya perlu men-style `a.nav-link`, dan semua item kini memang `<a>`. Jangan tambahkan kembali styling untuk `span.nav-link` kecuali perilaku sidebar berubah lagi.
+
+## Kursor pointer pada input tanggal beasiswa
+Flatpickr altInput:true menyembunyikan input asli .flatpickr dan menampilkan input saudara langsungnya; flatpickr tidak menyetel cursor. Aturan #formBeasiswa input.flatpickr + input { cursor: pointer; } di ekor custom.css menanganinya untuk form tambah & edit (id=formBeasiswa).

@@ -20,3 +20,6 @@ Arsip Kesra (`KeputusanPendaftaranController::disetujui()`) memanggil `pendaftar
 
 ## VerifikasiAntrean: profil terverifikasi cukup setuju kampus
 Profil "terverifikasi" hanya mensyaratkan `verif_kampus='setuju'` (tidak lagi `verif_catpil`, permintaan pengguna). `pendaftaran()` tanpa argumen tetap default `Applicant::PENDING_STATUS` -- kartu dasbor "Menunggu" mengandalkannya; panggilan TANPA argumen itu (mis. DashboardController) harus tetap mengecualikan yang sudah diputuskan, sedangkan halaman indeks Kesra memanggil dengan `$filter` eksplisit (null = semua status).
+
+## Menu Keputusan Kesra memuat diterima + ditolak
+pendaftaran(), pendaftarUsers(), dan pendaftarQuery() menerima array|string|null; array diterjemahkan ke whereIn. KeputusanPendaftaranController::disetujui()/disetujuiExport() memanggil pendaftaran(['diterima','ditolak']). Default tetap Applicant::PENDING_STATUS. Filter dibatalkan tetap ada di antrean kesra.blade.php karena itu pilihan mahasiswa, bukan keputusan Kesra.

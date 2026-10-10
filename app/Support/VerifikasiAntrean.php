@@ -295,9 +295,15 @@ class VerifikasiAntrean
      * Filter status tidak dipindah ke `pendaftarQuery()`: ringkasan butuh semua
      * status untuk menghitung kartu Disetujui/Ditolak/Dibatalkan.
      *
+     * `$status` boleh satu nilai string, satu array status (halaman Keputusan
+     * mengirim `['diterima', 'ditolak']`), atau `null` (semua status). Array
+     * diterjemahkan ke `whereIn`, jadi pemanggil tidak perlu tahu bahwa antrean
+     * dan ringkasan memakai filter yang berbeda bentuk.
+     *
+     * @param  array<int, string>|string|null  $status
      * @return Collection<int, Applicant>
      */
-    public function pendaftaran(?string $status = Applicant::PENDING_STATUS): Collection
+    public function pendaftaran(array|string|null $status = Applicant::PENDING_STATUS): Collection
     {
         if ($this->stage !== 'kesra') {
             return collect();
@@ -323,9 +329,10 @@ class VerifikasiAntrean
      * menyusun selnya. Halaman daftar sendiri memakai `pendaftaran()` dan tidak
      * pernah butuh relasi itu, jadi tidak ada query sia-sia di sana.
      *
+     * @param  array<int, string>|string|null  $status
      * @return Collection<int, User>
      */
-    public function pendaftarUsers(?string $status = Applicant::PENDING_STATUS): Collection
+    public function pendaftarUsers(array|string|null $status = Applicant::PENDING_STATUS): Collection
     {
         // `pluck()` dipakai, bukan `pendaftaran()->pluck('user')`, supaya query
         // kedua di bawah tidak mengambil ulang graf profil yang sudah dimuat oleh
@@ -357,11 +364,14 @@ class VerifikasiAntrean
      * Syaratnya persis `UserProfile::canVerifStage('kesra')` yang dipegang `show()`
      * -- hanya `verif_kampus = 'setuju'` -- jadi setiap baris yang tampil selalu
      * bisa dibuka tanpa membalas 403.
+     *
+     * @param  array<int, string>|string|null  $status
      */
-    private function pendaftarQuery(?string $status = null): Builder
+    private function pendaftarQuery(array|string|null $status = null): Builder
     {
         return Applicant::query()
-            ->when($status !== null, fn (Builder $query) => $query->where('status', $status))
+            ->when(is_array($status), fn (Builder $query) => $query->whereIn('status', $status))
+            ->when(! is_array($status) && $status !== null, fn (Builder $query) => $query->where('status', $status))
             ->whereHas('user', fn (Builder $query) => $query
                 ->where('status', 'aktif')
                 ->whereHas('profile', fn (Builder $profile) => $profile
