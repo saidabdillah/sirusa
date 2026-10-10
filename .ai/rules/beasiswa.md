@@ -14,3 +14,6 @@ paths:
 
 ## Detail beasiswa admin menampilkan fakultas & prodi
 Blok 'Program Studi yang Bisa Mendaftar' menampilkan fakultas + prodi cakupan (relasi $scholarship->fakultas yang di-eager-load BeasiswaController::show()), diletakkan setelah Periode dan sebelum Deskripsi. Blok yang sama ada di detail user.
+
+## Daftar prodi pakai pl-4, bukan ml-4
+Daftar prodi di blok 'Program Studi yang Bisa Mendaftar' memakai `<ul class="mb-0 pl-4">` (indentasi 24px) agar sejajar dengan catatan 'Seluruh program studi pada fakultas ini' (ml-4). Jangan pakai ml-4 pada <ul> - dobel dengan padding-left default ul (~40px) sehingga prodi menjorok ~64px.

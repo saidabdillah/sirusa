@@ -589,7 +589,11 @@ test('detail menampilkan cakupan fakultas dan prodi', function () {
         ->assertSee('Fakultas Teknik')
         ->assertSee('Teknik Informatika')
         ->assertSee('Teknik Elektro')
-        ->assertSee('Akuntansi');
+        ->assertSee('Akuntansi')
+        // Daftar prodi diindentasi lewat `pl-4` saja supaya sejajar dengan
+        // catatan fakultas; `ml-4` dobel dengan padding default `ul`.
+        ->assertSee('<ul class="mb-0 pl-4">', false)
+        ->assertDontSee('<ul class="ml-4 mb-0">', false);
 });
 
 test('detail tanpa daftar prodi menjelaskan bahwa semua prodi di kampusnya terbuka', function () {

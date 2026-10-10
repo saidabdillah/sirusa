@@ -11,3 +11,6 @@ paths:
 
 ## Detail beasiswa user: cakupan prodi di atas Deskripsi
 Blok 'Program Studi yang Bisa Mendaftar' (fakultas + prodi) dipromosikan ke dekat info Kampus - setelah Periode Pendaftaran dan sebelum <hr>/Deskripsi, bukan di bawah deskripsi.
+
+## Daftar prodi pakai pl-4, bukan ml-4
+Daftar prodi di blok 'Program Studi yang Bisa Mendaftar' memakai `<ul class="mb-0 pl-4">` (indentasi 24px) agar sejajar dengan catatan 'Seluruh program studi pada fakultas ini' (ml-4). Jangan pakai ml-4 pada <ul> - dobel dengan padding-left default ul (~40px) sehingga prodi menjorok ~64px.

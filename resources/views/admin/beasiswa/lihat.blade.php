@@ -87,7 +87,7 @@
                     @if($fakultas->prodi->isEmpty())
                       <div class="text-muted ml-4"><small>Seluruh program studi pada fakultas ini</small></div>
                     @else
-                      <ul class="ml-4 mb-0">
+                      <ul class="mb-0 pl-4">
                         @foreach($fakultas->prodi as $prodi)
                           <li>{{ $prodi->nama }}</li>
                         @endforeach
