@@ -9,10 +9,15 @@
     body { font-family: "Segoe UI", Arial, sans-serif; color: #191919; padding: 24px 32px; font-size: 13px; }
     .toolbar { margin-bottom: 16px; }
     .toolbar .btn { display: inline-block; padding: 6px 14px; border: 1px solid #6777ef; color: #6777ef; border-radius: 4px; text-decoration: none; margin-right: 8px; cursor: pointer; background: #fff; font-size: 13px; }
-    h1 { font-size: 18px; text-align: center; text-transform: uppercase; letter-spacing: .5px; }
-    .subjudul { text-align: center; color: #555; margin-top: 4px; margin-bottom: 20px; }
+    .kop { display: flex; align-items: center; gap: 18px; padding-bottom: 10px; margin-bottom: 18px; border-bottom: 3px solid #191919; }
+    .kop .logo { width: 76px; height: 76px; object-fit: contain; flex-shrink: 0; }
+    .kop .teks { flex: 1; text-align: center; }
+    .kop .instansi { font-weight: 700; font-size: 17px; letter-spacing: 1px; }
+    .kop .badan { font-size: 14px; font-weight: 600; }
+    .kop .alamat { font-size: 11px; margin-top: 4px; }
+    h1 { font-size: 18px; text-align: center; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #444; padding: 6px 8px; vertical-align: top; }
+    th, td { border: 1px solid #444; padding: 6px 8px; vertical-align: middle; }
     th { background: #eef1f8; text-align: left; }
     .nomor { width: 40px; text-align: center; }
     .ttd { margin-top: 40px; display: flex; justify-content: space-between; }
@@ -30,8 +35,17 @@
     <a class="btn" href="{{ route('admin.penerima.index') }}">Kembali</a>
   </div>
 
+  <div class="kop">
+    <img class="logo" src="{{ asset('images/logo-balangan.png') }}" alt="Logo Kabupaten Balangan">
+    <div class="teks">
+      <div class="instansi">PEMERINTAH KABUPATEN BALANGAN</div>
+      <div class="badan">BADAN PENGELOLAAN KEUANGAN,</div>
+      <div class="badan">PENDAPATAN DAN ASET DAERAH</div>
+      <div class="alamat">Jl. Jenderal Ahmad Yani Km. 4,5 Telepon 0526-2028360 Paringin 71462</div>
+    </div>
+  </div>
+
   <h1>Daftar Penerima Beasiswa</h1>
-  <div class="subjudul">Dicetak pada {{ now()->translatedFormat('d F Y') }} &middot; total {{ $penerima->count() }} penerima</div>
 
   <table>
     <thead>
@@ -74,7 +88,7 @@
       <div>(....................................)</div>
     </div>
     <div class="blok">
-      <div>Banjarmasin, {{ now()->translatedFormat('d F Y') }}</div>
+      <div>Paringin Selatan, {{ now()->translatedFormat('d F Y') }}</div>
       <div class="ruang"></div>
       <div>(....................................)</div>
     </div>

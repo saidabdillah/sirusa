@@ -97,13 +97,13 @@
                 </div>
               </div>
               <div class="form-row align-items-end mt-2">
-                <div class="col-md-3 mb-2 mb-md-0">
-                  <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
+                <div class="col-auto mb-2 mb-md-0">
+                  <button type="submit" class="btn btn-primary" data-loading-text="Menerapkan filter...">
                     <i class="fas fa-filter mr-1"></i> Terapkan
                   </button>
                 </div>
-                <div class="col-md-3 mb-2 mb-md-0">
-                  <a href="{{ route('admin.penerima.index') }}" class="btn btn-secondary btn-block">
+                <div class="col-auto mb-2 mb-md-0">
+                  <a href="{{ route('admin.penerima.index') }}" class="btn btn-secondary">
                     <i class="fas fa-redo"></i> Reset
                   </a>
                 </div>
@@ -122,7 +122,6 @@
                     <th>Program Studi</th>
                     <th>Beasiswa</th>
                     <th>Tanggal Daftar</th>
-                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -131,17 +130,16 @@
                     $profile = $applicant->user?->profile;
                   @endphp
                   <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>{{ $profile?->nama_lengkap ?? '-' }}</td>
-                    <td>{{ $profile?->nim ?? '-' }}</td>
+                    <td class="align-middle">{{ $loop->iteration }}</td>
+                    <td class="align-middle">{{ $profile?->nama_lengkap ?? '-' }}</td>
+                    <td class="align-middle">{{ $profile?->nim ?? '-' }}</td>
                     {{-- `Kampus` punya kolom `nama_kampus`; menulis `kampus->nama`
                          selalu membalas null. --}}
-                    <td>{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
-                    <td>{{ $profile?->prodi?->fakultas?->nama ?? '-' }}</td>
-                    <td>{{ $profile?->prodi?->nama ?? '-' }}</td>
-                    <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
-                    <td>{{ $applicant->created_at?->translatedFormat('d M Y') ?? '-' }}</td>
-                    <td><span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span></td>
+                    <td class="align-middle">{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
+                    <td class="align-middle">{{ $profile?->prodi?->fakultas?->nama ?? '-' }}</td>
+                    <td class="align-middle">{{ $profile?->prodi?->nama ?? '-' }}</td>
+                    <td class="align-middle">{{ $applicant->beasiswa?->nama ?? '-' }}</td>
+                    <td class="align-middle">{{ $applicant->created_at?->translatedFormat('d M Y') ?? '-' }}</td>
                   </tr>
                   @endforeach
                 </tbody>

@@ -87,6 +87,8 @@ test('kesra membuka daftar penerima yang hanya berisi pendaftar diterima dari ak
         // Halaman ini read-only penuh: tidak ada kolom Aksi (permintaan
         // pengguna), jadi tidak ada route `admin.penerima.tarik` yang dirender.
         ->assertDontSee('Aksi', false)
+        // Semua baris pasti berstatus `diterima`, jadi kolom Status dihapus.
+        ->assertDontSee('<th>Status</th>', false)
         // Hanya penerima aktif yang tampil; antrean verifikasi dan akun
         // non-aktif tidak ikut. `assertSee('Ahmad Fauzi')` tidak cukup karena
         // semua profil memakai nama sama, jadi yang dibedakan adalah NIM.
@@ -94,14 +96,24 @@ test('kesra membuka daftar penerima yang hanya berisi pendaftar diterima dari ak
         ->assertSee($penerima->user->profile->nim);
 });
 
-test('cetak merender halaman cetak mandiri tanpa layout aplikasi', function () {
+test('cetak merender halaman cetak mandiri dengan kop surat tanpa layout aplikasi', function () {
     penerimaBaru('penerima-cetak@test.com');
 
     $response = actingAs($this->kesra)->get(route('admin.penerima.cetak'));
 
     $response->assertOk()
         ->assertSee('Daftar Penerima Beasiswa', false)
-        ->assertSee('Ahmad Fauzi');
+        ->assertSee('Ahmad Fauzi')
+        // Kop surat: logo + nama instansi (permintaan pengguna).
+        ->assertSee('images/logo-balangan.png', false)
+        ->assertSee('PEMERINTAH KABUPATEN BALANGAN', false)
+        ->assertSee('BADAN PENGELOLAAN KEUANGAN,', false)
+        ->assertSee('PENDAPATAN DAN ASET DAERAH', false)
+        ->assertSee('Jl. Jenderal Ahmad Yani Km. 4,5 Telepon 0526-2028360 Paringin 71462', false)
+        // Tanda tangan memakai lokasi instansi, bukan Banjarmasin.
+        ->assertSee('Paringin Selatan,', false)
+        // Subjudul "Dicetak pada ... total N penerima" dihapus.
+        ->assertDontSee('Dicetak pada', false);
 
     // Halaman cetak tidak memakai layout Stisla: tanpa navbar dan tanpa
     // custom.js supaya `window.print()` menghasilkan lembar yang bersih.
