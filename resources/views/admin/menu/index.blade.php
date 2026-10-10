@@ -36,7 +36,7 @@
                   @endforeach
                 </select>
               </div>
-{{-- Hanya satu filter, jadi tombol sejajar dengan select. --}}
+              {{-- Hanya satu filter, jadi tombol sejajar dengan select. --}}
               <div class="col-auto mb-2 mb-md-0">
                 <button type="submit" class="btn btn-primary" data-loading-text="Memuat...">
                   <i class="fas fa-search"></i> Cari
@@ -81,7 +81,8 @@
                       <div class="d-flex align-items-center">
                         <strong class="ml-1">{{ $section }}</strong>
                         <div class="custom-control custom-checkbox ml-4">
-                          <input type="checkbox" class="custom-control-input" id="section-{{ $loop->index }}" data-section-toggle>
+                          <input type="checkbox" class="custom-control-input" id="section-{{ $loop->index }}"
+                            data-section-toggle>
                           <label class="custom-control-label" for="section-{{ $loop->index }}">Pilih semua</label>
                         </div>
                       </div>
@@ -98,14 +99,10 @@
                     </td>
                     <td class="text-center">
                       <div class="custom-control custom-checkbox d-inline-block">
-                        <input type="checkbox"
-                          class="custom-control-input"
-                          id="menu-{{ $menu->id }}"
-                          name="menus[]"
-                          value="{{ $menu->id }}"
-                          data-parent-menu="{{ $menu->id }}"
-                          {{ in_array($menu->id, $grants, true) || $menuLocked ? 'checked' : '' }}
-                          {{ $menuLocked ? 'disabled' : '' }}>
+                        <input type="checkbox" class="custom-control-input" id="menu-{{ $menu->id }}" name="menus[]"
+                          value="{{ $menu->id }}" data-parent-menu="{{ $menu->id }}" {{ in_array($menu->id, $grants,
+                        true) || $menuLocked ? 'checked' : '' }}
+                        {{ $menuLocked ? 'disabled' : '' }}>
                         <label class="custom-control-label" for="menu-{{ $menu->id }}"></label>
                       </div>
                     </td>
@@ -120,14 +117,10 @@
                     </td>
                     <td class="text-center">
                       <div class="custom-control custom-checkbox d-inline-block">
-                        <input type="checkbox"
-                          class="custom-control-input"
-                          id="menu-{{ $child->id }}"
-                          name="menus[]"
-                          value="{{ $child->id }}"
-                          data-child-of="{{ $menu->id }}"
-                          {{ in_array($child->id, $grants, true) || $childLocked ? 'checked' : '' }}
-                          {{ $childLocked ? 'disabled' : '' }}>
+                        <input type="checkbox" class="custom-control-input" id="menu-{{ $child->id }}" name="menus[]"
+                          value="{{ $child->id }}" data-child-of="{{ $menu->id }}" {{ in_array($child->id, $grants,
+                        true) || $childLocked ? 'checked' : '' }}
+                        {{ $childLocked ? 'disabled' : '' }}>
                         <label class="custom-control-label" for="menu-{{ $child->id }}"></label>
                       </div>
                     </td>
@@ -140,9 +133,11 @@
             </div>
 
             <div class="d-flex justify-content-between align-items-center mt-3">
-              <a href="{{ route('admin.role.index') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
+              <a href="{{ route('admin.role.index') }}" class="btn btn-outline-secondary"><i
+                  class="fas fa-arrow-left mr-1"></i> Kembali</a>
               <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save mr-1"></i> Simpan Akses untuk {{ $roleLabels[$activeRole->name] ?? ucfirst($activeRole->name) }}
+                <i class="fas fa-save mr-1"></i> Simpan Akses untuk {{ $roleLabels[$activeRole->name] ??
+                ucfirst($activeRole->name) }}
               </button>
             </div>
           </form>
