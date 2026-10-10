@@ -32,11 +32,12 @@
                  dengan daftar penuh dan opsi dinamis -- Fakultas hanya memuat
                  milik kampus terpilih, Program Studi hanya milik fakultas terpilih.
                  Filter status per tahap (verif_catpil/verif_kampus) DIHAPUS atas
-                 permintaan pengguna; Tombol Terapkan/Reset kompak di baris bawah,
-                 pola sama dengan halaman Penerima Beasiswa. --}}
+                 permintaan pengguna. Kisi 4 kolom (`col-md-3`, sama dengan halaman
+                 Penerima Beasiswa) merapikan toolbar di atas tabel; tombol
+                 Terapkan/Reset diletakkan di baris terpisah di bawahnya. --}}
             <form method="GET" action="{{ route($routePrefix.'.status') }}" class="mb-3">
               <div class="form-row align-items-end">
-                <div class="col-md-4 mb-2 mb-md-0">
+                <div class="col-md-3 mb-2 mb-md-0">
                   <label for="filter-kampus">Kampus</label>
                   <select class="form-control" name="kampus_id" id="filter-kampus">
                     <option value="" {{ $kampusId === null ? 'selected' : '' }}>-- Semua Kampus --</option>
@@ -45,7 +46,7 @@
                     @endforeach
                   </select>
                 </div>
-                <div class="col-md-4 mb-2 mb-md-0">
+                <div class="col-md-3 mb-2 mb-md-0">
                   <label for="filter-fakultas">Fakultas</label>
                   <select class="form-control" name="fakultas_id" id="filter-fakultas">
                     <option value="" {{ $fakultasId === null ? 'selected' : '' }}>-- Semua Fakultas --</option>
@@ -54,7 +55,7 @@
                     @endforeach
                   </select>
                 </div>
-                <div class="col-md-4 mb-2 mb-md-0">
+                <div class="col-md-3 mb-2 mb-md-0">
                   <label for="filter-jurusan">Program Studi</label>
                   <select class="form-control" name="jurusan_id" id="filter-jurusan">
                     <option value="" {{ $jurusanId === null ? 'selected' : '' }}>-- Semua Program Studi --</option>
@@ -135,6 +136,14 @@
 @push('script')
 <script>
   $(document).ready(function() {
+    // Tabel hanya boleh diinisialisasi SEKALI. Tanpa penjaga ini, skrip yang
+    // berjalan dua kali (mis. halaman dipulihkan dari cache peramban) menanam
+    // toolbar "Tampilkan N data"/"Cari:" dobel di atas tabel -- keluhan
+    // "perpage pencarian double".
+    if ($.fn.dataTable.isDataTable('#statusTable')) {
+      return;
+    }
+
     $('#statusTable').DataTable({
       order: [],
       processing: true,

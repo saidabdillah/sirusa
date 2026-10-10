@@ -287,3 +287,26 @@ test('filter lokasi kampus, fakultas, dan jurusan menyaring profil dan saling be
         ->assertSee('Citra ULM SI')
         ->assertDontSee('Citra Uniska Akuntansi');
 });
+
+test('filter status verifikasi memakai kisi 4 kolom dan tombol Terapkan/Reset di baris bawah', function () {
+    $response = actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.status'))
+        ->assertOk();
+
+    $html = $response->getContent();
+
+    // Tiga tingkat filter lokasi dibagi rata 4 kolom (`col-md-3`), bukan
+    // `col-md-4` -- pola yang sama dengan halaman Penerima Beasiswa.
+    expect(substr_count($html, 'class="col-md-3 mb-2 mb-md-0"'))->toBe(3);
+    expect($html)->not->toContain('class="col-md-4 mb-2 mb-md-0"');
+
+    // Tombol Terapkan/Reset berada di baris form TERPISAH di bawah kisi
+    // filter (`form-row ... mt-2`), bukan sejajar dengan select.
+    expect($html)->toContain('form-row align-items-end mt-2');
+    $response->assertSeeInOrder(['filter-jurusan', 'Terapkan', 'Reset'], false);
+
+    // Tabel hanya diinisialisasi SEKALI; penjaga ini mencegah toolbar
+    // "Tampilkan N data"/"Cari:" tertanam dobel di halaman.
+    expect($html)->toContain("isDataTable('#statusTable')")
+        ->toContain("$('#statusTable').DataTable(");
+});

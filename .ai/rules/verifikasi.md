@@ -44,3 +44,6 @@ Halaman status.blade.php (admin.kesra.status) kini hanya punya filter lokasi Kam
 
 ## Halaman Keputusan: satu daftar + kolom Status, Hapus hanya diterima
 kesra-disetujui.blade.php: judul 'Keputusan Kesra', kolom Status di antara 'Beasiswa' dan 'Diputuskan' (badge via statusBadge()/statusLabel()), tombol Hapus hanya dirender @if($applicant->status === 'diterima') karena batalkan() menolak status lain. Filter status di kesra.blade.php memakai Applicant::STATUS_LABELS lengkap termasuk dibatalkan - jangan dihapus.
+
+## Status Verifikasi: kisi filter 4 kolom + guard init DataTable
+status.blade.php (route admin.kesra.status) memakai kisi 4 kolom untuk filter lokasi: tiga select Kampus/Fakultas/Program Studi dibungkus `col-md-3 mb-2 mb-md-0` (sama dengan halaman Penerima Beasiswa, BUKAN col-md-4), dengan tombol Terapkan/Reset di `form-row align-items-end mt-2` terpisah di bawahnya. Skrip DataTable dijaga `if ($.fn.dataTable.isDataTable('#statusTable')) { return; }` sebelum `$('#statusTable').DataTable({...})` supaya toolbar 'Tampilkan N data'/'Cari:' tidak pernah tertanam dobel (keluhan 'perpage pencarian double'). Jangan kembalikan select ke col-md-4 atau hapus guard init.
