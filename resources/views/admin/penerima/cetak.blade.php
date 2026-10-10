@@ -14,7 +14,7 @@
     .kop .logo { width: 76px; height: 76px; object-fit: contain; flex-shrink: 0; }
     .kop .teks { flex: 1; text-align: center; }
     .kop .instansi { font-weight: 700; font-size: 17px; letter-spacing: 1px; }
-    .kop .badan { font-size: 14px; font-weight: 600; }
+    .kop .badan { font-size: 17px; font-weight: 600; }
     .kop .alamat { font-size: 11px; margin-top: 4px; }
     h1 { font-size: 18px; text-align: center; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px; }
     table { width: 100%; border-collapse: collapse; }
