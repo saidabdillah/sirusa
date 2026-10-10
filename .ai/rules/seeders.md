@@ -2,6 +2,7 @@
 paths:
   - database/seeders/MenuSeeder.php
   - database/seeders/UserSeeder.php
+  - 'database/seeders/**'
 ---
 
 # Seeders
@@ -32,3 +33,6 @@ Menu verifikasi di section `Verifikasi`: `Catpil` dan `Kampus` adalah leaf top-l
 
 ## Status Verifikasi moved to Administrasi (urutan 31)
 MenuSeeder now places the top-level leaf "Status Verifikasi" (route/scope `admin.kesra.status`) in section **Administrasi**, urutan 31 -- NOT section Verifikasi -- so Catpil/Kampus/Kesra/super_admin all find the rekap under Administrasi alongside Pendaftar/Master Data. It is granted to kesra, super_admin, catpil, and kampus. `buangMenuLama()` prunes the stale section-Verifikasi row on re-seed, so `php artisan db:seed --class=MenuSeeder` is required after this change. Totals are now 20 menus (10 top-level + 10 children). SeederTest locks `$status->section === 'Administrasi'`; MenuSidebarTest asserts the href appears in the Administrasi block and NOT in Verifikasi.
+
+## Kesra dropdown tiga anak; total menu 21
+MenuSeeder kini: 'Kesra' parent dropdown (scope admin.kesra, route null) dengan TIGA anak berurutan urutan: Verifikasi (admin.kesra.index), Penerima Beasiswa (admin.penerima.index), Keputusan (admin.kesra.disetujui). Total 21 menu (10 top-level + 11 anak). 'Status Verifikasi' (admin.kesra.status) adalah leaf top-level di section Administrasi urutan 31, di-grant ke kesra, super_admin, catpil, dan kampus. Bentuk ini dikunci tests/Feature/SeederTest.php (anak Kesra labels/scopes/urutan, count 21) -- jangan mengembalikan ke bentuk dua anak / total 20.

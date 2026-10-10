@@ -424,9 +424,11 @@ test('error ajax dicerminkan ke alt input flatpickr', function () {
     expect($jsRapi)
         ->toContain('function cerminIsInvalid($el)')
         ->toContain('$el.siblings(".flatpickr-alt").toggleClass("is-invalid", $el.hasClass("is-invalid"))')
-        // Dipanggil tepat setelah input asli ditandai, di dalam `paintFieldError`.
-        ->toContain('$el.addClass("is-invalid").attr("aria-invalid", "true"); '
-            .'$group.addClass("is-invalid"); cerminIsInvalid($el);')
+        // Dipanggil tepat setelah input asli ditandai, di dalam `paintFieldError`
+        // (di antara kedua statement itu boleh ada langkah select2 yang kondisional,
+        // jadi dicocokkan dengan regex, bukan `toContain` yang menuntut berurutan).
+        ->toMatch('/\$el\.addClass\("is-invalid"\)\.attr\("aria-invalid", "true"\); '
+            .'\$group\.addClass\("is-invalid"\);.*?cerminIsInvalid\(\$el\);/s')
         // Dan dibersihkan lagi saat form disubmit ulang -- kalau tidak,
         // `is-invalid` yang tertinggal di alt-input akan membuat field yang
         // sudah diperbaiki tetap merah.

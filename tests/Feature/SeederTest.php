@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserProfile;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\MenuSeeder;
+use Database\Seeders\UserDemoSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -116,7 +117,8 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         // SECTION 2 -- VERIFIKASI
         'Catpil' => 'Verifikasi',
         'Kampus' => 'Verifikasi',
-        // "Kesra" sekarang dropdown dua anak: antrean verifikasi + penerima.
+        // "Kesra" sekarang dropdown tiga anak: antrean verifikasi, penerima
+        // beasiswa, dan keputusan.
         'Kesra' => 'Verifikasi',
         // SECTION 3 -- ADMINISTRATOR
         'Kelola Akses' => 'Administrator',
@@ -135,15 +137,15 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
             ->and($menu->section)->toBe($section);
     }
 
-    // Anak dropdown Kesra ikut bagian "Verifikasi". Keduanya berada di bawah
+    // Anak dropdown Kesra ikut bagian "Verifikasi". Ketiganya berada di bawah
     // parent "Kesra", jadi tidak masuk pasangan top-level di atas.
     $anakKesra = Menu::query()
         ->whereHas('parent', fn ($query) => $query->where('label', 'Kesra'))
         ->orderBy('urutan')
         ->get();
 
-    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Penerima Beasiswa'])
-        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra', 'admin.penerima'])
+    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Penerima Beasiswa', 'Keputusan'])
+        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.penerima', 'admin.kesra.disetujui'])
         ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Verifikasi']);
 
     // Tidak boleh ada menu di luar section yang dikenal: sidebar tidak akan
@@ -274,13 +276,13 @@ test('menuseeder tidak menggandakan grant di pivot role menu', function () {
 
 /**
  * Menu "Kesra" adalah satu-satunya antrean verifikasi berbentuk dropdown:
- * induk tanpa route (scope `admin.kesra` menutupi `admin.kesra.*`) plus dua
- * anak ber-route (Keputusan, Verifikasi). "Status Verifikasi" bukan anak Kesra
- * lagi -- permintaan pengguna memindahkannya jadi leaf mandiri supaya Catpil
- * dan Kampus bisa melihat halaman itu juga. Anak wajib di-grant sendiri ke
- * role kesra -- `sidebarMenus()` hanya me-render anak yang grant-nya sendiri
- * terisi, jadi induk ter-grant tapi anak tidak = dropdown hilang dan jadi
- * `<span>` mati.
+ * induk tanpa route (scope `admin.kesra` menutupi `admin.kesra.*`) plus tiga
+ * anak ber-route (Verifikasi, Penerima Beasiswa, Keputusan). "Status Verifikasi"
+ * bukan anak Kesra lagi -- permintaan pengguna memindahkannya jadi leaf mandiri
+ * supaya Catpil dan Kampus bisa melihat halaman itu juga. Anak wajib di-grant
+ * sendiri ke role kesra -- `sidebarMenus()` hanya me-render anak yang grant-nya
+ * sendiri terisi, jadi induk ter-grant tapi anak tidak = dropdown hilang dan
+ * jadi `<span>` mati.
  */
 test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi', function () {
     seedAkses();
@@ -295,9 +297,9 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
         ->orderBy('urutan')
         ->get();
 
-    expect($anak->pluck('label')->all())->toBe(['Keputusan', 'Verifikasi'])
-        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.disetujui', 'admin.kesra.index'])
-        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.disetujui', 'admin.kesra.index']);
+    expect($anak->pluck('label')->all())->toBe(['Verifikasi', 'Penerima Beasiswa', 'Keputusan'])
+        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.penerima.index', 'admin.kesra.disetujui'])
+        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.penerima', 'admin.kesra.disetujui']);
 
     $kesraRoleId = Role::where('name', 'kesra')->firstOrFail()->id;
     $grantKesra = DB::table('role_menu')->where('role_id', $kesraRoleId)->pluck('menu_id');
@@ -377,6 +379,9 @@ test('run renamed menuseeder membuang scope lama supaya route tidak yatim', func
 
 test('seeder membuat akun role user yang siap dipakai untuk testing', function () {
     $this->seed(DatabaseSeeder::class);
+    // `UserDemoSeeder` sengaja tidak dipanggil `DatabaseSeeder` (dinyalakan
+    // lewat uncomment), jadi tes memanggilnya langsung.
+    $this->seed(UserDemoSeeder::class);
 
     $user = User::where('username', 'user')->first();
 
@@ -412,6 +417,9 @@ test('seeder membuat akun role user yang siap dipakai untuk testing', function (
 
 test('verif_kesra pada data demo selalu mengikuti status pendaftaran', function () {
     $this->seed(DatabaseSeeder::class);
+    // `UserDemoSeeder` memberi master data (KampusSeeder + ScholarshipSeeder)
+    // yang dibutuhkan `UserSeeder` untuk menautkan pendaftar ke beasiswanya.
+    $this->seed(UserDemoSeeder::class);
     // `UserSeeder` sengaja tidak ikut `DatabaseSeeder` (dinyalakan lewat
     // uncomment), tapi konsistensi penanda Kesra di sana tetap harus benar --
     // paling mudah dicek dengan menjalankannya langsung. Role, kampus, dan
@@ -439,6 +447,7 @@ test('verif_kesra pada data demo selalu mengikuti status pendaftaran', function 
 
 test('pendaftaran yang sudah diputuskan pada data demo punya tanggal keputusan', function () {
     $this->seed(DatabaseSeeder::class);
+    $this->seed(UserDemoSeeder::class);
     $this->seed(UserSeeder::class);
 
     $diterima = Applicant::query()->where('status', 'diterima')->firstOrFail();
@@ -450,6 +459,7 @@ test('pendaftaran yang sudah diputuskan pada data demo punya tanggal keputusan',
 
 test('akun demo user tertaut ke prodi, kampus, dan pendaftar', function () {
     $this->seed(DatabaseSeeder::class);
+    $this->seed(UserDemoSeeder::class);
 
     $user = User::where('username', 'user')->firstOrFail();
     $profile = $user->profile;
@@ -467,6 +477,7 @@ test('akun demo user tertaut ke prodi, kampus, dan pendaftar', function () {
 
 test('akun demo user punya satu pendaftar saja dan status verifikasi menunggu', function () {
     $this->seed(DatabaseSeeder::class);
+    $this->seed(UserDemoSeeder::class);
 
     $user = User::where('username', 'user')->firstOrFail();
 
@@ -483,7 +494,9 @@ test('akun demo user punya satu pendaftar saja dan status verifikasi menunggu', 
 
 test('akun demo user tidak dibuat dua kali saat seeder dijalankan berulang', function () {
     $this->seed(DatabaseSeeder::class);
+    $this->seed(UserDemoSeeder::class);
     $this->seed(DatabaseSeeder::class);
+    $this->seed(UserDemoSeeder::class);
 
     expect(User::where('username', 'user')->count())->toBe(1)
         ->and(UserProfile::where('nik', '6300000000000001')->count())->toBe(1)
@@ -493,6 +506,7 @@ test('akun demo user tidak dibuat dua kali saat seeder dijalankan berulang', fun
 
 test('akun demo user tidak menabrak akun admin yang sudah ada', function () {
     $this->seed(DatabaseSeeder::class);
+    $this->seed(UserDemoSeeder::class);
 
     $admin = User::where('username', 'kesra')->firstOrFail();
 

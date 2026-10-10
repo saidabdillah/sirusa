@@ -25,7 +25,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Requests/Profil/** | .ai/rules/profil.md |
 | app/Http/Requests/Admin/VerifikasiProfilRequest.php | .ai/rules/requests-admin.md |
 | resources/views/profil/index.blade.php | .ai/rules/resources-views-profil.md |
-| database/seeders/MenuSeeder.php, database/seeders/UserSeeder.php | .ai/rules/seeders.md |
+| database/seeders/MenuSeeder.php, database/seeders/UserSeeder.php, database/seeders/** | .ai/rules/seeders.md |
 | app/Support/**, app/Support/VerifikasiAntrean.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |
 | app/Http/Requests/User/*.php, app/Http/Requests/User/** | .ai/rules/user.md |
