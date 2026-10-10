@@ -44,32 +44,36 @@
             </div>
           </div>
           <div class="card-body">
-            <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
-              <div class="col-md-4 mb-2 mb-md-0">
-                <label for="filter">Status Pendaftaran</label>
-                <select class="form-control" name="filter" id="filter">
+            <form method="GET" action="{{ route($routePrefix.'.index') }}" class="mb-3">
+              <div class="form-row align-items-end">
+                <div class="col-md-4 mb-2 mb-md-0">
+                  <label for="filter">Status Pendaftaran</label>
+                  <select class="form-control" name="filter" id="filter">
 {{-- "Semua status" harus punya nilai sendiri, bukan `value=""`.
                        `ConvertEmptyStringsToNull` membuat `?filter=` menjadi
                        `null`, yang artinya "tanpa filter" (= semua status). --}}
-                  <option value="{{ $semuaStatus }}" {{ $filter === null ? 'selected' : '' }}>-- Semua Status --</option>
-                  @foreach($statusOptions as $value => $label)
-                  <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
-                  @endforeach
-                </select>
+                    <option value="{{ $semuaStatus }}" {{ $filter === null ? 'selected' : '' }}>-- Semua Status --</option>
+                    @foreach($statusOptions as $value => $label)
+                    <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                  </select>
+                </div>
               </div>
-              <div class="col-md-2 mb-2 mb-md-0">
-                <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
-                  <i class="fas fa-filter mr-1"></i> Terapkan
-                </button>
-              </div>
+              <div class="form-row align-items-end mt-2">
+                <div class="col-auto mb-2 mb-md-0">
+                  <button type="submit" class="btn btn-primary" data-loading-text="Menerapkan filter...">
+                    <i class="fas fa-filter mr-1"></i> Terapkan
+                  </button>
+                </div>
 {{-- Reset selalu ada, sama seperti di daftar pendaftar, dan tidak
-                   bergantung pada filter aktif. Default halaman kini semua
-                   status, jadi menyembunyikan tombol berdasarkan nilai filter
-                   akan membuat tombol hilang tepat saat paling dibutuhkan. --}}
-              <div class="col-md-2 mb-2 mb-md-0">
-                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary btn-block">
-                  <i class="fas fa-redo"></i> Reset
-                </a>
+                     bergantung pada filter aktif. Default halaman kini semua
+                     status, jadi menyembunyikan tombol berdasarkan nilai filter
+                     akan membuat tombol hilang tepat saat paling dibutuhkan. --}}
+                <div class="col-auto mb-2 mb-md-0">
+                  <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Reset
+                  </a>
+                </div>
               </div>
             </form>
             <div class="table-responsive">
@@ -88,7 +92,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @forelse($pendaftaran as $applicant)
+                  @foreach($pendaftaran as $applicant)
                   @php
                     $profile = $applicant->user?->profile;
                     $sudahDiputuskan = $applicant->isDecided();
@@ -121,11 +125,7 @@
                       @endif
                     </td>
                   </tr>
-                  @empty
-                  <tr>
-                    <td colspan="9" class="text-center text-muted">Tidak ada pendaftaran dengan status ini.</td>
-                  </tr>
-                  @endforelse
+                  @endforeach
                 </tbody>
               </table>
             </div>
@@ -148,7 +148,7 @@
         lengthMenu: "Tampilkan _MENU_ data",
         info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
         infoEmpty: "Tidak ada data",
-        emptyTable: "Tidak ada pendaftaran dalam daftar verifikasi Kesra.",
+        emptyTable: "Tidak ada pendaftaran dengan status ini.",
         infoFiltered: "(disaring dari _MAX_ total data)",
         zeroRecords: "Tidak ada data yang cocok",
         paginate: {

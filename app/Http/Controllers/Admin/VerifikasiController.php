@@ -176,10 +176,11 @@ class VerifikasiController extends Controller
      * antrean dan tidak punya kolom aksi: tidak ada tahap yang dikerjakan di
      * sini, hanya melihat status.
      *
-     * Filter (server-side) dipecah jadi dua grup dengan jarak: status per
-     * tahap (`verif_catpil` / `verif_kampus`) lalu lokasi `kampus_id` /
-     * `fakultas_id` / `jurusan_id` (di mana "Jurusan" adalah Prodi -- tidak
-     * ada tabel jurusan terpisah). Ketiga filter lokasi tidak pernah disabled
+     * Filter lokasi `kampus_id` / `fakultas_id` / `jurusan_id` (di mana
+     * "Jurusan" adalah Prodi -- tidak ada tabel jurusan terpisah). Filter
+     * status per tahap (`verif_catpil` / `verif_kampus`) DIHAPUS atas
+     * permintaan pengguna: halaman ini rekap penuh, bukan daftar yang
+     * disaring per tahap. Ketiga filter lokasi tidak pernah disabled
      * dan opsinya dinamis: Fakultas hanya memuat milik kampus yang terpilih,
      * Jurusan hanya milik fakultas yang terpilih, dan tanpa induk terpilih
      * daftarnya tampil penuh. Nilai yang tidak konsisten dengan induk yang
@@ -190,9 +191,6 @@ class VerifikasiController extends Controller
      */
     public function status(): View
     {
-        $filterCatpil = $this->validStatusFilter('catpil');
-        $filterKampus = $this->validStatusFilter('kampus');
-
         $kampusId = $this->validChoice('kampus_id');
         $fakultasId = $this->validChoice('fakultas_id');
         $jurusanId = $this->validChoice('jurusan_id');
@@ -224,10 +222,6 @@ class VerifikasiController extends Controller
             ->when($fakultasId, fn ($query) => $query->whereHas('profile.prodi', fn ($prodi) => $prodi->where('fakultas_id', $fakultasId)))
             ->when($jurusanId, fn ($query) => $query->whereHas('profile.prodi', fn ($prodi) => $prodi->where('id', $jurusanId)))
             ->get()
-            ->filter(fn (User $user) => $filterCatpil === null
-                || $user->profile->verifStageDecision('catpil')['status'] === $filterCatpil)
-            ->filter(fn (User $user) => $filterKampus === null
-                || $user->profile->verifStageDecision('kampus')['status'] === $filterKampus)
             ->sortBy(fn (User $user) => $user->profile->nama_lengkap)
             ->values();
 
@@ -251,7 +245,7 @@ class VerifikasiController extends Controller
             ->get(['id', 'nama']);
 
         return view('admin.verifikasi.status', compact(
-            'users', 'filterCatpil', 'filterKampus',
+            'users',
             'kampusId', 'fakultasId', 'jurusanId',
             'kampusOptions', 'fakultasOptions', 'jurusanOptions',
         ));
@@ -264,20 +258,6 @@ class VerifikasiController extends Controller
         }
 
         return $stage;
-    }
-
-    /**
-     * Nilai filter status profil yang diizinkan; null berarti semua status.
-     *
-     * Nama param memakai `verif_catpil`/`verif_kampus` (bukan `kampus`), karena
-     * `kampus_id` sudah dipakai filter lokasi pada halaman yang sama.
-     */
-    private function validStatusFilter(string $stage): ?string
-    {
-        $param = $stage === 'catpil' ? 'verif_catpil' : 'verif_kampus';
-        $value = request($param);
-
-        return in_array($value, self::FILTERS, true) ? $value : null;
     }
 
     private function validChoice(string $param): ?int

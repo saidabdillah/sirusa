@@ -3,18 +3,11 @@
 @php
   // Halaman status untuk peran Kesra, super_admin, Catpil, dan Kampus (menu
   // leaf mandiri di section "Administrasi"). Bukan antrean -- hanya rekap
-  // status profil (Catpil, Kampus, Kesra), tanpa kolom aksi. Filter terbagi
-  // dua grup dengan jarak: status per tahap (verif_catpil/verif_kampus) lalu
-  // lokasi Kampus/Fakultas/Program Studi yang semuanya aktif dengan daftar penuh.
-  // Sumber data di `VerifikasiController::status()`.
+  // status profil (Catpil, Kampus, Kesra), tanpa kolom aksi. Filter lokasi
+  // (Kampus/Fakultas/Program Studi) semuanya aktif dengan daftar penuh;
+  // filter status per tahap (verif_catpil/verif_kampus) DIHAPUS atas
+  // permintaan pengguna. Sumber data di `VerifikasiController::status()`.
   $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()['kesra'];
-  $statusOptions = [
-      'menunggu' => 'Menunggu',
-      'revisi' => 'Perlu Perbaikan',
-      'setuju' => 'Disetujui',
-      'tolak' => 'Ditolak',
-  ];
-  $semuaStatus = \App\Models\Applicant::FILTER_ALL;
 @endphp
 
 @section('content')
@@ -35,44 +28,14 @@
             <h4>Status Verifikasi Profil Mahasiswa</h4>
           </div>
           <div class="card-body">
-            {{-- Dua grup filter yang diberi jarak (tanpa garis pemisah): status
-                 per tahap di baris pertama, lokasi (Kampus/Fakultas/Program Studi) di
-                 baris kedua. Ketiga filter lokasi JANGAN disabled dan opsinya
-                 dinamis -- Fakultas hanya memuat milik kampus yang terpilih,
-                 Program Studi hanya milik fakultas yang terpilih, dan tanpa induk
-                 terpilih daftarnya tampil penuh. --}}
+            {{-- Filter lokasi (Kampus/Fakultas/Program Studi), semuanya aktif
+                 dengan daftar penuh dan opsi dinamis -- Fakultas hanya memuat
+                 milik kampus terpilih, Program Studi hanya milik fakultas terpilih.
+                 Filter status per tahap (verif_catpil/verif_kampus) DIHAPUS atas
+                 permintaan pengguna; Tombol Terapkan/Reset kompak di baris bawah,
+                 pola sama dengan halaman Penerima Beasiswa. --}}
             <form method="GET" action="{{ route($routePrefix.'.status') }}" class="mb-3">
               <div class="form-row align-items-end">
-                <div class="col-md-4 mb-2 mb-md-0">
-                  <label for="filter-verif-catpil">Verifikasi Catpil</label>
-                  <select class="form-control" name="verif_catpil" id="filter-verif-catpil">
-                    <option value="{{ $semuaStatus }}" {{ $filterCatpil === null ? 'selected' : '' }}>-- Semua Status --</option>
-                    @foreach($statusOptions as $value => $label)
-                    <option value="{{ $value }}" {{ $filterCatpil === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                  </select>
-                </div>
-                <div class="col-md-4 mb-2 mb-md-0">
-                  <label for="filter-verif-kampus">Verifikasi Kampus</label>
-                  <select class="form-control" name="verif_kampus" id="filter-verif-kampus">
-                    <option value="{{ $semuaStatus }}" {{ $filterKampus === null ? 'selected' : '' }}>-- Semua Status --</option>
-                    @foreach($statusOptions as $value => $label)
-                    <option value="{{ $value }}" {{ $filterKampus === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                  </select>
-                </div>
-                <div class="col-md-2 mb-2 mb-md-0">
-                  <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
-                    <i class="fas fa-filter mr-1"></i> Terapkan
-                  </button>
-                </div>
-                <div class="col-md-2 mb-2 mb-md-0">
-                  <a href="{{ route($routePrefix.'.status') }}" class="btn btn-secondary btn-block">
-                    <i class="fas fa-redo"></i> Reset
-                  </a>
-                </div>
-              </div>
-              <div class="form-row align-items-end mt-3">
                 <div class="col-md-4 mb-2 mb-md-0">
                   <label for="filter-kampus">Kampus</label>
                   <select class="form-control" name="kampus_id" id="filter-kampus">
@@ -99,6 +62,18 @@
                     <option value="{{ $jurusan->id }}" {{ $jurusanId === $jurusan->id ? 'selected' : '' }}>{{ $jurusan->nama }}</option>
                     @endforeach
                   </select>
+                </div>
+              </div>
+              <div class="form-row align-items-end mt-2">
+                <div class="col-auto mb-2 mb-md-0">
+                  <button type="submit" class="btn btn-primary" data-loading-text="Menerapkan filter...">
+                    <i class="fas fa-filter mr-1"></i> Terapkan
+                  </button>
+                </div>
+                <div class="col-auto mb-2 mb-md-0">
+                  <a href="{{ route($routePrefix.'.status') }}" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Reset
+                  </a>
                 </div>
               </div>
             </form>

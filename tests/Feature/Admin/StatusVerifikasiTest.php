@@ -174,7 +174,7 @@ test('role user tidak dapat membuka halaman status verifikasi', function () {
         ->assertForbidden();
 });
 
-test('filter status catpil dan kampus menyempitkan daftar profil', function () {
+test('filter status catpil dan kampus dihapus: halaman selalu rekap penuh', function () {
     $catpilSetuju = User::factory()->standardUser()->create();
     profilStatus($catpilSetuju, 'Citra Disetujui Catpil', ['verif_catpil' => 'setuju'], $this->prodi->id);
 
@@ -184,22 +184,23 @@ test('filter status catpil dan kampus menyempitkan daftar profil', function () {
     $kampusTolak = User::factory()->standardUser()->create();
     profilStatus($kampusTolak, 'Citra Ditolak Kampus', ['verif_catpil' => 'setuju', 'verif_kampus' => 'tolak'], $this->prodi->id);
 
+    // Select filter per tahap tidak dirender lagi (permintaan pengguna).
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.status'))
+        ->assertOk()
+        ->assertDontSee('name="verif_catpil"', false)
+        ->assertDontSee('name="verif_kampus"', false);
+
+    // Param lama di URL diabaikan: daftar tetap rekap penuh, bukan yang disaring.
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.status', ['verif_catpil' => 'setuju']))
         ->assertOk()
         ->assertSee('Citra Disetujui Catpil')
-        ->assertSee('Citra Ditolak Kampus')
-        ->assertDontSee('Citra Revisi Catpil');
+        ->assertSee('Citra Revisi Catpil')
+        ->assertSee('Citra Ditolak Kampus');
 
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.status', ['verif_kampus' => 'tolak']))
-        ->assertOk()
-        ->assertSee('Citra Ditolak Kampus')
-        ->assertDontSee('Citra Disetujui Catpil');
-
-    // Tanpa filter semua profil tampil.
-    actingAs($this->kesraAdmin)
-        ->get(route('admin.kesra.status'))
         ->assertOk()
         ->assertSee('Citra Disetujui Catpil')
         ->assertSee('Citra Revisi Catpil')

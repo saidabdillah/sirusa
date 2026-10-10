@@ -319,7 +319,7 @@ test('tombol reset filter selalu ada di ketiga antrean verifikasi', function () 
         preg_match('/<a href="[^"]+" class="([^"]*)">\s*<i class="fas fa-redo"><\/i>\s*Reset/', $html, $cocok);
 
         expect($cocok)->not->toBeEmpty()
-            ->and($cocok[1])->toBe('btn btn-secondary btn-block');
+            ->and($cocok[1])->toBe('btn btn-secondary');
     }
 });
 

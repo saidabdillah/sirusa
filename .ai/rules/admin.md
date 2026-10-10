@@ -126,3 +126,6 @@ Setelah profile->save(), bila status==='tolak' dan stage catpil/kampus, semua ap
 
 ## Penerima Beasiswa read-only penuh: tanpa kolom Aksi, endpoint tarik dihapus
 Halaman Penerima Beasiswa kini murni read-only untuk SEMUA role admin yang memegang grant 'admin.penerima' (super_admin, kesra, catpil, kampus). Kolom Aksi/tombol Hapus DIHAPUS atas permintaan pengguna -- tidak ada aksi tulis sama sekali, controller hanya punya index/cetak/export. Endpoint PUT 'admin.penerima.tarik' + trait RespondsToAjax + method tarik() sudah dihapus dari routes/web.php dan controller (route tidak terdaftar; jangan dipakai lagi di view/test). Karena Penerima Beasiswa kini leaf mandiri di section 'Manajemen', catpil/kampus melihat entri menu di sidebar (bukan lagi 'akses via URL tersembunyi'). Unduh/Cetak membawa request()->query() supaya hasil sesuai filter layar.
+
+## status() tanpa filter status per tahap; validStatusFilter dihapus
+VerifikasiController::status() tidak lagi membaca/menyaring verif_catpil/verif_kampus (select di view sudah dihapus atas permintaan pengguna). Param lama di URL diabaikan begitu saja — daftar selalu rekap penuh semua profil. Method private validStatusFilter() dihapus; konstanta FILTERS tetap dipakai validFilter() untuk antrean Catpil/Kampus.

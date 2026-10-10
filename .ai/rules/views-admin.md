@@ -22,3 +22,6 @@ Tombol Reset pada form filter admin (daftar pendaftar, antrean verifikasi Catpil
 
 ## Label tampil 'Program Studi', param tetap jurusan_id
 Semua teks tampil memakai 'Program Studi' (bukan 'Jurusan'). Nama field/param query TETAP jurusan_id/id='filter-jurusan' supaya aturan filter lokasi yang sudah ada tidak putus — hanya label display yang berubah. Komentar boleh menyebut alasannya.
+
+## Tombol filter admin kompak (col-auto), tidak btn-block
+Semua tombol filter daftar admin (Terapkan/Reset di Status Verifikasi, antrean Kesra, antrean Catpil/Kampus; Cari/Reset di Pendaftar dan Akses Menu) memakai pola halaman Penerima: wrapper `col-auto mb-2 mb-md-0`, kelas `btn btn-primary`/`btn btn-secondary` TANPA `btn-block`, pada baris form sendiri di bawah select (form-row mt-2). Aturan lama 'btn-secondary btn-block' sudah diganti; VerifikasiProfilTest mengunci kelas `btn btn-secondary`. Teks loading (Mencari..., Menerapkan filter..., Memuat...) tidak berubah.

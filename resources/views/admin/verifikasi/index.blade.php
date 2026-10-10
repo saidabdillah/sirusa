@@ -61,29 +61,33 @@ $filterOptions = [
             </div>
           </div>
 <div class="card-body">
-            <form method="GET" action="{{ route($routePrefix.'.index') }}" class="form-row align-items-end mb-3">
-              <div class="col-md-4 mb-2 mb-md-0">
-                <label for="filter">Status Keputusan</label>
-                <select class="form-control" name="filter" id="filter">
-                  <option value="">-- Semua Status --</option>
-                  @foreach($filterOptions as $value => $label)
-                  <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
-                  @endforeach
-                </select>
+            <form method="GET" action="{{ route($routePrefix.'.index') }}" class="mb-3">
+              <div class="form-row align-items-end">
+                <div class="col-md-4 mb-2 mb-md-0">
+                  <label for="filter">Status Keputusan</label>
+                  <select class="form-control" name="filter" id="filter">
+                    <option value="">-- Semua Status --</option>
+                    @foreach($filterOptions as $value => $label)
+                    <option value="{{ $value }}" {{ $filter === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                  </select>
+                </div>
               </div>
-              <div class="col-md-2 mb-2 mb-md-0">
-                <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
-                  <i class="fas fa-filter mr-1"></i> Terapkan
-                </button>
-              </div>
-              {{-- Reset selalu ada, sama seperti di daftar pendaftar. Filter
-                   kosong bukan kondisi yang perlu dibetulkan, jadi tidak ada
-                   alasan tombolnya hilang-hilang -- form-nya jadi tidak stabil
-                   dan pengguna mencari tombol yang sebenarnya ada. --}}
-              <div class="col-md-2 mb-2 mb-md-0">
-                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary btn-block">
-                  <i class="fas fa-redo"></i> Reset
-                </a>
+              <div class="form-row align-items-end mt-2">
+                <div class="col-auto mb-2 mb-md-0">
+                  <button type="submit" class="btn btn-primary" data-loading-text="Menerapkan filter...">
+                    <i class="fas fa-filter mr-1"></i> Terapkan
+                  </button>
+                </div>
+                {{-- Reset selalu ada, sama seperti di daftar pendaftar. Filter
+                     kosong bukan kondisi yang perlu dibetulkan, jadi tidak ada
+                     alasan tombolnya hilang-hilang -- form-nya jadi tidak stabil
+                     dan pengguna mencari tombol yang sebenarnya ada. --}}
+                <div class="col-auto mb-2 mb-md-0">
+                  <a href="{{ route($routePrefix.'.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Reset
+                  </a>
+                </div>
               </div>
             </form>
             <div class="table-responsive">
