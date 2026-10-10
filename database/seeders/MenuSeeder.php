@@ -235,12 +235,18 @@ class MenuSeeder extends Seeder
                 'admin.catpil',
                 'admin.pendaftar',
                 'admin.kesra.status',
+                // `admin.penerima` (anak dropdown Kesra) untuk melihat daftar
+                // penerima; parent `kesra` sengaja TIDAK di-grant supaya scope
+                // induk `admin.kesra` tidak membuka antrean/keputusan Kesra.
+                'admin.penerima',
             ],
             'kampus' => [
                 'dasbor',
                 'admin.kampusverif',
                 'admin.pendaftar',
                 'admin.kesra.status',
+                // Lihat komentar grant `admin.penerima` pada role catpil.
+                'admin.penerima',
             ],
             'kesra' => [
                 'dasbor',

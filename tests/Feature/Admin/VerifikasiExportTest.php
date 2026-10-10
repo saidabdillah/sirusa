@@ -411,10 +411,68 @@ test('halaman verifikasi menampilkan tombol unduh sesuai grant menu', function (
         ->assertSee('Unduh Excel')
         ->assertSee(route('admin.kesra.export'), false);
 
-    // Arsip keputusan kini tanpa tombol apa pun.
+    // Halaman Keputusan kini punya tombol Unduh Excel sendiri yang membaca
+    // koleksi yang sama dengan tabelnya (dan hanya untuk pengelola kesra).
     actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui'))
         ->assertOk()
-        ->assertDontSee('Unduh Excel');
+        ->assertSee('Unduh Excel')
+        ->assertSee(route('admin.kesra.disetujui.export'), false);
+
+    // Export keputusan tidak terbuka untuk verifikator tahap lain.
+    actingAs($this->catpilAdmin)->get(route('admin.kesra.disetujui.export'))->assertForbidden();
+    actingAs($this->kampusAdmin)->get(route('admin.kesra.disetujui.export'))->assertForbidden();
+});
+
+test('ekspor keputusan memuat kolom dan nilai baris yang sudah diputuskan kesra', function () {
+    $pemohon = User::factory()->standardUser()->create();
+    buatPemohon($pemohon, 'kesra', $this->prodi);
+    $applicant = $pemohon->applicants()->firstOrFail();
+
+    actingAs($this->kesraAdmin)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$pemohon, $applicant]), [
+            'pendaftaran_status' => 'diterima',
+        ])
+        ->assertRedirect(route('admin.kesra.lihat', $pemohon));
+
+    $response = actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui.export'));
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    expect($response->headers->get('Content-Disposition'))->toContain('keputusan-')
+        ->toContain('.xlsx');
+
+    // Kolomnya persis baris tabel halaman Keputusan, jadi unduhan tidak
+    // mungkin menyimpang dari yang tampil di layar.
+    expect(judulSheet($response))->toBe([
+        'No',
+        'Nama',
+        'NIM',
+        'Kampus',
+        'Fakultas',
+        'Program Studi',
+        'Beasiswa',
+        'Diputuskan',
+    ]);
+
+    $baris = bacaSheet($response);
+    expect($baris)->toHaveCount(1)
+        ->and($baris[0]['Nama'])->toBe("Ahmad Fauzi #{$pemohon->id}")
+        // `buatPemohon()` tidak mengisi NIM, jadi `teks(null)` menulis '-' di
+        // kolom identitas, bukan sel kosong.
+        ->and($baris[0]['NIM'])->toBe('-')
+        ->and($baris[0]['Kampus'])->toBe('Universitas Lambung Mangkurat')
+        ->and($baris[0]['Fakultas'])->toBe('Fakultas Teknik')
+        ->and($baris[0]['Program Studi'])->toBe('Teknik Informatika')
+        ->and($baris[0]['Beasiswa'])->toBe('Beasiswa Ekspor')
+        ->and($baris[0]['Diputuskan'])->toStartWith(now()->format('d/m/Y'));
+
+    // Pendaftaran yang belum diputuskan tidak ikut terunduh.
+    $menunggu = User::factory()->standardUser()->create();
+    buatPemohon($menunggu, 'kesra', $this->prodi);
+
+    $tanpaKeputusan = bacaSheet(actingAs($this->kesraAdmin)->get(route('admin.kesra.disetujui.export')));
+    expect(array_column($tanpaKeputusan, 'Nama'))->not->toContain("Ahmad Fauzi #{$menunggu->id}");
 });
 
 // ─── Perluasan kolom (spesifikasi batch 2, poin 23) ──────────────────────

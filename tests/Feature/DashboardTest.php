@@ -528,3 +528,33 @@ test('mahasiswa dashboard shows the blocking application', function () {
         ->assertSee('Pendaftaran Berjalan')
         ->assertSee($beasiswa->nama);
 });
+
+test('mahasiswa dashboard lists only beasiswa that allows the student prodi', function () {
+    $user = mahasiswaTahap('catpil', 'Rina Fakultas');
+
+    // Cakupan fakultas tanpa daftar prodi: tercakup untuk Teknik Informatika.
+    $terbukaFakultas = Scholarship::factory()->create([
+        'nama' => 'Beasiswa Fakultas Teknik',
+        'kampus_id' => $this->kampus->id,
+        'status' => 'aktif',
+        'tanggal_mulai' => now()->subDay(),
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+    $terbukaFakultas->fakultas()->create(['nama' => 'Fakultas Teknik']);
+
+    // Cakupan prodi: hanya Teknik Elektro, bukan Teknik Informatika milik user.
+    $tertutupProdi = Scholarship::factory()->create([
+        'nama' => 'Beasiswa Elektro',
+        'kampus_id' => $this->kampus->id,
+        'status' => 'aktif',
+        'tanggal_mulai' => now()->subDay(),
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+    $tertutupProdi->fakultas()->create(['nama' => 'Fakultas Teknik'])->prodi()->create(['nama' => 'Teknik Elektro']);
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee($terbukaFakultas->nama)
+        ->assertDontSee($tertutupProdi->nama);
+});

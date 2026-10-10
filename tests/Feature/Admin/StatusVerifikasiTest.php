@@ -82,10 +82,10 @@ test('kesra membuka halaman status verifikasi yang memuat seluruh profil dengan 
         ->assertSee(route('admin.kesra.status'), false)
         ->assertSee('Citra Status Lulus')
         ->assertSee('Citra Status Revisi')
-        // Urutan kolom dan judul lokasi: Kampus, Fakultas, Jurusan (Prodi).
+        // Urutan kolom dan judul lokasi: Kampus, Fakultas, Program Studi.
         ->assertSee('Kampus')
         ->assertSee('Fakultas')
-        ->assertSee('Jurusan')
+        ->assertSee('Program Studi')
         ->assertSee('Universitas Lambung Mangkurat')
         ->assertSee('Fakultas Teknik')
         // Badge keputusan per tahap ikut dirender.

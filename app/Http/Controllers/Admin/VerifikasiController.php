@@ -120,6 +120,20 @@ class VerifikasiController extends Controller
         // menghapus pekerjaan tahap lain yang sedang berjalan.
         $profile->save();
 
+        // Penolakan Catpil/Kampus menutup gerbang tahap Kesra selamanya
+        // (butuh `setuju` di keduanya), jadi pendaftaran yang masih menunggu
+        // putusan tidak akan pernah diputuskan: kalau dibiarkan, baris
+        // `verifikasi` itu memblokir pendaftaran beasiswa lain tanpa henti.
+        // Pendaftaran tersebut ditutup jadi `ditolak` -- bukan keputusan
+        // Kesra, hanya pembersihan karena profilnya gagal verifikasi.
+        // `verif_kesra` tidak disentuh: sumber label tahap Kesra tetap baris
+        // `pendaftar.status` (`User::kesraDecision()`).
+        if ($data['status'] === 'tolak' && in_array($stage, ['catpil', 'kampus'], true)) {
+            $user->applicants()
+                ->where('status', Applicant::PENDING_STATUS)
+                ->update(['status' => 'ditolak']);
+        }
+
         $successAction = match ($data['status']) {
             'setuju' => 'setujui',
             'revisi' => 'minta perbaikan',

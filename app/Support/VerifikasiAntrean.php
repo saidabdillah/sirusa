@@ -304,7 +304,7 @@ class VerifikasiAntrean
         }
 
         return $this->pendaftarQuery($status)
-            ->with(['beasiswa', 'user.profile.prodi.fakultas.kampus'])
+            ->with(['beasiswa', 'user.profile.prodi.fakultas.kampus', 'diputuskanOleh'])
             ->latest()
             ->get();
     }

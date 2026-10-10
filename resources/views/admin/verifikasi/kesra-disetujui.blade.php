@@ -24,9 +24,16 @@
         <div class="card">
           <div class="card-header">
             <h4>Pendaftaran yang Sudah Disetujui</h4>
-            {{-- Header sengaja tanpa tombol (permintaan pengguna): Unduh Excel ada --}}
-            {{-- di halaman antrean Kesra, dan navigasi antar halaman Kesra cukup --}}
-            {{-- lewat breadcrumb dan dropdown sidebar. --}}
+            {{-- Unduh Excel di halaman Keputusan ini membaca koleksi yang sama
+                 dengan tabelnya, jadi unduhan tidak mungkin menyimpang dari
+                 daftar yang tampil. --}}
+            <div class="card-header-action">
+              @if(auth()->user()->hasMenuAccess('admin.kesra.disetujui.export'))
+              <a href="{{ route('admin.kesra.disetujui.export') }}" class="btn btn-outline-success">
+                <i class="fas fa-file-excel mr-1"></i> Unduh Excel
+              </a>
+              @endif
+            </div>
           </div>
           <div class="card-body">
             {{-- Baris `@empty` sengaja tidak dipakai: DataTables memetakan sel --}}
@@ -40,10 +47,11 @@
                     <th>No</th>
                     <th>Nama</th>
                     <th>NIM</th>
-                    <th>Program Studi</th>
                     <th>Kampus</th>
+                    <th>Fakultas</th>
+                    <th>Program Studi</th>
                     <th>Beasiswa</th>
-<th>Diputuskan</th>
+                    <th>Diputuskan</th>
                     <th>Aksi</th>
                   </tr>
                 </thead>
@@ -56,10 +64,11 @@
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $profile?->nama_lengkap ?? $applicant->user?->username ?? '-' }}</td>
                     <td>{{ $profile?->nim ?? '-' }}</td>
-                    <td>{{ $applicant->prodi ?? $profile?->prodi?->nama ?? '-' }}</td>
                     {{-- `Kampus` punya kolom `nama_kampus`; menulis `kampus->nama`
                          selalu membalas null. --}}
                     <td>{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
+                    <td>{{ $profile?->prodi?->fakultas?->nama ?? '-' }}</td>
+                    <td>{{ $applicant->prodi ?? $profile?->prodi?->nama ?? '-' }}</td>
                     <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
                     <td>
                       {{ $applicant->diputuskan_at?->format('d/m/Y H:i') ?? '-' }}

@@ -5,7 +5,7 @@
   // leaf mandiri di section "Administrasi"). Bukan antrean -- hanya rekap
   // status profil (Catpil, Kampus, Kesra), tanpa kolom aksi. Filter terbagi
   // dua grup dengan jarak: status per tahap (verif_catpil/verif_kampus) lalu
-  // lokasi Kampus/Fakultas/Jurusan yang semuanya aktif dengan daftar penuh.
+  // lokasi Kampus/Fakultas/Program Studi yang semuanya aktif dengan daftar penuh.
   // Sumber data di `VerifikasiController::status()`.
   $routePrefix = 'admin.'.\App\Models\UserProfile::verifRoutePrefixes()['kesra'];
   $statusOptions = [
@@ -36,10 +36,10 @@
           </div>
           <div class="card-body">
             {{-- Dua grup filter yang diberi jarak (tanpa garis pemisah): status
-                 per tahap di baris pertama, lokasi (Kampus/Fakultas/Jurusan) di
+                 per tahap di baris pertama, lokasi (Kampus/Fakultas/Program Studi) di
                  baris kedua. Ketiga filter lokasi JANGAN disabled dan opsinya
                  dinamis -- Fakultas hanya memuat milik kampus yang terpilih,
-                 Jurusan hanya milik fakultas yang terpilih, dan tanpa induk
+                 Program Studi hanya milik fakultas yang terpilih, dan tanpa induk
                  terpilih daftarnya tampil penuh. --}}
             <form method="GET" action="{{ route($routePrefix.'.status') }}" class="mb-3">
               <div class="form-row align-items-end">
@@ -92,9 +92,9 @@
                   </select>
                 </div>
                 <div class="col-md-4 mb-2 mb-md-0">
-                  <label for="filter-jurusan">Jurusan</label>
+                  <label for="filter-jurusan">Program Studi</label>
                   <select class="form-control" name="jurusan_id" id="filter-jurusan">
-                    <option value="" {{ $jurusanId === null ? 'selected' : '' }}>-- Semua Jurusan --</option>
+                    <option value="" {{ $jurusanId === null ? 'selected' : '' }}>-- Semua Program Studi --</option>
                     @foreach($jurusanOptions as $jurusan)
                     <option value="{{ $jurusan->id }}" {{ $jurusanId === $jurusan->id ? 'selected' : '' }}>{{ $jurusan->nama }}</option>
                     @endforeach
@@ -111,7 +111,7 @@
                     <th>NIM</th>
                     <th>Kampus</th>
                     <th>Fakultas</th>
-                    <th>Jurusan</th>
+                    <th>Program Studi</th>
                     <th>Verifikasi Catpil</th>
                     <th>Verifikasi Kampus</th>
                     <th>Verifikasi Kesra</th>
@@ -137,7 +137,9 @@
                     <td>{{ $profile->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
                     <td>{{ $profile->prodi?->fakultas?->nama ?? '-' }}</td>
                     {{-- Tidak ada tabel Jurusan; level ketiga filter lokasi adalah
-                         Prodi, dan kolomnya berjudul "Jurusan" biar sejalan. --}}
+                         Prodi, dan kolomnya berjudul "Program Studi". Param
+                         query-nya tetap `jurusan_id` supaya tidak memutus
+                         aturan filter lokasi yang sudah ada. --}}
                     <td>{{ $profile->prodi?->nama ?? '-' }}</td>
                     <td><span class="badge badge-{{ $catpil['badge'] }}">{{ $catpil['label'] }}</span></td>
                     <td><span class="badge badge-{{ $kampus['badge'] }}">{{ $kampus['label'] }}</span></td>

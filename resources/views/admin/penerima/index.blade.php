@@ -1,5 +1,16 @@
 @extends('layouts.app')
 
+@php
+  // Catpil dan Kampus punya grant `admin.penerima` untuk MEMBACA daftar ini,
+  // tapi hanya Kesra (dan super_admin) yang boleh mengembalikan penerima ke
+  // antrean. Kolom Aksi + tombol Hapus hanya dirender untuk pengambil
+  // keputusan, bukan pembaca daftar.
+  $bisaTarik = auth()->user()->hasRole(['kesra', 'super_admin']);
+  // Unduh/Cetak membawa filter yang sedang dibuka, jadi hasilnya persis
+  // daftar di layar (pola yang sama dipakai halaman Status Verifikasi).
+  $queryString = request()->query();
+@endphp
+
 @section('content')
 <section class="section">
   <div class="section-header">
@@ -32,38 +43,99 @@
             <h4>Daftar Penerima Beasiswa</h4>
             <div class="card-header-action">
               @if(auth()->user()->hasMenuAccess('admin.penerima.export'))
-              <a href="{{ route('admin.penerima.export') }}" class="btn btn-outline-success">
+              <a href="{{ route('admin.penerima.export', $queryString) }}" class="btn btn-outline-success">
                 <i class="fas fa-file-excel mr-1"></i> Unduh Excel
               </a>
               @endif
               @if(auth()->user()->hasMenuAccess('admin.penerima.cetak'))
-              <a href="{{ route('admin.penerima.cetak') }}" target="_blank" class="btn btn-outline-primary">
+              <a href="{{ route('admin.penerima.cetak', $queryString) }}" target="_blank" class="btn btn-outline-primary">
                 <i class="fas fa-print mr-1"></i> Cetak
               </a>
               @endif
             </div>
           </div>
           <div class="card-body">
+            @if($bisaTarik)
             <div class="alert alert-primary">
               <i class="fas fa-info-circle mr-1"></i>
               Daftar ini hanya memuat pendaftar yang <strong>disetujui (diterima)</strong> Kesra.
               Tombol <strong>Hapus</strong> tidak menghapus data: status pendaftaran dikembalikan ke
               <strong>Verifikasi</strong> supaya masuk lagi ke antrean keputusan Kesra.
             </div>
+            @else
+            <div class="alert alert-primary">
+              <i class="fas fa-info-circle mr-1"></i>
+              Daftar ini hanya memuat pendaftar yang <strong>disetujui (diterima)</strong> Kesra.
+            </div>
+            @endif
+
+            <form method="GET" action="{{ route('admin.penerima.index') }}" class="mb-3">
+              <div class="form-row align-items-end">
+                <div class="col-md-3 mb-2 mb-md-0">
+                  <label for="filter-kampus">Kampus</label>
+                  <select class="form-control" name="kampus_id" id="filter-kampus">
+                    <option value="" {{ $kampusId === null ? 'selected' : '' }}>-- Semua Kampus --</option>
+                    @foreach($kampusOptions as $kampus)
+                    <option value="{{ $kampus->id }}" {{ $kampusId === $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                  <label for="filter-fakultas">Fakultas</label>
+                  <select class="form-control" name="fakultas_id" id="filter-fakultas">
+                    <option value="" {{ $fakultasId === null ? 'selected' : '' }}>-- Semua Fakultas --</option>
+                    @foreach($fakultasOptions as $fakultas)
+                    <option value="{{ $fakultas->id }}" {{ $fakultasId === $fakultas->id ? 'selected' : '' }}>{{ $fakultas->nama }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                  <label for="filter-jurusan">Program Studi</label>
+                  <select class="form-control" name="jurusan_id" id="filter-jurusan">
+                    <option value="" {{ $jurusanId === null ? 'selected' : '' }}>-- Semua Program Studi --</option>
+                    @foreach($jurusanOptions as $jurusan)
+                    <option value="{{ $jurusan->id }}" {{ $jurusanId === $jurusan->id ? 'selected' : '' }}>{{ $jurusan->nama }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                  <label for="filter-beasiswa">Beasiswa</label>
+                  <select class="form-control" name="beasiswa_id" id="filter-beasiswa">
+                    <option value="" {{ $beasiswaId === null ? 'selected' : '' }}>-- Semua Beasiswa --</option>
+                    @foreach($beasiswaOptions as $beasiswa)
+                    <option value="{{ $beasiswa->id }}" {{ $beasiswaId === $beasiswa->id ? 'selected' : '' }}>{{ $beasiswa->nama }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              </div>
+              <div class="form-row align-items-end mt-2">
+                <div class="col-md-3 mb-2 mb-md-0">
+                  <button type="submit" class="btn btn-primary btn-block" data-loading-text="Menerapkan filter...">
+                    <i class="fas fa-filter mr-1"></i> Terapkan
+                  </button>
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                  <a href="{{ route('admin.penerima.index') }}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-redo"></i> Reset
+                  </a>
+                </div>
+              </div>
+            </form>
+
             <div class="table-responsive">
               <table class="table table-striped" id="penerimaTable">
                 <thead>
                   <tr>
                     <th>No</th>
                     <th>Nama</th>
-                    <th>NIK</th>
                     <th>NIM</th>
-                    <th>Beasiswa</th>
-                    <th>Program Studi</th>
                     <th>Kampus</th>
+                    <th>Fakultas</th>
+                    <th>Program Studi</th>
+                    <th>Beasiswa</th>
                     <th>Tanggal Daftar</th>
                     <th>Status</th>
-                    @if(auth()->user()->hasMenuAccess('admin.penerima.index'))
+                    @if($bisaTarik)
                     <th>Aksi</th>
                     @endif
                   </tr>
@@ -76,14 +148,16 @@
                   <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $profile?->nama_lengkap ?? '-' }}</td>
-                    <td>{{ $profile?->nik ?? '-' }}</td>
                     <td>{{ $profile?->nim ?? '-' }}</td>
-                    <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
-                    <td>{{ $profile?->prodi?->nama ?? '-' }}</td>
+                    {{-- `Kampus` punya kolom `nama_kampus`; menulis `kampus->nama`
+                         selalu membalas null. --}}
                     <td>{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
+                    <td>{{ $profile?->prodi?->fakultas?->nama ?? '-' }}</td>
+                    <td>{{ $profile?->prodi?->nama ?? '-' }}</td>
+                    <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
                     <td>{{ $applicant->created_at?->translatedFormat('d M Y') ?? '-' }}</td>
                     <td><span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span></td>
-                    @if(auth()->user()->hasMenuAccess('admin.penerima.index'))
+                    @if($bisaTarik)
                     <td>
                       <form action="{{ route('admin.penerima.tarik', $applicant) }}" method="POST" data-ajax-form>
                         @csrf

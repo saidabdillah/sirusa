@@ -102,8 +102,8 @@ class DashboardController extends Controller
             'applications' => $user->applicants()->with('beasiswa')->latest()->take(5)->get(),
             'totalApplications' => $user->applicants()->count(),
             'activeApplication' => $user->blockingApplicant(),
-            'beasiswaTersedia' => Scholarship::tersedia()->untukKampus($kampusId)->orderBy('tanggal_selesai')->take(5)->get(),
-            'jumlahBeasiswaTersedia' => Scholarship::tersedia()->untukKampus($kampusId)->count(),
+            'beasiswaTersedia' => Scholarship::tersedia()->untukMahasiswa($profile)->orderBy('tanggal_selesai')->take(5)->get(),
+            'jumlahBeasiswaTersedia' => Scholarship::tersedia()->untukMahasiswa($profile)->count(),
         ]);
     }
 

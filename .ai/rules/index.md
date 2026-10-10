@@ -4,8 +4,8 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
-| app/Http/Controllers/Admin/**, app/Http/Controllers/Admin/PenggunaController.php, app/Http/Controllers/Admin/VerifikasiController.php, app/Http/Controllers/Admin/KeputusanPendaftaranController.php | .ai/rules/admin.md |
-| app/Models/Applicant.php, app/Http/Controllers/Admin/PendaftarController.php, app/Models/UserProfile.php, app/Models/User.php | .ai/rules/applicant.md |
+| app/Http/Controllers/Admin/**, app/Http/Controllers/Admin/PenggunaController.php, app/Http/Controllers/Admin/VerifikasiController.php, app/Http/Controllers/Admin/KeputusanPendaftaranController.php, app/Http/Controllers/Admin/PenerimaBeasiswaController.php | .ai/rules/admin.md |
+| app/Models/Applicant.php, app/Http/Controllers/Admin/PendaftarController.php, app/Models/UserProfile.php, app/Models/User.php, app/Models/Scholarship.php | .ai/rules/applicant.md |
 | app/Http/Controllers/Auth/** | .ai/rules/auth.md |
 | resources/views/admin/beasiswa/** | .ai/rules/beasiswa.md |
 | config/services.php | .ai/rules/config.md |

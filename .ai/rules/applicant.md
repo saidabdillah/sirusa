@@ -4,6 +4,7 @@ paths:
   - app/Http/Controllers/Admin/PendaftarController.php
   - app/Models/UserProfile.php
   - app/Models/User.php
+  - app/Models/Scholarship.php
 ---
 
 # Applicant (pendaftar)
@@ -28,3 +29,6 @@ canVerifStage() is the WRITE gate only. Queue visibility is inVerifQueue(): same
 
 ## Kesra display label derives from pendaftar.status via User::kesraDecision()
 verif_kesra is written `setuju` on ANY Kesra decision (accept or reject) — it only marks "already decided" (the Kampus lock key). Never render it as the Kesra status label, or a REJECTED application shows as "Disetujui". Use User::kesraDecision(): any diterima -> setuju/Disetujui, else any ditolak -> tolak/Ditolak, else Menunggu; label/badge come from UserProfile::decisionForStatus(). Callers: admin/verifikasi/status.blade.php, dasbor/mahasiswa.blade.php (via $kesraDecision), KesraVerifikasiExport (col "Status Kesra"). verif_kesra itself stays unchanged.
+
+## Cakupan beasiswa: prodi > fakultas > kampus
+scopeUntukMahasiswa(?UserProfile) memakai kampus outer (kampus_id match) + OR: prodi di beasiswa_prodi -> hanya prodi itu; fakultas tanpa prodi -> semua prodi fakultas; tanpa cakupan -> semua prodi kampus. allowsProdi() memakai semantik yang SAMA sehingga daftar (user.beasiswa.index, dasbor mahasiswa) konsisten dengan detail. prodiSnapshotNames() dihapus.

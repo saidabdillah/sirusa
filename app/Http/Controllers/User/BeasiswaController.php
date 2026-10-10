@@ -24,7 +24,7 @@ class BeasiswaController extends Controller
         // yang sama, dan `diterima_count` membuat `sisaKuota()` tidak perlu
         // COUNT per kartu. Tanpa dua-duanya, tiap kartu menembak query sendiri.
         $scholarships = Scholarship::tersedia()
-            ->untukKampus($kampusId)
+            ->untukMahasiswa($profile)
             ->withHitunganCakupan()
             ->withCount([
                 'pendaftar as penerima_diterima' => fn ($q) => $q->where('status', 'diterima'),

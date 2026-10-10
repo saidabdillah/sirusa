@@ -28,11 +28,12 @@
     'Kampus' => $profile->catatan_kampus,
     'Kesra' => $profile->catatan_kesra,
   ]);
-  // `diputuskanOleh` ikut di-eager-load karena blok keputusan yang sudah
-  // tersimpan memanggilnya; tanpa ini satu query per pendaftaran yang sudah
-  // diputuskan.
+  // `kampus.fakultas.prodi` dipakai kotak "Detail Beasiswa" untuk menulis
+  // cakupan fakultas/program studi; `diputuskanOleh` dipakai blok keputusan
+  // yang sudah tersimpan. Tanpa eager-load keduanya, satu query per
+  // pendaftaran.
   $applications = $stage === 'kesra'
-      ? $user->applicants()->with(['beasiswa.kampus', 'diputuskanOleh'])->latest()->get()
+      ? $user->applicants()->with(['beasiswa.kampus.fakultas.prodi', 'diputuskanOleh'])->latest()->get()
       : collect();
 @endphp
 
@@ -88,8 +89,29 @@
                     // mengulang data pendaftar: data diri, kampus, dan dokumen
                     // sudah lengkap di kolom kiri (`partials.profil-detail`),
                     // jadi peninjauan di sini fokus ke ketentuan beasiswanya.
+                    // Cakupan fakultas/prodi dibaca dari relasi `fakultas`
+                    // (baris `beasiswa_fakultas`) beserta anak `prodi` (baris
+                    // `beasiswa_prodi`), dengan aturan falls-back yang sama
+                    // seperti `Scholarship::cakupanLabel()` dan `allowsProdi()`:
+                    // prodi terdaftar -> hanya prodi itu; fakultas tanpa prodi ->
+                    // semua prodi fakultas; tanpa cakupan -> semua prodi kampus.
+                    $cakupanFakultas = $beasiswa?->fakultas ?? collect();
+                    $namaFakultasCakupan = $cakupanFakultas->pluck('nama')->filter()->values();
+                    $namaProdiCakupan = $cakupanFakultas
+                        ->flatMap(fn ($fakultas) => $fakultas->prodi)
+                        ->pluck('nama')->filter()->values();
+                    $namaKampus = $beasiswa?->kampus?->nama_kampus ?? $beasiswa?->kampus ?? null;
+
                     $detailBeasiswa = [
-                      ['label' => 'Kampus', 'value' => $beasiswa?->kampus?->nama_kampus ?? $beasiswa?->kampus ?? '-'],
+                      ['label' => 'Kampus', 'value' => $namaKampus ?? '-'],
+                      ['label' => 'Fakultas', 'value' => ! $namaFakultasCakupan->isEmpty()
+                          ? $namaFakultasCakupan->join(', ')
+                          : 'Semua Fakultas'],
+                      ['label' => 'Program Studi', 'value' => ! $namaProdiCakupan->isEmpty()
+                          ? $namaProdiCakupan->join(', ')
+                          : ($cakupanFakultas->isEmpty()
+                              ? 'Semua Program Studi'.($namaKampus !== null ? ' di '.$namaKampus : '')
+                              : 'Semua Program Studi fakultas yang tercakup')],
                       ['label' => 'Kuota', 'value' => $beasiswa?->kuota ?? '-'],
                       ['label' => 'IPK Minimal', 'value' => $beasiswa ? number_format((float) $beasiswa->ipk_minimal, 2) : '-'],
                       ['label' => 'Semester Minimal', 'value' => $beasiswa?->semester_minimal ?? '-'],

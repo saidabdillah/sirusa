@@ -499,6 +499,32 @@ test('daftar tanpa daftar prodi menulis semua program studi di kampus itu', func
         ->assertDontSee('0 Fakultas');
 });
 
+test('cakupan tingkat fakultas tanpa daftar prodi tetap menampilkan beasiswa untuk prodi fakultas itu', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+
+    // Fakultas Teknik tercakup tanpa baris prodi: semua prodi di fakultas itu
+    // boleh mendaftar, termasuk Teknik Informatika milik mahasiswa ini.
+    $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Fakultas Teknik']);
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik']);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
+        ->assertOk()
+        ->assertSee('Beasiswa Fakultas Teknik');
+});
+
+test('cakupan prodi mengecualikan prodi lain di fakultas yang sama', function () {
+    mhsBeasiswa($this->mahasiswa, $this->prodi);
+
+    // Teknik Informatika milik mahasiswa ini TIDAK tercakup (daftar prodi
+    // hanya memuat Teknik Elektro), jadi beasiswa ini tidak boleh tampil.
+    $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Elektro']);
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik'])->prodi()->create(['nama' => 'Teknik Elektro']);
+
+    actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
+        ->assertOk()
+        ->assertDontSee('Beasiswa Elektro');
+});
+
 test('daftar menandai beasiswa yang kuotanya sudah penuh', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Penuh', 'kuota' => 1]);

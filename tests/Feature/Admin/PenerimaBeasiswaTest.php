@@ -151,16 +151,81 @@ test('tarik menolak pendaftar yang bukan penerima aktif', function () {
     expect($bukanPenerima->refresh()->status)->toBe('verifikasi');
 });
 
-test('endpoint penerima ditolak untuk role tanpa grant menu', function () {
-    $penerima = penerimaBaru('penerima-catpil@test.com');
+test('catpil dan kampus membaca daftar penerima read-only, tarik tetap milik kesra', function () {
+    $penerima = penerimaBaru('penerima-baca@test.com');
     $catpil = User::factory()->catpil()->create(['email' => 'penerima-role-catpil@test.com']);
+    $kampus = User::factory()->kampusAdmin()->create(['email' => 'penerima-role-kampus@test.com']);
 
-    actingAs($catpil)->get(route('admin.penerima.index'))->assertForbidden();
-    actingAs($catpil)->get(route('admin.penerima.cetak'))->assertForbidden();
-    actingAs($catpil)->get(route('admin.penerima.export'))->assertForbidden();
+    foreach ([$catpil, $kampus] as $pembaca) {
+        // Grant `admin.penerima` (anak dropdown Kesra) membuka daftar, cetak,
+        // dan unduhan.
+        actingAs($pembaca)->get(route('admin.penerima.index'))->assertOk();
+        actingAs($pembaca)->get(route('admin.penerima.cetak'))->assertOk();
+        actingAs($pembaca)->get(route('admin.penerima.export'))->assertOk();
 
-    // `tarik` dijaga terpisah lewat `hasMenuAccess`, bukan hanya middleware
-    // `akses.menu` -- dicek dua-duanya.
-    actingAs($catpil)->putJson(route('admin.penerima.tarik', $penerima))->assertForbidden();
+        // Tapi halamannya read-only: tanpa kolom Aksi / tombol Hapus.
+        actingAs($pembaca)
+            ->get(route('admin.penerima.index'))
+            ->assertDontSee(route('admin.penerima.tarik', $penerima), false);
+
+        // `tarik` dijaga terpisah lewat gate role, bukan hanya middleware
+        // `akses.menu` -- dicek dua-duanya.
+        actingAs($pembaca)->putJson(route('admin.penerima.tarik', $penerima))->assertForbidden();
+    }
+
     expect($penerima->refresh()->status)->toBe('diterima');
+});
+
+test('pendaftar biasa tetap tidak bisa membuka menu penerima', function () {
+    $penerima = penerimaBaru('penerima-user@test.com');
+    $user = User::factory()->standardUser()->create();
+
+    actingAs($user)->get(route('admin.penerima.index'))->assertForbidden();
+    actingAs($user)->get(route('admin.penerima.export'))->assertForbidden();
+    actingAs($user)->putJson(route('admin.penerima.tarik', $penerima))->assertForbidden();
+});
+
+test('filter kampus mempersempit daftar penerima', function () {
+    $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Antapanas']);
+    $prodiLain = $kampusLain
+        ->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->create(['nama' => 'Akuntansi']);
+
+    $diKampus = penerimaBaru('penerima-ulm@test.com');
+    $diLain = penerimaBaru('penerima-antapanas@test.com');
+    $diLain->user->profile->update(['prodi_id' => $prodiLain->id]);
+
+    actingAs($this->kesra)
+        ->get(route('admin.penerima.index', ['kampus_id' => $this->kampus->id]))
+        ->assertOk()
+        ->assertSee($diKampus->user->profile->nim)
+        ->assertDontSee($diLain->user->profile->nim);
+});
+
+test('filter fakultas, prodi, dan beasiswa mempersempit daftar penerima', function () {
+    $prodiLain = $this->kampus
+        ->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->create(['nama' => 'Akuntansi']);
+
+    $teknik = penerimaBaru('penerima-teknik@test.com');
+    $ekonomi = penerimaBaru('penerima-ekonomi@test.com');
+    $ekonomi->user->profile->update(['prodi_id' => $prodiLain->id]);
+
+    actingAs($this->kesra)
+        ->get(route('admin.penerima.index', ['fakultas_id' => $this->prodi->fakultas->id]))
+        ->assertOk()
+        ->assertSee($teknik->user->profile->nim)
+        ->assertDontSee($ekonomi->user->profile->nim);
+
+    actingAs($this->kesra)
+        ->get(route('admin.penerima.index', ['jurusan_id' => $this->prodi->id]))
+        ->assertOk()
+        ->assertSee($teknik->user->profile->nim)
+        ->assertDontSee($ekonomi->user->profile->nim);
+
+    actingAs($this->kesra)
+        ->get(route('admin.penerima.index', ['beasiswa_id' => $teknik->beasiswa->id]))
+        ->assertOk()
+        ->assertSee($teknik->user->profile->nim)
+        ->assertDontSee($ekonomi->user->profile->nim);
 });

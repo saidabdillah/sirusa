@@ -6,6 +6,10 @@ use App\Exports\PenerimaExport;
 use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
+use App\Models\Fakultas;
+use App\Models\Kampus;
+use App\Models\Prodi;
+use App\Models\Scholarship;
 use App\Support\ExcelDownload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,10 +23,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Kesra. Halaman ini dipisah dari antrean verifikasi supaya cetak dan
  * ekspor selalu membaca daftar yang sudah disetujui, bukan daftar antrean.
  *
- * Aksi "Hapus" di sini tidak menghapus baris `pendaftar` apa pun: statusnya
- * dikembalikan ke `verifikasi`, jadi pendaftaran itu masuk lagi ke antrean
- * keputusan Kesra. Baris baru justru mustahil dibuat karena index unik
- * (user_id, beasiswa_id) hanya mengizinkan satu baris per pasangan.
+ * Daftarnya bisa dibaca (index/cetak/export) oleh semua role admin dengan
+ * grant `admin.penerima`; satu-satunya aksi tulis -- mengembalikan penerima
+ * ke antrean -- dijaga terpisah lewat gate role `kesra`/`super_admin`, jadi
+ * Catpil dan Kampus melihat halaman ini read-only.
  */
 class PenerimaBeasiswaController extends Controller
 {
@@ -32,6 +36,14 @@ class PenerimaBeasiswaController extends Controller
     {
         return view('admin.penerima.index', [
             'penerima' => $this->penerima(),
+            'kampusId' => $this->validChoice('kampus_id'),
+            'fakultasId' => $this->validChoice('fakultas_id'),
+            'jurusanId' => $this->validChoice('jurusan_id'),
+            'beasiswaId' => $this->validChoice('beasiswa_id'),
+            'kampusOptions' => Kampus::query()->orderBy('nama_kampus')->get(['id', 'nama_kampus']),
+            'fakultasOptions' => $this->fakultasOptions(),
+            'jurusanOptions' => $this->jurusanOptions(),
+            'beasiswaOptions' => Scholarship::query()->orderBy('nama')->get(['id', 'nama']),
         ]);
     }
 
@@ -64,6 +76,15 @@ class PenerimaBeasiswaController extends Controller
     {
         abort_unless(auth()->user()->hasMenuAccess('admin.penerima.index'), 403);
 
+        // Hanya Kesra (dan super_admin) yang boleh mengembalikan penerima ke
+        // antrean: grant `admin.penerima` sekarang juga dipegang Catpil dan
+        // Kampus supaya mereka bisa melihat daftar, tapi daftar itu read-only
+        // bagi mereka. Mengubah keputusan tetaplah wewenang pengambil
+        // keputusan, bukan pembaca daftar.
+        if (! auth()->user()->hasRole(['kesra', 'super_admin'])) {
+            abort(403);
+        }
+
         if ($applicant->status !== 'diterima') {
             return $this->ajaxFail(
                 $request,
@@ -86,17 +107,83 @@ class PenerimaBeasiswaController extends Controller
     }
 
     /**
-     * Pendaftar berstatus `diterima` dari akun yang masih aktif.
+     * Pendaftar berstatus `diterima` dari akun yang masih aktif, disaring
+     * kampus/fakultas/program studi/beasiswa lewat query string yang dibawa
+     * daftar, cetak, dan unduhan sekaligus.
      *
      * @return Collection<int, Applicant>
      */
     private function penerima(): Collection
     {
+        $kampusId = $this->validChoice('kampus_id');
+        $fakultasId = $this->validChoice('fakultas_id');
+        $jurusanId = $this->validChoice('jurusan_id');
+        $beasiswaId = $this->validChoice('beasiswa_id');
+
+        // Soft coherence, sama seperti filter lokasi di Status Verifikasi
+        // (`VerifikasiController::status()`): level bawah hanya dicek terhadap
+        // induknya JIKA induk itu ikut dipilih; nilai yang bertentangan dengan
+        // induk yang terpilih diabaikan, bukan mengosongkan daftar.
+        if ($kampusId !== null && $fakultasId !== null && ! Fakultas::query()
+            ->where('id', $fakultasId)
+            ->where('kampus_id', $kampusId)
+            ->exists()) {
+            $fakultasId = null;
+        }
+
+        if ($fakultasId !== null && $jurusanId !== null && ! Prodi::query()
+            ->where('id', $jurusanId)
+            ->where('fakultas_id', $fakultasId)
+            ->exists()) {
+            $jurusanId = null;
+        }
+
         return Applicant::query()
             ->with(['beasiswa', 'user.profile.prodi.fakultas.kampus'])
             ->where('status', 'diterima')
             ->whereHas('user', fn ($query) => $query->where('status', 'aktif'))
+            ->when($kampusId, fn ($query) => $query->whereHas('user.profile.prodi.fakultas', fn ($fakultas) => $fakultas->where('kampus_id', $kampusId)))
+            ->when($fakultasId, fn ($query) => $query->whereHas('user.profile.prodi', fn ($prodi) => $prodi->where('fakultas_id', $fakultasId)))
+            ->when($jurusanId, fn ($query) => $query->whereHas('user.profile.prodi', fn ($prodi) => $prodi->where('id', $jurusanId)))
+            ->when($beasiswaId, fn ($query) => $query->where('beasiswa_id', $beasiswaId))
             ->latest('updated_at')
             ->get();
+    }
+
+    /**
+     * Dropdown Fakultas dinamis: hanya memuat milik kampus yang terpilih.
+     */
+    private function fakultasOptions(): Collection
+    {
+        $kampusId = $this->validChoice('kampus_id');
+
+        return Fakultas::query()
+            ->when($kampusId, fn ($query) => $query->where('kampus_id', $kampusId))
+            ->orderBy('nama')
+            ->get(['id', 'nama']);
+    }
+
+    /**
+     * Dropdown Program Studi dinamis: hanya milik fakultas terpilih, atau milik
+     * fakultas mana pun di kampus terpilih selama fakultasnya belum dipilih.
+     */
+    private function jurusanOptions(): Collection
+    {
+        $kampusId = $this->validChoice('kampus_id');
+        $fakultasId = $this->validChoice('fakultas_id');
+
+        return Prodi::query()
+            ->when($fakultasId, fn ($query) => $query->where('fakultas_id', $fakultasId))
+            ->when($fakultasId === null && $kampusId !== null,
+                fn ($query) => $query->whereHas('fakultas', fn ($fakultas) => $fakultas->where('kampus_id', $kampusId)))
+            ->orderBy('nama')
+            ->get(['id', 'nama']);
+    }
+
+    private function validChoice(string $param): ?int
+    {
+        $value = filter_var(request($param), FILTER_VALIDATE_INT);
+
+        return $value === false || $value < 1 ? null : $value;
     }
 }

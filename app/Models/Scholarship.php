@@ -53,24 +53,44 @@ class Scholarship extends Model
     }
 
     /**
-     * Beasiswa milik satu kampus. Kalau daftar prodi pada beasiswa diisi, itu
-     * yang jadi acuan, bukan kampus -- supaya mahasiswa tetap bisa melihat
-     * beasiswa yang memang sengaja dibuka untuk prodinya.
+     * Beasiswa yang boleh didaftar seorang mahasiswa, disaring mengikuti
+     * kampus, fakultas, DAN program studi pada profilnya:
      *
-     * `$kampusId` null berarti kampus mahasiswanya belum diketahui, jadi tidak
-     * ada beasiswa yang bisa dipastikan miliknya: hasil kosong, bukan semua.
+     * - tanpa baris cakupan     -> seluruh prodi di kampus beasiswa tersebut;
+     * - cakupan prodi           -> hanya prodi yang terdaftar;
+     * - cakupan fakultas (saja) -> semua prodi fakultas-fakultas itu.
+     *
+     * Filter ini harus tetap sejalan dengan `allowsProdi()` di halaman detail:
+     * daftar tidak boleh menawarkan beasiswa yang detailnya menolak profi.
+     *
+     * `$profile` null atau tanpa prodi berarti kampus mahasiswanya belum
+     * diketahui, jadi hasil kosong, bukan semua.
      */
-    public function scopeUntukKampus(Builder $query, ?int $kampusId): Builder
+    public function scopeUntukMahasiswa(Builder $query, ?UserProfile $profile): Builder
     {
+        $kampusId = $profile?->prodi?->fakultas?->kampus_id;
+
         if (! $kampusId) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(function (Builder $inner) use ($kampusId) {
-            $inner->where('kampus_id', $kampusId)
-                ->orWhereHas('fakultas', fn ($q) => $q
-                    ->whereHas('prodi', fn ($p) => $p->whereHas('fakultas', fn ($f) => $f->where('kampus_id', $kampusId))));
-        });
+        $fakultasNama = $profile->prodi?->fakultas?->nama;
+        $prodiNama = $profile->prodi?->nama;
+
+        return $query->where('kampus_id', $kampusId)
+            ->where(function (Builder $inner) use ($fakultasNama, $prodiNama) {
+                $inner->whereDoesntHave('fakultas');
+
+                if ($fakultasNama !== null) {
+                    $inner->orWhereHas('fakultas', fn (Builder $f) => $f
+                        ->where('nama', $fakultasNama)
+                        ->whereDoesntHave('prodi'));
+                }
+
+                if ($prodiNama !== null) {
+                    $inner->orWhereHas('fakultas.prodi', fn (Builder $p) => $p->where('nama', $prodiNama));
+                }
+            });
     }
 
     public function kampus(): BelongsTo
@@ -148,12 +168,25 @@ class Scholarship extends Model
             return false;
         }
 
-        $allowedNames = $this->prodiSnapshotNames();
+        $this->loadMissing('fakultas.prodi');
 
-        if ($allowedNames->isNotEmpty()) {
-            return $allowedNames->contains($prodi->nama);
+        // Cakupan tingkat prodi lebih spesifik daripada tingkat fakultas:
+        // kalau ada daftar prodi, hanya prodi-prodi itu yang boleh mendaftar.
+        $daftarProdi = $this->fakultas->flatMap(
+            fn (ScholarshipFakultas $fakultas) => $fakultas->prodi,
+        );
+
+        if ($daftarProdi->isNotEmpty()) {
+            return $daftarProdi->pluck('nama')->contains($prodi->nama);
         }
 
+        // Cakupan tingkat fakultas tanpa daftar prodi: seluruh prodi di
+        // fakultas-fakultas yang tercakup boleh mendaftar.
+        if ($prodi->fakultas !== null && $this->fakultas->contains('nama', $prodi->fakultas->nama)) {
+            return true;
+        }
+
+        // Tanpa cakupan sama sekali -> seluruh prodi di kampus beasiswa tersebut.
         return $this->kampus_id !== null
             && $prodi->fakultas?->kampus_id === $this->kampus_id;
     }
@@ -196,7 +229,7 @@ class Scholarship extends Model
      *
      * Tanpa daftar fakultas/prodi, `allowsProdi()` jatuh ke aturan "semua prodi
      * di kampus ini" -- jadi itu yang ditulis, bukan "semua kampus".
-     * `kampus_id` null TIDAK berarti terbuka untuk semua kampus: `scopeUntukKampus()`
+     * `kampus_id` null TIDAK berarti terbuka untuk semua kampus: `scopeUntukMahasiswa()`
      * tidak akan mencocokkannya dengan siapa pun, sehingga beasiswa tersebut
      * tidak tampil untuk mahasiswa mana pun.
      */
@@ -282,15 +315,5 @@ class Scholarship extends Model
         return array_key_exists($nama, $this->attributes)
             ? (int) $this->attributes[$nama]
             : null;
-    }
-
-    private function prodiSnapshotNames(): Collection
-    {
-        $this->loadMissing('fakultas.prodi');
-
-        return $this->fakultas
-            ->flatMap(fn (ScholarshipFakultas $fakultas) => $fakultas->prodi->pluck('nama'))
-            ->filter()
-            ->values();
     }
 }

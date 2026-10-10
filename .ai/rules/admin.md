@@ -4,6 +4,7 @@ paths:
   - app/Http/Controllers/Admin/PenggunaController.php
   - app/Http/Controllers/Admin/VerifikasiController.php
   - app/Http/Controllers/Admin/KeputusanPendaftaranController.php
+  - app/Http/Controllers/Admin/PenerimaBeasiswaController.php
 ---
 
 # Admin
@@ -113,3 +114,12 @@ Halaman `status()` (route/scope `admin.kesra.status`) dibuka untuk kesra, super_
 
 ## status() dropped $bisaAksi; option lists cascade
 VerifikasiController::status() no longer computes `$bisaAksi` and never renders a "Putuskan"/admin.kesra.lihat link -- the status page is a pure rekap for kesra, super_admin, catpil, and kampus. Location option lists are cascade-filtered for the dynamic dropdowns (Fakultas->where kampus_id, Prodi->where fakultas_id, else Prodi of the selected kampus), while the soft-coherence nulling of contradictory sub-values is retained. Catatan is written only by the profile-stage endpoint (`verifikasi()`); Kesra keeps exactly one decision via KeputusanPendaftaranController::update().
+
+## Unduh Excel keputusan pakai rute tersendiri
+Route admin.kesra.disetujui.export (/verifikasi/kesra/disetujui/unduh) harus didaftarkan SEBELUM /verifikasi/kesra/{user}, dan mengekspor koleksi yang sama dengan tabel halaman Disetujui (8 kolom: No, Nama, NIM, Kampus, Fakultas, Program Studi, Beasiswa, Diputuskan). Tombol Unduh Excel di header tampil via hasMenuAccess('admin.kesra.disetujui.export'). Jangan menambal ke route /{user}.
+
+## Penerima read-only untuk catpil/kampus, tarik hanya kesra
+Catpil & kampus di-grant scope anak 'admin.penerima' TANPA parent 'kesra' (parent membocorkan semua admin.kesra.* via menuScopeCovers). Mereka dapat index/cetak/export via URL, sidebar tidak menampilkan (sidebarMenus hanya query menu root). Kolom Aksi + form tarik hanya dirender untuk hasRole(['kesra','super_admin']); tarik() memakai dua lapis hasMenuAccess('admin.penerima.index') + hasRole. Filter kampus/fakultas/jurusan/beasiswa mengikuti pola soft-coherence VerifikasiController::status() dengan opsi dinamis.
+
+## Auto-tolak pendaftar saat Catpil/Kampus menolak
+Setelah profile->save(), bila status==='tolak' dan stage catpil/kampus, semua applicants status PENDING di-update jadi 'ditolak'. Alasan: penolakan menutup gerbang Kesra selamanya, baris verifikasi yang menggantung akan memblokir pendaftaran beasiswa lain tanpa henti. verif_kesra TIDAK disentuh; status 'ditolak' adalah pembersihan, bukan keputusan Kesra.

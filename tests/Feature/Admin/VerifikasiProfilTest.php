@@ -389,6 +389,53 @@ test('the kesra profile verdict endpoint is closed', function () {
     expect($this->applicantUser->refresh()->profile->verif_kesra)->toBe('menunggu');
 });
 
+test('menolak profil di catpil menutup pendaftaran yang masih menunggu putusan', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kampus');
+    $applicant = $this->applicantUser->applicants()->firstOrFail();
+
+    actingAs($this->catpilAdmin)
+        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
+            'status' => 'tolak',
+            'catatan' => 'Dokumen tidak valid',
+        ])
+        ->assertRedirect(route('admin.catpil.index'));
+
+    // Penolakan Catpil menutup gerbang Kesra selamanya (butuh `setuju`), jadi
+    // pendaftaran yang menggantung dibuat `ditolak` -- bukan keputusan Kesra,
+    // hanya pembersihan -- dan mahasiswa bebas mendaftar beasiswa lain.
+    expect($applicant->refresh()->status)->toBe('ditolak')
+        ->and($this->applicantUser->blockingApplicant())->toBeNull()
+        ->and($this->applicantUser->refresh()->profile->verif_kesra)->toBe('menunggu');
+});
+
+test('menolak profil di kampus menutup pendaftaran yang masih menunggu putusan', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kesra');
+    $applicant = $this->applicantUser->applicants()->firstOrFail();
+
+    actingAs($this->kampusAdmin)
+        ->put(route('admin.kampusverif.verifikasi', $this->applicantUser), [
+            'status' => 'tolak',
+            'catatan' => 'Kampus tidak sesuai',
+        ])
+        ->assertRedirect(route('admin.kampusverif.index'));
+
+    expect($applicant->refresh()->status)->toBe('ditolak');
+});
+
+test('keputusan selain tolak tidak menutup pendaftaran yang masih menunggu', function () {
+    createPendingVerifikasiProfile($this->applicantUser, 'kampus');
+    $applicant = $this->applicantUser->applicants()->firstOrFail();
+
+    actingAs($this->catpilAdmin)
+        ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
+            'status' => 'setuju',
+            'catatan' => 'Data benar',
+        ])
+        ->assertRedirect(route('admin.catpil.index'));
+
+    expect($applicant->refresh()->status)->toBe('verifikasi');
+});
+
 test('revisi at a stage blocks downstream stages until fixed', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 

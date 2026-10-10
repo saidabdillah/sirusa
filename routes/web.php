@@ -138,6 +138,9 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
         // kalau sesudah, string itu tertangkap binding model sebagai id user
         // dan balasannya 404 ModelNotFoundException, bukan halaman arsip.
         Route::get('/verifikasi/kesra/disetujui', [KeputusanPendaftaranController::class, 'disetujui'])->defaults('stage', 'kesra')->name('kesra.disetujui');
+        // Rute `unduh` diletakkan sebelum `/{user}`, sama seperti `unduh` pada
+        // tahap Catpil/Kampus, supaya tidak tertangkap sebagai parameter user.
+        Route::get('/verifikasi/kesra/disetujui/unduh', [KeputusanPendaftaranController::class, 'disetujuiExport'])->defaults('stage', 'kesra')->name('kesra.disetujui.export');
         // `status` juga harus terdaftar sebelum `/verifikasi/kesra/{user}`,
         // sama seperti `disetujui` (lihat komentar di atas).
         Route::get('/verifikasi/kesra/status', [VerifikasiController::class, 'status'])->defaults('stage', 'kesra')->name('kesra.status');

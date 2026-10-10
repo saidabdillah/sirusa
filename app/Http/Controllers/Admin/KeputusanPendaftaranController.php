@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\KeputusanExport;
 use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\KeputusanPendaftaranRequest;
 use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
+use App\Support\ExcelDownload;
 use App\Support\VerifikasiAntrean;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class KeputusanPendaftaranController extends Controller
 {
@@ -119,6 +122,24 @@ class KeputusanPendaftaranController extends Controller
         return view('admin.verifikasi.kesra-disetujui', [
             'pendaftaran' => (new VerifikasiAntrean('kesra'))->pendaftaran('diterima'),
         ]);
+    }
+
+    /**
+     * Unduhan Excel daftar keputusan yang disetujui.
+     *
+     * Membaca koleksi yang sama dengan halaman Keputusan, jadi unduhan tidak
+     * mungkin menyimpang dari daftar di layar. Route-nya bernama
+     * `admin.kesra.disetujui.export` dan scope menu `admin.kesra.disetujui`
+     * menutupinya lewat `menuScopeCovers()`, jadi tidak ada pengecualian
+     * otorisasi baru.
+     */
+    public function disetujuiExport(): StreamedResponse
+    {
+        abort_unless(auth()->user()->hasMenuAccess('admin.kesra.disetujui.export'), 403);
+
+        $export = new KeputusanExport((new VerifikasiAntrean('kesra'))->pendaftaran('diterima'));
+
+        return ExcelDownload::response($export->toSpreadsheet(), $export->fileName());
     }
 
     /**
