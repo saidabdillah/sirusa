@@ -30,9 +30,9 @@ $stageColumns = [
 
 $filterOptions = [
 'menunggu' => 'Menunggu',
-'revisi' => 'Perlu Perbaikan',
-'setuju' => 'Disetujui',
-'tolak' => 'Ditolak',
+'revisi' => 'Revisi',
+'setuju' => 'Setuju',
+'tolak' => 'Tolak',
 ];
 @endphp
 

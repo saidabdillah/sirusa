@@ -131,12 +131,8 @@
                     <small class="text-muted">{{ $applicant->fakultas ?? '-' }}</small>
                   </div>
                   <div>
-                    @if($applicant->status === 'verifikasi')
-                    <span class="badge badge-warning">Verifikasi</span>
-                    @elseif($applicant->status === 'diterima')
-                    <span class="badge badge-success">Diterima</span>
-                    @elseif($applicant->status === 'ditolak')
-                    <span class="badge badge-danger">Ditolak</span>
+                    @if(in_array($applicant->status, ['verifikasi', 'diterima', 'ditolak'], true))
+                    <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
                     @endif
                   </div>
                 </div>

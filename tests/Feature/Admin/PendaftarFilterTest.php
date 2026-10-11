@@ -147,7 +147,7 @@ test('pendaftar index filters cancelled registrations apart from decisions', fun
     actingAs($this->admin)
         ->get(route('admin.pendaftar.index', ['status' => 'dibatalkan']))
         ->assertOk()
-        ->assertSee('Dibatalkan');
+        ->assertSee('Batal');
 
     $applicants = Applicant::where('status', 'dibatalkan')->get();
     expect($applicants)->toHaveCount(1)
@@ -169,7 +169,7 @@ test('dropdown status memakai istilah ui yang sama dengan badge', function () {
     }
 
     expect($html)->toContain('>Menunggu<')
-        ->and($html)->toContain('>Disetujui<');
+        ->and($html)->toContain('>Setuju<');
 });
 
 test('pendaftar index rejects invalid beasiswa filter', function () {

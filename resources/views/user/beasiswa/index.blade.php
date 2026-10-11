@@ -27,16 +27,9 @@
                 <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
                   <h5 class="card-title mb-0">{{ $scholarship->nama }}</h5>
                   @if(isset($applications[$scholarship->id]) && $applications[$scholarship->id] !== 'dibatalkan')
-                    @switch($applications[$scholarship->id])
-                      @case('verifikasi')
-                        <span class="badge badge-warning">Verifikasi</span>
-                        @break
-                      @case('diterima')
-                        <span class="badge badge-success">Diterima</span>
-                        @break
-                      @default
-                        <span class="badge badge-danger">Ditolak</span>
-                    @endswitch
+                    @php($statusBeasiswa = $applications[$scholarship->id])
+                    {{-- Label dan warna diambil dari `Applicant`, sama seperti daftar pendaftar admin. --}}
+                    <span class="badge badge-{{ \App\Models\Applicant::STATUS_BADGES[$statusBeasiswa] ?? 'secondary' }}">{{ \App\Models\Applicant::STATUS_LABELS[$statusBeasiswa] ?? ucfirst($statusBeasiswa) }}</span>
                   @elseif($scholarship->isExpired())
                     <span class="badge badge-danger">Berakhir</span>
                   @elseif($scholarship->sisaKuota() === 0)

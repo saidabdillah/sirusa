@@ -362,6 +362,6 @@ test('dropdown keputusan verifikasi tidak pernah mengikuti keputusan yang tersim
     expect($html)->toContain('<option value="" selected>')
         ->and($html)->not->toContain('<option value="revisi" selected>')
         ->and($html)->toContain('Keputusan saat ini:')
-        ->and($html)->toContain('Perlu Perbaikan')
+        ->and($html)->toContain('Revisi')
         ->and($html)->toContain('&mdash; Pilih &mdash;');
 });

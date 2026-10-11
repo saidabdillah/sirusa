@@ -4,6 +4,8 @@ use App\Models\Applicant;
 use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
+use App\Models\UserProfile;
+use App\Support\VerifikasiAntrean;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -97,8 +99,33 @@ test('data status verifikasi tetap tersedia untuk logika di belakang layar', fun
 
     // UI progres dihapus, tapi kolom statusnya tetap dipakai filter dan audit.
     expect($this->profile->refresh()->verifStageDecision('kesra'))
-        ->toMatchArray(['status' => 'revisi', 'decided' => true, 'label' => 'Perlu Perbaikan'])
+        ->toMatchArray(['status' => 'revisi', 'decided' => true, 'label' => 'Revisi'])
         ->and($this->profile->catatan_kesra)->toBe('Belum lengkap.');
+});
+
+test('satu palet warna badge untuk semua status verifikasi', function () {
+    // Badge tahap profil dan kartu statistik harus memakai warna yang sama,
+    // supaya "Menunggu" tidak tampil kelabu di satu halaman lagi dan kuning di
+    // halaman lain. `decisionForStatus()` (badge) dan `ringkasanKolom()` (stat
+    // card) adalah dua peta terpisah yang sempat berbeda -- test ini mengunci
+    // supaya tidak bisa berbeda lagi.
+    $palet = [
+        'menunggu' => 'warning',
+        'revisi' => 'info',
+        'setuju' => 'success',
+        'tolak' => 'danger',
+    ];
+
+    foreach ($palet as $status => $badge) {
+        expect(UserProfile::decisionForStatus($status)['badge'])->toBe($badge);
+    }
+
+    $kolom = collect(VerifikasiAntrean::ringkasanKolom())->keyBy('label');
+
+    expect($kolom['Menunggu']['bg'])->toBe($palet['menunggu'])
+        ->and($kolom['Revisi']['bg'])->toBe($palet['revisi'])
+        ->and($kolom['Setuju']['bg'])->toBe($palet['setuju'])
+        ->and($kolom['Tolak']['bg'])->toBe($palet['tolak']);
 });
 
 test('halaman kesra hanya punya satu form keputusan, tanpa verdict profil', function () {
@@ -265,7 +292,7 @@ test('halaman mahasiswa memakai istilah status yang sama dengan admin', function
         ->and($html)->toContain($label);
 })->with([
     'verifikasi' => ['verifikasi', 'warning', 'Menunggu'],
-    'diterima' => ['diterima', 'success', 'Disetujui'],
-    'ditolak' => ['ditolak', 'danger', 'Ditolak'],
-    'dibatalkan' => ['dibatalkan', 'secondary', 'Dibatalkan'],
+    'diterima' => ['diterima', 'success', 'Setuju'],
+    'ditolak' => ['ditolak', 'danger', 'Tolak'],
+    'dibatalkan' => ['dibatalkan', 'secondary', 'Batal'],
 ]);

@@ -257,16 +257,16 @@ class UserProfile extends Model
         return [
             'status' => $status,
             'label' => match ($status) {
-                'setuju' => 'Disetujui',
-                'revisi' => 'Perlu Perbaikan',
-                'tolak' => 'Ditolak',
+                'setuju' => 'Setuju',
+                'revisi' => 'Revisi',
+                'tolak' => 'Tolak',
                 default => 'Menunggu',
             },
             'badge' => match ($status) {
                 'setuju' => 'success',
-                'revisi' => 'warning',
+                'revisi' => 'info',
                 'tolak' => 'danger',
-                default => 'secondary',
+                default => 'warning',
             },
             'decided' => $status !== 'menunggu',
         ];

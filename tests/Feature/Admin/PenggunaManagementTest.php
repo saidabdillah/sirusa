@@ -768,7 +768,21 @@ test('peran is required on edit so the empty placeholder fails', function () {
     put(route('admin.pengguna.perbarui', $this->user), [
         'peran' => '',
         'status' => 'aktif',
-    ])->assertSessionHasErrors('peran');
+    ])->assertSessionHasErrors(['peran' => 'Role harus dipilih']);
+});
+
+test('pengguna create and edit forms label the peran field as Role', function () {
+    $this->actingAs($this->superAdmin);
+
+    get(route('admin.pengguna.buat'))
+        ->assertOk()
+        ->assertSee('<label for="peran">Role', false)
+        ->assertDontSee('<label for="peran">Peran', false);
+
+    get(route('admin.pengguna.ubah', $this->user))
+        ->assertOk()
+        ->assertSee('<label for="peran">Role', false)
+        ->assertDontSee('<label for="peran">Peran', false);
 });
 
 test('a role name outside the canonical set is rejected on create', function () {

@@ -608,13 +608,13 @@ test('an already approved stage stays in the queue so the decision can be change
         ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju'])
         ->assertRedirect(route('admin.catpil.index'));
 
-    // Disetujui, tapi masih ada di daftar Catpil dengan aksi ubah.
+    // Setuju, tapi masih ada di daftar Catpil dengan aksi ubah.
     actingAs($this->catpilAdmin)
         ->get(route('admin.catpil.index'))
         ->assertOk()
         ->assertSee($this->applicantUser->profile->nama_lengkap)
         ->assertSee('Ubah Keputusan')
-        ->assertSee('Disetujui');
+        ->assertSee('Setuju');
 });
 
 test('catpil can revise an approval into a rejection', function () {
@@ -731,7 +731,7 @@ test('the decision form shows the current choice and offers no pull-back', funct
         ->assertSee('Keputusan saat ini:')
         // Keputusan lama tetap terbaca di kotak read-only, lengkap dengan
         // labelnya, jadi admin tahu dia sedang memperbaiki apa.
-        ->assertSee('Perlu Perbaikan')
+        ->assertSee('Revisi')
         ->assertSee('KTP kurang terbaca')
         ->getContent();
 
@@ -996,7 +996,7 @@ test('a decided row shows its note so the verifier can recall what was asked', f
     actingAs($this->catpilAdmin)
         ->get(route('admin.catpil.index'))
         ->assertOk()
-        ->assertSee('Perlu Perbaikan')
+        ->assertSee('Revisi')
         ->assertSee('KTP kurang terbaca')
         ->assertSee('Ubah Keputusan');
 });

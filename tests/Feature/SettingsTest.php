@@ -157,6 +157,8 @@ test('settings page shows account info and the three password fields', function 
     $response->assertOk()
         ->assertSee('NIK')
         ->assertSee('NIM')
+        ->assertSee('<dt class="col-sm-4">Role</dt>', false)
+        ->assertDontSee('<dt class="col-sm-4">Peran</dt>', false)
         ->assertSee('Ganti Kata Sandi')
         ->assertSee('name="current_password"', false)
         ->assertSee('name="password"', false)

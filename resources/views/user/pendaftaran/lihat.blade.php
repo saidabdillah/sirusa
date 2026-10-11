@@ -29,7 +29,7 @@
             <div class="mb-3">
               {{-- Ikon dan label diambil dari `Applicant`, bukan ditulis ulang
                    per status di sini. `@switch` per status di view adalah tempat
-                   kedua label "Diterima"/"Disetujui" pernah berubah pisahi, dan
+                   kedua label "Diterima"/"Setuju" pernah berubah pisahi, dan
                    `@break` yang menempel setelah teks bisa gagal dikompilasi
                    lalu tercetak literal. Satu peta di model menutup keduanya. --}}
               <span class="badge badge-{{ $applicant->statusBadge() }} p-2">

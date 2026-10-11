@@ -216,7 +216,7 @@ test('unduhan kampus memprioritaskan kolom akademik dan UKT ditulis sebagai angk
         ->and($rows[0]['Program Studi'])->toBe('Teknik Informatika')
         ->and($rows[0]['Fakultas'])->toBe('Fakultas Teknik')
         ->and($rows[0]['Kampus'])->toBe('Universitas Lambung Mangkurat')
-        ->and($rows[0]['Status Catpil'])->toBe('Disetujui')
+        ->and($rows[0]['Status Catpil'])->toBe('Setuju')
         ->and($rows[0]['Status Kampus'])->toBe('Menunggu')
         ->and($rows[0]['UKT/SPP'])->toBe('1500000')
         // UKT harus sel numerik, bukan teks "Rp 1.500.000", supaya masih bisa
@@ -241,13 +241,13 @@ test('unduhan kesra menambah data pendaftaran dan statusnya', function () {
         ->and($rows[0]['Nama Lengkap'])->toBe('Kesra Satu')
         ->and($rows[0]['Beasiswa'])->toBe('Beasiswa Ekspor')
         // Label di Excel memakai istilah UI yang sama dengan badge, bukan nilai
-        // mentah database: `diterima` tampil sebagai "Disetujui".
-        ->and($rows[0]['Status Pendaftaran'])->toBe('Disetujui')
+        // mentah database: `diterima` tampil sebagai "Setuju".
+        ->and($rows[0]['Status Pendaftaran'])->toBe('Setuju')
         ->and($rows[0]['Nama Orang Tua/Wali'])->toBe('Ayah Ahmad')
         ->and($rows[0]['UKT/SPP'])->toBe('1500000')
         // Status Kesra mengikuti keputusan pendaftaran (`diterima`), bukan
         // `verif_kesra` yang cuma penanda "sudah diputuskan".
-        ->and($rows[0]['Status Kesra'])->toBe('Disetujui');
+        ->and($rows[0]['Status Kesra'])->toBe('Setuju');
 });
 
 test('kolom status kesra mengikuti keputusan pendaftaran, bukan verif_kesra', function () {
@@ -267,8 +267,8 @@ test('kolom status kesra mengikuti keputusan pendaftaran, bukan verif_kesra', fu
     $rows = collect(bacaSheet(actingAs($this->kesraAdmin)->get(route('admin.kesra.export', ['filter' => 'semua']))))
         ->keyBy('Nama Lengkap');
 
-    expect($rows['Kesra Diterima']['Status Kesra'])->toBe('Disetujui')
-        ->and($rows['Kesra Ditolak']['Status Kesra'])->toBe('Ditolak');
+    expect($rows['Kesra Diterima']['Status Kesra'])->toBe('Setuju')
+        ->and($rows['Kesra Ditolak']['Status Kesra'])->toBe('Tolak');
 });
 
 test('unduhan kesra memuat persis isi antrean kesra yang sedang dibuka', function () {
@@ -363,7 +363,7 @@ test('unduhan mengikuti filter status yang sedang aktif', function () {
     expect(array_column($semuaFilter, 'Nama Lengkap'))
         ->toContain('Sudah Disetujui', 'Masih Menunggu')
         ->and(array_column($hanyaSetuju, 'Nama Lengkap'))->toBe(['Sudah Disetujui'])
-        ->and($hanyaSetuju[0]['Status Catpil'])->toBe('Disetujui');
+        ->and($hanyaSetuju[0]['Status Catpil'])->toBe('Setuju');
 });
 
 test('unduhan hanya bisa diakses tahap yang punya grant menu', function () {
@@ -469,8 +469,8 @@ test('ekspor keputusan memuat kolom dan nilai baris yang sudah diputuskan kesra'
     $baris = collect(bacaSheet($response))->keyBy('Nama');
 
     expect($baris)->toHaveCount(2)
-        ->and($baris["Ahmad Fauzi #{$pemohon->id}"]['Status'])->toBe('Disetujui')
-        ->and($baris["Ahmad Fauzi #{$ditolak->id}"]['Status'])->toBe('Ditolak');
+        ->and($baris["Ahmad Fauzi #{$pemohon->id}"]['Status'])->toBe('Setuju')
+        ->and($baris["Ahmad Fauzi #{$ditolak->id}"]['Status'])->toBe('Tolak');
 
     expect($baris["Ahmad Fauzi #{$pemohon->id}"])
         // `buatPemohon()` tidak mengisi NIM, jadi `teks(null)` menulis '-' di
@@ -637,8 +637,8 @@ test('setiap tahap menampilkan keputusan tahap sebelumnya sebagai kolom sendiri'
 
     // Pemutus tahap akhir perlu tahu dasar keputusannya, dan "Status" tanpa
     // nama tahap akan ambigu begitu ada lebih dari satu kolom status.
-    expect($rows[0]['Status Catpil'])->toBe('Disetujui')
-        ->and($rows[0]['Status Kampus'])->toBe('Disetujui')
+    expect($rows[0]['Status Catpil'])->toBe('Setuju')
+        ->and($rows[0]['Status Kampus'])->toBe('Setuju')
         ->and($rows[0]['Status Kesra'])->toBe('Menunggu');
 });
 

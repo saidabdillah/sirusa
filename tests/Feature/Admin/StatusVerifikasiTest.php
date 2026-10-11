@@ -89,15 +89,15 @@ test('kesra membuka halaman status verifikasi yang memuat seluruh profil dengan 
         ->assertSee('Universitas Lambung Mangkurat')
         ->assertSee('Fakultas Teknik')
         // Badge keputusan per tahap ikut dirender.
-        ->assertSee('Disetujui')
-        ->assertSee('Perlu Perbaikan')
-        ->assertSee('Ditolak');
+        ->assertSee('Setuju')
+        ->assertSee('Revisi')
+        ->assertSee('Tolak');
 });
 
 test('kolom kesra mengikuti keputusan pendaftaran, bukan verif_kesra', function () {
     // `verif_kesra` sengaja `setuju` (penanda "sudah diputuskan", kunci tahap
     // Kampus) padahal pendaftarannya DITOLAK. Dulu kolom Kesra membaca
-    // `verif_kesra` sehingga tampil "Disetujui"; sekarang harus "Ditolak".
+    // `verif_kesra` sehingga tampil "Setuju"; sekarang harus "Tolak".
     $ditolak = User::factory()->standardUser()->create();
     profilStatus($ditolak, 'Citra Kesra Ditolak', [
         'verif_catpil' => 'setuju',
@@ -121,13 +121,13 @@ test('kolom kesra mengikuti keputusan pendaftaran, bukan verif_kesra', function 
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.status'))
         ->assertOk()
-        // Baris ini dulu berakhir "Disetujui". Dua badge pertama Catpil/Kampus
-        // tetap Disetujui; badge Kesra wajib Ditolak.
+        // Baris ini dulu berakhir "Setuju". Dua badge pertama Catpil/Kampus
+        // tetap Setuju; badge Kesra wajib Tolak.
         ->assertSeeInOrder([
             'Citra Kesra Ditolak',
-            'badge badge-success">Disetujui',
-            'badge badge-success">Disetujui',
-            'badge badge-danger">Ditolak',
+            'badge badge-success">Setuju',
+            'badge badge-success">Setuju',
+            'badge badge-danger">Tolak',
         ], false);
 });
 

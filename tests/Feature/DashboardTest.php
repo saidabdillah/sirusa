@@ -160,11 +160,11 @@ test('kesra stat cards count registrations, not profile verdicts', function () {
         'dibatalkan' => 1,
     ]);
 
-    // "Perlu Perbaikan" adalah status profil. Tidak ada kode yang bisa menulisnya
+    // "Revisi" adalah status profil. Tidak ada kode yang bisa menulisnya
     // di tahap Kesra lagi, jadi menampilkannya hanya menambah angka nol yang
     // selalu nol.
     expect($response->getContent())->toContain('Menunggu Putusan')
-        ->not->toContain('Perlu Perbaikan');
+        ->not->toContain('Revisi');
 });
 
 test('kesra queue count matches the applicant list its menu opens', function () {
@@ -283,11 +283,11 @@ test('the cross-stage table shows zero for statuses that do not apply to a stage
         ->assertOk()
         ->getContent();
 
-    // "Perlu Perbaikan" hanya milik Catpil dan Kampus. Di baris Kesra status itu
+    // "Revisi" hanya milik Catpil dan Kampus. Di baris Kesra status itu
     // tidak berlaku, dan atas permintaan pengguna selnya ditampilkan 0 (dulu
     // tanda hubung, lalu literal "&mdash;" yang ter-escape dua kali). Fixture
     // kesra tidak punya pendaftaran, jadi kelima sel baris Kesra bernilai 0.
-    expect($html)->toContain('Perlu Perbaikan')
+    expect($html)->toContain('Revisi')
         ->and(preg_match('/text-capitalize">Verifikasi Kesra<\/td>\s*((?:<td class="text-center">\d+<\/td>\s*){5})/', $html, $cells))->toBe(1)
         ->and(substr_count($cells[1], '<td class="text-center">0</td>'))->toBe(5)
         ->and($cells[1])->not->toContain('—')
@@ -338,9 +338,9 @@ test('statistik antrean tetap ada di dasbor tahap', function () {
         // Angka dan tabelnya tetap; yang dihapus hanya kartu "Tahapan
         // Berikutnya" beserta navigasi ke tahap lain.
         ->assertSee('Menunggu Tindakan')
-        ->assertSee('Perlu Perbaikan')
-        ->assertSee('Disetujui')
-        ->assertSee('Ditolak')
+        ->assertSee('Revisi')
+        ->assertSee('Setuju')
+        ->assertSee('Tolak')
         ->assertSee('Menunggu Tindakan Anda');
 });
 
@@ -361,6 +361,28 @@ test('student sees the student dashboard', function () {
         ->assertOk()
         ->assertSee('Pendaftaran Saya')
         ->assertSee('Beasiswa Tersedia');
+});
+
+test('student dashboard lays Beasiswa Tersedia out full width in a grid', function () {
+    $user = mahasiswaTahap('catpil', 'Dewi Mahasiswa');
+
+    $beasiswa = Scholarship::factory()->create([
+        'nama' => 'Beasiswa Grid',
+        'kampus_id' => $this->kampus->id,
+        'status' => 'aktif',
+        'tanggal_mulai' => now()->subDay(),
+        'tanggal_selesai' => now()->addMonth(),
+    ]);
+    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik']);
+
+    $html = actingAs($user)->get(route('dashboard'))->assertOk()->getContent();
+
+    // Kartu "Beasiswa Tersedia" selebar layar (col-12), dan tiap beasiswa jadi
+    // item grid responsif -- bukan lagi satu blok vertikal di kolom kanan.
+    expect($html)
+        ->toContain('col-12')
+        ->toContain('col-md-6 col-xl-4')
+        ->toContain('Beasiswa Grid');
 });
 
 test('student dashboard does not repeat the profile name back to the student', function () {
@@ -456,9 +478,9 @@ test('student dashboard shows the status of every verification stage', function 
         // yang dipakai antrean admin.
         ->assertSeeInOrder([
             'Verifikasi Catpil',
-            'badge badge-success mt-1">Disetujui',
+            'badge badge-success mt-1">Setuju',
             'Verifikasi Kampus',
-            'badge badge-secondary mt-1">Menunggu',
+            'badge badge-warning mt-1">Menunggu',
             'Verifikasi Kesra',
         ], false)
         ->assertDontSee('Catpil dan Kampus berjalan paralel');
@@ -468,7 +490,7 @@ test('student dashboard shows Kesra as rejected when the application was rejecte
     $user = mahasiswaTahap('kesra', 'Eka Kesra Ditolak');
 
     // `verif_kesra` `setuju` (penanda "sudah diputuskan") tapi pendaftarannya
-    // ditolak: kartu status tidak boleh melaporkan "Disetujui".
+    // ditolak: kartu status tidak boleh melaporkan "Setuju".
     $beasiswa = Scholarship::factory()->create([
         'kampus_id' => $this->kampus->id,
         'status' => 'aktif',
@@ -487,7 +509,7 @@ test('student dashboard shows Kesra as rejected when the application was rejecte
         ->assertOk()
         ->assertSeeInOrder([
             'Verifikasi Kesra',
-            'badge badge-danger mt-1">Ditolak',
+            'badge badge-danger mt-1">Tolak',
         ], false);
 });
 

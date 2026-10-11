@@ -68,7 +68,7 @@ class StoreUserRequest extends FormRequest
             'password.min' => 'Kata sandi minimal 8 karakter',
             'password_confirmation.required_unless' => 'Konfirmasi kata sandi harus diisi',
             'password_confirmation.same' => 'Konfirmasi kata sandi tidak cocok',
-            'peran.required' => 'Peran harus dipilih',
+            'peran.required' => 'Role harus dipilih',
             'peran.in' => $this->peranInMessage(),
             'status.required' => 'Status harus dipilih',
             'status.in' => 'Status tidak valid',
@@ -82,8 +82,8 @@ class StoreUserRequest extends FormRequest
     private function peranInMessage(): string
     {
         return $this->user()->hasRole('super_admin')
-            ? 'Peran tidak valid'
-            : 'Anda tidak dapat memberikan peran Super Admin';
+            ? 'Role tidak valid'
+            : 'Anda tidak dapat memberikan role Super Admin';
     }
 
     /**

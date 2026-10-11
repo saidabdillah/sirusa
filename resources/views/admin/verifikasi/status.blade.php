@@ -98,7 +98,7 @@
                     $catpil = $profile->verifStageDecision('catpil');
                     $kampus = $profile->verifStageDecision('kampus');
                     // Tahap Kesra diturunkan dari baris `pendaftar` (diterima ->
-                    // Disetujui, ditolak -> Ditolak), BUKAN dari `verif_kesra`
+                    // Setuju, ditolak -> Tolak), BUKAN dari `verif_kesra`
                     // yang selalu `setuju` walau pendaftarannya ditolak.
                     $kesra = $user->kesraDecision();
                   @endphp

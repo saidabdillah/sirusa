@@ -102,9 +102,9 @@ test('halaman keputusan menampilkan pendaftaran yang sudah diputuskan kesra', fu
         ->assertSee('Beasiswa Ditolak')
         ->assertSee('oleh '.$this->kesraAdmin->username, false)
         // Kolom Status memakai label dan warna badge yang sama dengan antrean.
-        ->assertSee('Disetujui')
+        ->assertSee('Setuju')
         ->assertSee('badge-success', false)
-        ->assertSee('Ditolak')
+        ->assertSee('Tolak')
         ->assertSee('badge-danger', false)
         // Baris yang masih menunggu putusan tetap milik antrean kerja.
         ->assertDontSee($lain->profile->nama_lengkap);
@@ -116,7 +116,7 @@ test('halaman keputusan menampilkan pendaftaran yang sudah diputuskan kesra', fu
         ->assertDontSee('Antrean Putusan');
 
     // Header antrean sengaja tanpa tombol arsip (permintaan pengguna):
-    // ikon fa-check-double adalah jangkar tombol "Disetujui" yang dihapus.
+    // ikon fa-check-double adalah jangkar tombol "Setuju" yang dihapus.
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.index'))
         ->assertOk()
@@ -136,7 +136,7 @@ test('filter antrean kesra tetap menawarkan dan menyaring dibatalkan', function 
     actingAs($this->kesraAdmin)->get(route('admin.kesra.index'))
         ->assertOk()
         ->assertSee('value="dibatalkan"', false)
-        ->assertSee('Dibatalkan');
+        ->assertSee('Batal');
 
     // `?filter=dibatalkan` benar-benar menyaring: hanya baris yang dibatalkan
     // mahasiswa yang tampil.

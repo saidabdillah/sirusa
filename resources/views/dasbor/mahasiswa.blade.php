@@ -36,7 +36,9 @@
   @endif
 
   <div class="row">
-    <div class="col-lg-7">
+    {{-- Tanpa kartu "Pendaftaran Berjalan" kolom kanan akan kosong, jadi tabel
+         "Pendaftaran Saya" melebar penuh saat tidak ada pendaftaran berjalan. --}}
+    <div class="{{ $activeApplication ? 'col-lg-7' : 'col-12' }}">
       <div class="card">
         <div class="card-header">
           <h4>Pendaftaran Saya</h4>
@@ -79,8 +81,8 @@
       </div>
     </div>
 
-    <div class="col-lg-5">
-      @if($activeApplication)
+    @if($activeApplication)
+      <div class="col-lg-5">
         <div class="card">
           <div class="card-header">
             <h4>Pendaftaran Berjalan</h4>
@@ -99,8 +101,12 @@
             </a>
           </div>
         </div>
-      @endif
+      </div>
+    @endif
+  </div>
 
+  <div class="row">
+    <div class="col-12">
       <div class="card">
         <div class="card-header">
           <h4>Beasiswa Tersedia</h4>
@@ -115,28 +121,35 @@
             </div>
           @endunless
 
-          @forelse($beasiswaTersedia as $beasiswa)
-            {{-- Satu beasiswa = satu blok vertikal, bukan satu baris horizontal.
-                 Badge sisa waktu di baris paling atas, lalu nama, lalu detail
-                 kampus/kuota. Susunan horizontal membuat baris terlalu rapat di
-                 layar sempit dan nama terpotong di tengah. --}}
-            <div class="mb-3 pb-3 border-bottom">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="badge badge-{{ $beasiswa->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
-                  {{ $beasiswa->tanggal_selesai?->diffForHumans() }}
-                </span>
-                <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+          {{-- Kartu selebar layar, jadi daftarnya disusun sebagai grid (bukan satu
+               blok vertikal). Tombol "Lihat" tetap di dalam card-body sesuai
+               konvensi kartu grid. --}}
+          <div class="row">
+            @forelse($beasiswaTersedia as $beasiswa)
+              <div class="col-md-6 col-xl-4 mb-3">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="badge badge-{{ $beasiswa->tanggal_selesai?->diffInDays(now()) <= 7 ? 'danger' : 'primary' }}">
+                        {{ $beasiswa->tanggal_selesai?->diffForHumans() }}
+                      </span>
+                      <a href="{{ route('user.beasiswa.lihat', $beasiswa) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+                    </div>
+                    <div class="font-weight-bold">{{ $beasiswa->nama }}</div>
+                    <div class="text-small text-muted">{{ $beasiswa->kampus }} &middot; sisa kuota {{ $beasiswa->sisaKuota() }}</div>
+                  </div>
+                </div>
               </div>
-              <div class="font-weight-bold">{{ $beasiswa->nama }}</div>
-              <div class="text-small text-muted">{{ $beasiswa->kampus }} &middot; sisa kuota {{ $beasiswa->sisaKuota() }}</div>
-            </div>
-          @empty
-            <div class="text-center text-muted">
-              @if($kampusId)
-                Belum ada beasiswa terbuka untuk kampus Anda.
-              @endif
-            </div>
-          @endforelse
+            @empty
+              <div class="col-12">
+                <div class="text-center text-muted">
+                  @if($kampusId)
+                    Belum ada beasiswa terbuka untuk kampus Anda.
+                  @endif
+                </div>
+              </div>
+            @endforelse
+          </div>
         </div>
       </div>
     </div>

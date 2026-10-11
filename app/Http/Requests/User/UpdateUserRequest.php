@@ -45,10 +45,10 @@ class UpdateUserRequest extends FormRequest
         return [
             'status.required' => 'Status harus dipilih',
             'status.in' => 'Status tidak valid',
-            'peran.required' => 'Peran harus dipilih',
+            'peran.required' => 'Role harus dipilih',
             'peran.in' => $this->user()->hasRole('super_admin')
-                ? 'Peran tidak valid'
-                : 'Anda tidak dapat memberikan peran Super Admin',
+                ? 'Role tidak valid'
+                : 'Anda tidak dapat memberikan role Super Admin',
             'kampus_id.required' => 'Kampus harus dipilih untuk admin kampus',
         ];
     }

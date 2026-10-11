@@ -33,7 +33,7 @@
               <dd class="col-sm-8">{{ auth()->user()->username }}</dd>
               <dt class="col-sm-4">Email</dt>
               <dd class="col-sm-8">{{ auth()->user()->email ?? '-' }}</dd>
-              <dt class="col-sm-4">Peran</dt>
+              <dt class="col-sm-4">Role</dt>
               <dd class="col-sm-8">{{ \App\Models\User::ROLE_LABELS[auth()->user()->getRoleNames()->first()] ?? 'User' }}</dd>
             </dl>
             <div class="alert alert-info mt-3 mb-0">

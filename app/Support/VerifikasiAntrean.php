@@ -142,10 +142,10 @@ class VerifikasiAntrean
     {
         return [
             ['label' => 'Menunggu', 'keys' => ['menunggu', 'verifikasi'], 'icon' => 'fa-inbox', 'bg' => 'warning'],
-            ['label' => 'Perlu Perbaikan', 'keys' => ['revisi'], 'icon' => 'fa-pen', 'bg' => 'info'],
-            ['label' => 'Disetujui', 'keys' => ['setuju', 'diterima'], 'icon' => 'fa-check-circle', 'bg' => 'success'],
-            ['label' => 'Ditolak', 'keys' => ['tolak', 'ditolak'], 'icon' => 'fa-times-circle', 'bg' => 'danger'],
-            ['label' => 'Dibatalkan', 'keys' => ['dibatalkan'], 'icon' => 'fa-ban', 'bg' => 'secondary'],
+            ['label' => 'Revisi', 'keys' => ['revisi'], 'icon' => 'fa-pen', 'bg' => 'info'],
+            ['label' => 'Setuju', 'keys' => ['setuju', 'diterima'], 'icon' => 'fa-check-circle', 'bg' => 'success'],
+            ['label' => 'Tolak', 'keys' => ['tolak', 'ditolak'], 'icon' => 'fa-times-circle', 'bg' => 'danger'],
+            ['label' => 'Batal', 'keys' => ['dibatalkan'], 'icon' => 'fa-ban', 'bg' => 'secondary'],
         ];
     }
 
@@ -175,9 +175,9 @@ class VerifikasiAntrean
             ? ['verifikasi' => 'Menunggu Putusan'] + Applicant::STATUS_LABELS
             : [
                 'menunggu' => 'Menunggu Tindakan',
-                'revisi' => 'Perlu Perbaikan',
-                'setuju' => 'Disetujui',
-                'tolak' => 'Ditolak',
+                'revisi' => 'Revisi',
+                'setuju' => 'Setuju',
+                'tolak' => 'Tolak',
             ];
     }
 
@@ -293,7 +293,7 @@ class VerifikasiAntrean
      * keputusan, satu tempat: antrean ini.
      *
      * Filter status tidak dipindah ke `pendaftarQuery()`: ringkasan butuh semua
-     * status untuk menghitung kartu Disetujui/Ditolak/Dibatalkan.
+     * status untuk menghitung kartu Setuju/Tolak/Batal.
      *
      * `$status` boleh satu nilai string, satu array status (halaman Keputusan
      * mengirim `['diterima', 'ditolak']`), atau `null` (semua status). Array

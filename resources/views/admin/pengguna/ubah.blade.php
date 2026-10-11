@@ -29,7 +29,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="peran">Peran <span class="text-danger">*</span></label>
+                  <label for="peran">Role <span class="text-danger">*</span></label>
                   @php $currentPeran = old('peran', $user->roles->first()?->name ?? ''); @endphp
                   <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
                     <option value="">&mdash; Pilih &mdash;</option>

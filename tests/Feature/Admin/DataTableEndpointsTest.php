@@ -106,9 +106,9 @@ test('pendaftar data endpoint respects status filter', function () {
         ->getJson(route('admin.pendaftar.data', ['status' => 'diterima']))
         ->assertOk()
         ->assertJson(['recordsTotal' => 2, 'recordsFiltered' => 1])
-        // Label "Disetujui", bukan "Diterima": istilah di UI sekarang sama
+        // Label "Setuju", bukan "Diterima": istilah di UI sekarang sama
         // dengan peta `Applicant::STATUS_LABELS`, bukan nilai mentah database.
-        ->assertJsonPath('data.0.status', '<span class="badge badge-success">Disetujui</span>');
+        ->assertJsonPath('data.0.status', '<span class="badge badge-success">Setuju</span>');
 
     expect($response->json('data.0.aksi'))->toBeNull();
 });
@@ -125,9 +125,9 @@ test('pendaftar data endpoint renders a badge for every status', function (strin
         ->assertJsonPath('data.0.status', "<span class=\"badge badge-{$badge}\">{$label}</span>");
 })->with([
     'verifikasi' => ['verifikasi', 'warning', 'Menunggu'],
-    'diterima' => ['diterima', 'success', 'Disetujui'],
-    'ditolak' => ['ditolak', 'danger', 'Ditolak'],
-    'dibatalkan' => ['dibatalkan', 'secondary', 'Dibatalkan'],
+    'diterima' => ['diterima', 'success', 'Setuju'],
+    'ditolak' => ['ditolak', 'danger', 'Tolak'],
+    'dibatalkan' => ['dibatalkan', 'secondary', 'Batal'],
 ]);
 
 test('pendaftar data endpoint searches by applicant name', function () {

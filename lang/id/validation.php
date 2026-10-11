@@ -175,7 +175,7 @@ return [
         'login' => 'NIK atau Username',
         'otp' => 'Kode OTP',
         'agree' => 'Syarat dan Ketentuan',
-        'peran' => 'Peran',
+        'peran' => 'Role',
         'status' => 'Status',
         'prodi_id' => 'Program Studi',
         'prodi_ids' => 'Program Studi',

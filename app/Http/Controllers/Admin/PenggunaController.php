@@ -128,7 +128,7 @@ class PenggunaController extends Controller
         // Menurunkan peran atau menonaktifkan akun sendiri akan mengunci akses ke modul ini.
         if ($user->id === $currentUser->id) {
             if ($validated['peran'] !== $user->roles->first()?->name) {
-                return $this->ajaxFail($request, 'Anda tidak dapat mengubah peran akun sendiri', route('admin.pengguna.index'));
+                return $this->ajaxFail($request, 'Anda tidak dapat mengubah role akun sendiri', route('admin.pengguna.index'));
             }
 
             if ($validated['status'] === 'non-aktif') {
@@ -141,7 +141,7 @@ class PenggunaController extends Controller
         // aturan yang sama dengan shortcut Nonaktifkan di daftar.
         if ($user->hasRole('super_admin')) {
             if ($validated['peran'] !== 'super_admin') {
-                return $this->ajaxFail($request, 'Anda tidak dapat mengubah peran Super Admin', route('admin.pengguna.index'));
+                return $this->ajaxFail($request, 'Anda tidak dapat mengubah role Super Admin', route('admin.pengguna.index'));
             }
 
             if ($validated['status'] === 'non-aktif') {

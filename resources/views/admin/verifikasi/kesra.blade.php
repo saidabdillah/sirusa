@@ -33,7 +33,7 @@
             {{-- Unduh Excel di sini mengikuti pola Catpil/Kampus: unduhan berisi --}}
             {{-- status yang sedang dibuka (`request()->only('filter')`). Tanpa --}}
             {{-- filter berarti semua status (permintaan pengguna; dulu default --}}
-            {{-- antrean `verifikasi`). Tombol "Disetujui" tetap tidak ada: arsip --}}
+            {{-- antrean `verifikasi`). Tombol "Setuju" tetap tidak ada: arsip --}}
             {{-- keputusan dibuka lewat dropdown sidebar Kesra (menu "Keputusan"). --}}
             <div class="card-header-action">
               @if(auth()->user()->hasMenuAccess($routePrefix.'.export'))

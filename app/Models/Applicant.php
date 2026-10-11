@@ -14,9 +14,9 @@ class Applicant extends Model
 
     public const STATUS_LABELS = [
         'verifikasi' => 'Menunggu',
-        'diterima' => 'Disetujui',
-        'ditolak' => 'Ditolak',
-        'dibatalkan' => 'Dibatalkan',
+        'diterima' => 'Setuju',
+        'ditolak' => 'Tolak',
+        'dibatalkan' => 'Batal',
     ];
 
     /**

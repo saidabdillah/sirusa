@@ -194,7 +194,7 @@ class User extends Authenticatable
      * `verif_kesra` HANYA menandai "sudah diputuskan" (kunci tahap Kampus) dan
      * nilainya selalu `setuju` walau pendaftarannya DITOLAK. Karena itu label
      * tahap Kesra tidak boleh dibaca dari `verif_kesra` -- kalau dibaca dari
-     * sana, penolakan tampil sebagai "Disetujui" di halaman Status Verifikasi,
+     * sana, penolakan tampil sebagai "Setuju" di halaman Status Verifikasi,
      * dasbor mahasiswa, dan export. Sumber kebenarannya baris `pendaftar.status`.
      *
      * Satu mahasiswa bisa punya beberapa pendaftaran: `diterima` menang, lalu

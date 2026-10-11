@@ -22,7 +22,7 @@
               @csrf
               <div class="card-body">
                 <div class="form-group">
-                  <label for="peran">Peran <span class="text-danger">*</span></label>
+                  <label for="peran">Role <span class="text-danger">*</span></label>
                   <select class="form-control @error('peran') is-invalid @enderror" id="peran" name="peran">
                     <option value="">&mdash; Pilih &mdash;</option>
                     @foreach ($peranOptions as $peranValue => $peranLabel)
@@ -119,7 +119,7 @@
               </div>
               <div class="mb-0">
                 <strong>Admin Kampus</strong><br>
-                <small class="text-muted">Peran Kampus wajib memilih kampus agar data pendaftar dan verifikasi kampus ter-scope.</small>
+                <small class="text-muted">Role Kampus wajib memilih kampus agar data pendaftar dan verifikasi kampus ter-scope.</small>
               </div>
             </div>
           </div>
