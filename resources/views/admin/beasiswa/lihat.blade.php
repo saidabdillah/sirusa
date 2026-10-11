@@ -66,8 +66,6 @@
                 {{ $scholarship->tanggal_mulai?->translatedFormat('d F Y') }} s.d.
                 {{ $scholarship->tanggal_selesai?->translatedFormat('d F Y') }}
               </span>
-              @if($scholarship->isExpired())
-              <span class="badge badge-danger ml-2">Telah Berakhir</span>
               @endif
             </div>
 

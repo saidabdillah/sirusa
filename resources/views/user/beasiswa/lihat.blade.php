@@ -51,9 +51,8 @@
                   <span class="{{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
                     {{ $scholarship->tanggal_mulai?->translatedFormat('d F Y') }} s.d. {{ $scholarship->tanggal_selesai?->translatedFormat('d F Y') }}
                   </span>
-                  @if($scholarship->isExpired())
-                  <span class="badge badge-danger ml-2">Telah Berakhir</span>
-                  @endif
+
+
                 </div>
               </div>
 
@@ -159,7 +158,6 @@
                   @else
                     <strong>Sudah ada pendaftaran aktif.</strong><br>
                     Anda sedang memproses pendaftaran pada {{ $blocking->beasiswa?->nama }}. Setiap mahasiswa hanya boleh satu beasiswa.
-                  @endif
                 </div>
                 <a href="{{ route('user.pendaftaran.index') }}" class="btn btn-info btn-lg btn-block">
                   <i class="fas fa-list"></i> Lihat Pendaftaran Saya
