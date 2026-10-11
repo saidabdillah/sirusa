@@ -158,6 +158,7 @@
                   @else
                     <strong>Sudah ada pendaftaran aktif.</strong><br>
                     Anda sedang memproses pendaftaran pada {{ $blocking->beasiswa?->nama }}. Setiap mahasiswa hanya boleh satu beasiswa.
+                  @endif
                 </div>
                 <a href="{{ route('user.pendaftaran.index') }}" class="btn btn-info btn-lg btn-block">
                   <i class="fas fa-list"></i> Lihat Pendaftaran Saya

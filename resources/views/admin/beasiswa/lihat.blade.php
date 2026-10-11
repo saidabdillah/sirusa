@@ -66,7 +66,6 @@
                 {{ $scholarship->tanggal_mulai?->translatedFormat('d F Y') }} s.d.
                 {{ $scholarship->tanggal_selesai?->translatedFormat('d F Y') }}
               </span>
-              @endif
             </div>
 
             {{-- Cakupan beasiswa (fakultas & program studi yang dipilih saat
