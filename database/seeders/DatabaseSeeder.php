@@ -89,5 +89,9 @@ class DatabaseSeeder extends Seeder
     // Menu & hak akses default — WAJIB tetap dijalankan: tanpa ini sidebar
     // kosong dan semua rute yang tercakup menu akan 403.
     $this->call(MenuSeeder::class);
+
+    // Permission aksi (read/create/edit/update/delete) untuk modul CRUD.
+    // Dijalankan SETELAH MenuSeeder supaya role-nya sudah pasti ada.
+    $this->call(PermissionSeeder::class);
   }
 }

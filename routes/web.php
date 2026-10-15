@@ -25,7 +25,7 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/masuk', [AuthController::class, 'simpanMasuk'])->name('login.store');
 });
 
-Route::middleware(['auth', 'status.aktif', 'akses.menu'])->group(function () {
+Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'keluar'])->name('logout');
     Route::get('/keluar/info', function () {
         return response()->json([

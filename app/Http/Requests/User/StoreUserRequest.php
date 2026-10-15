@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\User;
 
+use App\Support\MenuAction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,7 +10,7 @@ class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->canManageUsers();
+        return $this->user()->hasMenuAction('admin.pengguna', MenuAction::CREATE);
     }
 
     /**

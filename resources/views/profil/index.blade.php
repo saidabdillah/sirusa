@@ -138,9 +138,10 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label for="nik">NIK (Nomor Induk Kependudukan) <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik"
-                    value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16">
+                  <input type="text" inputmode="numeric" class="form-control @error('nik') is-invalid @enderror" id="nik"
+                    name="nik" value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16" placeholder="16 digit angka">
                   @error('nik')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Hanya angka, tepat 16 digit.</small>
                 </div>
                 <div class="form-group col-md-6">
                   <label for="no_kk">No. Kartu Keluarga <span class="text-danger">*</span></label>
@@ -153,9 +154,11 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label for="telepon">Telepon <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('telepon') is-invalid @enderror" id="telepon"
-                    name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}">
+                  <input type="text" inputmode="numeric" class="form-control @error('telepon') is-invalid @enderror"
+                    id="telepon" name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}" maxlength="13"
+                    placeholder="contoh 081234567890">
                   @error('telepon')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Nomor HP Indonesia: diawali 08, panjang 10 sampai 13 digit.</small>
                 </div>
                 <div class="form-group col-md-6">
                   <label for="desil">Desil Kesejahteraan <span class="text-danger">*</span></label>
@@ -483,8 +486,9 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   @endif
                   @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG, atau WEBP. Ukuran maksimal 2 MB.</small>
                 @if($profile && $profile->{$field})
-                <small class="text-muted">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
+                <small class="text-muted d-block">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
                 @endif
               </div>
               @endforeach
@@ -495,6 +499,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror"
                   id="dokumen_prestasi" name="dokumen_prestasi[]" accept="image/*,.pdf,.webp" multiple>
                 @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <small class="text-muted">Format: PDF, JPG, JPEG, PNG, atau WEBP. Ukuran maksimal 2 MB per file.</small>
                 @if($profile && $profile->dokumen_prestasi)
                 <div class="mt-2">
                   @foreach($profile->dokumen_prestasi as $path)
@@ -564,6 +569,22 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     dateFormat: "Y-m-d",
     disableMobile: true
   });
+
+  if (typeof Cleave !== 'undefined' && document.getElementById('nik')) {
+    // NIK dan nomor HP hanya angka. `blocks` + `numericOnly` menahan huruf
+    // sejak ketikan pertama, jadi pengguna tidak bisa melewati batas digit:
+    // NIK berhenti di 16, nomor HP di 13. Aturan server (`digits:16` dan
+    // `regex:/^08[0-9]{8,11}$/`) tetap berlaku sebagai penutup jalur tanpa JS.
+    new Cleave('#nik', {
+      blocks: [16],
+      numericOnly: true,
+    });
+
+    new Cleave('#telepon', {
+      blocks: [13],
+      numericOnly: true,
+    });
+  }
 
   if (typeof Cleave !== 'undefined' && document.getElementById('ukt')) {
     // UKT adalah rupiah bulat, jadi `numeralDecimalScale: 0`.

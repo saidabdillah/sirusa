@@ -10,6 +10,18 @@
   </div>
 
 @if($profile)
+    {{-- Pengingat kelengkapan profil. Ditaruh di dasbor (bukan hanya di
+         halaman Profil) supaya mahasiswa tahu di mana harus mengisi, karena
+         halaman itu satu-satunya tempat data dan dokumen diunggah. --}}
+    @unless($profileComplete)
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong><i class="fas fa-exclamation-triangle mr-1"></i>Data profil Anda belum lengkap.</strong><br>
+        Lengkapi data dan unggah dokumen pendukung di halaman
+        <a href="{{ route('profile') }}" class="alert-link">Profil</a> supaya Anda bisa mendaftar beasiswa.
+        <button type="button" class="close" data-dismiss="alert" aria-label="Tutup"><span>&times;</span></button>
+      </div>
+    @endunless
+
     <div class="row">
       <div class="col-12">
         <div class="card">

@@ -46,6 +46,7 @@
                   <div class="form-group col-md-4">
                     <label for="tingkat_gelar">Tingkat Gelar <span class="text-danger">*</span></label>
                     <select class="form-control @error('tingkat_gelar') is-invalid @enderror" id="tingkat_gelar" name="tingkat_gelar">
+                      <option value="" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === '' ? 'selected' : '' }}>&mdash; Pilih &mdash;</option>
                       <option value="S1" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === 'S1' ? 'selected' : '' }}>S1</option>
                       <option value="S2" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === 'S2' ? 'selected' : '' }}>S2</option>
                       <option value="S3" {{ old('tingkat_gelar', $scholarship->tingkat_gelar) === 'S3' ? 'selected' : '' }}>S3</option>
@@ -103,6 +104,7 @@
                   <div class="form-group col-md-4">
                     <label for="status">Status <span class="text-danger">*</span></label>
                     <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
+                      <option value="" {{ old('status', $scholarship->status) === '' ? 'selected' : '' }}>&mdash; Pilih &mdash;</option>
                       <option value="aktif" {{ old('status', $scholarship->status) === 'aktif' ? 'selected' : '' }}>Aktif</option>
                       <option value="non-aktif" {{ old('status', $scholarship->status) === 'non-aktif' ? 'selected' : '' }}>Non-aktif</option>
                     </select>

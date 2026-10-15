@@ -8,6 +8,7 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\Kampus;
 use App\Models\User;
+use App\Support\MenuAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,14 +33,15 @@ class PenggunaController extends Controller
     /**
      * Detail read-only satu pengguna: informasi akun + Data Diri profilnya.
      *
-     * `akses.menu` sudah menolak role tanpa grant `admin.pengguna`; ini
-     * defense-in-depth yang sama seperti `create()`/`edit()`. Berbeda dari
-     * `abortUnlessMayTouch()` di bawah, membaca akun super_admin tetap
-     * diperbolehkan karena halaman ini tidak mengubah apa pun.
+     * `akses.menu` sudah menolak role tanpa grant `admin.pengguna` dan
+     * `akses.aksi` menolak yang tanpa aksi `read`; ini defense-in-depth yang
+     * sama seperti `create()`/`edit()`. Berbeda dari `abortUnlessMayTouch()`
+     * di bawah, membaca akun super_admin tetap diperbolehkan karena halaman
+     * ini tidak mengubah apa pun.
      */
     public function show(User $user): View
     {
-        abort_unless(auth()->user()->canManageUsers(), 403);
+        abort_unless(auth()->user()->hasMenuAction('admin.pengguna', MenuAction::READ), 403);
 
         $user->load(['roles', 'kampus', 'profile.user']);
 
@@ -53,7 +55,7 @@ class PenggunaController extends Controller
     {
         $currentUser = auth()->user();
 
-        abort_unless($currentUser->canManageUsers(), 403);
+        abort_unless($currentUser->hasMenuAction('admin.pengguna', MenuAction::CREATE), 403);
 
         return view('admin.pengguna.buat', [
             'kampusList' => $this->kampusList(),
@@ -107,7 +109,7 @@ class PenggunaController extends Controller
     {
         $currentUser = auth()->user();
 
-        abort_unless($currentUser->canManageUsers(), 403);
+        abort_unless($currentUser->hasMenuAction('admin.pengguna', MenuAction::EDIT), 403);
         $this->abortUnlessMayTouch($user);
 
         $user->load('roles');
@@ -173,7 +175,7 @@ class PenggunaController extends Controller
      */
     public function toggleStatus(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        abort_unless(auth()->user()->canManageUsers(), 403);
+        abort_unless(auth()->user()->hasMenuAction('admin.pengguna', MenuAction::UPDATE), 403);
 
         $this->abortUnlessMayTouch($user);
 
@@ -198,7 +200,7 @@ class PenggunaController extends Controller
      */
     public function resetPassword(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        abort_unless(auth()->user()->canManageUsers(), 403);
+        abort_unless(auth()->user()->hasMenuAction('admin.pengguna', MenuAction::UPDATE), 403);
 
         $this->abortUnlessMayTouch($user);
 
@@ -211,6 +213,10 @@ class PenggunaController extends Controller
      * Menghapus akun adalah aksi destruktif paling berat, jadi tetap khusus
      * super_admin meski peran lain boleh menyunting, mengubah status, dan
      * mereset kata sandi. Kesra sengaja tidak diberi akses hapus.
+     *
+     * Aksi `delete` di lapisan permission tetap ada (halaman Akses Menu
+     * menampilkannya), tapi gerbang sebenarnya di sini: role mana pun selain
+     * super_admin ditolak, walaupun permission-nya diberikan.
      */
     public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {

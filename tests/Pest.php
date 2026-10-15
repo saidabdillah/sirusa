@@ -1,6 +1,7 @@
 <?php
 
 use Database\Seeders\MenuSeeder;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Spatie\Permission\Models\Role;
@@ -56,6 +57,7 @@ function seedAkses()
     Role::firstOrCreate(['name' => 'user']);
 
     (new MenuSeeder)->run();
+    (new PermissionSeeder)->run();
 }
 
 /**

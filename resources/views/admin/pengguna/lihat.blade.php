@@ -7,8 +7,10 @@
   $displayName = $profile?->nama_lengkap ?: $user->username;
   // Target super_admin tidak punya aksi penyuntingan sama sekali, sama seperti
   // di tabel pengguna — meski secara teknis `PenggunaController::edit()` hanya
-  // menolak bila pemanggilnya bukan super_admin.
-  $canEdit = auth()->user()->canManageUsers() && $roleName !== 'super_admin';
+  // menolak bila pemanggilnya bukan super_admin. Tombolnya mengikuti aksi
+  // `edit` supaya role yang cuma boleh melihat tidak diberi tombol Ubah.
+  $canEdit = auth()->user()->hasMenuAction('admin.pengguna', \App\Support\MenuAction::EDIT)
+      && $roleName !== 'super_admin';
 @endphp
 
 @section('content')

@@ -9,6 +9,7 @@ use App\Http\Requests\Menu\UpdateMenuAccessRequest;
 use App\Http\Requests\Menu\UpdateMenuRequest;
 use App\Models\Menu;
 use App\Models\User;
+use App\Support\MenuAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,24 @@ class MenuController extends Controller
             );
         }
 
-        return view('admin.menu.index', compact('roles', 'roleLabels', 'activeRole', 'menus', 'grants', 'lockedMenuIds'));
+        // Aksi yang dipegang role terpilih, sebagai lookup nama permission
+        // supaya view cukup `isset()` tanpa query per baris.
+        $rolePermissions = $activeRole
+            ? array_flip($activeRole->permissions->pluck('name')->all())
+            : [];
+
+        return view('admin.menu.index', compact(
+            'roles',
+            'roleLabels',
+            'activeRole',
+            'menus',
+            'grants',
+            'lockedMenuIds',
+            'rolePermissions',
+        ) + [
+            'actionLabels' => MenuAction::LABELS,
+            'actionModules' => MenuAction::MODULES,
+        ]);
     }
 
     public function perbarui(UpdateMenuAccessRequest $request): RedirectResponse|JsonResponse
@@ -92,7 +110,7 @@ class MenuController extends Controller
 
         // Hanya role terpilih yang disentuh: menyimpan role lain tidak boleh
         // menghapus grant role ini (dan sebaliknya).
-        DB::transaction(function () use ($role, $menuIds): void {
+        DB::transaction(function () use ($role, $menuIds, $request): void {
             DB::table('role_menu')->where('role_id', $role->id)->delete();
 
             foreach ($menuIds as $menuId) {
@@ -101,9 +119,76 @@ class MenuController extends Controller
                     'menu_id' => $menuId,
                 ]);
             }
+
+            $this->syncAksi($role, $menuIds, (array) $request->input('aksi', []));
         });
 
         return $this->ajaxOk($request, 'Akses menu berhasil diperbarui', route('admin.menu.index', ['role' => $role->id]));
+    }
+
+    /**
+     * Simpan aksi (read/create/edit/update/delete) untuk modul CRUD.
+     *
+     * Aksi hanya diberikan bila menu modulnya ikut dicentang: role yang tidak
+     * punya menu Pengguna tidak boleh menyimpan sisa permission-nya, kalau
+     * tidak permission itu diam-diam aktif lagi begitu menunya dicentang
+     * ulang di lain waktu.
+     *
+     * `super_admin` selalu penuh dan tidak bisa dicabut dari sini, sama seperti
+     * lapisan menu yang mengunci modulnya.
+     *
+     * Permission di luar modul CRUD (kalau nanti ada) sengaja dipertahankan,
+     * bukan ikut di-`sync` -- menyimpan satu role tidak boleh menghapus
+     * permission yang bukan urusannya.
+     *
+     * @param  list<int>  $menuIds  menu yang dicentang untuk role ini
+     * @param  array<int|string, mixed>  $aksi  `[menu_id => [aksi, ...]]`
+     */
+    private function syncAksi(Role $role, array $menuIds, array $aksi): void
+    {
+        $scopePerMenu = DB::table('menus')
+            ->whereIn('id', $menuIds)
+            ->whereIn('scope', MenuAction::MODULES)
+            ->pluck('scope', 'id');
+
+        $diinginkan = [];
+
+        foreach (MenuAction::MODULES as $scope) {
+            if ($role->name === 'super_admin') {
+                foreach (MenuAction::ACTIONS as $action) {
+                    $diinginkan[] = MenuAction::permissionName($scope, $action);
+                }
+
+                continue;
+            }
+
+            $menuId = $scopePerMenu->search($scope);
+
+            if ($menuId === false) {
+                continue;
+            }
+
+            $diminta = (array) ($aksi[$menuId] ?? []);
+
+            // Menu modul dicentang tanpa aksi apa pun = boleh melihat saja.
+            // Tanpa default ini, menu tampil di sidebar tapi diklik langsung
+            // 403 -- kondisi yang membingungkan dan tidak pernah diinginkan.
+            if ($diminta === []) {
+                $diminta = [MenuAction::READ];
+            }
+
+            foreach (MenuAction::ACTIONS as $action) {
+                if (in_array($action, $diminta, true)) {
+                    $diinginkan[] = MenuAction::permissionName($scope, $action);
+                }
+            }
+        }
+
+        $bukanModul = $role->permissions
+            ->pluck('name')
+            ->reject(fn (string $nama) => in_array($nama, MenuAction::allPermissionNames(), true));
+
+        $role->syncPermissions($bukanModul->merge($diinginkan)->unique()->values()->all());
     }
 
     public function kelola(): View

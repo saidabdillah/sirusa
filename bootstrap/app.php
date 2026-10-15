@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckUserStatus;
 use App\Http\Middleware\EnsureMenuAccess;
+use App\Http\Middleware\EnsureMenuAction;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'status.aktif' => CheckUserStatus::class,
             'akses.menu' => EnsureMenuAccess::class,
+            'akses.aksi' => EnsureMenuAction::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('login'));
     })

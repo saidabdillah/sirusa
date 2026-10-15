@@ -14,7 +14,7 @@
     <div class="row">
       <div class="col-12">
         <div class="card">
-          @if(auth()->user()->canManageUsers())
+          @if(auth()->user()->hasMenuAction('admin.pengguna', \App\Support\MenuAction::CREATE))
           <div class="card-header">
             <a href="{{ route('admin.pengguna.buat') }}" class="btn btn-primary">
               <i class="fas fa-plus"></i> Tambah Pengguna
@@ -42,11 +42,11 @@
                     // yang boleh menyuntingnya, dan aksi logout/statusnya justru ditolak.
                     $rowIsSuperAdmin = $roleName === 'super_admin';
                     $isSuperAdmin = auth()->user()->hasRole('super_admin');
-                    // Ubah, ubah status, dan reset password mengikuti gate yang sama
-                    // dengan controller (`canManageUsers()`), jadi UI dan backend
-                    // tidak bisa berbeda pendapat. Hapus tetap khusus super_admin.
-                    $canEdit = ! $rowIsSuperAdmin && auth()->user()->canManageUsers();
-                    $canManageAccount = $canEdit;
+                    // Tiap tombol mengikuti aksi granularnya sendiri, jadi role
+                    // yang cuma punya `read` tidak melihat satu pun tombol
+                    // mutasi -- dan controller menolaknya juga.
+                    $canEdit = ! $rowIsSuperAdmin && auth()->user()->hasMenuAction('admin.pengguna', \App\Support\MenuAction::EDIT);
+                    $canManageAccount = ! $rowIsSuperAdmin && auth()->user()->hasMenuAction('admin.pengguna', \App\Support\MenuAction::UPDATE);
                     $canDelete = $isSuperAdmin && ! $rowIsSuperAdmin;
                   @endphp
                   <tr>

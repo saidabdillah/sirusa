@@ -59,6 +59,11 @@
             <strong>memberikan akses ke halaman modul</strong> terkait. Mencentang sub-menu otomatis
             mencentang menu induknya. Dasbor bersifat wajib dan selalu aktif. Perubahan hanya
             disimpan untuk role ini; role lain tidak terpengaruh.
+            <div class="mt-2">
+              Untuk menu yang punya baris <strong>Aksi yang diizinkan</strong>, centang aksinya secara
+              terpisah: role bisa diberi <strong>Lihat</strong> saja tanpa boleh menambah, mengubah,
+              atau menghapus.
+            </div>
           </div>
 
           <form action="{{ route('admin.menu.grants') }}" method="POST" id="formMenuGrants" data-ajax-form>
@@ -125,6 +130,36 @@
                       </div>
                     </td>
                   </tr>
+                  @if(in_array($child->scope, $actionModules, true))
+                  {{-- Baris aksi hanya untuk modul CRUD, dan modul-modul itu
+                       adalah baris ANAK (Pengguna/Role/Kelola Menu di bawah
+                       "Kelola Akses"). Super Admin dikunci penuh -- dan
+                       `User::hasMenuAction()` mematok itu juga -- jadi
+                       centangnya disabled supaya tidak ada yang mencoba
+                       mencabutnya lewat halaman ini. --}}
+                  @php($aksiLocked = $childLocked || $activeRole->name === 'super_admin')
+                  <tr class="table-light" data-section-body="{{ $loop->parent->parent->index }}">
+                    <td class="pl-5">
+                      <span class="text-muted pl-4"><i class="fas fa-key mr-2"></i>Aksi yang diizinkan</span>
+                      @if($aksiLocked)
+                      <span class="badge badge-info ml-1">semua aksi</span>
+                      @endif
+                    </td>
+                    <td class="text-center">
+                      @foreach($actionLabels as $actionKey => $actionLabel)
+                      @php($actionChecked = $aksiLocked || isset($rolePermissions[$child->scope.'.'.$actionKey]))
+                      <div class="custom-control custom-checkbox d-inline-block mr-3">
+                        <input type="checkbox" class="custom-control-input"
+                          id="aksi-{{ $child->id }}-{{ $actionKey }}" name="aksi[{{ $child->id }}][]"
+                          value="{{ $actionKey }}" data-aksi-menu="{{ $child->id }}"
+                          {{ $actionChecked ? 'checked' : '' }} {{ $aksiLocked ? 'disabled' : '' }}>
+                        <label class="custom-control-label" for="aksi-{{ $child->id }}-{{ $actionKey }}">{{
+                          $actionLabel }}</label>
+                      </div>
+                      @endforeach
+                    </td>
+                  </tr>
+                  @endif
                   @endforeach
                   @endforeach
                   @endforeach
@@ -223,6 +258,62 @@
             box.checked = toggle.checked;
           });
           syncSectionToggles();
+        });
+      });
+
+      // Menu modul dicari lewat `value`-nya (bisa baris induk atau anak),
+      // bukan lewat `data-parent-menu`, karena modul CRUD ada di baris anak.
+      const menuCheckboxOf = function(menuId) {
+        return form.querySelector('input[name="menus[]"][value="' + menuId + '"]');
+      };
+
+      const aksiCheckboxesOf = function(menuId) {
+        return Array.from(form.querySelectorAll('input[data-aksi-menu="' + menuId + '"]:not(:disabled)'));
+      };
+
+      // Aksi mengikuti menu modulnya: mencentang aksi otomatis mencentang
+      // menunya (tanpa menu, permission-nya tidak akan tersimpan).
+      form.querySelectorAll('input[data-aksi-menu]').forEach(function(box) {
+        box.addEventListener('change', function() {
+          if (box.disabled) {
+            return;
+          }
+
+          const menuId = box.getAttribute('data-aksi-menu');
+          const menuBox = menuCheckboxOf(menuId);
+
+          if (menuBox && !menuBox.disabled && box.checked) {
+            menuBox.checked = true;
+          }
+
+          syncSectionToggles();
+        });
+      });
+
+      // Kebalikannya: mencentang menu modul otomatis mencentang aksi "Lihat"
+      // supaya role yang baru diberi menu tidak langsung 403 saat diklik, dan
+      // mencabut menunya ikut mencabut semua aksinya supaya tidak ada
+      // permission menggantung.
+      form.querySelectorAll('input[name="menus[]"]').forEach(function(menuBox) {
+        menuBox.addEventListener('change', function() {
+          const boxes = aksiCheckboxesOf(menuBox.value);
+
+          if (boxes.length === 0) {
+            return;
+          }
+
+          if (!menuBox.checked) {
+            boxes.forEach(function(box) { box.checked = false; });
+            return;
+          }
+
+          if (!boxes.some(function(box) { return box.checked; })) {
+            const lihat = boxes.find(function(box) { return box.value === 'read'; });
+
+            if (lihat) {
+              lihat.checked = true;
+            }
+          }
         });
       });
 

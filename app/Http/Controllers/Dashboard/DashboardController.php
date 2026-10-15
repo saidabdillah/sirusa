@@ -96,6 +96,11 @@ class DashboardController extends Controller
         return view('dasbor.mahasiswa', [
             'profile' => $profile,
             'kampusId' => $kampusId,
+            // Dipakai alert "lengkapi profil" di dasbor: pengingatnya harus
+            // memakai definisi kelengkapan yang sama dengan gate pendaftaran
+            // (`isProfileComplete()`), bukan daftar kolom yang ditulis ulang
+            // di view.
+            'profileComplete' => $user->isProfileComplete(),
             // Tahap Kesra diturunkan dari baris `pendaftar` (bukan `verif_kesra`,
             // yang selalu `setuju` walau pendaftarannya ditolak).
             'kesraDecision' => $user->kesraDecision(),

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MenuAction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -121,14 +122,66 @@ class User extends Authenticatable
     }
 
     /**
+     * Boleh melakukan `$action` (read/create/edit/update/delete) pada modul `$scope`?
+     *
+     * Lapisan ini terpisah dari `hasMenuAccess()`: grant menu menentukan
+     * apakah menu tampil dan halamannya bisa dibuka, sedangkan permission
+     * Spatie (`<scope>.<aksi>`) menentukan aksi apa yang boleh dilakukan di
+     * dalamnya. Modul non-CRUD tidak punya permission sama sekali, jadi
+     * pemanggilnya harus memakai `hasMenuAccess()` untuk modul tersebut.
+     *
+     * `super_admin` selalu boleh: dialah satu-satunya akun yang tidak boleh
+     * kehilangan akses, jadi aturannya dipatok di sini (bukan di UI) supaya
+     * kombinasi permission yang salah tidak bisa mengunci sistem.
+     */
+    public function hasMenuAction(string $scope, string $action): bool
+    {
+        if (! MenuAction::isModule($scope)) {
+            return false;
+        }
+
+        if ($this->hasRole('super_admin')) {
+            return true;
+        }
+
+        // `getAllPermissions()` dipakai, BUKAN `hasPermissionTo()`: yang kedua
+        // memanggil `Permission::findByName()` yang MELEMPAR
+        // `PermissionDoesNotExist` kalau baris permission-nya belum di-seed.
+        // Akibatnya setiap halaman admin jadi 500 alih-alih 403 di database
+        // yang belum menjalankan `PermissionSeeder`. Di sini jawaban yang benar
+        // untuk "permission tidak ada" adalah "tidak punya izin".
+        return $this->getAllPermissions()
+            ->contains('name', MenuAction::permissionName($scope, $action));
+    }
+
+    /**
+     * `hasMenuAction()` untuk peran aktif; `false` bila tidak ada peran.
+     */
+    public function canAnyMenuAction(string $scope, array $actions): bool
+    {
+        foreach ($actions as $action) {
+            if ($this->hasMenuAction($scope, $action)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * May this user open the Pengguna module at all (index, create, edit)?
      *
      * Breadth follows the menu grant, like every other admin module; only the
      * rules that protect the super_admin account itself stay on `hasRole`.
+     *
+     * Sejak aksi granular ada, `read` adalah aksinya: memegang `read` berarti
+     * boleh membuka modulnya, sedangkan tambah/ubah/hapus diperiksa terpisah
+     * lewat `hasMenuAction()`. Dengan begitu UI dan backend tidak bisa berbeda
+     * pendapat soal "boleh buka halaman ini".
      */
     public function canManageUsers(): bool
     {
-        return $this->hasMenuAccess('admin.pengguna.index');
+        return $this->hasMenuAction('admin.pengguna', MenuAction::READ);
     }
 
     /**

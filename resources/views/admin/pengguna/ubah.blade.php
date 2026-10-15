@@ -55,6 +55,7 @@
                 <div class="form-group">
                   <label for="status">Status <span class="text-danger">*</span></label>
                   <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
+                    <option value="" {{ old('status', $user->status) === '' ? 'selected' : '' }}>&mdash; Pilih &mdash;</option>
                     <option value="aktif" {{ old('status', $user->status) === 'aktif' ? 'selected' : '' }}>Aktif</option>
                     <option value="non-aktif" {{ old('status', $user->status) === 'non-aktif' ? 'selected' : '' }}>Nonaktif</option>
                   </select>

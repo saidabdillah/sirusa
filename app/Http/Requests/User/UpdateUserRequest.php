@@ -3,6 +3,7 @@
 namespace App\Http\Requests\User;
 
 use App\Models\User;
+use App\Support\MenuAction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        if (! $this->user()->canManageUsers()) {
+        if (! $this->user()->hasMenuAction('admin.pengguna', MenuAction::UPDATE)) {
             return false;
         }
 

@@ -64,7 +64,11 @@ class UpdateProfilRequest extends FormRequest
             'tanggal_lahir' => ['required', 'date'],
             'jenis_kelamin' => ['required', 'in:Laki-laki,Perempuan'],
             'agama' => ['required', 'in:Islam,Kristen,Katholik,Hindu,Buddha,Konghucu'],
-            'telepon' => ['required', 'string', 'max:20'],
+            // Nomor HP khusus Indonesia: diawali `08` lalu 8-11 digit lagi,
+            // jadi total 10-13 digit. Cleave di form sudah menahan huruf dan
+            // memotong di digit ke-13, tapi aturan ini yang menutup jalur
+            // tanpa JavaScript (POST yang dirakit manual).
+            'telepon' => ['required', 'string', 'regex:/^08[0-9]{8,11}$/'],
             'alamat' => ['required', 'string'],
             'provinsi' => ['nullable', 'string', 'max:255'],
             'kabupaten_kota' => ['nullable', 'string', 'max:255'],
@@ -200,6 +204,7 @@ class UpdateProfilRequest extends FormRequest
             'jenis_kelamin.required' => 'Jenis kelamin harus dipilih.',
             'agama.required' => 'Agama harus dipilih.',
             'telepon.required' => 'Telepon harus diisi.',
+            'telepon.regex' => 'Nomor HP harus berupa angka, diawali 08, dan panjang 10 sampai 13 digit.',
             'alamat.required' => 'Alamat harus diisi.',
             'kecamatan.required' => 'Kecamatan harus dipilih.',
             'desa_kelurahan.required' => 'Desa/Kelurahan harus dipilih.',
