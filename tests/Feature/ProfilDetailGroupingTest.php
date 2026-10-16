@@ -23,7 +23,7 @@ beforeEach(function () {
         'user_id' => $this->user->id,
         'nama_lengkap' => 'Ahmad Grouping',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000000002',
+        'no_kk' => '6302000000000001',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',

@@ -40,7 +40,7 @@ function pemohonKesra(Kampus $kampus, Scholarship $beasiswa): User
         'user_id' => $user->id,
         'nama_lengkap' => 'Pemohon '.$user->id,
         'nik' => '6302000000'.$suffix,
-        'no_kk' => '6302000001'.$suffix,
+        'no_kk' => '6302000000'.$suffix,
         'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'menunggu',

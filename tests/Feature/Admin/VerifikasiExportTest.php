@@ -63,7 +63,7 @@ function buatPemohon(User $user, string $stage, Prodi $prodi, ?string $nama = nu
     $profile = $user->profile()->create(array_merge([
         'nama_lengkap' => $nama ?? "Ahmad Fauzi #{$user->id}",
         'nik' => '6302000000'.$suffix,
-        'no_kk' => '6302000001'.$suffix,
+        'no_kk' => '6302000000'.$suffix,
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -194,7 +194,7 @@ test('unduhan catpil memuat kolom identitas dan mengabaikan data akademik', func
     expect($rows)->toHaveCount(1)
         ->and($rows[0]['Nama Lengkap'])->toBe('Catpil Satu')
         ->and($rows[0]['NIK'])->toStartWith('6302000000')
-        ->and($rows[0]['No. Kartu Keluarga'])->toStartWith('6302000001')
+        ->and($rows[0]['No. Kartu Keluarga'])->toStartWith('6302000000')
         ->and($rows[0]['Tanggal Lahir'])->toBe('01/01/2000')
         ->and($rows[0]['Desil'])->toBe('3')
         ->and($rows[0]['Kartu Keluarga Diikuti'])->toBe('Ayah')
@@ -679,7 +679,7 @@ test('nomor identitas ditulis sebagai teks, bukan angka', function (string $rout
     $profile->update([
         'nik' => '6302000000123456',
         'nim' => '0123456789',
-        'no_kk' => '6302000000987654',
+        'no_kk' => '6302000000123456',
     ]);
 
     $sheet = loadSheet(actingAs($this->{$role})->get(route($route)));

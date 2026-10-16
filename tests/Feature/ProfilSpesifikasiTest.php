@@ -39,7 +39,7 @@ function payloadProfilAjax(Prodi $prodi, array $ubah = []): array
         'nama_lengkap' => 'Ahmad Fauzi',
         'email' => 'ahmad.fauzi@example.test',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000000002',
+        'no_kk' => '6302000000000001',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -193,8 +193,8 @@ test('email sendiri tidak dianggap bentrok saat profil disimpan ulang', function
 |--------------------------------------------------------------------------
 */
 
-test('bukti ukt menerima gambar termasuk webp', function (string $nama, string $mime) {
-    $berkas = UploadedFile::fake()->createWithContent($nama, 'bukti-ukt');
+test('bukti ukt hanya menerima PDF', function () {
+    $berkas = UploadedFile::fake()->createWithContent('bukti-ukt.pdf', '%PDF-1.4 bukti ukt');
 
     actingAs($this->user)
         ->put(route('profile.update'), payloadProfilAjax($this->prodi, [
@@ -207,29 +207,31 @@ test('bukti ukt menerima gambar termasuk webp', function (string $nama, string $
     expect($tersimpan)->not->toBeNull();
 
     Storage::disk('public')->assertExists($tersimpan);
+});
+
+test('bukti ukt menolak berkas yang bukan pdf', function (string $nama, string $mime) {
+    $berkas = UploadedFile::fake()->createWithContent($nama, 'bukan pdf');
+
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilAjax($this->prodi, [
+            'dokumen_bukti_ukt' => $berkas,
+        ]))
+        ->assertSessionHasErrors(['dokumen_bukti_ukt' => 'Bukti UKT harus berupa file PDF.']);
+
+    expect(profilLokal($this->user)?->dokumen_bukti_ukt)->toBeNull();
 })->with([
-    'pdf' => ['bukti-ukt.pdf', 'application/pdf'],
     'jpg' => ['bukti-ukt.jpg', 'image/jpeg'],
     'png' => ['bukti-ukt.png', 'image/png'],
     'webp' => ['bukti-ukt.webp', 'image/webp'],
+    'docx' => ['bukti-ukt.docx', 'application/msword'],
 ]);
 
-test('bukti ukt menolak berkas yang bukan gambar atau pdf', function () {
-    actingAs($this->user)
-        ->put(route('profile.update'), payloadProfilAjax($this->prodi, [
-            'dokumen_bukti_ukt' => UploadedFile::fake()->create('bukti-ukt.docx', 50, 'application/msword'),
-        ]))
-        ->assertSessionHasErrors('dokumen_bukti_ukt');
-
-    expect(profilLokal($this->user)?->dokumen_bukti_ukt)->toBeNull();
-});
-
-test('kolom bukti ukt menawarkan gambar dan pdf di form', function () {
+test('kolom bukti ukt menawarkan pdf saja di form', function () {
     actingAs($this->user)->get(route('profile'))
         ->assertOk()
-        // `accept` sudah pdf + webp, tidak sekadar `image/*`.
+        // Semua dokumen PDF; hanya pas foto yang berupa gambar.
         ->assertSee('name="dokumen_bukti_ukt"', false)
-        ->assertSee('accept="image/*,.pdf,.webp"', false);
+        ->assertSee('accept="application/pdf"', false);
 });
 
 /*

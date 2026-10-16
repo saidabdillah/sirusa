@@ -52,7 +52,7 @@ function penerimaProfil(User $mahasiswa, string $urutan): UserProfile
         'user_id' => $mahasiswa->id,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302'.$urutan.'0000001',
-        'no_kk' => '6302'.$urutan.'0000002',
+        'no_kk' => '6302'.$urutan.'0000001',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',

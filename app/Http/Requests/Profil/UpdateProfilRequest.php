@@ -58,7 +58,11 @@ class UpdateProfilRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($this->user()->id),
             ],
             'nik' => ['required', 'digits:16'],
-            'no_kk' => ['required', 'digits:16'],
+            // No. KK harus sama dengan NIK: pada kartu keluarga milik sendiri,
+            // NIK pemiliknya memang tertera, jadi dua nilai berbeda berarti
+            // salah ketik. `digits:16` tetap dipasang supaya pesan panjangnya
+            // muncul lebih dulu saat isian belum 16 digit.
+            'no_kk' => ['required', 'digits:16', 'same:nik'],
             'nim' => ['nullable', 'string', 'max:30'],
             'tempat_lahir' => ['required', 'string', 'max:255'],
             'tanggal_lahir' => ['required', 'date'],
@@ -96,7 +100,7 @@ class UpdateProfilRequest extends FormRequest
             'pekerjaan_wali' => $pakaiWali ? ['required', $pekerjaan] : ['nullable'],
             'hubungan_wali' => $pakaiWali ? ['required', 'in:Paman,Bibi,Kakek,Nenek,Lainnya'] : ['nullable'],
 
-            'foto_profil' => $this->dokumen('foto_profil', 'image', 'jpg,jpeg,png'),
+            'foto_profil' => $this->foto('foto_profil'),
             'dokumen_ktp' => $this->dokumen('dokumen_ktp'),
             'dokumen_kk' => $this->dokumen('dokumen_kk'),
             'dokumen_desil' => $this->dokumen('dokumen_desil'),
@@ -110,7 +114,7 @@ class UpdateProfilRequest extends FormRequest
             'ktp_wali' => $pakaiWali ? $this->dokumen('ktp_wali') : ['nullable'],
             'kk_wali' => $pakaiWali ? $this->dokumen('kk_wali') : ['nullable'],
             'dokumen_prestasi' => ['nullable', 'array'],
-            'dokumen_prestasi.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
+            'dokumen_prestasi.*' => ['file', 'mimes:pdf', 'max:2048'],
         ];
     }
 
@@ -172,24 +176,69 @@ class UpdateProfilRequest extends FormRequest
     }
 
     /**
-     * Field berkas bertanda * pada form profil: wajib diunggah, kecuali filenya
-     * sudah tersimpan di profil (dokumen yang sudah ada tidak diunggah ulang).
+     * Dokumen: WAJIB PDF, dan wajib diunggah kecuali filenya sudah tersimpan
+     * (dokumen yang ada tidak perlu diunggah ulang saat mengubah data lain).
+     *
+     * Aturan di sini adalah sumber kebenaran format; teks bantuan di bawah tiap
+     * input di `profil/index.blade.php` harus menyebut format yang sama, kalau
+     * tidak pesan di layar berbohong soal apa yang sebenarnya diterima server.
      *
      * @return array<int, string>
      */
-    private function dokumen(string $field, string $tipe = 'file', string $ekstensi = 'pdf,jpg,jpeg,png,webp'): array
+    private function dokumen(string $field): array
     {
         return [
             filled($this->user()?->profile?->{$field}) ? 'nullable' : 'required',
-            $tipe,
-            'mimes:'.$ekstensi,
+            'file',
+            'mimes:pdf',
             'max:2048',
         ];
     }
 
-    public function messages(): array
+    /**
+     * Pas foto: satu-satunya berkas yang berupa GAMBAR (semua dokumen lain PDF).
+     *
+     * @return array<int, string>
+     */
+    private function foto(string $field): array
     {
         return [
+            filled($this->user()?->profile?->{$field}) ? 'nullable' : 'required',
+            'image',
+            'mimes:jpg,jpeg,png',
+            'max:2048',
+        ];
+    }
+
+    /**
+     * Label tampil tiap dokumen PDF, dipakai menyusun pesan format dan ukuran
+     * sekaligus supaya tiap field PASTI punya pesannya sendiri. Tanpa ini,
+     * berkas non-PDF jatuh ke pesan bawaan `lang/id/validation.php`
+     * ("... harus berupa file dengan tipe: pdf.") yang menyebut istilah teknis.
+     *
+     * Pas foto sengaja tidak ada di sini: ia satu-satunya berkas berupa gambar
+     * dan pesannya ditulis terpisah di `messages()`.
+     *
+     * @var array<string, string>
+     */
+    private const DOKUMEN_PDF = [
+        'dokumen_ktp' => 'KTP',
+        'dokumen_kk' => 'Kartu Keluarga',
+        'dokumen_desil' => 'Dokumen Desil',
+        'dokumen_sktm' => 'SKTM',
+        'dokumen_transkrip' => 'Transkrip',
+        'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
+        'dokumen_surat_pernyataan' => 'Surat Pernyataan',
+        'dokumen_bukti_ukt' => 'Bukti UKT',
+        'ktp_ayah' => 'KTP Ayah',
+        'ktp_ibu' => 'KTP Ibu',
+        'ktp_wali' => 'KTP Wali',
+        'kk_wali' => 'KK Wali',
+    ];
+
+    public function messages(): array
+    {
+        $pesan = [
             'nama_lengkap.required' => 'Nama lengkap harus diisi.',
             'email.required' => 'Email harus diisi.',
             'email.email' => 'Email harus berupa alamat email yang valid.',
@@ -198,6 +247,7 @@ class UpdateProfilRequest extends FormRequest
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
             'no_kk.required' => 'Nomor Kartu Keluarga harus diisi.',
             'no_kk.digits' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit.',
+            'no_kk.same' => 'Nomor Kartu Keluarga harus sama dengan NIK.',
             'tempat_lahir.required' => 'Tempat lahir harus diisi.',
             'tanggal_lahir.required' => 'Tanggal lahir harus diisi.',
             'tanggal_lahir.date' => 'Tanggal lahir tidak valid.',
@@ -254,5 +304,18 @@ class UpdateProfilRequest extends FormRequest
             'ktp_wali.required' => 'KTP Wali wajib diunggah.',
             'kk_wali.required' => 'KK Wali wajib diunggah.',
         ];
+
+        // Semua dokumen wajib PDF (pas foto dikecualikan). Pesannya dibangun
+        // dari daftar label supaya tidak mungkin ada dokumen yang lolos tanpa
+        // pesan format saat pengguna mengunggah berkas non-PDF.
+        foreach (self::DOKUMEN_PDF as $field => $label) {
+            $pesan[$field.'.mimes'] = $label.' harus berupa file PDF.';
+            $pesan[$field.'.max'] = 'Ukuran '.$label.' maksimal 2MB.';
+        }
+
+        $pesan['dokumen_prestasi.*.mimes'] = 'Dokumen prestasi harus berupa file PDF.';
+        $pesan['dokumen_prestasi.*.max'] = 'Ukuran dokumen prestasi maksimal 2MB per file.';
+
+        return $pesan;
     }
 }

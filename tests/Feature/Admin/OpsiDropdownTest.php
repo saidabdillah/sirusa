@@ -5,6 +5,7 @@ use App\Models\Menu;
 use App\Models\Scholarship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
 
@@ -114,8 +115,8 @@ test('tidak ada radio jenis kelamin yang terpilih saat profil masih kosong', fun
 
 test('checkbox akses menu tidak tercentang untuk role yang belum punya akses', function () {
     // Role baru tanpa grant apa pun: seluruh checkbox harus kosong.
-    \Spatie\Permission\Models\Role::create(['name' => 'kosong']);
-    $roleId = \Spatie\Permission\Models\Role::where('name', 'kosong')->value('id');
+    Role::create(['name' => 'kosong']);
+    $roleId = Role::where('name', 'kosong')->value('id');
 
     $html = actingAs($this->superAdmin)
         ->get(route('admin.menu.index', ['role' => $roleId]))
@@ -142,8 +143,8 @@ test('checkbox akses menu tidak tercentang untuk role yang belum punya akses', f
 });
 
 test('checkbox aksi tidak tercentang untuk role yang belum punya aksi', function () {
-    \Spatie\Permission\Models\Role::create(['name' => 'tanpa-aksi']);
-    $roleId = \Spatie\Permission\Models\Role::where('name', 'tanpa-aksi')->value('id');
+    Role::create(['name' => 'tanpa-aksi']);
+    $roleId = Role::where('name', 'tanpa-aksi')->value('id');
 
     $html = actingAs($this->superAdmin)
         ->get(route('admin.menu.index', ['role' => $roleId]))

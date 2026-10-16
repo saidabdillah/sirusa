@@ -145,9 +145,11 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
                 <div class="form-group col-md-6">
                   <label for="no_kk">No. Kartu Keluarga <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control @error('no_kk') is-invalid @enderror" id="no_kk" name="no_kk"
-                    value="{{ old('no_kk', $profile->no_kk ?? '') }}" maxlength="16">
+                  <input type="text" inputmode="numeric" class="form-control @error('no_kk') is-invalid @enderror"
+                    id="no_kk" name="no_kk" value="{{ old('no_kk', $profile->no_kk ?? '') }}" maxlength="16"
+                    placeholder="16 digit angka">
                   @error('no_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Hanya angka, tepat 16 digit, dan harus sama dengan NIK.</small>
                 </div>
               </div>
 
@@ -158,7 +160,6 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                     id="telepon" name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}" maxlength="13"
                     placeholder="contoh 081234567890">
                   @error('telepon')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Nomor HP Indonesia: diawali 08, panjang 10 sampai 13 digit.</small>
                 </div>
                 <div class="form-group col-md-6">
                   <label for="desil">Desil Kesejahteraan <span class="text-danger">*</span></label>
@@ -469,13 +470,23 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               @foreach($documentGroups as $groupName => $documents)
               <h6 class="mt-3 mb-2"><i class="fas fa-folder text-primary mr-1"></i>{{ $groupName }}</h6>
               @foreach($documents as $field => $label)
-              @php $isWaliDoc = in_array($field, $waliDocFields, true); @endphp
+              @php
+                $isWaliDoc = in_array($field, $waliDocFields, true);
+                // Pas foto satu-satunya berkas berupa gambar; semua dokumen
+                // lain wajib PDF. `accept` dan teks bantuan mengikuti aturan
+                // yang sama dengan `UpdateProfilRequest`.
+                $isFoto = $field === 'foto_profil';
+                $accept = $isFoto ? 'image/jpeg,image/png' : 'application/pdf';
+                $bantuan = $isFoto
+                    ? 'Format: JPG, JPEG, atau PNG. Ukuran maksimal 2 MB.'
+                    : 'Format: PDF. Ukuran maksimal 2 MB.';
+              @endphp
               <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}"
                 style="{{ $isWaliDoc && old('ikut_kk', $profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
                 <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
                 <div class="input-group">
                   <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"
-                    name="{{ $field }}" accept="image/*,.pdf,.webp">
+                    name="{{ $field }}" accept="{{ $accept }}">
                   @if($profile && $profile->{$field})
                   <div class="input-group-append">
                     <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank"
@@ -486,7 +497,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   @endif
                   @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <small class="text-muted">Format: PDF, JPG, JPEG, PNG, atau WEBP. Ukuran maksimal 2 MB.</small>
+                <small class="text-muted">{{ $bantuan }}</small>
                 @if($profile && $profile->{$field})
                 <small class="text-muted d-block">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
                 @endif
@@ -497,9 +508,9 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-group">
                 <label for="dokumen_prestasi">Dokumen Prestasi (Pilihan, bisa lebih dari satu)</label>
                 <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror"
-                  id="dokumen_prestasi" name="dokumen_prestasi[]" accept="image/*,.pdf,.webp" multiple>
+                  id="dokumen_prestasi" name="dokumen_prestasi[]" accept="application/pdf" multiple>
                 @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <small class="text-muted">Format: PDF, JPG, JPEG, PNG, atau WEBP. Ukuran maksimal 2 MB per file.</small>
+                <small class="text-muted">Format: PDF. Ukuran maksimal 2 MB per file.</small>
                 @if($profile && $profile->dokumen_prestasi)
                 <div class="mt-2">
                   @foreach($profile->dokumen_prestasi as $path)
@@ -571,11 +582,17 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   });
 
   if (typeof Cleave !== 'undefined' && document.getElementById('nik')) {
-    // NIK dan nomor HP hanya angka. `blocks` + `numericOnly` menahan huruf
-    // sejak ketikan pertama, jadi pengguna tidak bisa melewati batas digit:
-    // NIK berhenti di 16, nomor HP di 13. Aturan server (`digits:16` dan
-    // `regex:/^08[0-9]{8,11}$/`) tetap berlaku sebagai penutup jalur tanpa JS.
+    // NIK, No. KK, dan nomor HP hanya angka. `blocks` + `numericOnly` menahan
+    // huruf sejak ketikan pertama, jadi pengguna tidak bisa melewati batas
+    // digit: NIK dan No. KK berhenti di 16, nomor HP di 13. Aturan server
+    // (`digits:16`, `same:nik`, dan `regex:/^08[0-9]{8,11}$/`) tetap berlaku
+    // sebagai penutup jalur tanpa JS.
     new Cleave('#nik', {
+      blocks: [16],
+      numericOnly: true,
+    });
+
+    new Cleave('#no_kk', {
       blocks: [16],
       numericOnly: true,
     });

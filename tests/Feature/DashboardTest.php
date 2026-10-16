@@ -245,7 +245,7 @@ test('the campus column on a stage dashboard shows the real campus name', functi
 
 test('kolom antrean di dasbor mengikuti tahap yang memverifikasi', function () {
     $catpil = mahasiswaTahap('catpil', 'Ani Catpil');
-    $catpil->profile->update(['nik' => '6302000000000001', 'no_kk' => '6302000000000002', 'desil' => 2]);
+    $catpil->profile->update(['nik' => '6302000000000001', 'no_kk' => '6302000000000001', 'desil' => 2]);
 
     $html = actingAs($this->catpilAdmin)->get(route('dashboard'))->assertOk()->getContent();
 
@@ -415,7 +415,7 @@ test('student dashboard drops the warning once the profile is complete', functio
 
     $user->profile->update([
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000000009',
+        'no_kk' => '6302000000000001',
         'ikut_kk' => 'ayah',
         'ukt' => 3500000,
         'desil' => 3,

@@ -21,7 +21,7 @@ function payloadTeleponProfil(int $prodiId, array $override = []): array
         'nama_lengkap' => 'Budi',
         'email' => 'user@test.com',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000009999',
+        'no_kk' => '6302000000000001',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -109,10 +109,47 @@ test('pesan galat nomor HP menyebut aturannya', function () {
 test('setiap input berkas punya keterangan format dan ukuran', function () {
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 
-    // Keterangan yang sama muncul untuk tiap dokumen wajib dan dokumen prestasi.
-    expect(substr_count($html, 'Format: PDF, JPG, JPEG, PNG, atau WEBP. Ukuran maksimal 2 MB.'))
-        ->toBeGreaterThan(10)
-        ->and($html)->toContain('Ukuran maksimal 2 MB per file.');
+    // Semua dokumen PDF; pas foto satu-satunya yang berupa gambar. Keterangan
+    // di layar harus mencerminkan aturan server, jadi jumlahnya diperiksa:
+    // 13 dokumen PDF (12 di grup + dokumen prestasi) dan 1 pas foto.
+    expect(substr_count($html, 'Format: PDF. Ukuran maksimal 2 MB.'))
+        ->toBe(12)
+        ->and($html)->toContain('Ukuran maksimal 2 MB per file.')
+        ->and(substr_count($html, 'Format: JPG, JPEG, atau PNG. Ukuran maksimal 2 MB.'))
+        ->toBe(1)
+        // Tidak boleh ada lagi sisa teks format lama yang menyebut gambar
+        // untuk dokumen.
+        ->and($html)->not->toContain('Format: PDF, JPG, JPEG, PNG, atau WEBP.');
+});
+
+test('input dokumen memakai accept pdf, pas foto memakai accept gambar', function () {
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    // Semua input dokumen: PDF saja.
+    preg_match_all('#<input[^>]*type="file"[^>]*>#i', $html, $semua);
+
+    $pdf = 0;
+    $gambar = 0;
+
+    foreach ($semua[0] as $tag) {
+        if (str_contains($tag, 'accept="application/pdf"')) {
+            $pdf++;
+
+            continue;
+        }
+
+        if (str_contains($tag, 'accept="image/jpeg,image/png"')) {
+            $gambar++;
+
+            continue;
+        }
+
+        $this->fail('Ada input berkas dengan accept yang tidak sesuai: '.$tag);
+    }
+
+    // 12 dokumen wajib + dokumen prestasi = 13 PDF, dan 1 pas foto.
+    expect($pdf)->toBe(13)
+        ->and($gambar)->toBe(1);
 });
 
 test('input NIK dan nomor HP memakai inputmode angka dan dibatasi panjangnya', function () {
@@ -120,20 +157,57 @@ test('input NIK dan nomor HP memakai inputmode angka dan dibatasi panjangnya', f
 
     expect($html)
         ->toMatch('/id="nik"[^>]*maxlength="16"/')
+        ->toMatch('/id="no_kk"[^>]*maxlength="16"/')
         ->toMatch('/id="telepon"[^>]*maxlength="13"/')
         ->toContain('Hanya angka, tepat 16 digit.')
-        ->toContain('Nomor HP Indonesia: diawali 08, panjang 10 sampai 13 digit.');
+        ->toContain('Hanya angka, tepat 16 digit, dan harus sama dengan NIK.')
+        // Teks bantuan nomor HP sengaja dihapus atas permintaan pengguna.
+        ->not->toContain('Nomor HP Indonesia: diawali 08');
 });
 
-test('NIK dan nomor HP diinisialisasi dengan Cleave angka murni', function () {
+test('NIK, No. KK, dan nomor HP diinisialisasi dengan Cleave angka murni', function () {
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 
     expect($html)
         ->toContain("new Cleave('#nik'")
+        ->toContain("new Cleave('#no_kk'")
         ->toContain("new Cleave('#telepon'")
         ->toContain('blocks: [16]')
         ->toContain('blocks: [13]')
         ->toContain('numericOnly: true');
+});
+
+// ─── No. KK harus sama dengan NIK ─────────────────────────────────────────
+
+test('No. KK yang berbeda dari NIK ditolak', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), array_merge(
+            payloadTeleponProfil($this->prodi->id, ['no_kk' => '6302000000008888']),
+            berkasProfilDummy(),
+        ))
+        ->assertSessionHasErrors(['no_kk' => 'Nomor Kartu Keluarga harus sama dengan NIK.']);
+});
+
+test('No. KK yang sama dengan NIK diterima', function () {
+    $nik = '6302000000000001';
+
+    actingAs($this->user)
+        ->put(route('profile.update'), array_merge(
+            payloadTeleponProfil($this->prodi->id, ['nik' => $nik, 'no_kk' => $nik]),
+            berkasProfilDummy(),
+        ))
+        ->assertSessionDoesntHaveErrors();
+
+    expect($this->user->fresh()->profile->no_kk)->toBe($nik);
+});
+
+test('No. KK yang belum 16 digit dilaporkan panjangnya, bukan kesamaannya', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), array_merge(
+            payloadTeleponProfil($this->prodi->id, ['no_kk' => '123']),
+            berkasProfilDummy(),
+        ))
+        ->assertSessionHasErrors(['no_kk' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit.']);
 });
 
 // ─── Alert dasbor ─────────────────────────────────────────────────────────
@@ -157,7 +231,7 @@ test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap',
         'user_id' => $this->user->id,
         'nama_lengkap' => 'Budi',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000009999',
+        'no_kk' => '6302000000000001',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',

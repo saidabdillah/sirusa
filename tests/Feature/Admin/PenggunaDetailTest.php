@@ -33,7 +33,7 @@ beforeEach(function () {
         'user_id' => $this->mahasiswa->id,
         'nama_lengkap' => 'Budi Santoso',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000009999',
+        'no_kk' => '6302000000000001',
         'jenis_kelamin' => 'Laki-laki',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
@@ -66,7 +66,7 @@ test('kesra bisa membuka detail pengguna mahasiswa', function () {
         ->assertSee('NIK')
         ->assertSee('6302000000000001')
         ->assertSee('No. Kartu Keluarga')
-        ->assertSee('6302000000009999')
+        ->assertSee('6302000000000001')
         ->assertSee('Laki-laki')
         ->assertSee('Agama')
         ->assertSee('Islam')
