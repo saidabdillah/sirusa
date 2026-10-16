@@ -351,3 +351,109 @@ test('upload berkas wali tetap terlihat setelah validasi gagal', function () {
 
     expect($html)->toContain('class="form-group wali-doc" style="display:none;"');
 });
+
+/*
+|--------------------------------------------------------------------------
+| NIK dan NIM unik antar mahasiswa
+|--------------------------------------------------------------------------
+| Kedua kolom punya index unique di `profil_pengguna`, tapi sebelumnya TIDAK
+| ada rule `unique` di `UpdateProfilRequest`. Pelanggarannya karena itu baru
+| ketahuan di database, dan pesan exception-nya (yang memuat seluruh perintah
+| INSERT beserta NIK, No. KK, nomor HP, dan data pribadi lain) tampil ke layar
+| lewat catch-all di `ProfileController`. Tes di bawah mengunci dua hal
+| sekaligus: pelanggarannya dicegah sebelum menyentuh database, dan pesan yang
+| muncul bisa dimengerti.
+*/
+
+/** Mahasiswa lain yang sudah mengisi profilnya lebih dulu. */
+function mahasiswaLainDenganProfil(string $email, array $profil = []): User
+{
+    $lain = User::factory()->standardUser()->create(['email' => $email]);
+
+    UserProfile::create(array_merge([
+        'user_id' => $lain->id,
+        'nama_lengkap' => 'Mahasiswa Lain',
+        'nik' => '6302000000007777',
+        'nim' => '2010999999',
+        'ikut_kk' => 'ayah',
+        'kk_ikut_wali' => false,
+    ], $profil));
+
+    return $lain;
+}
+
+test('NIK yang sudah dipakai akun lain ditolak dengan pesan yang bisa dimengerti', function () {
+    mahasiswaLainDenganProfil('lain@test.com', ['nik' => '6302000000000001']);
+
+    $response = actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id))
+        ->assertSessionHasErrors([
+            'nik' => 'NIK ini sudah terdaftar pada akun lain. Periksa kembali NIK Anda.',
+        ]);
+
+    // Ditahan di validasi, jadi tidak ada baris profil yang setengah jadi.
+    expect(UserProfile::where('user_id', $this->user->id)->exists())->toBeFalse();
+});
+
+test('NIM yang sudah dipakai akun lain ditolak dengan pesan yang bisa dimengerti', function () {
+    mahasiswaLainDenganProfil('lain@test.com', ['nim' => '2010123456']);
+
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id))
+        ->assertSessionHasErrors([
+            'nim' => 'NIM ini sudah terdaftar pada akun lain. Periksa kembali NIM Anda.',
+        ]);
+
+    expect(UserProfile::where('user_id', $this->user->id)->exists())->toBeFalse();
+});
+
+test('NIK dan NIM sendiri tidak dianggap bentrok saat profil disimpan ulang', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id))
+        ->assertSessionHasNoErrors();
+
+    // Simpan ulang dengan nilai yang sama: `Rule::unique(...)->ignore($profilId)`
+    // harus mengecualikan baris profil milik sendiri, kalau tidak setiap
+    // penyimpanan ulang akan gagal.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id))
+        ->assertSessionHasNoErrors();
+
+    $profil = UserProfile::where('user_id', $this->user->id)->first();
+
+    expect($profil->nik)->toBe('6302000000000001')
+        ->and($profil->nim)->toBe('2010123456');
+});
+
+test('No. KK dan NIK orang tua yang sama dengan mahasiswa lain tetap diterima', function () {
+    // Dua mahasiswa bersaudara memang berbagi nomor KK dan NIK orang tua.
+    // Kolom-kolom ini SENGAJA tidak unik -- menguncinya akan menolak
+    // pendaftaran yang sah.
+    mahasiswaLainDenganProfil('saudara@test.com', [
+        'no_kk' => '6302000000009999',
+        'nik_ayah' => '6302000000000002',
+        'nik_ibu' => '6302000000000003',
+    ]);
+
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id))
+        ->assertSessionHasNoErrors();
+
+    $profil = UserProfile::where('user_id', $this->user->id)->first();
+
+    expect($profil->no_kk)->toBe('6302000000009999')
+        ->and($profil->nik_ayah)->toBe('6302000000000002')
+        ->and($profil->nik_ibu)->toBe('6302000000000003');
+});
+
+test('pesan galat penyimpanan profil tidak membocorkan isi exception', function () {
+    // Pelanggaran unique di database menghasilkan pesan yang memuat SELURUH
+    // perintah INSERT beserta nilai tiap kolom. Pesan itu tidak boleh pernah
+    // sampai ke layar: yang tampil hanya keterangan umum, detailnya ke log.
+    $sumber = file_get_contents(app_path('Http/Controllers/Profile/ProfileController.php'));
+
+    expect($sumber)
+        ->not->toContain("'Terjadi kesalahan saat menyimpan profil: '.\$e->getMessage()")
+        ->and($sumber)->toContain('Log::error')
+        ->and($sumber)->toContain('Profil gagal disimpan karena terjadi kesalahan pada sistem.');
+});

@@ -45,6 +45,24 @@ class UpdateProfilRequest extends FormRequest
 
         $pekerjaan = 'in:PNS/TNI/Polri,Swasta,Wiraswasta,Petani,Buruh,Tidak Bekerja,Lainnya';
 
+        // NIK dan NIM unik antar mahasiswa. Tabelnya sudah punya index unique
+        // sejak awal, tapi tanpa rule di sini pelanggarannya baru ketahuan di
+        // database: mahasiswa melihat pesan SQL mentah berikut seluruh isi
+        // datanya, bukan pesan yang bisa dimengerti.
+        //
+        // `ignore()` memakai id baris profil milik sendiri supaya menyimpan
+        // ulang tanpa mengubah NIK/NIM tidak dianggap bentrok dengan diri
+        // sendiri.
+        //
+        // Diambil lewat `profile()` (query segar), BUKAN `profile` (relasi
+        // yang bisa sudah ter-cache): pada request yang sama relasi itu bisa
+        // terlanjur di-cache sebagai `null` -- misalnya saat request pertama
+        // memang belum punya profil -- sehingga `ignore()` tidak mengecualikan
+        // apa pun dan penyimpanan ulang ditolak oleh barisnya sendiri.
+        // Saat profilnya belum ada, hasilnya `null` dan tidak ada baris yang
+        // perlu dikecualikan.
+        $profilId = $this->user()?->profile()->value('id');
+
         return [
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'email' => [
@@ -57,11 +75,23 @@ class UpdateProfilRequest extends FormRequest
                 // dengan dirinya sendiri.
                 Rule::unique('users', 'email')->ignore($this->user()->id),
             ],
-            'nik' => ['required', 'digits:16'],
+            'nik' => [
+                'required',
+                'digits:16',
+                Rule::unique('profil_pengguna', 'nik')->ignore($profilId),
+            ],
             // No. KK berdiri sendiri: wajib 16 digit angka, tidak harus sama
-            // dengan NIK (nomor KK dan NIK memang nomor yang berbeda).
+            // dengan NIK (nomor KK dan NIK memang nomor yang berbeda). Kolom
+            // ini SENGAJA tidak unik: dua mahasiswa bersaudara memakai nomor
+            // KK yang sama, jadi mengunci keunikannya akan menolak pendaftaran
+            // yang sah.
             'no_kk' => ['required', 'digits:16'],
-            'nim' => ['nullable', 'string', 'max:30'],
+            'nim' => [
+                'nullable',
+                'string',
+                'max:30',
+                Rule::unique('profil_pengguna', 'nim')->ignore($profilId),
+            ],
             'tempat_lahir' => ['required', 'string', 'max:255'],
             'tanggal_lahir' => ['required', 'date'],
             'jenis_kelamin' => ['required', 'in:Laki-laki,Perempuan'],
@@ -243,8 +273,10 @@ class UpdateProfilRequest extends FormRequest
             'email.unique' => 'Email ini sudah digunakan user lain.',
             'nik.required' => 'NIK harus diisi.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
+            'nik.unique' => 'NIK ini sudah terdaftar pada akun lain. Periksa kembali NIK Anda.',
             'no_kk.required' => 'Nomor Kartu Keluarga harus diisi.',
             'no_kk.digits' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit angka.',
+            'nim.unique' => 'NIM ini sudah terdaftar pada akun lain. Periksa kembali NIM Anda.',
             'tempat_lahir.required' => 'Tempat lahir harus diisi.',
             'tanggal_lahir.required' => 'Tanggal lahir harus diisi.',
             'tanggal_lahir.date' => 'Tanggal lahir tidak valid.',

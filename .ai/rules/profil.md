@@ -5,6 +5,19 @@ paths:
 
 # Profil
 
+## NIK dan NIM unik antar mahasiswa; No. KK dan NIK orang tua SENGAJA tidak
+`profil_pengguna` punya index unique pada `nik` dan `nim` sejak migrasi awal. Rule di FormRequest WAJIB mencerminkannya — kalau tidak, pelanggarannya baru ketahuan di database dan mahasiswa melihat pesan exception yang memuat SELURUH perintah INSERT beserta NIK, No. KK, nomor HP, dan data pribadi lain. `UpdateProfilRequest` memakai `Rule::unique('profil_pengguna', 'nik'|'nim')->ignore($profilId)`, dengan `$profilId = $this->user()?->profile()->value('id')`.
+
+- Ambil id-nya lewat `profile()` (query segar), BUKAN `profile` (relasi): relasi itu bisa sudah ter-cache sebagai `null` pada request yang sama, sehingga `ignore()` tidak mengecualikan apa pun dan penyimpanan ulang ditolak oleh barisnya sendiri.
+- Pesannya `'nik.unique' => 'NIK ini sudah terdaftar pada akun lain. Periksa kembali NIK Anda.'` dan `'nim.unique'` serupa.
+- `no_kk`, `nik_ayah`, `nik_ibu`, `nik_wali` SENGAJA tidak unik: dua mahasiswa bersaudara berbagi nomor KK dan NIK orang tua yang sama, jadi menguncinya akan menolak pendaftaran yang sah.
+- NIK ikut dipakai sebagai kredensial masuk (`AuthController::simpanMasuk` mencari `whereHas('profile', nik = $login)`), jadi keunikannya menopang login, bukan sekadar kerapian data.
+- Jalur admin (`StoreUserRequest`) sudah lebih dulu punya `Rule::unique('profil_pengguna','nik')`; jaga keduanya tetap sejalan.
+- Covered by tests/Feature/ProfilValidasiTest.php.
+
+## Pesan exception TIDAK boleh ditampilkan ke pengguna
+`ProfileController::update` dibungkus `catch (\Throwable)` yang dulu menempelkan `$e->getMessage()` ke pesan `ajaxFail` — pesan SQL-nya memuat seluruh nilai kolom, jadi itu pembocoran data pribadi. Sekarang detailnya hanya ke `Log::error(...)` (dengan `user_id` + objek exception) dan yang tampil ke pengguna hanya "Profil gagal disimpan karena terjadi kesalahan pada sistem. Silakan coba lagi; bila masih gagal, hubungi admin.". Jangan kembalikan `$e->getMessage()` ke `ajaxFail`/flash di halaman mana pun.
+
 ## Nomor HP Indonesia dibatasi 08 + 10–13 digit; NIK/no HP/No. KK pakai Cleave angka
 `UpdateProfilRequest` memvalidasi `telepon` dengan `regex:/^08[0-9]{8,11}$/` (diawali `08`, total 10–13 digit) — nomor asing sengaja TIDAK diterima karena kolom ini khusus nomor HP Indonesia (keputusan pengguna). Form `profil/index` memasang Cleave `numericOnly: true` dengan `blocks: [16]` untuk `#nik` DAN `#no_kk`, serta `blocks: [13]` untuk `#telepon` (satu blok `if (typeof Cleave !== 'undefined' && document.getElementById('nik'))`, sebelum blok UKT), sehingga huruf tertahan sejak ketikan pertama dan digit tidak bisa melewati batas. Aturan server tetap penutup jalur tanpa JavaScript — jangan hapus salah satunya. Teks bantuan nomor HP SUDAH DIHAPUS atas permintaan pengguna. Aturan format/ukuran berkas ada di bagian berikutnya. Covered by tests/Feature/ProfilTeleponDanAlertTest.php.
 

@@ -161,11 +161,18 @@ class ProfileController extends Controller
 
             return $this->ajaxOk($request, 'Profil berhasil diperbarui', route('profile'));
         } catch (\Throwable $e) {
-            Log::error('Gagal update profil: '.$e->getMessage());
+            // Detail teknisnya masuk log, TIDAK ke layar. Pesan exception
+            // database memuat seluruh perintah INSERT beserta nilai-nilainya,
+            // jadi menampilkannya sama dengan membocorkan NIK, No. KK, nomor
+            // HP, dan data pribadi lain milik mahasiswa yang sedang mengisi.
+            Log::error('Gagal update profil: '.$e->getMessage(), [
+                'user_id' => auth()->id(),
+                'exception' => $e,
+            ]);
 
             return $this->ajaxFail(
                 $request,
-                'Terjadi kesalahan saat menyimpan profil: '.$e->getMessage(),
+                'Profil gagal disimpan karena terjadi kesalahan pada sistem. Silakan coba lagi; bila masih gagal, hubungi admin.',
                 null,
                 [],
                 500
