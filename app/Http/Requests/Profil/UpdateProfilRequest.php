@@ -9,6 +9,30 @@ use Illuminate\Validation\Validator;
 
 class UpdateProfilRequest extends FormRequest
 {
+    /**
+     * Kolom-kolom NIK/No. KK yang harus saling berbeda, dalam urutan form.
+     *
+     * Kelimanya adalah nomor identitas orang yang berbeda-beda (mahasiswa, kartu
+     * keluarga, ayah, ibu, wali), jadi satu nomor tidak boleh dipakai di dua
+     * kolom: itu tanda salah isi, bukan variasi data yang sah. Nomor KK dan NIK
+     * memang dua nomor yang berbeda pula, jadi No. KK pun tidak boleh sama
+     * dengan NIK mana pun.
+     *
+     * Tiap kolom menyebut SEMUA kolom lain (bukan hanya yang di atasnya) supaya
+     * pesan galatnya muncul tepat di kolom yang bentrok. `different` dilewati
+     * Laravel untuk nilai string kosong, jadi kolom opsional seperti `nik_wali`
+     * tidak ikut menghasilkan pesan saat memang sedang tidak diisi.
+     *
+     * @var array<string, string>
+     */
+    private const BEDA_DARI_NIK_LAIN = [
+        'nik' => 'different:no_kk,nik_ayah,nik_ibu,nik_wali',
+        'no_kk' => 'different:nik,nik_ayah,nik_ibu,nik_wali',
+        'nik_ayah' => 'different:nik,no_kk,nik_ibu,nik_wali',
+        'nik_ibu' => 'different:nik,no_kk,nik_ayah,nik_wali',
+        'nik_wali' => 'different:nik,no_kk,nik_ayah,nik_ibu',
+    ];
+
     public function authorize(): bool
     {
         // Hanya mahasiswa yang punya profil isian + dokumen. Akun staf
@@ -79,13 +103,13 @@ class UpdateProfilRequest extends FormRequest
                 'required',
                 'digits:16',
                 Rule::unique('profil_pengguna', 'nik')->ignore($profilId),
+                self::BEDA_DARI_NIK_LAIN['nik'],
             ],
-            // No. KK berdiri sendiri: wajib 16 digit angka, tidak harus sama
-            // dengan NIK (nomor KK dan NIK memang nomor yang berbeda). Kolom
-            // ini SENGAJA tidak unik: dua mahasiswa bersaudara memakai nomor
-            // KK yang sama, jadi mengunci keunikannya akan menolak pendaftaran
-            // yang sah.
-            'no_kk' => ['required', 'digits:16'],
+            // No. KK berdiri sendiri: wajib 16 digit angka dan bukan salinan
+            // NIK siapa pun. Kolom ini SENGAJA tidak unik antar mahasiswa: dua
+            // mahasiswa bersaudara memakai nomor KK yang sama, jadi mengunci
+            // keunikannya akan menolak pendaftaran yang sah.
+            'no_kk' => ['required', 'digits:16', self::BEDA_DARI_NIK_LAIN['no_kk']],
             'nim' => [
                 'nullable',
                 'string',
@@ -118,13 +142,19 @@ class UpdateProfilRequest extends FormRequest
             // Ketiga blok (ayah, ibu, wali) selalu tampil di form dan selalu bertanda *,
             // jadi wali hanya wajib bila KK-nya memang mengikuti wali.
             'nama_ayah' => ['required', 'string', 'max:255'],
-            'nik_ayah' => ['required', 'digits:16'],
+            'nik_ayah' => ['required', 'digits:16', self::BEDA_DARI_NIK_LAIN['nik_ayah']],
             'pekerjaan_ayah' => ['required', $pekerjaan],
             'nama_ibu' => ['required', 'string', 'max:255'],
-            'nik_ibu' => ['required', 'digits:16'],
+            'nik_ibu' => ['required', 'digits:16', self::BEDA_DARI_NIK_LAIN['nik_ibu']],
             'pekerjaan_ibu' => ['required', $pekerjaan],
             'nama_wali' => $pakaiWali ? ['required', 'string', 'max:255'] : ['nullable'],
-            'nik_wali' => $pakaiWali ? ['required', 'digits:16'] : ['nullable'],
+            // Saat wali tidak dipakai, kolomnya `nullable` dan `different`
+            // otomatis dilewati (Laravel melewati rule non-implicit untuk nilai
+            // string kosong), jadi tidak ada pesan bentrok yang muncul dari
+            // kolom yang memang sedang tidak diisi.
+            'nik_wali' => $pakaiWali
+                ? ['required', 'digits:16', self::BEDA_DARI_NIK_LAIN['nik_wali']]
+                : ['nullable'],
             'pekerjaan_wali' => $pakaiWali ? ['required', $pekerjaan] : ['nullable'],
             'hubungan_wali' => $pakaiWali ? ['required', 'in:Paman,Bibi,Kakek,Nenek,Lainnya'] : ['nullable'],
 
@@ -274,6 +304,14 @@ class UpdateProfilRequest extends FormRequest
             'nik.required' => 'NIK harus diisi.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
             'nik.unique' => 'NIK ini sudah terdaftar pada akun lain. Periksa kembali NIK Anda.',
+            // Kelima kolom ini memuat nomor identitas orang yang berbeda-beda,
+            // jadi satu nomor tidak boleh dipakai dua kali. Pesannya menyebut
+            // kolom pasangannya supaya mahasiswa tahu mana yang harus diperiksa.
+            'nik.different' => 'NIK tidak boleh sama dengan No. Kartu Keluarga, NIK Ayah, NIK Ibu, atau NIK Wali.',
+            'no_kk.different' => 'No. Kartu Keluarga tidak boleh sama dengan NIK, NIK Ayah, NIK Ibu, atau NIK Wali.',
+            'nik_ayah.different' => 'NIK Ayah tidak boleh sama dengan NIK, No. Kartu Keluarga, NIK Ibu, atau NIK Wali.',
+            'nik_ibu.different' => 'NIK Ibu tidak boleh sama dengan NIK, No. Kartu Keluarga, NIK Ayah, atau NIK Wali.',
+            'nik_wali.different' => 'NIK Wali tidak boleh sama dengan NIK, No. Kartu Keluarga, NIK Ayah, atau NIK Ibu.',
             'no_kk.required' => 'Nomor Kartu Keluarga harus diisi.',
             'no_kk.digits' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit angka.',
             'nim.unique' => 'NIM ini sudah terdaftar pada akun lain. Periksa kembali NIM Anda.',
@@ -304,16 +342,16 @@ class UpdateProfilRequest extends FormRequest
             'desil.between' => 'Desil harus antara 1 dan 10.',
             'ikut_kk.required' => 'Ikut KK harus dipilih.',
             'nama_ayah.required' => 'Nama ayah harus diisi.',
-            'nik_ayah.required' => 'NIK ayah harus diisi.',
-            'nik_ayah.digits' => 'NIK ayah harus terdiri dari 16 digit.',
+            'nik_ayah.required' => 'NIK Ayah harus diisi.',
+            'nik_ayah.digits' => 'NIK Ayah harus terdiri dari 16 digit angka.',
             'pekerjaan_ayah.required' => 'Pekerjaan ayah harus dipilih.',
             'nama_ibu.required' => 'Nama ibu harus diisi.',
-            'nik_ibu.required' => 'NIK ibu harus diisi.',
-            'nik_ibu.digits' => 'NIK ibu harus terdiri dari 16 digit.',
+            'nik_ibu.required' => 'NIK Ibu harus diisi.',
+            'nik_ibu.digits' => 'NIK Ibu harus terdiri dari 16 digit angka.',
             'pekerjaan_ibu.required' => 'Pekerjaan ibu harus dipilih.',
             'nama_wali.required' => 'Nama wali harus diisi.',
-            'nik_wali.required' => 'NIK wali harus diisi.',
-            'nik_wali.digits' => 'NIK wali harus terdiri dari 16 digit.',
+            'nik_wali.required' => 'NIK Wali harus diisi.',
+            'nik_wali.digits' => 'NIK Wali harus terdiri dari 16 digit angka.',
             'pekerjaan_wali.required' => 'Pekerjaan wali harus dipilih.',
             'hubungan_wali.required' => 'Hubungan dengan wali harus dipilih.',
             'foto_profil.required' => 'Pas foto 3x4 wajib diunggah.',

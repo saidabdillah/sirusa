@@ -10,10 +10,19 @@ paths:
 
 - Ambil id-nya lewat `profile()` (query segar), BUKAN `profile` (relasi): relasi itu bisa sudah ter-cache sebagai `null` pada request yang sama, sehingga `ignore()` tidak mengecualikan apa pun dan penyimpanan ulang ditolak oleh barisnya sendiri.
 - Pesannya `'nik.unique' => 'NIK ini sudah terdaftar pada akun lain. Periksa kembali NIK Anda.'` dan `'nim.unique'` serupa.
-- `no_kk`, `nik_ayah`, `nik_ibu`, `nik_wali` SENGAJA tidak unik: dua mahasiswa bersaudara berbagi nomor KK dan NIK orang tua yang sama, jadi menguncinya akan menolak pendaftaran yang sah.
+- `no_kk`, `nik_ayah`, `nik_ibu`, `nik_wali` SENGAJA tidak unik ANTAR MAHASISWA: dua mahasiswa bersaudara berbagi nomor KK dan NIK orang tua yang sama, jadi mengunci keunikannya akan menolak pendaftaran yang sah.
 - NIK ikut dipakai sebagai kredensial masuk (`AuthController::simpanMasuk` mencari `whereHas('profile', nik = $login)`), jadi keunikannya menopang login, bukan sekadar kerapian data.
 - Jalur admin (`StoreUserRequest`) sudah lebih dulu punya `Rule::unique('profil_pengguna','nik')`; jaga keduanya tetap sejalan.
 - Covered by tests/Feature/ProfilValidasiTest.php.
+
+## Kelima kolom NIK/No. KK tidak boleh saling sama (dalam satu profil)
+`nik`, `no_kk`, `nik_ayah`, `nik_ibu`, `nik_wali` memuat nomor identitas orang (dan kartu) yang BERBEDA-BEDA, jadi satu nomor tidak boleh dipakai di dua kolom — itu tanda salah isi, bukan variasi data yang sah. Nomor KK juga bukan NIK, jadi `no_kk` pun tidak boleh sama dengan NIK mana pun.
+
+Sumber tunggalnya konstanta `UpdateProfilRequest::BEDA_DARI_NIK_LAIN` (peta `field => 'different:<semua field lain>'`). Tiap kolom menyebut SEMUA kolom lain, bukan hanya yang di atasnya, supaya pesan galatnya muncul tepat di kolom yang bentrok — bukan cuma di satu kolom. Pesan `'<field>.different'` menyebut kolom pasangannya, mis. "NIK Ayah tidak boleh sama dengan NIK, No. Kartu Keluarga, NIK Ibu, atau NIK Wali.".
+
+Jangan hapus rule `different` dari `nik_wali` saat wali tidak dipakai: Laravel melewati rule non-implicit untuk nilai string kosong (`Arr::has` + perbandingan string), jadi `['nullable', 'different:...']` tidak menghasilkan pesan palsu. Kalau ragu, `validateDifferent()` di `Illuminate/Validation/Concerns/ValidatesAttributes.php` mengembalikan `true` begitu nilainya kosong.
+
+Teks bantuan di `profil/index.blade.php` mengikuti aturan ini: kolom NIK mahasiswa dan No. KK berbunyi "Hanya angka, tepat 16 digit.", sedangkan ketiga NIK orang tua berbunyi "Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain." (jadi 3 + 2, dihitung tes).
 
 ## Pesan exception TIDAK boleh ditampilkan ke pengguna
 `ProfileController::update` dibungkus `catch (\Throwable)` yang dulu menempelkan `$e->getMessage()` ke pesan `ajaxFail` — pesan SQL-nya memuat seluruh nilai kolom, jadi itu pembocoran data pribadi. Sekarang detailnya hanya ke `Log::error(...)` (dengan `user_id` + objek exception) dan yang tampil ke pengguna hanya "Profil gagal disimpan karena terjadi kesalahan pada sistem. Silakan coba lagi; bila masih gagal, hubungi admin.". Jangan kembalikan `$e->getMessage()` ke `ajaxFail`/flash di halaman mana pun.

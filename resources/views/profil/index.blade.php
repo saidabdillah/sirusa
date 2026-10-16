@@ -372,6 +372,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah"
                     name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
                   @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.</small>
                 </div>
                 <div class="form-group col-md-4">
                   <label for="pekerjaan_ayah">Pekerjaan Ayah <span class="text-danger">*</span></label>
@@ -400,6 +401,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu"
                     name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
                   @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  <small class="text-muted">Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.</small>
                 </div>
                 <div class="form-group col-md-4">
                   <label for="pekerjaan_ibu">Pekerjaan Ibu <span class="text-danger">*</span></label>
@@ -431,6 +433,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                     <input type="text" class="form-control @error('nik_wali') is-invalid @enderror" id="nik_wali"
                       name="nik_wali" value="{{ old('nik_wali', $profile->nik_wali ?? '') }}" maxlength="16">
                     @error('nik_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <small class="text-muted">Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.</small>
                   </div>
                 </div>
                 <div class="form-row">

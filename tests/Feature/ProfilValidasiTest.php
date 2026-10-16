@@ -457,3 +457,103 @@ test('pesan galat penyimpanan profil tidak membocorkan isi exception', function 
         ->and($sumber)->toContain('Log::error')
         ->and($sumber)->toContain('Profil gagal disimpan karena terjadi kesalahan pada sistem.');
 });
+
+/*
+|--------------------------------------------------------------------------
+| NIK, No. KK, NIK Ayah/Ibu/Wali tidak boleh saling sama
+|--------------------------------------------------------------------------
+| Kelimanya nomor identitas orang (dan kartu) yang berbeda-beda. Satu nomor di
+| dua kolom adalah tanda salah isi, bukan variasi data yang sah. `no_kk` juga
+| tidak boleh sama dengan NIK mana pun karena nomor KK bukan NIK.
+*/
+
+test('semua kolom NIK diisi nomor yang sama ditolak', function () {
+    $nomor = '6302000000000001';
+
+    $response = actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
+            'nik' => $nomor,
+            'no_kk' => $nomor,
+            'nik_ayah' => $nomor,
+            'nik_ibu' => $nomor,
+            'nik_wali' => $nomor,
+        ]))
+        ->assertSessionHasErrors(['nik', 'no_kk', 'nik_ayah', 'nik_ibu', 'nik_wali']);
+
+    expect($response->getSession()->get('errors')->get('nik')[0])
+        ->toBe('NIK tidak boleh sama dengan No. Kartu Keluarga, NIK Ayah, NIK Ibu, atau NIK Wali.')
+        ->and(UserProfile::where('user_id', $this->user->id)->exists())->toBeFalse();
+});
+
+test('No. KK yang sama dengan NIK ditolak', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
+            'nik' => '6302000000000001',
+            'no_kk' => '6302000000000001',
+        ]))
+        ->assertSessionHasErrors([
+            'no_kk' => 'No. Kartu Keluarga tidak boleh sama dengan NIK, NIK Ayah, NIK Ibu, atau NIK Wali.',
+        ]);
+});
+
+test('NIK ayah yang sama dengan NIK ibu ditolak', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
+            'nik_ayah' => '6302000000000002',
+            'nik_ibu' => '6302000000000002',
+        ]))
+        ->assertSessionHasErrors(['nik_ayah', 'nik_ibu']);
+});
+
+test('NIK wali yang sama dengan NIK ayah ditolak', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
+            'ikut_kk' => 'wali',
+            'nik_ayah' => '6302000000000002',
+            'nik_wali' => '6302000000000002',
+        ]))
+        ->assertSessionHasErrors([
+            'nik_wali' => 'NIK Wali tidak boleh sama dengan NIK, No. Kartu Keluarga, NIK Ayah, atau NIK Ibu.',
+        ]);
+});
+
+test('kelima nomor yang berbeda diterima', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
+            'ikut_kk' => 'wali',
+            'nik' => '6302000000000001',
+            'no_kk' => '6302000000000011',
+            'nik_ayah' => '6302000000000021',
+            'nik_ibu' => '6302000000000031',
+            'nik_wali' => '6302000000000041',
+        ]))
+        ->assertSessionHasNoErrors();
+
+    $profil = UserProfile::where('user_id', $this->user->id)->first();
+
+    expect($profil->nik)->toBe('6302000000000001')
+        ->and($profil->no_kk)->toBe('6302000000000011')
+        ->and($profil->nik_wali)->toBe('6302000000000041');
+});
+
+test('saat wali tidak dipakai, nik_wali kosong tidak memicu pesan bentrok', function () {
+    // `different` dilewati Laravel untuk nilai string kosong, jadi kolom yang
+    // sedang tidak diisi tidak menambah pesan galat yang membingungkan.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
+            'ikut_kk' => 'ayah',
+            'nik_wali' => '',
+        ]))
+        ->assertSessionDoesntHaveErrors(['nik_wali']);
+});
+
+test('kolom NIK orang tua memakai teks bantuan yang menyebut aturan beda NIK', function () {
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    // NIK mahasiswa + No. KK + ketiga NIK orang tua = 5 kolom.
+    expect(substr_count($html, 'Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.'))
+        ->toBe(3)
+        // Teks lama (tanpa keterangan) tidak boleh tersisa di kolom NIK mana pun.
+        ->and(substr_count($html, 'Hanya angka, tepat 16 digit.</small>'))
+        ->toBe(2);
+});
