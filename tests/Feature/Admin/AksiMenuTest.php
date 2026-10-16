@@ -105,6 +105,54 @@ test('daftar pengguna untuk role read saja tidak menampilkan tombol tambah', fun
         ->assertDontSee('Tambah Pengguna');
 });
 
+test('daftar pengguna untuk role read saja tidak menampilkan tombol aksi apa pun', function () {
+    $pembaca = roleHanyaLihat();
+
+    // Tombol "Aksi" adalah pintu ke Ubah/Nonaktifkan/Reset/Hapus. Role yang
+    // hanya boleh melihat tidak boleh melihat pintunya sama sekali -- dropdown
+    // kosong tetap terbaca sebagai "boleh mengubah".
+    //
+    // Penandanya harus `fa-cog"></i> Aksi` (tombol dropdown di kolom Aksi),
+    // BUKAN `fa-cog` polos: ikon yang sama dipakai menu "Pengaturan" di navbar.
+    actingAs($pembaca)->get(route('admin.pengguna.index'))
+        ->assertOk()
+        ->assertDontSee('fa-cog"></i> Aksi', false)
+        ->assertDontSee('Nonaktifkan')
+        ->assertDontSee('Reset Password')
+        ->assertDontSee('Hapus User')
+        // "Lihat" tetap ada: itu inti dari aksi read.
+        ->assertSee('Lihat');
+});
+
+test('detail pengguna untuk role read saja tidak menampilkan tombol ubah', function () {
+    $pembaca = roleHanyaLihat();
+
+    actingAs($pembaca)->get(route('admin.pengguna.lihat', $this->target))
+        ->assertOk()
+        ->assertDontSee('fa-user-tag', false);
+});
+
+test('daftar pengguna untuk role dengan edit tetap menampilkan tombol aksi berisi ubah', function () {
+    $role = Role::create(['name' => 'pengubah']);
+    $role->syncPermissions([
+        Permission::findOrCreate('admin.pengguna.read', 'web'),
+        Permission::findOrCreate('admin.pengguna.edit', 'web'),
+    ]);
+
+    $menuId = Menu::query()->where('scope', 'admin.pengguna')->value('id');
+    DB::table('role_menu')->insertOrIgnore(['role_id' => $role->id, 'menu_id' => $menuId]);
+
+    $pengubah = User::factory()->create(['email' => 'pengubah@test.com'])->assignRole($role);
+
+    // Aksi yang tidak dipegang tetap tidak muncul walau tombolnya ada.
+    actingAs($pengubah)->get(route('admin.pengguna.index'))
+        ->assertOk()
+        ->assertSee('Aksi')
+        ->assertSee('Ubah')
+        ->assertDontSee('Reset Password')
+        ->assertDontSee('Hapus User');
+});
+
 // ─── Aksi granular: kombinasi ─────────────────────────────────────────────
 
 test('role dengan aksi read dan update bisa mengubah status tanpa bisa menghapus', function () {

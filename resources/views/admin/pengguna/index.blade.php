@@ -48,6 +48,11 @@
                     $canEdit = ! $rowIsSuperAdmin && auth()->user()->hasMenuAction('admin.pengguna', \App\Support\MenuAction::EDIT);
                     $canManageAccount = ! $rowIsSuperAdmin && auth()->user()->hasMenuAction('admin.pengguna', \App\Support\MenuAction::UPDATE);
                     $canDelete = $isSuperAdmin && ! $rowIsSuperAdmin;
+                    // Dropdown "Aksi" hanya ditampilkan kalau ada minimal satu
+                    // isinya. Role yang cuma boleh melihat tidak boleh melihat
+                    // tombol aksi sama sekali: tombol kosong terbaca sebagai
+                    // "boleh mengubah", dan itu justru yang tidak diberikan.
+                    $adaAksi = $canEdit || $canManageAccount || $canDelete;
                   @endphp
                   <tr>
                     <td>{{ $loop->iteration }}</td>
@@ -72,7 +77,7 @@
                       <a class="btn btn-info btn-sm" href="{{ route('admin.pengguna.lihat', $user) }}">
                         <i class="fas fa-eye mr-1"></i> Lihat
                       </a>
-                      @if(! $rowIsSuperAdmin)
+                      @if($adaAksi)
                       <div class="btn-group">
                         <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                           <i class="fas fa-cog"></i> Aksi
