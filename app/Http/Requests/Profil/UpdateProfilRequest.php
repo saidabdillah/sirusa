@@ -58,11 +58,9 @@ class UpdateProfilRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($this->user()->id),
             ],
             'nik' => ['required', 'digits:16'],
-            // No. KK harus sama dengan NIK: pada kartu keluarga milik sendiri,
-            // NIK pemiliknya memang tertera, jadi dua nilai berbeda berarti
-            // salah ketik. `digits:16` tetap dipasang supaya pesan panjangnya
-            // muncul lebih dulu saat isian belum 16 digit.
-            'no_kk' => ['required', 'digits:16', 'same:nik'],
+            // No. KK berdiri sendiri: wajib 16 digit angka, tidak harus sama
+            // dengan NIK (nomor KK dan NIK memang nomor yang berbeda).
+            'no_kk' => ['required', 'digits:16'],
             'nim' => ['nullable', 'string', 'max:30'],
             'tempat_lahir' => ['required', 'string', 'max:255'],
             'tanggal_lahir' => ['required', 'date'],
@@ -246,8 +244,7 @@ class UpdateProfilRequest extends FormRequest
             'nik.required' => 'NIK harus diisi.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
             'no_kk.required' => 'Nomor Kartu Keluarga harus diisi.',
-            'no_kk.digits' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit.',
-            'no_kk.same' => 'Nomor Kartu Keluarga harus sama dengan NIK.',
+            'no_kk.digits' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit angka.',
             'tempat_lahir.required' => 'Tempat lahir harus diisi.',
             'tanggal_lahir.required' => 'Tanggal lahir harus diisi.',
             'tanggal_lahir.date' => 'Tanggal lahir tidak valid.',

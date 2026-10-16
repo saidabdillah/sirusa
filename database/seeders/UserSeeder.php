@@ -97,7 +97,7 @@ class UserSeeder extends Seeder
                 [
                     'nama_lengkap' => $data['nama_lengkap'],
                     'nik' => $nik,
-                    'no_kk' => $nik,
+                    'no_kk' => '6303'.str_pad((string) (200 + $i), 12, '0', STR_PAD_LEFT),
                     'nim' => $data['nim'] ?? null,
                     'tempat_lahir' => $data['tempat_lahir'],
                     'tanggal_lahir' => $data['tanggal_lahir'],
@@ -252,9 +252,7 @@ class UserSeeder extends Seeder
                 [
                     'nama_lengkap' => $fullName,
                     'nik' => '6303'.str_pad((string) (1000 + $n), 12, '0', STR_PAD_LEFT),
-                    // No. KK disamakan dengan NIK: aturan aplikasi menuntut
-                    // keduanya sama, jadi data demo pun harus konsisten.
-                    'no_kk' => '6303'.str_pad((string) (1000 + $n), 12, '0', STR_PAD_LEFT),
+                    'no_kk' => '6303'.str_pad((string) (3000 + $n), 12, '0', STR_PAD_LEFT),
                     'nim' => '2310'.str_pad((string) $n, 6, '0', STR_PAD_LEFT),
                     'tempat_lahir' => $this->tempatLahir[$n % count($this->tempatLahir)],
                     'tanggal_lahir' => now()->subYears(21)->subDays($n)->toDateString(),

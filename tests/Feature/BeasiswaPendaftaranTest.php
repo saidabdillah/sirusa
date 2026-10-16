@@ -24,7 +24,7 @@ function mhsBeasiswa(?User $user = null, ?Prodi $prodi = null, array $verif = []
         'user_id' => $user->id,
         'nama_lengkap' => 'Beasiswa '.($user->id + 1),
         'nik' => '63020000'.$suffix,
-        'no_kk' => '63020000'.$suffix,
+        'no_kk' => '63020001'.$suffix,
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',

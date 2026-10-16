@@ -103,8 +103,7 @@ class UserDemoSeeder extends Seeder
                 'nama_lengkap' => 'User Demo',
                 'nik' => self::NIK,
                 'nim' => '2465100001',
-                // No. KK disamakan dengan NIK (aturan aplikasi).
-                'no_kk' => self::NIK,
+                'no_kk' => '6300000000000002',
                 'tempat_lahir' => 'Paringin',
                 'tanggal_lahir' => '2004-01-15',
                 'jenis_kelamin' => 'Laki-laki',

@@ -149,7 +149,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                     id="no_kk" name="no_kk" value="{{ old('no_kk', $profile->no_kk ?? '') }}" maxlength="16"
                     placeholder="16 digit angka">
                   @error('no_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Hanya angka, tepat 16 digit, dan harus sama dengan NIK.</small>
+                  <small class="text-muted">Hanya angka, tepat 16 digit.</small>
                 </div>
               </div>
 

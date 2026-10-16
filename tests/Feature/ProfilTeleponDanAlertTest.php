@@ -21,7 +21,7 @@ function payloadTeleponProfil(int $prodiId, array $override = []): array
         'nama_lengkap' => 'Budi',
         'email' => 'user@test.com',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000000001',
+        'no_kk' => '6302000000009999',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -160,9 +160,10 @@ test('input NIK dan nomor HP memakai inputmode angka dan dibatasi panjangnya', f
         ->toMatch('/id="no_kk"[^>]*maxlength="16"/')
         ->toMatch('/id="telepon"[^>]*maxlength="13"/')
         ->toContain('Hanya angka, tepat 16 digit.')
-        ->toContain('Hanya angka, tepat 16 digit, dan harus sama dengan NIK.')
         // Teks bantuan nomor HP sengaja dihapus atas permintaan pengguna.
-        ->not->toContain('Nomor HP Indonesia: diawali 08');
+        ->not->toContain('Nomor HP Indonesia: diawali 08')
+        // No. KK tidak lagi disyaratkan sama dengan NIK.
+        ->not->toContain('harus sama dengan NIK');
 });
 
 test('NIK, No. KK, dan nomor HP diinisialisasi dengan Cleave angka murni', function () {
@@ -177,37 +178,46 @@ test('NIK, No. KK, dan nomor HP diinisialisasi dengan Cleave angka murni', funct
         ->toContain('numericOnly: true');
 });
 
-// ─── No. KK harus sama dengan NIK ─────────────────────────────────────────
+// ─── No. KK: 16 digit angka, tidak harus sama dengan NIK ──────────────────
 
-test('No. KK yang berbeda dari NIK ditolak', function () {
+test('No. KK boleh berbeda dari NIK asal 16 digit angka', function () {
     actingAs($this->user)
         ->put(route('profile.update'), array_merge(
-            payloadTeleponProfil($this->prodi->id, ['no_kk' => '6302000000008888']),
-            berkasProfilDummy(),
-        ))
-        ->assertSessionHasErrors(['no_kk' => 'Nomor Kartu Keluarga harus sama dengan NIK.']);
-});
-
-test('No. KK yang sama dengan NIK diterima', function () {
-    $nik = '6302000000000001';
-
-    actingAs($this->user)
-        ->put(route('profile.update'), array_merge(
-            payloadTeleponProfil($this->prodi->id, ['nik' => $nik, 'no_kk' => $nik]),
+            payloadTeleponProfil($this->prodi->id, [
+                'nik' => '6302000000000001',
+                'no_kk' => '6302000000008888',
+            ]),
             berkasProfilDummy(),
         ))
         ->assertSessionDoesntHaveErrors();
 
-    expect($this->user->fresh()->profile->no_kk)->toBe($nik);
+    $profile = $this->user->fresh()->profile;
+
+    expect($profile->no_kk)->toBe('6302000000008888')
+        ->and($profile->nik)->toBe('6302000000000001');
 });
 
-test('No. KK yang belum 16 digit dilaporkan panjangnya, bukan kesamaannya', function () {
+test('No. KK yang bukan 16 digit ditolak', function (string $noKk) {
     actingAs($this->user)
         ->put(route('profile.update'), array_merge(
-            payloadTeleponProfil($this->prodi->id, ['no_kk' => '123']),
+            payloadTeleponProfil($this->prodi->id, ['no_kk' => $noKk]),
             berkasProfilDummy(),
         ))
-        ->assertSessionHasErrors(['no_kk' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit.']);
+        ->assertSessionHasErrors(['no_kk' => 'Nomor Kartu Keluarga harus terdiri dari 16 digit angka.']);
+})->with([
+    'kurang digit' => ['123'],
+    'lebih digit' => ['63020000000000011'],
+    'ada huruf' => ['63020000000000ab'],
+    'pakai tanda hubung' => ['6302-0000-0000-0001'],
+]);
+
+test('No. KK yang kosong dilaporkan wajib diisi', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), array_merge(
+            payloadTeleponProfil($this->prodi->id, ['no_kk' => '']),
+            berkasProfilDummy(),
+        ))
+        ->assertSessionHasErrors(['no_kk' => 'Nomor Kartu Keluarga harus diisi.']);
 });
 
 // ─── Alert dasbor ─────────────────────────────────────────────────────────
@@ -231,7 +241,7 @@ test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap',
         'user_id' => $this->user->id,
         'nama_lengkap' => 'Budi',
         'nik' => '6302000000000001',
-        'no_kk' => '6302000000000001',
+        'no_kk' => '6302000000009999',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
