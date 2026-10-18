@@ -152,8 +152,7 @@
                 @elseif($statusTerlihat === 'ditolak')
                   <div class="alert alert-danger">
                     <i class="fas fa-times-circle"></i><br>
-                    <strong>Pendaftaran Ditolak.</strong><br>
-                    {{ $application->catatan ? 'Alasan: '.$application->catatan : 'Silakan hubungi admin untuk informasi lebih lanjut.' }}
+                    <strong>Pendaftaran Ditolak.</strong>
                   </div>
                   <a href="{{ route('user.beasiswa.index') }}" class="btn btn-primary btn-lg btn-block">
                     <i class="fas fa-search"></i> Cari Beasiswa Lain
@@ -242,7 +241,7 @@
       Swal.fire({
         icon: 'error',
         title: 'Pendaftaran Ditolak',
-        text: 'Pendaftaran Anda tidak diterima. Silakan hubungi admin untuk informasi lebih lanjut.',
+        text: 'Pendaftaran Anda tidak diterima.',
         confirmButtonText: 'Mengerti'
       });
     </script>

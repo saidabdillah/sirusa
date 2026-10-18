@@ -55,12 +55,6 @@
               </div>
             </div>
             @endif
-            @if($applicant->catatan)
-            <div class="text-left">
-              <strong>Catatan Admin:</strong>
-              <p class="mb-0">{!! nl2br(e($applicant->catatan)) !!}</p>
-            </div>
-            @endif
             @endif
             @if($applicant->canBeCancelled())
               {{-- Konfirmasi pakai `.btn-confirm-toggle` yang sudah ditangani
