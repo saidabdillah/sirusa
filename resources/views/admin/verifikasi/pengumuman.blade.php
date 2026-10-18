@@ -25,12 +25,6 @@
             <h4>Daftar Beasiswa</h4>
           </div>
           <div class="card-body">
-            <p class="text-muted">
-              Hasil seleksi baru terlihat oleh mahasiswa setelah diumumkan. Pengumuman
-              dilakukan per beasiswa sekaligus untuk semua pendaftarnya, sehingga
-              pendaftar yang membuka Sirusa bersamaan melihat jawaban pada waktu yang sama.
-            </p>
-
             {{-- DataTables memetakan sel berdasarkan posisi dan mengabaikan
                  `colspan`, jadi baris `@empty` tidak dipakai; pesan kosongnya
                  ditaruh di opsi `language.emptyTable`. --}}

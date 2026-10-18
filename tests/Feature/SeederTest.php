@@ -147,8 +147,8 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         ->orderBy('urutan')
         ->get();
 
-    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan', 'Pengumuman'])
-        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.kesra.pengumuman'])
+    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan'])
+        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui'])
         ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Verifikasi']);
 
     // "Penerima Beasiswa" bukan anak Kesra lagi: leaf mandiri di section
@@ -310,9 +310,9 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
         ->orderBy('urutan')
         ->get();
 
-    expect($anak->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan', 'Pengumuman'])
-        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.kesra.pengumuman'])
-        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.kesra.pengumuman']);
+    expect($anak->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan'])
+        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui'])
+        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui']);
 
     $kesraRoleId = Role::where('name', 'kesra')->firstOrFail()->id;
     $grantKesra = DB::table('role_menu')->where('role_id', $kesraRoleId)->pluck('menu_id');

@@ -361,13 +361,6 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
               </div>
 
-              {{-- KRS & KHS per semester: berkas DAN nilainya terpisah, dan
-                   tiap semester punya barisnya sendiri. Mengunggah KHS
-                   semester 4 tidak menimpa KHS semester 3. --}}
-              @include('profil.partials.dokumen-akademik')
-
-              <hr>
-
               {{-- DATA ORANG TUA & WALI --}}
               <h5 class="mb-3">Data Orang Tua &amp; Famili Lain</h5>
               <div class="form-row">
@@ -539,6 +532,12 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <small class="text-muted d-block">{{ $bantuan }}</small>
               </div>
               @endforeach
+              {{-- KRS & KHS ikut kelompok dokumen, di bawah "Berkas Kampus":
+                   keduanya dokumen akademik yang diperiksa Kampus, bukan
+                   isian data kampus. --}}
+              @if($groupName === 'Berkas Kampus')
+              @include('profil.partials.dokumen-akademik')
+              @endif
               @endforeach
 
               <div class="form-group">

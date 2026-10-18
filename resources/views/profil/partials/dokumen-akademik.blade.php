@@ -17,8 +17,7 @@ $maksSemester = max(\App\Support\JenjangPendidikan::JUMLAH_SEMESTER);
 $jenisList = \App\Models\DokumenAkademik::JENIS_LABELS;
 @endphp
 
-<hr>
-<h5 class="mb-3">KRS &amp; KHS</h5>
+<h6 class="mt-3 mb-2"><i class="fas fa-file-alt text-primary mr-1"></i>KRS &amp; KHS per Semester</h6>
 {{-- Petunjuk yang teksnya diisi skrip di bawah mengikuti jenjang + semester
      aktif yang dipilih: KRS diminta sampai semester aktif, KHS sampai
      semester SEBELUMNYA (KHS semester berjalan belum terbit). --}}

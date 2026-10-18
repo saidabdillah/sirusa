@@ -303,7 +303,7 @@
                 <div class="form-group" id="grup-berdomisili"
                   style="{{ $statusTerpilih === 'setuju' ? '' : 'display:none;' }}">
                   <label for="berdomisili_sejak">
-                    Berdomisili sejak tanggal
+                    Terhitung sejak tanggal
                     <span class="text-danger d-none" id="berdomisili-wajib">*</span>
                   </label>
                   <input type="text" class="form-control flatpickr @error('berdomisili_sejak') is-invalid @enderror"

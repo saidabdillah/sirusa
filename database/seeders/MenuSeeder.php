@@ -86,8 +86,20 @@ class MenuSeeder extends Seeder
                 'children' => [
                     ['label' => 'Verifikasi', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra.index'],
                     ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
-                    ['label' => 'Pengumuman', 'route' => 'admin.kesra.pengumuman', 'scope' => 'admin.kesra.pengumuman'],
                 ],
+            ],
+            // "Pengumuman" adalah leaf MANDIRI, bukan anak dropdown Kesra
+            // (permintaan pengguna): menerbitkan hasil seleksi adalah pekerjaan
+            // tersendiri, bukan lanjutan dari antrean verifikasi. Scope-nya
+            // tetap `admin.kesra.pengumuman` supaya route & middleware yang
+            // sudah ada tidak berubah.
+            [
+                'label' => 'Pengumuman',
+                'icon' => 'fas fa-bullhorn',
+                'route' => 'admin.kesra.pengumuman',
+                'scope' => 'admin.kesra.pengumuman',
+                'section' => 'Verifikasi',
+                'urutan' => 28,
             ],
             // "Penerima Beasiswa" (pendaftar berstatus `diterima`) menjadi LEAF
             // mandiri, bukan anak dropdown Kesra (permintaan pengguna): daftar

@@ -460,7 +460,7 @@ test('sidebarMenus returns only top level menus with children nested', function 
     expect($kesraDropdown)->not->toBeNull()
         ->and($kesraDropdown->label)->toBe('Kesra')
         ->and($kesraDropdown->children->pluck('scope')->all())
-        ->toEqualCanonicalizing(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.kesra.pengumuman'])
+        ->toEqualCanonicalizing(['admin.kesra.index', 'admin.kesra.disetujui'])
         ->and($topLevel->firstWhere('scope', 'admin.catpil'))->toBeNull()
         ->and($topLevel->firstWhere('scope', 'admin.kampusverif'))->toBeNull()
         // "Verifikasi" kini memang ADA sebagai menu anak (di bawah Kesra),

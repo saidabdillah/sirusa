@@ -91,7 +91,7 @@
           ['label' => 'Desa/Kelurahan', 'value' => $profile?->desa_kelurahan ?? '-'],
           // Ditampilkan supaya petugas bisa memeriksa SUMBER perhitungan lama
           // berdomisili di antrean Kesra. Diisi petugas Catpil saat "Setujui".
-          ['label' => 'Berdomisili Sejak', 'value' => $profile?->berdomisili_sejak?->translatedFormat('d F Y') ?? 'Belum ditentukan'],
+          ['label' => 'Terhitung Sejak', 'value' => $profile?->berdomisili_sejak?->translatedFormat('d F Y') ?? 'Belum ditentukan'],
           ['label' => 'Lama Berdomisili', 'value' => $profile?->lamaBerdomisiliLabel() ?? 'Belum ditentukan'],
         ];
       @endphp

@@ -298,11 +298,11 @@ test('field berdomisili tampil di halaman Catpil saja', function () {
 
     actingAs($this->catpil)->get(route('admin.catpil.lihat', $user->id))
         ->assertOk()
-        ->assertSee('Berdomisili sejak tanggal');
+        ->assertSee('Terhitung sejak tanggal');
 
     actingAs($this->kampusAdmin)->get(route('admin.kampusverif.lihat', $user->id))
         ->assertOk()
-        ->assertDontSee('Berdomisili sejak tanggal');
+        ->assertDontSee('Terhitung sejak tanggal');
 });
 
 /*
@@ -366,6 +366,6 @@ test('tanggal mulai domisili tampil di detail agar sumber hitungan bisa diperiks
 
     actingAs($this->kesra)->get(route('admin.kesra.lihat', $user->id))
         ->assertOk()
-        ->assertSee('Berdomisili Sejak')
+        ->assertSee('Terhitung Sejak')
         ->assertSee('15 Juni 2019');
 });
