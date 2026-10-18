@@ -147,7 +147,11 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi'])->group(f
         // Pengumuman hasil seleksi satu beasiswa sekaligus. Didaftarkan sebelum
         // `/verifikasi/kesra/{user}` karena segmen `beasiswa` akan tertangkap
         // sebagai parameter user kalau urutannya terbalik.
-        Route::post('/verifikasi/kesra/beasiswa/{scholarship}/umumkan', [KeputusanPendaftaranController::class, 'umumkan'])->defaults('stage', 'kesra')->name('kesra.umumkan');
+        Route::post('/verifikasi/kesra/beasiswa/{scholarship}/umumkan', [KeputusanPendaftaranController::class, 'umumkan'])->defaults('stage', 'kesra')->name('kesra.pengumuman.umumkan');
+        Route::delete('/verifikasi/kesra/beasiswa/{scholarship}/umumkan', [KeputusanPendaftaranController::class, 'batalkanPengumuman'])->defaults('stage', 'kesra')->name('kesra.pengumuman.batalkan');
+        // Halaman kerja pengumuman. Didaftarkan sebelum `/verifikasi/kesra/{user}`
+        // dengan alasan yang sama seperti `disetujui` dan `status`.
+        Route::get('/verifikasi/kesra/pengumuman', [KeputusanPendaftaranController::class, 'pengumuman'])->defaults('stage', 'kesra')->name('kesra.pengumuman');
         // `status` juga harus terdaftar sebelum `/verifikasi/kesra/{user}`,
         // sama seperti `disetujui` (lihat komentar di atas).
         Route::get('/verifikasi/kesra/status', [VerifikasiController::class, 'status'])->defaults('stage', 'kesra')->name('kesra.status');

@@ -603,3 +603,15 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
 }
 
 /*# sourceMappingURL=custom.css.map */
+
+/* Label input file (custom-file Bootstrap) TIDAK boleh melar karena nama
+   berkas yang panjang. Tanpa ini, nama seperti
+   "Surat_Pernyataan_Tidak_Menerima_Beasiswa_Lain_2026.pdf" membungkus jadi
+   beberapa baris dan menabrak input di bawahnya. `padding-right` disisihkan
+   untuk tombol "Browse" bawaan Bootstrap supaya teks tidak tertutup. */
+.custom-file-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 6.5rem;
+}

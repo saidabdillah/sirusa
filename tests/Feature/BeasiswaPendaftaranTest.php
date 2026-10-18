@@ -944,7 +944,7 @@ test('kesra bisa memutuskan pendaftaran tanpa langkah verifikasi profil kesra le
     expect($applicant->refresh()->status)->toBe('diterima')
         ->and($user->refresh()->profile->verif_kesra)->toBe('menunggu');
 
-    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $beasiswa))->assertRedirect();
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $beasiswa))->assertRedirect();
 
     expect($user->refresh()->profile->verif_kesra)->toBe('setuju');
 });
@@ -975,7 +975,7 @@ test('pengumuman menutup tahap kesra pada profil, termasuk untuk pendaftaran yan
     expect($applicant->refresh()->status)->toBe('ditolak')
         ->and($user->refresh()->profile->verif_kesra)->toBe('menunggu');
 
-    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $beasiswa))->assertRedirect();
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $beasiswa))->assertRedirect();
 
     // Identitas sudah ditinjau -- itu yang dilakukan keputusan ini -- jadi
     // tahap Kesra selesai meski hasilnya bukan penerimaan.

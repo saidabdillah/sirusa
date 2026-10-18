@@ -124,7 +124,7 @@
                       <a href="{{ route($routePrefix.'.lihat', $applicant->user_id) }}"
                         class="btn btn-sm {{ $sudahDiputuskan ? 'btn-outline-primary' : 'btn-info' }}">
                         <i class="fas {{ $sudahDiputuskan ? 'fa-edit' : 'fa-eye' }}"></i>
-                        {{ $sudahDiputuskan ? 'Ubah Keputusan' : 'Putuskan' }}
+                        {{ $sudahDiputuskan ? 'Ubah Keputusan' : 'Verifikasi' }}
                       </a>
                       @else
                       <span class="text-muted small">Dibatalkan mahasiswa</span>

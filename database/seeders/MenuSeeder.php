@@ -86,6 +86,7 @@ class MenuSeeder extends Seeder
                 'children' => [
                     ['label' => 'Verifikasi', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra.index'],
                     ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
+                    ['label' => 'Pengumuman', 'route' => 'admin.kesra.pengumuman', 'scope' => 'admin.kesra.pengumuman'],
                 ],
             ],
             // "Penerima Beasiswa" (pendaftar berstatus `diterima`) menjadi LEAF
@@ -233,6 +234,7 @@ class MenuSeeder extends Seeder
                 'admin.penerima',
                 'admin.kesra.disetujui',
                 'admin.kesra.index',
+                'admin.kesra.pengumuman',
                 'admin.kesra.status',
                 'master-data',
                 'admin.kampus',
@@ -270,6 +272,7 @@ class MenuSeeder extends Seeder
                 'admin.penerima',
                 'admin.kesra.disetujui',
                 'admin.kesra.index',
+                'admin.kesra.pengumuman',
                 'admin.kesra.status',
                 'master-data',
                 'admin.kampus',

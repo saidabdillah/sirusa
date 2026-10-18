@@ -120,7 +120,7 @@ test('pengumuman menolak selama masih ada pendaftar yang belum diputuskan', func
     putuskanSerentak($this->kesra, $sudah, 'diterima');
 
     actingAs($this->kesra)
-        ->post(route('admin.kesra.umumkan', $this->beasiswa))
+        ->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))
         ->assertRedirect()
         ->assertSessionHas('error');
 
@@ -136,7 +136,7 @@ test('pengumuman mengisi satu waktu yang sama untuk semua pendaftar', function (
     putuskanSerentak($this->kesra, $b, 'ditolak');
 
     actingAs($this->kesra)
-        ->post(route('admin.kesra.umumkan', $this->beasiswa))
+        ->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))
         ->assertRedirect();
 
     $this->beasiswa->refresh();
@@ -165,7 +165,7 @@ test('setelah diumumkan mahasiswa melihat hasil masing-masing', function () {
     putuskanSerentak($this->kesra, $diterima, 'diterima');
     putuskanSerentak($this->kesra, $ditolak, 'ditolak');
 
-    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $this->beasiswa))->assertRedirect();
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))->assertRedirect();
 
     actingAs($diterima)->get(route('user.pendaftaran.lihat', $diterima->applicants()->first()))
         ->assertOk()
@@ -182,7 +182,7 @@ test('hasil yang sudah diumumkan tidak bisa diubah lagi', function () {
     $pemohon = pemohonSerentak($this->kampus, $this->beasiswa, 'Pendaftar Terkunci');
     putuskanSerentak($this->kesra, $pemohon, 'diterima');
 
-    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $this->beasiswa))->assertRedirect();
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))->assertRedirect();
 
     actingAs($this->kesra)->put(
         route('admin.kesra.pendaftaran.keputusan', [$pemohon, $pemohon->applicants()->first()]),
@@ -196,23 +196,64 @@ test('pengumuman ganda ditolak', function () {
     $pemohon = pemohonSerentak($this->kampus, $this->beasiswa, 'Pendaftar Ganda');
     putuskanSerentak($this->kesra, $pemohon, 'diterima');
 
-    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $this->beasiswa))->assertRedirect();
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))->assertRedirect();
     $pertama = $this->beasiswa->fresh()->result_announced_at;
 
-    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $this->beasiswa))
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))
         ->assertSessionHas('error');
 
     expect($this->beasiswa->fresh()->result_announced_at->equalTo($pertama))->toBeTrue();
 });
 
-test('halaman keputusan kesra menampilkan panel pengumuman per beasiswa', function () {
+test('menu pengumuman menampilkan tabel beasiswa beserta statusnya', function () {
     $pemohon = pemohonSerentak($this->kampus, $this->beasiswa, 'Pendaftar Panel');
     putuskanSerentak($this->kesra, $pemohon, 'diterima');
 
-    actingAs($this->kesra)->get(route('admin.kesra.disetujui'))
+    actingAs($this->kesra)->get(route('admin.kesra.pengumuman'))
         ->assertOk()
         ->assertSee('Pengumuman Hasil Seleksi')
         ->assertSee('Beasiswa Serentak')
         ->assertSee('Siap diumumkan')
-        ->assertSee('Umumkan Hasil');
+        ->assertSee('Umumkan');
+});
+
+test('pengumuman bisa dibatalkan sehingga hasil kembali tersembunyi', function () {
+    $pemohon = pemohonSerentak($this->kampus, $this->beasiswa, 'Pendaftar Dibatalkan');
+    putuskanSerentak($this->kesra, $pemohon, 'diterima');
+
+    actingAs($this->kesra)->post(route('admin.kesra.pengumuman.umumkan', $this->beasiswa))->assertRedirect();
+
+    actingAs($pemohon)->get(route('user.pendaftaran.lihat', $pemohon->applicants()->first()))
+        ->assertOk()
+        ->assertSee('Setuju');
+
+    actingAs($this->kesra)->delete(route('admin.kesra.pengumuman.batalkan', $this->beasiswa))
+        ->assertRedirect();
+
+    $this->beasiswa->refresh();
+    expect($this->beasiswa->result_announced_at)->toBeNull()
+        ->and($pemohon->applicants()->first()->decision_at)->toBeNull()
+        ->and($pemohon->profile->fresh()->verif_kesra)->toBe('menunggu');
+
+    // Mahasiswa kembali melihat "Menunggu", dan keputusan bisa diubah lagi.
+    actingAs($pemohon)->get(route('user.pendaftaran.lihat', $pemohon->applicants()->first()))
+        ->assertOk()
+        ->assertSee('Menunggu')
+        ->assertDontSee('Setuju');
+
+    actingAs($this->kesra)->put(
+        route('admin.kesra.pendaftaran.keputusan', [$pemohon, $pemohon->applicants()->first()]),
+        ['pendaftaran_status' => 'ditolak'],
+    )->assertRedirect();
+
+    expect($pemohon->applicants()->first()->status)->toBe('ditolak');
+});
+
+test('membatalkan pengumuman yang belum ada ditolak', function () {
+    $pemohon = pemohonSerentak($this->kampus, $this->beasiswa, 'Belum Diumumkan');
+    putuskanSerentak($this->kesra, $pemohon, 'diterima');
+
+    actingAs($this->kesra)->delete(route('admin.kesra.pengumuman.batalkan', $this->beasiswa))
+        ->assertRedirect()
+        ->assertSessionHas('error');
 });

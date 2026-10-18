@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserProfile;
 use App\Support\ExcelDownload;
 use App\Support\VerifikasiAntrean;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -133,10 +134,39 @@ class KeputusanPendaftaranController extends Controller
     {
         abort_unless(auth()->user()->hasMenuAccess('admin.kesra.index'), 403);
 
-        // Ringkasan per beasiswa untuk panel pengumuman. Dihitung dari baris
-        // `pendaftar` yang sama dengan tabel di bawahnya, jadi angka "menunggu"
-        // di panel dan jumlah baris berstatus Menunggu tidak bisa berbeda.
-        $beasiswaRingkasan = Scholarship::query()
+        return view('admin.verifikasi.kesra-disetujui', [
+            'pendaftaran' => (new VerifikasiAntrean('kesra'))->pendaftaran(['diterima', 'ditolak']),
+        ]);
+    }
+
+    /**
+     * Halaman kerja pengumuman hasil seleksi, satu baris per beasiswa.
+     *
+     * Dipisah dari arsip "Keputusan" supaya mengumumkan punya menu dan tempat
+     * sendiri: arsip dipakai untuk membaca/membatalkan keputusan, halaman ini
+     * untuk menerbitkan hasil ke mahasiswa.
+     */
+    public function pengumuman(): View
+    {
+        abort_unless(auth()->user()->hasMenuAccess('admin.kesra.pengumuman'), 403);
+
+        return view('admin.verifikasi.pengumuman', [
+            'beasiswaRingkasan' => $this->ringkasanPengumuman(),
+        ]);
+    }
+
+    /**
+     * Ringkasan per beasiswa untuk tabel pengumuman.
+     *
+     * Dihitung dari baris `pendaftar` yang sama dengan antrean dan arsip, jadi
+     * angka "belum diputuskan" di sini tidak bisa berbeda dari jumlah baris
+     * berstatus Menunggu di halaman lain.
+     *
+     * @return Collection<int, Scholarship>
+     */
+    private function ringkasanPengumuman()
+    {
+        return Scholarship::query()
             ->whereHas('pendaftar')
             ->withCount([
                 'pendaftar as total_pendaftar',
@@ -145,11 +175,6 @@ class KeputusanPendaftaranController extends Controller
             ])
             ->orderBy('nama')
             ->get();
-
-        return view('admin.verifikasi.kesra-disetujui', [
-            'pendaftaran' => (new VerifikasiAntrean('kesra'))->pendaftaran(['diterima', 'ditolak']),
-            'beasiswaRingkasan' => $beasiswaRingkasan,
-        ]);
     }
 
     /**
@@ -302,7 +327,56 @@ class KeputusanPendaftaranController extends Controller
         return $this->ajaxOk(
             $request,
             "Hasil seleksi Beasiswa {$scholarship->nama} diumumkan serentak untuk {$jumlah} pendaftar.",
-            route('admin.kesra.disetujui'),
+            route('admin.kesra.pengumuman'),
+        );
+    }
+
+    /**
+     * Menarik kembali pengumuman satu beasiswa.
+     *
+     * Keputusan per pendaftar TIDAK dihapus -- yang dibersihkan hanya
+     * `decision_at`, sehingga hasilnya kembali tersembunyi dari mahasiswa dan
+     * Kesra bisa menilai ulang. `verif_kesra` pada profil juga dibuka kembali
+     * untuk mahasiswa yang tidak punya keputusan terumum lain.
+     *
+     * Berguna saat pengumuman terlanjur ditekan padahal ada keputusan yang
+     * masih keliru, atau saat kuota berubah dan hasilnya perlu disusun ulang.
+     */
+    public function batalkanPengumuman(Request $request, Scholarship $scholarship): RedirectResponse|JsonResponse
+    {
+        abort_unless(auth()->user()->hasMenuAccess('admin.kesra.pengumuman'), 403);
+
+        if ($scholarship->result_announced_at === null) {
+            return $this->ajaxFail(
+                $request,
+                'Hasil seleksi Beasiswa '.$scholarship->nama.' belum diumumkan.',
+                route('admin.kesra.pengumuman'),
+            );
+        }
+
+        $userIds = $scholarship->pendaftar()->pluck('user_id');
+
+        DB::transaction(function () use ($scholarship, $userIds) {
+            $scholarship->pendaftar()->update(['decision_at' => null]);
+            $scholarship->forceFill(['result_announced_at' => null])->save();
+
+            // Profil yang masih punya keputusan TERUMUM pada beasiswa lain tetap
+            // `setuju`; hanya yang tidak punya sisa pengumuman yang dibuka lagi.
+            $masihTerumum = Applicant::query()
+                ->whereIn('user_id', $userIds)
+                ->whereNotNull('decision_at')
+                ->pluck('user_id')
+                ->unique();
+
+            UserProfile::query()
+                ->whereIn('user_id', $userIds->diff($masihTerumum))
+                ->update(['verif_kesra' => 'menunggu']);
+        });
+
+        return $this->ajaxOk(
+            $request,
+            "Pengumuman hasil seleksi Beasiswa {$scholarship->nama} dibatalkan. Hasilnya kembali tersembunyi dari mahasiswa.",
+            route('admin.kesra.pengumuman'),
         );
     }
 
