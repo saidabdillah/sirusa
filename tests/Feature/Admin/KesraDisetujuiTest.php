@@ -170,12 +170,13 @@ test('halaman disetujui dan aksinya ditutup untuk yang bukan pengelola kesra', f
     expect($applicant->refresh()->status)->toBe('diterima');
 });
 
-test('hapus mengembalikan pendaftaran ke antrean dan membuka kunci kesra', function () {
+test('hapus mengembalikan pendaftaran ke antrean selama hasil belum diumumkan', function () {
     $pemohon = pemohonKesra($this->kampus, beasiswaKesra($this->kampus, 'Beasiswa Dihapus'));
     $applicant = $pemohon->applicants()->firstOrFail();
     putuskanPendaftaran($this->kesraAdmin, $pemohon, $applicant, 'diterima', 'Layak menerima');
 
-    expect($pemohon->refresh()->profile->verif_kesra)->toBe('setuju');
+    // Tahap Kesra pada profil belum ditutup: keputusan belum diumumkan.
+    expect($pemohon->refresh()->profile->verif_kesra)->toBe('menunggu');
 
     actingAs($this->kesraAdmin)
         ->delete(route('admin.kesra.pendaftaran.hapus', [$pemohon, $applicant]))
@@ -188,10 +189,10 @@ test('hapus mengembalikan pendaftaran ke antrean dan membuka kunci kesra', funct
     expect($app->status)->toBe(Applicant::PENDING_STATUS)
         ->and($app->catatan)->toBeNull()
         ->and($app->diputuskan_at)->toBeNull()
-        ->and($app->diputuskan_oleh)->toBeNull();
+        ->and($app->diputuskan_oleh)->toBeNull()
+        ->and($app->decision_at)->toBeNull();
 
-    // Kunci Kesra terbuka lagi karena tidak ada pendaftaran lain yang
-    // menyimpan keputusan, dan barisnya kembali ke antrean kerja.
+    // Tahap Kesra tetap terbuka karena keputusan yang tadi sudah dibatalkan.
     expect($pemohon->refresh()->profile->verif_kesra)->toBe('menunggu');
 
     actingAs($this->kesraAdmin)

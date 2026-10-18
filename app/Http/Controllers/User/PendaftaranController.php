@@ -154,6 +154,13 @@ class PendaftaranController extends Controller
      */
     private function beasiswaError(User $user, Scholarship $scholarship, ?UserProfile $profile): ?string
     {
+        // Setelah hasil diumumkan, pendaftaran baru tidak boleh masuk: baris
+        // baru itu tidak akan pernah ikut diumumkan dan mahasiswanya menunggu
+        // tanpa kepastian.
+        if ($scholarship->result_announced_at !== null) {
+            return 'Hasil seleksi beasiswa ini sudah diumumkan, jadi pendaftaran baru sudah ditutup.';
+        }
+
         $alreadyRegistered = $user->applicants()
             ->where('beasiswa_id', $scholarship->id)
             ->where('status', '!=', 'dibatalkan')

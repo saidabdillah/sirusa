@@ -103,7 +103,7 @@ class DashboardController extends Controller
             'profileComplete' => $user->isProfileComplete(),
             // Tahap Kesra diturunkan dari baris `pendaftar` (bukan `verif_kesra`,
             // yang selalu `setuju` walau pendaftarannya ditolak).
-            'kesraDecision' => $user->kesraDecision(),
+            'kesraDecision' => $user->kesraDecisionVisible(),
             'applications' => $user->applicants()->with('beasiswa')->latest()->take(5)->get(),
             'totalApplications' => $user->applicants()->count(),
             'activeApplication' => $user->blockingApplicant(),

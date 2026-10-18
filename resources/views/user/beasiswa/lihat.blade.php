@@ -123,7 +123,17 @@
                   Beasiswa ini sedang tidak aktif
                 </div>
               @elseif($application && ! $application->isCancelled())
-                @if($application->status === 'verifikasi')
+                @php($statusTerlihat = $application->visibleStatus())
+                @if(! $application->isAnnounced() && in_array($application->status, ['diterima', 'ditolak'], true))
+                  {{-- Keputusan sudah ada tetapi belum diumumkan. Mahasiswa tidak
+                       boleh tahu hasilnya lebih dulu daripada pendaftar lain. --}}
+                  <div class="alert alert-info">
+                    <i class="fas fa-hourglass-half"></i><br>
+                    <strong>Menunggu Pengumuman Hasil.</strong><br>
+                    Pendaftaran Anda sudah diproses. Hasil seleksi akan diumumkan
+                    sekaligus untuk semua pendaftar beasiswa ini.
+                  </div>
+                @elseif($statusTerlihat === 'verifikasi')
                   <div class="mb-3">
                     <div class="text-muted">Periode pendaftaran</div>
                     <div class="font-weight-bold {{ $scholarship->tanggal_selesai?->diffInDays(now()) <= 7 ? 'text-danger' : '' }}">
@@ -133,13 +143,13 @@
                   <button type="button" class="btn btn-secondary btn-lg btn-block" disabled>
                     <i class="fas fa-clock"></i> Menunggu Verifikasi
                   </button>
-                @elseif($application->status === 'diterima')
+                @elseif($statusTerlihat === 'diterima')
                   <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i><br>
                     <strong>Selamat! Anda Diterima.</strong><br>
                     Pendaftaran Anda telah disetujui dan Anda berhak menerima beasiswa ini.
                   </div>
-                @elseif($application->status === 'ditolak')
+                @elseif($statusTerlihat === 'ditolak')
                   <div class="alert alert-danger">
                     <i class="fas fa-times-circle"></i><br>
                     <strong>Pendaftaran Ditolak.</strong><br>
@@ -152,7 +162,7 @@
               @elseif($blocking)
                 <div class="alert alert-warning">
                   <i class="fas fa-exclamation-circle"></i><br>
-                  @if($blocking->status === 'diterima')
+                  @if($blocking->status === 'diterima' && $blocking->isAnnounced())
                     <strong>Anda sudah diterima.</strong><br>
                     Setiap mahasiswa hanya boleh menerima satu beasiswa, dan Anda sudah diterima pada {{ $blocking->beasiswa?->nama }}.
                   @else
@@ -197,6 +207,9 @@
 @endsection
 
 @push('script')
+  {{-- Popup memakai `visibleStatus()`: sebelum pengumuman, hasil yang sudah
+       ditetapkan Kesra tetap tampil sebagai "menunggu" supaya tidak bocor
+       lebih awal. --}}
   @if($application && $application->status === 'verifikasi')
     <script>
       Swal.fire({
@@ -206,7 +219,16 @@
         confirmButtonText: 'Mengerti'
       });
     </script>
-  @elseif($application && $application->status === 'diterima')
+  @elseif($application && ! $application->isAnnounced() && in_array($application->status, ['diterima', 'ditolak'], true))
+    <script>
+      Swal.fire({
+        icon: 'info',
+        title: 'Menunggu Pengumuman',
+        text: 'Pendaftaran Anda sudah diproses. Hasil seleksi diumumkan sekaligus untuk semua pendaftar.',
+        confirmButtonText: 'Mengerti'
+      });
+    </script>
+  @elseif($application && $application->visibleStatus() === 'diterima')
     <script>
       Swal.fire({
         icon: 'success',
@@ -215,7 +237,7 @@
         confirmButtonText: 'Mengerti'
       });
     </script>
-  @elseif($application && $application->status === 'ditolak')
+  @elseif($application && $application->visibleStatus() === 'ditolak')
     <script>
       Swal.fire({
         icon: 'error',

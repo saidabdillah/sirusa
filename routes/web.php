@@ -144,6 +144,10 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi'])->group(f
         // Rute `unduh` diletakkan sebelum `/{user}`, sama seperti `unduh` pada
         // tahap Catpil/Kampus, supaya tidak tertangkap sebagai parameter user.
         Route::get('/verifikasi/kesra/disetujui/unduh', [KeputusanPendaftaranController::class, 'disetujuiExport'])->defaults('stage', 'kesra')->name('kesra.disetujui.export');
+        // Pengumuman hasil seleksi satu beasiswa sekaligus. Didaftarkan sebelum
+        // `/verifikasi/kesra/{user}` karena segmen `beasiswa` akan tertangkap
+        // sebagai parameter user kalau urutannya terbalik.
+        Route::post('/verifikasi/kesra/beasiswa/{scholarship}/umumkan', [KeputusanPendaftaranController::class, 'umumkan'])->defaults('stage', 'kesra')->name('kesra.umumkan');
         // `status` juga harus terdaftar sebelum `/verifikasi/kesra/{user}`,
         // sama seperti `disetujui` (lihat komentar di atas).
         Route::get('/verifikasi/kesra/status', [VerifikasiController::class, 'status'])->defaults('stage', 'kesra')->name('kesra.status');

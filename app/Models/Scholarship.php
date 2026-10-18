@@ -28,6 +28,7 @@ class Scholarship extends Model
         'deskripsi',
         'persyaratan',
         'status',
+        'result_announced_at',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class Scholarship extends Model
         return [
             'tanggal_mulai' => 'date',
             'tanggal_selesai' => 'date',
+            'result_announced_at' => 'datetime',
             // D1-D4 ditambah di migrasi extend_tingkat_gelar; tanpa cast ini
             // Eloquent menganggapnya string biasa dan perbandingannya dengan
             // jenjang profil tidak konsisten.
@@ -162,6 +164,36 @@ class Scholarship extends Model
         return $this->pendaftar()
             ->where('status', 'diterima')
             ->with('user.profile.prodi.fakultas.kampus');
+    }
+
+    /**
+     * Jumlah pendaftar yang belum diputuskan Kesra.
+     *
+     * Selama angkanya bukan nol, hasil seleksi belum boleh diumumkan: kalau
+     * diumumkan sekarang, pendaftar yang masih menunggu akan melihat
+     * "sedang diproses" sementara yang lain sudah tahu hasilnya -- persis
+     * keadaan yang ingin dihilangkan.
+     */
+    public function jumlahBelumDiputuskan(): int
+    {
+        return $this->pendaftar()
+            ->where('status', Applicant::PENDING_STATUS)
+            ->count();
+    }
+
+    /**
+     * Boleh diumumkan bila ada minimal satu keputusan dan tidak ada lagi
+     * pendaftar yang menggantung. Pendaftaran `dibatalkan` mahasiswa tidak
+     * menghalangi karena itu bukan keputusan yang perlu diumumkan.
+     */
+    public function bolehDiumumkan(): bool
+    {
+        if ($this->result_announced_at !== null) {
+            return false;
+        }
+
+        return $this->jumlahBelumDiputuskan() === 0
+            && $this->pendaftar()->whereIn('status', ['diterima', 'ditolak'])->exists();
     }
 
     public function allowsProdi(UserProfile $profile): bool

@@ -22,6 +22,11 @@ return new class extends Migration
             $table->decimal('ipk_minimal', 3, 2)->default(0);
             $table->unsignedInteger('semester_minimal')->default(0);
             $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
+
+            // Momen seluruh hasil seleksi beasiswa ini diumumkan serentak.
+            // Menjadi penanda di halaman Kesra bahwa tombol "Umumkan Hasil"
+            // sudah pernah ditekan, dan mencegah pengumuman ganda.
+            $table->timestamp('result_announced_at')->nullable();
             $table->timestamps();
         });
     }

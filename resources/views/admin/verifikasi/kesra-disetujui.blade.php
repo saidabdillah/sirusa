@@ -20,6 +20,105 @@
   </div>
 
   <div class="section-body">
+
+    {{-- Panel pengumuman serentak. Keputusan Kesra per pendaftar sudah
+         tersimpan, tetapi mahasiswa baru melihatnya setelah tombol di sini
+         ditekan. Tombol dikunci selama masih ada pendaftar yang belum
+         diputuskan, supaya tidak ada pengumuman setengah jadi. --}}
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h4>Pengumuman Hasil Seleksi</h4>
+          </div>
+          <div class="card-body">
+            <p class="text-muted">
+              Hasil seleksi baru terlihat oleh mahasiswa setelah diumumkan. Pengumuman
+              dilakukan per beasiswa dan sekaligus untuk semua pendaftarnya, sehingga
+              pendaftar yang membuka Sirusa bersamaan melihat jawaban pada waktu yang sama.
+            </p>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Beasiswa</th>
+                    <th class="text-center">Pendaftar</th>
+                    <th class="text-center">Sudah Diputuskan</th>
+                    <th class="text-center">Belum Diputuskan</th>
+                    <th>Status</th>
+                    <th class="text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @forelse($beasiswaRingkasan as $beasiswa)
+                  <tr>
+                    <td>{{ $beasiswa->nama }}</td>
+                    <td class="text-center">{{ $beasiswa->total_pendaftar }}</td>
+                    <td class="text-center">{{ $beasiswa->total_diputuskan }}</td>
+                    <td class="text-center">
+                      @if($beasiswa->total_menunggu > 0)
+                        <span class="badge badge-warning">{{ $beasiswa->total_menunggu }}</span>
+                      @else
+                        <span class="badge badge-success">0</span>
+                      @endif
+                    </td>
+                    <td>
+                      @if($beasiswa->result_announced_at)
+                        <span class="badge badge-success">
+                          <i class="fas fa-bullhorn mr-1"></i>
+                          Diumumkan {{ $beasiswa->result_announced_at->translatedFormat('d M Y H:i') }}
+                        </span>
+                      @elseif($beasiswa->total_menunggu > 0)
+                        <span class="badge badge-secondary">Menunggu keputusan</span>
+                      @elseif($beasiswa->total_diputuskan === 0)
+                        <span class="badge badge-secondary">Belum ada keputusan</span>
+                      @else
+                        <span class="badge badge-info">Siap diumumkan</span>
+                      @endif
+                    </td>
+                    <td class="text-right">
+                      @if($beasiswa->result_announced_at)
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+                          Sudah diumumkan
+                        </button>
+                      @elseif($beasiswa->total_menunggu > 0)
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                          title="Putuskan semua pendaftar dulu">
+                          Umumkan Hasil
+                        </button>
+                      @elseif($beasiswa->total_diputuskan === 0)
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+                          Umumkan Hasil
+                        </button>
+                      @else
+                        <form action="{{ route('admin.kesra.umumkan', $beasiswa) }}" method="POST" data-ajax-form class="m-0">
+                          @csrf
+                          <button type="button" class="btn btn-sm btn-primary btn-confirm-toggle"
+                            data-confirm-title="Umumkan Hasil Seleksi?"
+                            data-confirm-text="Hasil seleksi Beasiswa {{ $beasiswa->nama }} akan diumumkan sekaligus kepada {{ $beasiswa->total_diputuskan }} pendaftar. Setelah diumumkan, keputusan tidak bisa diubah. Lanjutkan?"
+                            data-confirm-icon="question"
+                            data-confirm-color="#6777ef"
+                            data-confirm-button="Ya, Umumkan!"
+                            data-loading-text="Mengumumkan...">
+                            <i class="fas fa-bullhorn mr-1"></i> Umumkan Hasil
+                          </button>
+                        </form>
+                      @endif
+                    </td>
+                  </tr>
+                  @empty
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">Belum ada beasiswa dengan pendaftar.</td>
+                  </tr>
+                  @endforelse
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="row">
       <div class="col-12">
         <div class="card">

@@ -26,6 +26,13 @@ return new class extends Migration
             $table->timestamp('diputuskan_at')->nullable();
             $table->foreignId('diputuskan_oleh')->nullable()->constrained('users')->nullOnDelete();
 
+            // Kapan hasil keputusan ini DIUMUMKAN ke mahasiswa. Keputusan Kesra
+            // tetap disimpan lebih dulu (`status` + `diputuskan_at`), tetapi
+            // mahasiswa baru melihatnya setelah kolom ini terisi lewat aksi
+            // "Umumkan Hasil" per beasiswa. Tanpa kolom ini, mahasiswa yang
+            // dibuka berbarengan akan melihat hasil pada waktu berbeda-beda.
+            $table->timestamp('decision_at')->nullable();
+
             $table->timestamps();
             $table->unique(['user_id', 'beasiswa_id']);
         });

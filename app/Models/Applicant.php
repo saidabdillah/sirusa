@@ -85,12 +85,14 @@ class Applicant extends Model
         'catatan',
         'diputuskan_at',
         'diputuskan_oleh',
+        'decision_at',
     ];
 
     protected function casts(): array
     {
         return [
             'diputuskan_at' => 'datetime',
+            'decision_at' => 'datetime',
         ];
     }
 
@@ -122,6 +124,62 @@ class Applicant extends Model
     public function statusIcon(): string
     {
         return self::STATUS_ICONS[$this->status] ?? 'fa-clock';
+    }
+
+    /**
+     * Apakah hasil pendaftaran ini sudah diumumkan ke mahasiswa.
+     *
+     * Keputusan Kesra disimpan lebih dulu (`status`, `diputuskan_at`), tetapi
+     * baru terlihat oleh mahasiswa setelah `decision_at` terisi lewat aksi
+     * "Umumkan Hasil" per beasiswa. Dengan begitu seluruh pendaftar satu
+     * beasiswa menerima jawaban pada momen yang sama, bukan satu per satu
+     * saat Kesra menekan tombol setuju/tolak.
+     */
+    public function isAnnounced(): bool
+    {
+        return $this->decision_at !== null;
+    }
+
+    /**
+     * Status yang boleh dilihat MAHASISWA.
+     *
+     * Sebelum pengumuman, keputusan apa pun tetap tampil "menunggu" supaya
+     * tidak ada pendaftar yang tahu hasilnya lebih dulu. `dibatalkan` tetap
+     * tampil apa adanya karena itu tindakan mahasiswa sendiri, bukan keputusan
+     * Kesra. Halaman admin tetap memakai `status` mentah.
+     */
+    public function visibleStatus(): string
+    {
+        if ($this->status === 'dibatalkan') {
+            return 'dibatalkan';
+        }
+
+        return $this->isAnnounced() ? $this->status : self::PENDING_STATUS;
+    }
+
+    public function visibleStatusLabel(): string
+    {
+        return self::STATUS_LABELS[$this->visibleStatus()] ?? ucfirst($this->visibleStatus());
+    }
+
+    public function visibleStatusBadge(): string
+    {
+        return self::STATUS_BADGES[$this->visibleStatus()] ?? 'warning';
+    }
+
+    public function visibleStatusIcon(): string
+    {
+        return self::STATUS_ICONS[$this->visibleStatus()] ?? 'fa-clock';
+    }
+
+    /**
+     * Keputusan yang sudah diumumkan tidak boleh diubah lagi: mahasiswa sudah
+     * membaca hasilnya, jadi membaliknya di belakang layar akan membuat
+     * pengumuman serentak kehilangan arti.
+     */
+    public function isLockedByAnnouncement(): bool
+    {
+        return $this->isAnnounced();
     }
 
     /**

@@ -275,7 +275,12 @@ test('pendaftaran yang dibatalkan mahasiswa tidak punya form keputusan', functio
 });
 
 test('halaman mahasiswa memakai istilah status yang sama dengan admin', function (string $status, string $badge, string $label) {
-    $this->applicant->update(['status' => $status]);
+    // `diterima`/`ditolak` baru tampil setelah hasil diumumkan; status lain
+    // tidak butuh pengumuman.
+    $this->applicant->update([
+        'status' => $status,
+        'decision_at' => in_array($status, ['diterima', 'ditolak'], true) ? now() : null,
+    ]);
 
     $html = preg_replace(
         '/\s+/',

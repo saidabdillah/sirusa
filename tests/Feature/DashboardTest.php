@@ -503,6 +503,9 @@ test('student dashboard shows Kesra as rejected when the application was rejecte
         'user_id' => $user->id,
         'beasiswa_id' => $beasiswa->id,
         'status' => 'ditolak',
+        // Hasil sudah diumumkan; sebelum pengumuman dasbor memang sengaja
+        // menampilkan "Menunggu" (lihat test berikutnya).
+        'decision_at' => now(),
     ]);
     $user->profile->update(['verif_kesra' => 'setuju']);
 

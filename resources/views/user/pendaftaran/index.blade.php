@@ -39,7 +39,10 @@
                       <td>{{ $applicant->beasiswa->kampus }}</td>
                       <td>{{ $applicant->ipk }}</td>
                       <td>
-                        <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
+                        {{-- Status yang tampil adalah versi yang boleh dilihat
+                             mahasiswa: keputusan Kesra baru muncul setelah
+                             diumumkan serentak. --}}
+                        <span class="badge badge-{{ $applicant->visibleStatusBadge() }}">{{ $applicant->visibleStatusLabel() }}</span>
                       </td>
                       <td>{{ $applicant->created_at->translatedFormat('d M Y H:i') }}</td>
                       <td>

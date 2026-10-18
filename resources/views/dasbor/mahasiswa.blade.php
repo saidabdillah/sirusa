@@ -73,7 +73,9 @@
                 @forelse($applications as $applicant)
                   <tr>
                     <td>{{ $applicant->beasiswa?->nama }}</td>
-                    <td><span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span></td>
+                    {{-- Versi status yang boleh dilihat mahasiswa; hasil Kesra
+                         baru muncul setelah diumumkan serentak. --}}
+                    <td><span class="badge badge-{{ $applicant->visibleStatusBadge() }}">{{ $applicant->visibleStatusLabel() }}</span></td>
                     <td>{{ $applicant->created_at->translatedFormat('d M Y') }}</td>
                     <td class="text-right">
                       <a href="{{ route('user.pendaftaran.lihat', $applicant) }}" class="btn btn-sm btn-outline-primary">
@@ -102,7 +104,7 @@
           <div class="card-body">
             <div class="font-weight-bold">{{ $activeApplication->beasiswa?->nama }}</div>
             <p class="text-muted mb-2">
-              @if($activeApplication->status === 'diterima')
+              @if($activeApplication->status === 'diterima' && $activeApplication->isAnnounced())
                 Selamat, pendaftaran Anda diterima.
               @else
                 Pendaftaran sedang diproses. Anda hanya boleh satu pendaftaran aktif.

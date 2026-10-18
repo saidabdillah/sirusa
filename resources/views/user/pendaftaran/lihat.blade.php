@@ -32,10 +32,19 @@
                    kedua label "Diterima"/"Setuju" pernah berubah pisahi, dan
                    `@break` yang menempel setelah teks bisa gagal dikompilasi
                    lalu tercetak literal. Satu peta di model menutup keduanya. --}}
-              <span class="badge badge-{{ $applicant->statusBadge() }} p-2">
-                <i class="fas {{ $applicant->statusIcon() }}"></i> {{ $applicant->statusLabel() }}
+              <span class="badge badge-{{ $applicant->visibleStatusBadge() }} p-2">
+                <i class="fas {{ $applicant->visibleStatusIcon() }}"></i> {{ $applicant->visibleStatusLabel() }}
               </span>
             </div>
+            @if(! $applicant->isAnnounced() && in_array($applicant->status, ['diterima', 'ditolak'], true))
+            {{-- Keputusan sudah ada tetapi belum diumumkan: tanggal, catatan,
+                 dan hasilnya belum boleh tampil. --}}
+            <div class="alert alert-info text-left mb-0">
+              <i class="fas fa-hourglass-half mr-1"></i>
+              Pendaftaran Anda sudah diproses. Hasil seleksi akan diumumkan
+              sekaligus untuk semua pendaftar beasiswa ini.
+            </div>
+            @else
             @if($applicant->diputuskan_at)
             <div class="text-left small text-muted">
               <div class="mb-0">
@@ -51,6 +60,7 @@
               <strong>Catatan Admin:</strong>
               <p class="mb-0">{!! nl2br(e($applicant->catatan)) !!}</p>
             </div>
+            @endif
             @endif
             @if($applicant->canBeCancelled())
               {{-- Konfirmasi pakai `.btn-confirm-toggle` yang sudah ditangani

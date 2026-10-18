@@ -267,6 +267,11 @@ class User extends Authenticatable
      * `ditolak`, dan selain itu (belum ada pendaftaran / masih `verifikasi` /
      * semua `dibatalkan`) berarti "Menunggu".
      *
+     * Hanya keputusan yang SUDAH DIUMUMKAN (`decision_at` terisi) yang dihitung.
+     * Sebelum pengumuman, tahap Kesra tetap "Menunggu" walau Kesra sudah
+     * menekan setuju/tolak, supaya dasbor mahasiswa tidak membocorkan hasil
+     * lebih awal daripada pendaftar lain.
+     *
      * @return array{status: string, label: string, badge: string, decided: bool}
      */
     public function kesraDecision(): array
@@ -278,6 +283,34 @@ class User extends Authenticatable
         $status = match (true) {
             $applicants->contains('status', 'diterima') => 'setuju',
             $applicants->contains('status', 'ditolak') => 'tolak',
+            default => 'menunggu',
+        };
+
+        return UserProfile::decisionForStatus($status);
+    }
+
+    /**
+     * Versi `kesraDecision()` untuk mata mahasiswa: hanya keputusan yang sudah
+     * DIUMUMKAN (`decision_at` terisi) yang dihitung.
+     *
+     * Halaman admin dan export tetap memakai `kesraDecision()` karena petugas
+     * memang harus melihat keputusan yang belum diumumkan. Dasbor mahasiswa
+     * memakai versi ini supaya hasil tidak bocor lebih awal daripada pendaftar
+     * lain pada beasiswa yang sama.
+     *
+     * @return array{status: string, label: string, badge: string, decided: bool}
+     */
+    public function kesraDecisionVisible(): array
+    {
+        $applicants = $this->relationLoaded('applicants')
+            ? $this->applicants
+            : $this->applicants()->get();
+
+        $announced = $applicants->whereNotNull('decision_at');
+
+        $status = match (true) {
+            $announced->contains('status', 'diterima') => 'setuju',
+            $announced->contains('status', 'ditolak') => 'tolak',
             default => 'menunggu',
         };
 

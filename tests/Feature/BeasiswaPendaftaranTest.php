@@ -924,14 +924,17 @@ test('kesra bisa memutuskan pendaftaran tanpa langkah verifikasi profil kesra le
         'verif_kesra' => 'menunggu',
     ]);
 
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
     $applicant = Applicant::create([
         'user_id' => $user->id,
-        'beasiswa_id' => beasiswaTersedia($this->kampus->id)->id,
+        'beasiswa_id' => $beasiswa->id,
         'status' => 'verifikasi',
     ]);
 
     // Dulu langkah "verifikasi Kesra" harus disetujui dulu, baru pendaftaran
-    // bisa diputuskan. Sekarang keduanya satu aksi yang sama.
+    // bisa diputuskan. Sekarang keputusan diambil langsung; tahap Kesra pada
+    // profil baru ditutup saat hasilnya DIUMUMKAN.
     actingAs($this->kesra)
         ->put(route('admin.kesra.pendaftaran.keputusan', [$user, $applicant]), [
             'pendaftaran_status' => 'diterima',
@@ -939,10 +942,14 @@ test('kesra bisa memutuskan pendaftaran tanpa langkah verifikasi profil kesra le
         ->assertRedirect(route('admin.kesra.lihat', $user));
 
     expect($applicant->refresh()->status)->toBe('diterima')
-        ->and($user->refresh()->profile->verif_kesra)->toBe('setuju');
+        ->and($user->refresh()->profile->verif_kesra)->toBe('menunggu');
+
+    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $beasiswa))->assertRedirect();
+
+    expect($user->refresh()->profile->verif_kesra)->toBe('setuju');
 });
 
-test('keputusan kesra menutup tahap kesra pada profilnya, termasuk saat ditolak', function () {
+test('pengumuman menutup tahap kesra pada profil, termasuk untuk pendaftaran yang ditolak', function () {
     $user = User::factory()->standardUser()->create();
     mhsBeasiswa($user, $this->prodi, [
         'verif_catpil' => 'setuju',
@@ -950,9 +957,11 @@ test('keputusan kesra menutup tahap kesra pada profilnya, termasuk saat ditolak'
         'verif_kesra' => 'menunggu',
     ]);
 
+    $beasiswa = beasiswaTersedia($this->kampus->id);
+
     $applicant = Applicant::create([
         'user_id' => $user->id,
-        'beasiswa_id' => beasiswaTersedia($this->kampus->id)->id,
+        'beasiswa_id' => $beasiswa->id,
         'status' => 'verifikasi',
     ]);
 
@@ -961,9 +970,15 @@ test('keputusan kesra menutup tahap kesra pada profilnya, termasuk saat ditolak'
             'pendaftaran_status' => 'ditolak',
         ]);
 
-    // Identitas sudah ditinjau -- itu yang dilakukan keputusan ini -- jadi tahap
-    // Kesra selesai meski hasilnya bukan penerimaan. Kalau tahap Kesra tetap
-    // `menunggu`, satu pendaftaran bisa menunggu keputusan yang sudah diberikan.
+    // Keputusan sudah tersimpan, tetapi tahap Kesra belum ditutup: mahasiswa
+    // baru boleh tahu setelah hasil diumumkan serentak.
+    expect($applicant->refresh()->status)->toBe('ditolak')
+        ->and($user->refresh()->profile->verif_kesra)->toBe('menunggu');
+
+    actingAs($this->kesra)->post(route('admin.kesra.umumkan', $beasiswa))->assertRedirect();
+
+    // Identitas sudah ditinjau -- itu yang dilakukan keputusan ini -- jadi
+    // tahap Kesra selesai meski hasilnya bukan penerimaan.
     expect($user->refresh()->profile->verif_kesra)->toBe('setuju')
         ->and($applicant->refresh()->status)->toBe('ditolak');
 });
