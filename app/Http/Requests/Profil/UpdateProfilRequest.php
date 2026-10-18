@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Profil;
 
+use App\Models\DokumenAkademik;
 use App\Models\Prodi;
+use App\Support\JenjangPendidikan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -44,8 +46,18 @@ class UpdateProfilRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        // `ikut_kk` kini EMPAT opsi: ayah, ibu, famili_lain, kepala_keluarga.
+        // Status kepala keluarga bukan input mahasiswa lagi -- ia opsi keempat
+        // di grup radio ini -- jadi kolom boolean `kepala_keluarga` SELALU
+        // dihitung di server dari pilihan itu dan input klien untuk kolom ini
+        // DITIMPA. Tanpa penimpaan, request yang dirakit manual bisa memilih
+        // "Ayah" sambil mengirim `kepala_keluarga=1` dan profilnya tersimpan
+        // bertentangan dengan yang dipilih.
+        $ikutKk = $this->input('ikut_kk', 'ayah');
+
         $this->merge([
-            'ikut_kk' => $this->input('ikut_kk', 'ayah'),
+            'ikut_kk' => $ikutKk,
+            'kepala_keluarga' => $ikutKk === 'kepala_keluarga' ? 1 : 0,
             'ukt' => self::normalisasiRupiah($this->input('ukt')),
         ]);
     }
@@ -65,7 +77,7 @@ class UpdateProfilRequest extends FormRequest
 
     public function rules(): array
     {
-        $pakaiWali = $this->input('ikut_kk') === 'wali';
+        $pakaiWali = $this->input('ikut_kk') === 'famili_lain';
 
         $pekerjaan = 'in:PNS/TNI/Polri,Swasta,Wiraswasta,Petani,Buruh,Tidak Bekerja,Lainnya';
 
@@ -133,11 +145,29 @@ class UpdateProfilRequest extends FormRequest
             'nama_kampus' => ['required', 'string', 'max:255'],
             'fakultas' => ['required', 'string', 'max:255'],
             'prodi_id' => ['required', 'exists:prodi,id'],
+            // Jenjang menentukan rentang semester yang sah, jadi keduanya
+            // divalidasi bersama di `withValidator()` di bawah.
+            'jenjang' => ['required', Rule::in(JenjangPendidikan::JENJANG)],
+            'tahun_masuk' => [
+                'required',
+                'integer',
+                'min:'.JenjangPendidikan::rentangTahunMasuk()[0],
+                // Tahun masuk tidak boleh di masa depan: `max` memakai tahun
+                // berjalan, bukan angka tetap, supaya tidak perlu diubah tiap
+                // tahun.
+                'max:'.JenjangPendidikan::rentangTahunMasuk()[1],
+            ],
+            // Bukan input mahasiswa: nilainya DITIMPA di `prepareForValidation()`
+            // dari opsi `ikut_kk` (ayah/ibu/famili_lain/kepala_keluarga). Rule
+            // ini tetap ADA supaya nilai hasil hitungan server ikut masuk
+            // `validated()` dan tersimpan -- menghapusnya membuat kolom ini
+            // diam-diam tidak pernah diperbarui lagi.
+            'kepala_keluarga' => ['required', 'boolean'],
             'ipk' => ['required', 'numeric', 'between:0,4'],
-            'semester' => ['required', 'integer', 'between:1,14'],
+            'semester' => ['required', 'integer'],
             'ukt' => ['required', 'numeric', 'min:0'],
             'desil' => ['required', 'integer', 'between:1,10'],
-            'ikut_kk' => ['required', 'in:ayah,ibu,wali'],
+            'ikut_kk' => ['required', 'in:ayah,ibu,famili_lain,kepala_keluarga'],
 
             // Ketiga blok (ayah, ibu, wali) selalu tampil di form dan selalu bertanda *,
             // jadi wali hanya wajib bila KK-nya memang mengikuti wali.
@@ -162,10 +192,10 @@ class UpdateProfilRequest extends FormRequest
             'dokumen_ktp' => $this->dokumen('dokumen_ktp'),
             'dokumen_kk' => $this->dokumen('dokumen_kk'),
             'dokumen_desil' => $this->dokumen('dokumen_desil'),
-            'dokumen_sktm' => $this->dokumen('dokumen_sktm'),
-            'dokumen_transkrip' => $this->dokumen('dokumen_transkrip'),
             'dokumen_surat_aktif' => $this->dokumen('dokumen_surat_aktif'),
             'dokumen_surat_pernyataan' => $this->dokumen('dokumen_surat_pernyataan'),
+            // Pengganti berkas Transkrip: bukti terdaftar di PDDIKTI.
+            'dokumen_pddikti' => $this->dokumen('dokumen_pddikti'),
             'dokumen_bukti_ukt' => $this->dokumen('dokumen_bukti_ukt'),
             'ktp_ayah' => $this->dokumen('ktp_ayah'),
             'ktp_ibu' => $this->dokumen('ktp_ibu'),
@@ -173,7 +203,112 @@ class UpdateProfilRequest extends FormRequest
             'kk_wali' => $pakaiWali ? $this->dokumen('kk_wali') : ['nullable'],
             'dokumen_prestasi' => ['nullable', 'array'],
             'dokumen_prestasi.*' => ['file', 'mimes:pdf', 'max:2048'],
+
+            // KRS/KHS per semester: `dokumen_akademik[<jenis>][<semester>][file|nilai]`.
+            // Structurnya divalidasi longgar di sini; KEWAJIBAN berkasnya
+            // per-baris ditentukan `withValidator()` di bawah -- baris yang
+            // dikirim (form hanya mengirim baris sesuai jenjang+semester)
+            // wajib punya berkas, KECUALI baris itu sudah pernah tersimpan
+            // (menyimpan ulang tanpa mengganti berkas tidak boleh ditolak).
+            'dokumen_akademik' => ['nullable', 'array'],
+            'dokumen_akademik.*' => ['nullable', 'array'],
+            'dokumen_akademik.*.*' => ['nullable', 'array'],
+            'dokumen_akademik.*.*.file' => [
+                // Nullable di sini: kekosongan dihukum per-baris di
+                // `withValidator()` supaya pesannya bisa menyebut
+                // jenis+semester, bukan sekadar kunci array.
+                'nullable',
+                'file',
+                'mimes:pdf',
+                'max:2048',
+            ],
+            // Skala nilai mengikuti yang sudah dipakai aplikasi (IPK 0-4),
+            // bukan skala baru.
+            'dokumen_akademik.*.*.nilai' => ['nullable', 'numeric', 'between:0,4'],
         ];
+    }
+
+    /**
+     * Aturan yang butuh nilai field lain, jadi tidak bisa ditulis di `rules()`.
+     *
+     * Semester harus masuk rentang jenjang yang dipilih. Tanpa ini, mahasiswa
+     * D1 bisa mengirim semester 3 lewat request manual -- dropdown di form
+     * memang sudah membatasi, tapi form bukan penjaga.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $jenjang = $this->input('jenjang');
+            $semester = $this->input('semester');
+
+            if (! $validator->errors()->has('jenjang')
+                && ! $validator->errors()->has('semester')
+                && ! JenjangPendidikan::semesterValid($jenjang, $semester)) {
+                $maks = JenjangPendidikan::jumlahSemester($jenjang);
+
+                $validator->errors()->add(
+                    'semester',
+                    $maks === null
+                        ? 'Pilih jenjang pendidikan terlebih dahulu.'
+                        : "Semester untuk jenjang {$jenjang} hanya tersedia 1 sampai {$maks}.",
+                );
+            }
+
+            // Jenis dan semester pada baris KRS/KHS juga diperiksa: array bisa
+            // dikirim dengan kunci apa pun, termasuk jenis yang tidak dikenal
+            // atau semester di luar jenjangnya. Setiap baris yang DIKIRIM juga
+            // wajib membawa berkas, kecuali baris itu sudah tersimpan (profil
+            // lama yang disimpan ulang tanpa mengunggah ulang tetap sah).
+            // `profile()` mengembalikan objek RELASI HasOne, bukan model --
+            // `first()` dulu supaya `dokumenAkademik()` dipanggil di model
+            // `UserProfile`. Query segar (bukan properti ter-cache) dipakai
+            // dengan alasan yang sama dengan `ignore()` NIK di atas: relasi
+            // bisa terlanjur ter-cache `null` pada request yang sama.
+            $tersimpan = $this->user()?->profile()->first()
+                ?->dokumenAkademik()
+                ->get()
+                ->keyBy(fn (DokumenAkademik $d) => $d->jenis.'.'.$d->semester);
+
+            foreach ((array) $this->input('dokumen_akademik', []) as $jenis => $perSemester) {
+                if (! array_key_exists($jenis, DokumenAkademik::JENIS_LABELS)) {
+                    $validator->errors()->add(
+                        "dokumen_akademik.{$jenis}",
+                        'Jenis dokumen akademik tidak dikenal.',
+                    );
+
+                    continue;
+                }
+
+                foreach ((array) $perSemester as $kunci => $isi) {
+                    if (! JenjangPendidikan::semesterValid($jenjang, $kunci)) {
+                        $validator->errors()->add(
+                            "dokumen_akademik.{$jenis}.{$kunci}",
+                            'Semester '.$kunci." tidak tersedia untuk jenjang {$jenjang}.",
+                        );
+
+                        continue;
+                    }
+
+                    // Baris yang dikirim WAJIB berisi sesuatu: berkas ATAU
+                    // nilai (baris benar-benar kosong berarti data rusak dari
+                    // klien, bukan input yang sah). Berkasnya sendiri tidak
+                    // wajib per-baris: baris yang sudah tersimpan sah
+                    // diperbarui nilainya saja tanpa mengunggah ulang.
+                    $adaFile = $this->hasFile("dokumen_akademik.{$jenis}.{$kunci}.file");
+                    $adaNilai = filled($isi['nilai'] ?? null);
+                    $sudahAda = $tersimpan?->has($jenis.'.'.$kunci) ?? false;
+
+                    if (! $adaFile && ! $adaNilai && ! $sudahAda) {
+                        $label = DokumenAkademik::JENIS_LABELS[$jenis];
+
+                        $validator->errors()->add(
+                            "dokumen_akademik.{$jenis}.{$kunci}.file",
+                            "Berkas atau nilai {$label} semester {$kunci} wajib diisi.",
+                        );
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -283,15 +418,14 @@ class UpdateProfilRequest extends FormRequest
         'dokumen_ktp' => 'KTP',
         'dokumen_kk' => 'Kartu Keluarga',
         'dokumen_desil' => 'Dokumen Desil',
-        'dokumen_sktm' => 'SKTM',
-        'dokumen_transkrip' => 'Transkrip',
         'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
         'dokumen_surat_pernyataan' => 'Surat Pernyataan',
+        'dokumen_pddikti' => 'Dokumen PDDIKTI',
         'dokumen_bukti_ukt' => 'Bukti UKT',
         'ktp_ayah' => 'KTP Ayah',
         'ktp_ibu' => 'KTP Ibu',
-        'ktp_wali' => 'KTP Wali',
-        'kk_wali' => 'KK Wali',
+        'ktp_wali' => 'KTP Famili Lain',
+        'kk_wali' => 'KK Famili Lain',
     ];
 
     public function messages(): array
@@ -329,6 +463,18 @@ class UpdateProfilRequest extends FormRequest
             'fakultas.required' => 'Fakultas harus dipilih.',
             'prodi_id.required' => 'Program studi harus dipilih.',
             'prodi_id.exists' => 'Program studi tidak valid.',
+            'jenjang.required' => 'Jenjang pendidikan harus dipilih.',
+            'jenjang.in' => 'Jenjang pendidikan tidak valid.',
+            'tahun_masuk.required' => 'Tahun masuk harus diisi.',
+            'tahun_masuk.integer' => 'Tahun masuk harus berupa angka tahun.',
+            'tahun_masuk.min' => 'Tahun masuk tidak masuk akal.',
+            'tahun_masuk.max' => 'Tahun masuk tidak boleh di masa depan.',
+            'kepala_keluarga.required' => 'Pilih apakah Anda kepala keluarga.',
+            'kepala_keluarga.boolean' => 'Pilihan kepala keluarga tidak valid.',
+            'dokumen_akademik.*.*.file.mimes' => 'Berkas KRS/KHS harus berupa file PDF.',
+            'dokumen_akademik.*.*.file.max' => 'Ukuran berkas KRS/KHS maksimal 2MB.',
+            'dokumen_akademik.*.*.nilai.numeric' => 'Nilai KRS/KHS harus berupa angka.',
+            'dokumen_akademik.*.*.nilai.between' => 'Nilai KRS/KHS harus antara 0 dan 4.',
             'ipk.required' => 'IPK harus diisi.',
             'ipk.numeric' => 'IPK harus berupa angka.',
             'ipk.between' => 'IPK harus antara 0 dan 4.',

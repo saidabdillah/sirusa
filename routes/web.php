@@ -10,19 +10,27 @@ use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\VerifikasiController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\User\BeasiswaController as UserBeasiswaController;
 use App\Http\Controllers\User\PendaftaranController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 
 Route::get('/', fn () => view('landing'))->name('landing');
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/masuk', [AuthController::class, 'masuk'])->name('login');
     Route::post('/masuk', [AuthController::class, 'simpanMasuk'])->name('login.store');
+
+    // Registrasi mandiri mahasiswa. Petugas Kampus tidak lagi wajib membuatkan
+    // akun mahasiswa; mahasiswa mendaftar sendiri dengan NIK + kata sandi +
+    // kampus, lalu melengkapi sisanya di halaman Profil setelah akunnya
+    // diaktifkan.
+    Route::get('/daftar', [RegisterController::class, 'daftar'])->name('register');
+    Route::post('/daftar', [RegisterController::class, 'simpan'])->name('register.store');
 });
 
 Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi'])->group(function () {
@@ -43,19 +51,12 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi'])->group(f
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
 
     // Dokumen upload (pas foto, KTP, KK, dll)
-    Route::get('/dokumen/{path}', function ($path) {
-        $disk = Storage::disk('public');
-        if ($disk->exists($path)) {
-            $file = $disk->path($path);
-            $mimeType = mime_content_type($file);
-
-            return response()->file($file, [
-                'Content-Type' => $mimeType,
-                'Cache-Control' => 'public, max-age=86400',
-            ]);
-        }
-        abort(404);
-    })->name('dokumen.show')->where('path', '.*');
+    //
+    // Dilayani lewat controller, BUKAN closure: berkas ini pribadi, jadi
+    // kepemilikannya harus diperiksa sebelum isinya dikirim. Versi lamanya
+    // melayani berkas apa pun di disk publik kepada siapa pun yang sudah login.
+    Route::get('/dokumen/{path}', [DokumenController::class, 'show'])
+        ->name('dokumen.show')->where('path', '.*');
 
     // Pengaturan akun
     Route::get('/pengaturan', [SettingsController::class, 'index'])->name('settings');

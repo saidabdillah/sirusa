@@ -114,7 +114,7 @@ test('kesra sidebar shows admin menus plus Pengguna but not role and menu manage
         ->assertSee('<span>Verifikasi</span>', false)
         ->assertSee('<span>Penerima Beasiswa</span>', false)
         ->assertSee('<span>Keputusan</span>', false)
-        ->assertSee('<span>Status Verifikasi</span>', false)
+        ->assertSee('<span>Pendaftar</span>', false)
         // Halaman Kampus (Master Data) dikelola role kesra. Diuji lewat href,
         // bukan `<span>Kampus</span>`, karena sejak menu verifikasi dipersingkat
         // jadi "Kampus" ada dua menu dengan label yang sama di sidebar.
@@ -208,7 +208,6 @@ test('sidebar groups menu ke section yang sesuai', function () {
     $administrasi = $bagian('Administrasi');
     expect($administrasi)
         ->toContain(route('admin.beasiswa.index'))
-        ->toContain(route('admin.pendaftar.index'))
         ->toContain(route('admin.kampus.index'))
         ->toContain(route('admin.kesra.status'))
         ->not->toContain(route('admin.catpil.index'))
@@ -230,8 +229,7 @@ test('sidebar groups menu ke section yang sesuai', function () {
         ->toContain('<span>Kesra</span>')
         ->not->toContain(route('admin.penerima.index'))
         ->not->toContain(route('admin.kesra.status'))
-        ->not->toContain(route('admin.beasiswa.index'))
-        ->not->toContain(route('admin.pendaftar.index'));
+        ->not->toContain(route('admin.beasiswa.index'));
 
     // SECTION "MANAJEMEN" -- section mandiri untuk "Penerima Beasiswa"
     // (permintaan pengguna): daftar hasil yang tidak boleh terkubur di

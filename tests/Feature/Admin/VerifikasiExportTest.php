@@ -756,5 +756,5 @@ test('blok orang tua mengikuti pilihan kartu keluarga mahasiswa', function (stri
 })->with([
     'ayah' => ['ayah', 'Ayah', 'Ayah Ahmad', '1111111111111111', 'Petani'],
     'ibu' => ['ibu', 'Ibu', 'Ibu Siti', '2222222222222222', 'Swasta'],
-    'wali' => ['wali', 'Wali', 'Wali Dedi', '3333333333333333', 'Wiraswasta'],
+    'wali' => ['famili_lain', 'Famili Lain', 'Wali Dedi', '3333333333333333', 'Wiraswasta'],
 ]);

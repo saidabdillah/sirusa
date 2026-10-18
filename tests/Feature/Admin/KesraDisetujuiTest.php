@@ -38,6 +38,9 @@ function pemohonKesra(Kampus $kampus, Scholarship $beasiswa): User
 
     UserProfile::create([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Pemohon '.$user->id,
         'nik' => '6302000000'.$suffix,
         'no_kk' => '6302000001'.$suffix,

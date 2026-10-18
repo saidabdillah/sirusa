@@ -15,6 +15,9 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
 {
     return UserProfile::create([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000000002',
@@ -41,8 +44,7 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
         'dokumen_ktp' => 'profil/1/ktp.pdf',
         'dokumen_kk' => 'profil/1/kk.pdf',
         'dokumen_desil' => 'profil/1/desil.pdf',
-        'dokumen_sktm' => 'profil/1/sktm.pdf',
-        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_pddikti' => 'profil/1/pddikti.pdf',
         'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
@@ -104,7 +106,9 @@ test('application rejected when ipk below minimum', function () {
     actingAs($this->user)
         ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))
         ->assertRedirect(route('user.beasiswa.lihat', $scholarship))
-        ->assertSessionHas('error', 'IPK minimal untuk beasiswa ini adalah 3.5.');
+        // Selalu dua desimal: kolom decimal(3,2) dirender `3.50` di MySQL dan
+        // `3.5` di sqlite, jadi pesannya dibakukan di model.
+        ->assertSessionHas('error', 'IPK minimal untuk beasiswa ini adalah 3.50.');
 
     $this->assertDatabaseMissing('pendaftar', ['beasiswa_id' => $scholarship->id]);
 });
@@ -180,6 +184,9 @@ test('application rejected when already applied', function () {
 test('application rejected when profile has no prodi', function () {
     UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Ahmad Fauzi',
         'nik' => '6302000000000001',
         'verif_catpil' => 'setuju',
@@ -199,6 +206,9 @@ test('application rejected when profile has no prodi', function () {
 test('application rejected when profile incomplete', function () {
     UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Ahmad Fauzi',
         'prodi_id' => $this->prodi->id,
     ]);
@@ -266,7 +276,7 @@ test('application accepted once catpil approves the profile, without waiting for
 
 test('application rejected when wali data incomplete and kk ikut wali', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
-    $this->user->profile->update(['kk_ikut_wali' => true]);
+    $this->user->profile->update(['kk_ikut_famili_lain' => true]);
     $scholarship = createEligibleScholarship($this->kampus->id);
 
     actingAs($this->user)
@@ -280,7 +290,7 @@ test('application rejected when wali data incomplete and kk ikut wali', function
 test('application accepted when kk ikut wali and wali data complete', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
     $this->user->profile->update([
-        'kk_ikut_wali' => true,
+        'kk_ikut_famili_lain' => true,
         'nama_wali' => 'Wali Ahmad',
         'nik_wali' => '6302000000000005',
         'pekerjaan_wali' => 'Swasta',

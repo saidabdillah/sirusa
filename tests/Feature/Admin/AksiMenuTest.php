@@ -247,7 +247,9 @@ test('halaman akses menu menampilkan centang aksi untuk modul crud', function ()
 });
 
 test('halaman akses menu tidak menampilkan centang aksi untuk menu non crud', function () {
-    $pendaftar = Menu::query()->where('scope', 'admin.pendaftar')->firstOrFail();
+    // Menu daftar pendaftar lama (scope admin.pendaftar) sudah dihapus;
+    // contoh menu non-CRUD kini diambil dari leaf rekap "Pendaftar".
+    $pendaftar = Menu::query()->where('scope', 'admin.kesra.status')->firstOrFail();
 
     $html = actingAs($this->superAdmin)
         ->get(route('admin.menu.index', ['role' => Role::where('name', 'kesra')->value('id')]))

@@ -18,12 +18,6 @@
             <h4>Riwayat Pendaftaran</h4>
           </div>
           <div class="card-body">
-            @if($applicants->isEmpty())
-              <div class="text-center text-muted mb-3">
-                Anda belum punya pendaftaran beasiswa. <a href="{{ route('user.beasiswa.index') }}">Lihat daftar beasiswa</a>.
-              </div>
-            @endif
-
             <div class="table-responsive">
               <table class="table table-striped" id="myApplicantTable">
                 <thead>

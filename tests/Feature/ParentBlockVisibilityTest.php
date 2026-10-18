@@ -30,9 +30,12 @@ function createProfileWithParentData(User $user, bool $kkIkutWali): UserProfile
 {
     return UserProfile::create([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Orang Tua Test',
         'nik' => '6302000000000001',
-        'kk_ikut_wali' => $kkIkutWali,
+        'kk_ikut_famili_lain' => $kkIkutWali,
         'nama_ayah' => 'Ayah Lengkap',
         'nama_ibu' => 'Ibu Lengkap',
         'nama_wali' => 'Wali Lengkap',

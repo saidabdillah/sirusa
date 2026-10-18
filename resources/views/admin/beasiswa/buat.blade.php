@@ -50,13 +50,15 @@
                   @endif
                 </div>
                 <div class="form-group col-md-4">
-                  <label for="tingkat_gelar">Tingkat Gelar <span class="text-danger">*</span></label>
+                  <label for="tingkat_gelar">Jenjang <span class="text-danger">*</span></label>
+                  {{-- Pilihan dari sumber yang sama dengan profil (JenjangPendidikan),
+                       bukan daftar tulis tangan yang bisa beda. --}}
                   <select class="form-control @error('tingkat_gelar') is-invalid @enderror" id="tingkat_gelar"
                     name="tingkat_gelar">
-                    <option value="">&mdash; Pilih &mdash;</option>
-                    <option value="S1" {{ old('tingkat_gelar')==='S1' ? 'selected' : '' }}>S1</option>
-                    <option value="S2" {{ old('tingkat_gelar')==='S2' ? 'selected' : '' }}>S2</option>
-                    <option value="S3" {{ old('tingkat_gelar')==='S3' ? 'selected' : '' }}>S3</option>
+                    <option value="">&mdash; Pilih Jenjang &mdash;</option>
+                    @foreach(\App\Support\JenjangPendidikan::JENJANG as $jenjang)
+                    <option value="{{ $jenjang }}" {{ old('tingkat_gelar') === $jenjang ? 'selected' : '' }}>{{ $jenjang }}</option>
+                    @endforeach
                   </select>
                   @error('tingkat_gelar')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -108,21 +110,22 @@
                     value="{{ old('ipk_minimal') }}" placeholder="contoh 3.00">
                   @error('ipk_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group col-md-4">
+                {{-- Semester minimal: dropdown, bukan input bebas -- gaya yang
+                     sama dengan dropdown Semester di profil (permintaan
+                     pengguna). 1..8 = jumlah semester jenjang terpanjang. --}}
+                <div class="form-group col-md-8">
                   <label for="semester_minimal">Semester Minimal <span class="text-danger">*</span></label>
-                  <input type="number" min="1" max="14"
-                    class="form-control @error('semester_minimal') is-invalid @enderror" id="semester_minimal"
-                    name="semester_minimal" value="{{ old('semester_minimal') }}" placeholder="contoh 3">
-                  @error('semester_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="form-group col-md-4">
-                  <label for="status">Status <span class="text-danger">*</span></label>
-                  <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
-                    <option value="">&mdash; Pilih &mdash;</option>
-                    <option value="aktif" {{ old('status') === 'aktif' ? 'selected' : '' }}>Aktif</option>
-                    <option value="non-aktif" {{ old('status') === 'non-aktif' ? 'selected' : '' }}>Non-aktif</option>
+                  <select class="form-control @error('semester_minimal') is-invalid @enderror" id="semester_minimal"
+                    name="semester_minimal">
+                    <option value="">-- Pilih Semester --</option>
+                    @foreach(range(1, 8) as $semester)
+                    <option value="{{ $semester }}" {{ old('semester_minimal') == $semester ? 'selected' : '' }}>{{ $semester }}</option>
+                    @endforeach
                   </select>
-                  @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  @error('semester_minimal')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                  {{-- Kolom `status` sengaja TIDAK ada di form: beasiswa baru
+                       selalu aktif (default kolom), dan pendaftaran otomatis
+                       tertutup oleh tanggal selesai. --}}
                 </div>
               </div>
             </div>

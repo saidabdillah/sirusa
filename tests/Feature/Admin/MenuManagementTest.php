@@ -299,7 +299,10 @@ test('super admin cannot delete a wajib menu', function () {
 });
 
 test('super admin cannot delete a menu that still has children', function () {
-    $parent = Menu::where('label', 'Beasiswa')->whereNotNull('children')->firstOrFail();
+    // `children` adalah nama RELASI, bukan kolom; kolom di tabelnya
+    // `parent_id`. Query langsung ke kolom `children` melempar
+    // "Unknown column" di database yang menegakkan skema.
+    $parent = Menu::where('label', 'Beasiswa')->whereHas('children')->firstOrFail();
 
     actingAs($this->superAdmin)
         ->delete(route('admin.menukelola.hapus', $parent))

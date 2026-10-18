@@ -31,7 +31,6 @@ test('admin creating scholarship gets error feedback for invalid required fields
             'semester_minimal' => '',
             'deskripsi' => '',
             'persyaratan' => '',
-            'status' => 'aktif',
             'prodi_ids' => [$prodi->id],
         ])
         ->assertSessionHasErrors([
@@ -62,7 +61,6 @@ test('admin creating scholarship with out-of-range semester gets red error feedb
             'ipk_minimal' => 3.0,
             'semester_minimal' => 0,
             'deskripsi' => 'Deskripsi',
-            'status' => 'aktif',
             'prodi_ids' => [$prodi->id],
         ])
         ->assertSessionHasErrors(['semester_minimal' => 'Semester minimal harus antara 1 hingga 14']);

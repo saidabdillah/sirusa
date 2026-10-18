@@ -259,14 +259,13 @@ class VerifikasiAntrean
 
     /**
      * Profil yang sudah cukup terverifikasi untuk bisa diputuskan Kesra, yaitu
-     * yang lolos verifikasi Kampus. Catpil tidak lagi menghalangi putusan Kesra
-     * (permintaan pengguna: Kesra tidak menunggu Catpil).
+     * yang lolos verifikasi Catpil DAN Kampus (permintaan pengguna).
      *
      * Ini diterjemahkan ke SQL, bukan disaring lewat `canVerifStage()`, dan itu
      * aman khusus untuk tahap `kesra`: `kesra` adalah tahap terakhir, jadi
-     * `canVerifStage()` untuknya tidak punya aturan tambahan apa pun --
-     * hanya flag kampus yang harus `setuju`. Kalau suatu hari ada tahap
-     * setelah Kesra, aturan ini harus ikut diperbarui di sampingnya.
+     * `canVerifStage()` untuknya tidak punya aturan tambahan apa pun -- hanya
+     * dua flag itu yang harus `setuju`. Kalau suatu hari ada tahap setelah
+     * Kesra, aturan ini harus ikut diperbarui di sampingnya.
      */
     public function profilTerverifikasi(): int
     {
@@ -274,6 +273,7 @@ class VerifikasiAntrean
             ? User::role('user')
                 ->where('status', 'aktif')
                 ->whereHas('profile', fn (Builder $query) => $query
+                    ->where('verif_catpil', 'setuju')
                     ->where('verif_kampus', 'setuju'))
                 ->count()
             : $this->ringkasan()['setuju'];
@@ -361,9 +361,10 @@ class VerifikasiAntrean
      * statistik dasbor, tabel antrean, dan unduhan tidak pernah menghitung cakupan
      * yang berbeda.
      *
-     * Syaratnya persis `UserProfile::canVerifStage('kesra')` yang dipegang `show()`
-     * -- hanya `verif_kampus = 'setuju'` -- jadi setiap baris yang tampil selalu
-     * bisa dibuka tanpa membalas 403.
+     * Syaratnya persis `UserProfile::lolosGerbangKesra()` yang dipegang `show()`
+     * dan `verifikasi()` -- `verif_catpil` DAN `verif_kampus` sama-sama
+     * `setuju` -- jadi setiap baris yang tampil selalu bisa dibuka tanpa
+     * membalas 403.
      *
      * @param  array<int, string>|string|null  $status
      */
@@ -375,6 +376,11 @@ class VerifikasiAntrean
             ->whereHas('user', fn (Builder $query) => $query
                 ->where('status', 'aktif')
                 ->whereHas('profile', fn (Builder $profile) => $profile
+                    // Gerbang Kesra: Catpil DAN Kampus harus `setuju`. `tolak`
+                    // maupun `revisi` di salah satunya menahan permohonan ini
+                    // dari antrean -- dan karena disaring di SQL, tidak ada
+                    // cara melewatinya lewat URL langsung.
+                    ->where('verif_catpil', 'setuju')
                     ->where('verif_kampus', 'setuju')));
     }
 

@@ -87,6 +87,11 @@
                     <th>Kampus</th>
                     <th>Beasiswa</th>
                     <th>IPK</th>
+                    {{-- Lama berdomisili DIHITUNG saat halaman dibuka dari
+                         `berdomisili_sejak` (diisi petugas Catpil), bukan nilai
+                         statis: kalau disimpan, angkanya jadi salah begitu bulan
+                         berganti. --}}
+                    <th>Lama Berdomisili</th>
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -107,6 +112,7 @@
                     <td>{{ $profile?->prodi?->fakultas?->kampus?->nama_kampus ?? '-' }}</td>
                     <td>{{ $applicant->beasiswa?->nama ?? '-' }}</td>
                     <td>{{ $applicant->ipk ?? $profile?->ipk ?? '-' }}</td>
+                    <td>{{ $profile?->lamaBerdomisiliLabel() ?? 'Belum ditentukan' }}</td>
 <td>
                       <span class="badge badge-{{ $applicant->statusBadge() }}">{{ $applicant->statusLabel() }}</span>
                     </td>

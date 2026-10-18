@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Scholarship;
 
 use App\Models\Prodi;
+use App\Support\JenjangPendidikan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -19,14 +20,14 @@ class UpdateScholarshipRequest extends FormRequest
             'nama' => 'required|string|max:255',
             'kampus_id' => 'required|integer|exists:kampus,id',
             'kuota' => 'required|integer|min:1',
-            'tingkat_gelar' => 'required|in:S1,S2,S3',
+            // Rentang jenjang SATU SUMBER dengan form profil (D1-S3).
+            'tingkat_gelar' => 'required|in:'.implode(',', JenjangPendidikan::JENJANG),
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'ipk_minimal' => 'required|numeric|gt:0|max:4',
             'semester_minimal' => 'required|integer|between:1,14',
             'deskripsi' => 'required|string',
             'persyaratan' => 'required|string',
-            'status' => 'required|in:aktif,non-aktif',
             'prodi_ids' => 'required|array|min:1',
             'prodi_ids.*' => 'required|integer|distinct|exists:prodi,id',
         ];
@@ -66,8 +67,8 @@ class UpdateScholarshipRequest extends FormRequest
             'kuota.required' => 'Kuota harus diisi',
             'kuota.integer' => 'Kuota harus berupa angka',
             'kuota.min' => 'Kuota minimal 1',
-            'tingkat_gelar.required' => 'Tingkat gelar harus dipilih',
-            'tingkat_gelar.in' => 'Tingkat gelar tidak valid',
+            'tingkat_gelar.required' => 'Jenjang harus dipilih',
+            'tingkat_gelar.in' => 'Jenjang tidak valid',
             'tanggal_mulai.required' => 'Tanggal mulai harus diisi',
             'tanggal_mulai.date' => 'Tanggal mulai tidak valid',
             'tanggal_selesai.required' => 'Tanggal selesai harus diisi',
@@ -82,7 +83,6 @@ class UpdateScholarshipRequest extends FormRequest
             'semester_minimal.between' => 'Semester minimal harus antara 1 hingga 14',
             'deskripsi.required' => 'Deskripsi harus diisi',
             'persyaratan.required' => 'Persyaratan harus diisi',
-            'status.required' => 'Status harus dipilih',
             'prodi_ids.required' => 'Minimal harus memilih 1 program studi',
             'prodi_ids.min' => 'Minimal harus memilih 1 program studi',
             'prodi_ids.*.exists' => 'Program studi yang dipilih tidak valid',

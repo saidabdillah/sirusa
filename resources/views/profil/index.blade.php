@@ -7,19 +7,20 @@ $documentGroups = [
 'dokumen_ktp' => 'KTP (Kartu Tanda Penduduk)',
 'dokumen_kk' => 'KK (Kartu Keluarga)',
 'dokumen_desil' => 'Dokumen Desil',
-'dokumen_sktm' => 'SKTM (Surat Keterangan Tidak Mampu)',
 ],
 'Berkas Kampus' => [
-'dokumen_transkrip' => 'Transkrip',
+// Transkrip digantikan PDDIKTI; SKTM tidak lagi disyaratkan. Berkas KRS dan
+// KHS diunggah di bagian akademik tersendiri (per semester), bukan di sini.
+'dokumen_pddikti' => 'Dokumen PDDIKTI',
 'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
 'dokumen_surat_pernyataan' => 'Surat Pernyataan',
 'dokumen_bukti_ukt' => 'Bukti UKT (Uang Kuliah Tunggal)',
 ],
-'Berkas Orang Tua/Wali' => [
+'Berkas Orang Tua/Famili Lain' => [
 'ktp_ayah' => 'KTP (Kartu Tanda Penduduk) Ayah',
 'ktp_ibu' => 'KTP (Kartu Tanda Penduduk) Ibu',
-'ktp_wali' => 'KTP (Kartu Tanda Penduduk) Wali',
-'kk_wali' => 'KK (Kartu Keluarga) Wali',
+'ktp_wali' => 'KTP (Kartu Tanda Penduduk) Famili Lain',
+'kk_wali' => 'KK (Kartu Keluarga) Famili Lain',
 ],
 ];
 $waliDocFields = ['ktp_wali', 'kk_wali'];
@@ -129,8 +130,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <div class="form-group col-md-6">
                   <label for="email">Email <span class="text-danger">*</span></label>
                   <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email"
-                    value="{{ old('email', auth()->user()->email) }}" placeholder="contoh: nama@email.com"
-                    autocomplete="email">
+                    value="{{ old('email', auth()->user()->email) }}" autocomplete="email">
                   @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
@@ -139,23 +139,20 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <div class="form-group col-md-6">
                   <label for="nik">NIK (Nomor Induk Kependudukan) <span class="text-danger">*</span></label>
                   <input type="text" inputmode="numeric" class="form-control @error('nik') is-invalid @enderror" id="nik"
-                    name="nik" value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16" placeholder="16 digit angka">
+                    name="nik" value="{{ old('nik', $profile->nik ?? '') }}" maxlength="16">
                   @error('nik')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Hanya angka, tepat 16 digit.</small>
                 </div>
                 <div class="form-group col-md-6">
                   <label for="no_kk">No. Kartu Keluarga <span class="text-danger">*</span></label>
                   <input type="text" inputmode="numeric" class="form-control @error('no_kk') is-invalid @enderror"
-                    id="no_kk" name="no_kk" value="{{ old('no_kk', $profile->no_kk ?? '') }}" maxlength="16"
-                    placeholder="16 digit angka">
+                    id="no_kk" name="no_kk" value="{{ old('no_kk', $profile->no_kk ?? '') }}" maxlength="16">
                   @error('no_kk')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Hanya angka, tepat 16 digit.</small>
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group col-md-6">
-                  <label for="telepon">Telepon <span class="text-danger">*</span></label>
+                  <label for="telepon">No. HP <span class="text-danger">*</span></label>
                   <input type="text" inputmode="numeric" class="form-control @error('telepon') is-invalid @enderror"
                     id="telepon" name="telepon" value="{{ old('telepon', $profile->telepon ?? '') }}" maxlength="13"
                     placeholder="contoh 081234567890">
@@ -294,35 +291,63 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
               </div>
               <div class="form-row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="prodi">Program Studi <span class="text-danger">*</span></label>
                   <select class="form-control @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id">
                     <option value="">Pilih Fakultas terlebih dahulu</option>
                   </select>
                   @error('prodi_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group col-md-4">
-                  <label for="ipk">IPK (Indeks Prestasi Akademik) <span class="text-danger">*</span></label>
-                  <input type="number" step="0.01" min="0" max="4"
-                    class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk"
-                    value="{{ old('ipk', $profile->ipk ?? '') }}">
-                  @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="form-group col-md-6">
+                  <label for="jenjang">Jenjang Pendidikan <span class="text-danger">*</span></label>
+                  <select class="form-control @error('jenjang') is-invalid @enderror" id="jenjang" name="jenjang">
+                    <option value="">-- Pilih Jenjang --</option>
+                    @foreach($jenjangList as $jenjang)
+                    <option value="{{ $jenjang }}" {{ old('jenjang', $profile->jenjang ?? '') === $jenjang ? 'selected' :
+                      '' }}>{{ $jenjang }}</option>
+                    @endforeach
+                  </select>
+                  @error('jenjang')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group col-md-4">
-                  <label for="semester">Semester <span class="text-danger">*</span></label>
-                  <input type="number" min="1" max="14" class="form-control @error('semester') is-invalid @enderror"
-                    id="semester" name="semester" value="{{ old('semester', $profile->semester ?? '') }}">
-                  @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="form-group col-md-6">
+                  <label for="tahun_masuk">Tahun Masuk <span class="text-danger">*</span></label>
+                  <input type="number" min="{{ \App\Support\JenjangPendidikan::rentangTahunMasuk()[0] }}"
+                    max="{{ \App\Support\JenjangPendidikan::rentangTahunMasuk()[1] }}" step="1"
+                    class="form-control @error('tahun_masuk') is-invalid @enderror" id="tahun_masuk" name="tahun_masuk"
+                    value="{{ old('tahun_masuk', $profile->tahun_masuk ?? '') }}" placeholder="contoh 2023">
+                  @error('tahun_masuk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group col-md-6">
-                  <label for="nim">NIM (Nomor Induk Mahasiswa)</label>
+                  <label for="ipk">IPK (Indeks Prestasi Kumulatif) <span class="text-danger">*</span></label>
+                  <input type="number" step="0.01" min="0" max="4"
+                    class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk"
+                    value="{{ old('ipk', $profile->ipk ?? '') }}">
+                  @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-6">
+                  {{-- Semester dipilih dari daftar, bukan diketik: pilihannya
+                       mengikuti jenjang, jadi angka yang tidak ada di jenjang
+                       itu tidak pernah bisa dipilih. Dropdown-nya nonaktif
+                       sampai jenjang dipilih, dan diisi ulang oleh skrip di
+                       bawah saat jenjang berubah. --}}
+                  <label for="semester">Semester <span class="text-danger">*</span></label>
+                  <select class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester">
+                    <option value="">-- Pilih Semester --</option>
+                  </select>
+                  @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="nim">NIM/NPM</label>
                   <input type="text" class="form-control @error('nim') is-invalid @enderror" id="nim" name="nim"
                     value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30">
                   @error('nim')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+              </div>
+
+              <div class="form-row">
                 <div class="form-group col-md-6">
                   <label for="ukt">UKT (Uang Kuliah Tunggal) <span class="text-danger">*</span></label>
                   <div class="input-group @error('ukt') is-invalid @enderror">
@@ -336,15 +361,20 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
               </div>
 
+              {{-- KRS & KHS per semester: berkas DAN nilainya terpisah, dan
+                   tiap semester punya barisnya sendiri. Mengunggah KHS
+                   semester 4 tidak menimpa KHS semester 3. --}}
+              @include('profil.partials.dokumen-akademik')
+
               <hr>
 
               {{-- DATA ORANG TUA & WALI --}}
-              <h5 class="mb-3">Data Orang Tua &amp; Wali</h5>
+              <h5 class="mb-3">Data Orang Tua &amp; Famili Lain</h5>
               <div class="form-row">
                 <div class="form-group col-md-12">
                   <label>Ikut KK (Kartu Keluarga) <span class="text-danger">*</span></label>
-                  <div class="d-flex align-items-center">
-                    @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'wali' => 'Wali'] as $value => $label)
+                  <div class="d-flex align-items-center flex-wrap">
+                    @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'famili_lain' => 'Famili Lain', 'kepala_keluarga' => 'Kepala Keluarga'] as $value => $label)
                     <div class="custom-control custom-radio mr-4">
                       <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror"
                         id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}" {{ old('ikut_kk',
@@ -353,28 +383,33 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                     </div>
                     @endforeach
                   </div>
-                  <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data
-                    orang tua/wali yang dipilih wajib diisi.</small>
+                  <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih, atau
+                    milik sendiri bila Anda kepala keluarga. Data ayah dan ibu tetap wajib diisi.</small>
                   @error('ikut_kk')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                  {{-- Kolom boolean `kepala_keluarga` tetap ada di database dan
+                       NILAINYA DIHITUNG SERVER dari opsi radio ini
+                       (`prepareForValidation` menimpanya: `kepala_keluarga` =
+                       pilihan === 'kepala_keluarga'). Input klien untuk kolom
+                       itu tidak bisa merubah keputusan, jadi tidak perlu field
+                       apa pun di form. --}}
                 </div>
               </div>
 
               <h6 class="text-muted mt-3 mb-2">Ayah</h6>
               <div class="form-row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="nama_ayah">Nama Ayah <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nama_ayah') is-invalid @enderror" id="nama_ayah"
                     name="nama_ayah" value="{{ old('nama_ayah', $profile->nama_ayah ?? '') }}">
                   @error('nama_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="nik_ayah">NIK (Nomor Induk Kependudukan) Ayah <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nik_ayah') is-invalid @enderror" id="nik_ayah"
                     name="nik_ayah" value="{{ old('nik_ayah', $profile->nik_ayah ?? '') }}" maxlength="16">
                   @error('nik_ayah')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.</small>
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="pekerjaan_ayah">Pekerjaan Ayah <span class="text-danger">*</span></label>
                   <select class="form-control @error('pekerjaan_ayah') is-invalid @enderror" id="pekerjaan_ayah"
                     name="pekerjaan_ayah">
@@ -390,20 +425,19 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
 
               <h6 class="text-muted mt-3 mb-2">Ibu</h6>
               <div class="form-row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="nama_ibu">Nama Ibu <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nama_ibu') is-invalid @enderror" id="nama_ibu"
                     name="nama_ibu" value="{{ old('nama_ibu', $profile->nama_ibu ?? '') }}">
                   @error('nama_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="nik_ibu">NIK (Nomor Induk Kependudukan) Ibu <span class="text-danger">*</span></label>
                   <input type="text" class="form-control @error('nik_ibu') is-invalid @enderror" id="nik_ibu"
                     name="nik_ibu" value="{{ old('nik_ibu', $profile->nik_ibu ?? '') }}" maxlength="16">
                   @error('nik_ibu')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                  <small class="text-muted">Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.</small>
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-6">
                   <label for="pekerjaan_ibu">Pekerjaan Ibu <span class="text-danger">*</span></label>
                   <select class="form-control @error('pekerjaan_ibu') is-invalid @enderror" id="pekerjaan_ibu"
                     name="pekerjaan_ibu">
@@ -418,9 +452,9 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               </div>
 
               <div id="section-wali"
-                style="{{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === 'wali' ? '' : 'display:none;' }}">
+                style="{{ old('ikut_kk', $profile->ikut_kk ?? 'ayah') === 'famili_lain' ? '' : 'display:none;' }}">
                 <hr>
-                <h6 class="text-muted mb-2">Wali</h6>
+                <h6 class="text-muted mb-2">Famili Lain</h6>
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="nama_wali">Nama Wali <span class="text-danger">*</span></label>
@@ -429,12 +463,11 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                     @error('nama_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
                   </div>
                   <div class="form-group col-md-6">
-                    <label for="nik_wali">NIK (Nomor Induk Kependudukan) Wali <span class="text-danger">*</span></label>
+                    <label for="nik_wali">NIK (Nomor Induk Kependudukan) Famili Lain <span class="text-danger">*</span></label>
                     <input type="text" class="form-control @error('nik_wali') is-invalid @enderror" id="nik_wali"
                       name="nik_wali" value="{{ old('nik_wali', $profile->nik_wali ?? '') }}" maxlength="16">
                     @error('nik_wali')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <small class="text-muted">Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.</small>
-                  </div>
+                    </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group col-md-6">
@@ -484,36 +517,39 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                     ? 'Format: JPG, JPEG, atau PNG. Ukuran maksimal 2 MB.'
                     : 'Format: PDF. Ukuran maksimal 2 MB.';
               @endphp
+              {{-- Tampilan input mengikuti KRS/KHS: custom-file Bootstrap, bukan
+                   input-group (permintaan pengguna). --}}
               <div class="form-group {{ $isWaliDoc ? 'wali-doc' : '' }}"
-                style="{{ $isWaliDoc && old('ikut_kk', $profile->ikut_kk ?? 'ayah') !== 'wali' ? 'display:none;' : '' }}">
+                style="{{ $isWaliDoc && old('ikut_kk', $profile->ikut_kk ?? 'ayah') !== 'famili_lain' ? 'display:none;' : '' }}">
                 <label for="{{ $field }}">{{ $label }} <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <input type="file" class="form-control @error($field) is-invalid @enderror" id="{{ $field }}"
-                    name="{{ $field }}" accept="{{ $accept }}">
-                  @if($profile && $profile->{$field})
-                  <div class="input-group-append">
-                    <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank"
-                      class="btn btn-outline-secondary" title="Lihat dokumen">
-                      <i class="fas fa-eye"></i>
-                    </a>
-                  </div>
-                  @endif
-                  @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="custom-file">
+                  <input type="file"
+                    class="custom-file-input @error($field) is-invalid @enderror"
+                    id="{{ $field }}" name="{{ $field }}" accept="{{ $accept }}">
+                  <label class="custom-file-label" for="{{ $field }}">{{ $profile?->{$field} ? basename($profile->{$field}) : 'Pilih file' }}</label>
                 </div>
-                <small class="text-muted">{{ $bantuan }}</small>
+                @error($field)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 @if($profile && $profile->{$field})
-                <small class="text-muted d-block">Dokumen sudah diunggah. Upload file baru untuk mengganti.</small>
+                <small class="text-muted d-block">
+                  Dokumen sudah diunggah.
+                  <a href="{{ route('dokumen.show', $profile->{$field}) }}" target="_blank"
+                    rel="noopener noreferrer">Lihat berkas tersimpan</a>. Upload file baru untuk mengganti.
+                </small>
                 @endif
+                <small class="text-muted d-block">{{ $bantuan }}</small>
               </div>
               @endforeach
               @endforeach
 
               <div class="form-group">
                 <label for="dokumen_prestasi">Dokumen Prestasi (Pilihan, bisa lebih dari satu)</label>
-                <input type="file" class="form-control @error('dokumen_prestasi.*') is-invalid @enderror"
-                  id="dokumen_prestasi" name="dokumen_prestasi[]" accept="application/pdf" multiple>
-                @error('dokumen_prestasi.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <small class="text-muted">Format: PDF. Ukuran maksimal 2 MB per file.</small>
+                <div class="custom-file">
+                  <input type="file" class="custom-file-input @error('dokumen_prestasi.*') is-invalid @enderror"
+                    id="dokumen_prestasi" name="dokumen_prestasi[]" accept="application/pdf" multiple>
+                  <label class="custom-file-label" for="dokumen_prestasi">Pilih file</label>
+                </div>
+                @error('dokumen_prestasi.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                <small class="text-muted d-block">Format: PDF. Ukuran maksimal 2 MB per file.</small>
                 @if($profile && $profile->dokumen_prestasi)
                 <div class="mt-2">
                   @foreach($profile->dokumen_prestasi as $path)
@@ -741,7 +777,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   }
 
   function updateWaliVisibility() {
-    var showWali = $('input[name="ikut_kk"]:checked').val() === 'wali';
+    var showWali = $('input[name="ikut_kk"]:checked').val() === 'famili_lain';
     $('#section-wali').toggle(showWali);
     $('.wali-doc').toggle(showWali);
   }
@@ -749,6 +785,103 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   $('input[name="ikut_kk"]').on('change', updateWaliVisibility);
 
   updateWaliVisibility();
+
+  // Nama berkas terpilih tampil di label custom-file (semua input file
+  // profil memakai gaya custom-file, sama dengan KRS/KHS).
+  $('.custom-file-input').on('change', function() {
+    var nama = (this.files && this.files.length > 1)
+      ? this.files.length + ' berkas dipilih'
+      : (this.files[0] ? this.files[0].name : '');
+    $(this).next('.custom-file-label').text(nama || 'Pilih file');
+  });
+
+  // ── Semester mengikuti jenjang, dan baris KRS/KHS mengikuti semester ─────
+  //
+  // Rentang semester per jenjang dikirim dari server (satu sumber: kelas
+  // JenjangPendidikan), jadi tidak ada daftar kedua yang bisa berbeda.
+  var semesterMap = @json($semesterMap);
+  var semesterAwal = "{{ old('semester', $profile->semester ?? '') }}";
+
+  function isiSemester(pertahankan) {
+    var jenjang = $('#jenjang').val();
+    var jumlah = semesterMap[jenjang] || 0;
+    var $semester = $('#semester');
+
+    $semester.html('<option value="">-- Pilih Semester --</option>');
+
+    if (!jumlah) {
+      // Belum ada jenjang: dropdown dikunci, bukan dikosongkan diam-diam.
+      $semester.prop('disabled', true);
+      return;
+    }
+
+    for (var i = 1; i <= jumlah; i++) {
+      var selected = (pertahankan && String(i) === String(semesterAwal)) ? ' selected' : '';
+      $semester.append('<option value="' + i + '"' + selected + '>' + i + '</option>');
+    }
+
+    $semester.prop('disabled', false);
+
+    // Semester yang sudah dipilih tidak sah lagi di jenjang baru (mis. 8 -> D1):
+    // dikosongkan supaya pengguna memilih ulang, bukan diam-diam dikoreksi.
+    if (pertahankan && semesterAwal && Number(semesterAwal) > jumlah) {
+      $semester.val('');
+    }
+  }
+
+  function tampilkanBarisAkademik() {
+    var jenjang = $('#jenjang').val();
+    var jumlah = semesterMap[jenjang] || 0;
+    // Semester AKTIF menentukan batas berkas yang realistis dimiliki
+    // mahasiswa (permintaan pengguna): mahasiswa semester 2 memegang KRS
+    // semester 2 (rencana studi yang sedang berjalan) dan KHS semester 1
+    // (hasil semester sebelumnya) -- KHS semester 2 baru terbit SETELAH
+    // semester itu selesai, jadi barisnya tidak diminta.
+    var semesterAktif = Number($('#semester').val()) || 0;
+
+    $('.baris-akademik').each(function() {
+      var semester = Number($(this).data('semester'));
+      var jenis = $(this).data('jenis');
+
+      // KRS: sampai semester aktif. KHS: sampai semester AKTIF DIKURANGI
+      // SATU. Tanpa semester terpilih, semua baris disembunyikan -- baris
+      // untuk semester yang tidak diketahui tidak ada gunanya diminta.
+      var batas = jenis === 'khs' ? semesterAktif - 1 : semesterAktif;
+      var tampil = jumlah > 0 && semesterAktif > 0 && semester <= batas;
+
+      $(this).toggle(tampil);
+      // Input yang disembunyikan WAJIB dinonaktifkan: input nonaktif tidak
+      // ikut terkirim, jadi semester di luar batas tidak pernah sampai ke
+      // backend (yang tetap memvalidasi ulang).
+      $(this).find('input').prop('disabled', !tampil);
+    });
+
+    // Teks petunjuk di atas grup KRS/KHS mengikuti batas yang sama, supaya
+    // mahasiswa paham KHS semester terakhir memang tidak diminta.
+    var petunjuk = $('#petunjuk-akademik');
+    if (petunjuk.length && jumlah > 0 && semesterAktif > 0) {
+      petunjuk.text('Semester Anda ' + semesterAktif + ': unggah KRS semester 1 sampai ' +
+        semesterAktif + ' dan KHS semester 1 sampai ' + (semesterAktif > 1 ? semesterAktif - 1 : 0) +
+        (semesterAktif > 1 ? '' : ' (KHS semester 1 baru terbit setelah semester 1 selesai)') + '.');
+    }
+  }
+
+  $('#jenjang').on('change', function() {
+    // Nilai lama dilepas dulu supaya semester jenjang sebelumnya tidak
+    // terpilih otomatis di jenjang baru.
+    semesterAwal = '';
+    isiSemester(false);
+    $('#semester').val('');
+    tampilkanBarisAkademik();
+  });
+
+  // Perubahan SEMESTER juga menata ulang baris KRS/KHS -- itulah inti
+  // permintaan: memilih semester langsung menggeser batas berkas yang
+  // diminta (KRS sampai semester itu, KHS sampai semester sebelumnya).
+  $('#semester').on('change', tampilkanBarisAkademik);
+
+  isiSemester(true);
+  tampilkanBarisAkademik();
 
 </script>
 @endpush

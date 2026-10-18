@@ -15,6 +15,18 @@ class PendaftarController extends Controller
 {
     public function index(Request $request): View
     {
+        // Menunya dihapus dari sidebar (digantikan leaf rekap "Pendaftar" di
+        // Administrasi), tapi halamannya tetap ada dan tetap terlindungi.
+        // Sebelumnya penjaganya grant menu `admin.pendaftar`; karena baris
+        // menunya sudah tidak ada, penjaganya kini peran admin secara eksplisit
+        // -- tanpa ini, route tanpa baris menu tidak pernah dianggap "guarded"
+        // dan bisa dibuka siapa pun yang sudah login.
+        abort_unless(
+            auth()->user()->hasAnyRole(['super_admin', 'catpil', 'kampus', 'kesra']),
+            403,
+            'Anda tidak memiliki akses ke halaman ini.',
+        );
+
         $request->validate([
             'status' => 'nullable|in:'.implode(',', array_keys(Applicant::STATUS_LABELS)),
             'beasiswa_id' => 'nullable|integer|exists:beasiswa,id',
@@ -43,6 +55,13 @@ class PendaftarController extends Controller
 
     public function data(Request $request): JsonResponse
     {
+        // Penjaga yang sama dengan `index()` -- lihat catatannya di sana.
+        abort_unless(
+            auth()->user()->hasAnyRole(['super_admin', 'catpil', 'kampus', 'kesra']),
+            403,
+            'Anda tidak memiliki akses ke halaman ini.',
+        );
+
         $kampusId = $this->scopedKampusId();
 
         $query = Applicant::query()->with(['user.profile', 'beasiswa'])->latest('id');

@@ -50,7 +50,7 @@
           </div>
         </div>
         <div class="mt-5 text-muted text-center">
-          Belum punya akun? Silakan hubungi admin agar didaftarkan.
+          Belum punya akun? <a href="{{ route('register') }}">Daftar di sini</a>.
         </div>
         <div class="simple-footer">
           Hak Cipta &copy; SIRUSA {{ date('Y') }}

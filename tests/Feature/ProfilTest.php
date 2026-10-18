@@ -19,6 +19,9 @@ function completeProfilePayload($prodi): array
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
         'nim' => '2010123456',
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -115,6 +118,9 @@ test('user can update profile with campus data and parent nik', function () {
         'nama_kampus' => 'Universitas Lambung Mangkurat',
         'fakultas' => 'Fakultas Teknik',
         'prodi_id' => $this->prodi->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'ipk' => 3.75,
         'semester' => 5,
         'ukt' => 3500000,
@@ -152,16 +158,19 @@ test('user can update profile with campus data and parent nik', function () {
         'desa_kelurahan' => 'Ambakiang',
         'alamat' => 'RT 01 RW 02',
         'prodi_id' => $this->prodi->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'ipk' => 3.75,
         'semester' => 5,
     ]);
 });
 
-test('profil hides wali section and drops wali data when kk_ikut_wali is unchecked', function () {
+test('profil hides wali section and drops wali data when kk_ikut_famili_lain is unchecked', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     $payload = array_merge(completeProfilePayload($this->prodi), [
-        'kk_ikut_wali' => 0,
+        'kk_ikut_famili_lain' => 0,
         'nama_wali' => 'Paman Wawan',
         'nik_wali' => '6302000000000004',
         'hubungan_wali' => 'Paman',
@@ -174,7 +183,7 @@ test('profil hides wali section and drops wali data when kk_ikut_wali is uncheck
 
     $this->assertDatabaseHas('profil_pengguna', [
         'user_id' => $user->id,
-        'kk_ikut_wali' => false,
+        'kk_ikut_famili_lain' => false,
         'nama_wali' => null,
         'nik_wali' => null,
     ]);
@@ -185,11 +194,11 @@ test('profil hides wali section and drops wali data when kk_ikut_wali is uncheck
     expect($response->getContent())->toMatch('/id="section-wali"\s+style="display:none;/');
 });
 
-test('profil shows wali section and saves wali data when kk_ikut_wali is checked', function () {
+test('profil shows wali section and saves wali data when kk_ikut_famili_lain is checked', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
 
     $payload = array_merge(completeProfilePayload($this->prodi), [
-        'kk_ikut_wali' => 1,
+        'kk_ikut_famili_lain' => 1,
         'nama_wali' => 'Paman Wawan',
         'nik_wali' => '6302000000000004',
         'hubungan_wali' => 'Paman',
@@ -322,11 +331,18 @@ test('profile is incomplete without campus data and complete with it', function 
     expect($user->refresh()->isProfileComplete())->toBeFalse();
     $missing = $user->getMissingProfileFields();
     $this->assertContains('Program Studi', $missing);
-    $this->assertContains('IPK', $missing);
+    $this->assertContains('Jenjang Pendidikan', $missing);
+    $this->assertContains('Tahun Masuk', $missing);
+    $this->assertContains('Kepala Keluarga', $missing);
+    $this->assertContains('IPK (Indeks Prestasi Kumulatif)', $missing);
     $this->assertContains('Semester', $missing);
 
     $user->profile->update([
         'prodi_id' => $this->prodi->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        // Jawaban "Tidak" (false) harus dianggap SUDAH dijawab, bukan kosong.
+        'kepala_keluarga' => false,
         'ipk' => 3.5,
         'semester' => 4,
         'ukt' => 3500000,
@@ -335,8 +351,8 @@ test('profile is incomplete without campus data and complete with it', function 
         'dokumen_ktp' => 'profil/1/ktp.pdf',
         'dokumen_kk' => 'profil/1/kk.pdf',
         'dokumen_desil' => 'profil/1/desil.pdf',
-        'dokumen_sktm' => 'profil/1/sktm.pdf',
-        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        // SKTM tidak lagi disyaratkan; PDDIKTI menggantikan Transkrip.
+        'dokumen_pddikti' => 'profil/1/pddikti.pdf',
         'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
@@ -345,6 +361,27 @@ test('profile is incomplete without campus data and complete with it', function 
     ]);
 
     expect($user->refresh()->isProfileComplete())->toBeTrue();
+});
+
+test('jawaban Tidak pada kepala keluarga tidak dianggap field kosong', function () {
+    // `empty(false)` bernilai true, jadi tanpa penanganan khusus mahasiswa yang
+    // menjawab "Tidak" akan selamanya dianggap profilnya belum lengkap.
+    $user = User::factory()->standardUser()->create(['email' => 'kk-tidak@test.com']);
+
+    $profile = UserProfile::create([
+        'user_id' => $user->id,
+        'nama_lengkap' => 'Ahmad',
+        'kepala_keluarga' => false,
+    ]);
+
+    expect($user->refresh()->getMissingProfileFields())
+        ->not->toContain('Kepala Keluarga');
+
+    // Belum dijawab (null) tetap dianggap kosong.
+    $profile->update(['kepala_keluarga' => null]);
+
+    expect($user->refresh()->getMissingProfileFields())
+        ->toContain('Kepala Keluarga');
 });
 
 test('alamat_lengkap accessor composes full address', function () {
@@ -377,21 +414,34 @@ test('profil expands every abbreviated label with its full meaning', function (s
 })->with([
     'dokumen ktp' => ['KTP (Kartu Tanda Penduduk)'],
     'dokumen kk' => ['KK (Kartu Keluarga)'],
-    'dokumen sktm' => ['SKTM (Surat Keterangan Tidak Mampu)'],
+    // SKTM sudah tidak ada di form; Transkrip digantikan PDDIKTI.
+    'dokumen pddikti' => ['Dokumen PDDIKTI'],
     'dokumen bukti ukt' => ['Bukti UKT (Uang Kuliah Tunggal)'],
     'ktp ayah' => ['KTP (Kartu Tanda Penduduk) Ayah'],
     'ktp ibu' => ['KTP (Kartu Tanda Penduduk) Ibu'],
-    'ktp wali' => ['KTP (Kartu Tanda Penduduk) Wali'],
-    'kk wali' => ['KK (Kartu Keluarga) Wali'],
+    'ktp famili lain' => ['KTP (Kartu Tanda Penduduk) Famili Lain'],
+    'kk famili lain' => ['KK (Kartu Keluarga) Famili Lain'],
     'nik' => ['NIK (Nomor Induk Kependudukan)'],
-    'ipk' => ['IPK (Indeks Prestasi Akademik)'],
-    'nim' => ['NIM (Nomor Induk Mahasiswa)'],
+    // Istilah lengkap IPK sesuai permintaan pengguna: "Kumulatif", bukan
+    // "Akademik".
+    'ipk' => ['IPK (Indeks Prestasi Kumulatif)'],
+    // NIM kini berlabel NIM/NPM.
+    'nim' => ['NIM/NPM'],
     'ukt' => ['UKT (Uang Kuliah Tunggal)'],
     'ikut kk' => ['Ikut KK (Kartu Keluarga)'],
     'nik ayah' => ['NIK (Nomor Induk Kependudukan) Ayah'],
     'nik ibu' => ['NIK (Nomor Induk Kependudukan) Ibu'],
-    'nik wali' => ['NIK (Nomor Induk Kependudukan) Wali'],
+    'nik famili lain' => ['NIK (Nomor Induk Kependudukan) Famili Lain'],
 ]);
+
+test('profil memakai label No. HP, bukan Telepon', function () {
+    $user = User::factory()->standardUser()->create(['email' => 'label-hp@test.com']);
+
+    $html = actingAs($user)->get(route('profile'))->assertOk()->getContent();
+
+    expect($html)->toContain('>No. HP')
+        ->and($html)->not->toContain('>Telepon');
+});
 
 test('profil no longer labels the ukt field as UKT/SPP', function () {
     $user = User::factory()->standardUser()->create(['email' => 'user@test.com']);
@@ -417,10 +467,11 @@ test('profil spells out the ikut kk helper text and fixes its wording', function
     $html = actingAs($user)->get(route('profile'))->assertOk()->getContent();
 
     // Teks helper di Blade ditulis beberapa baris, jadi whitespace hasil
-    // format sumber diratakan dulu sebelum dicari.
+    // format sumber diratakan dulu sebelum dicari. Wording-nya mengikuti
+    // grup Ikut KK berkempat opsi (Kepala Keluarga = kartu milik sendiri).
     $htmlRata = preg_replace('/\s+/', ' ', $html);
 
     expect($htmlRata)
-        ->toContain('Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih. Data orang tua/wali yang dipilih wajib diisi.')
+        ->toContain('Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih, atau milik sendiri bila Anda kepala keluarga. Data ayah dan ibu tetap wajib diisi.')
         ->not->toContain('yang diikuti');
 });

@@ -295,6 +295,29 @@
                   <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
                 </div>
+                {{-- Tanggal mulai berdomisili: HANYA tahap Catpil, dan hanya
+                     relevan saat keputusannya "Setujui". Ditampilkan/disembunyikan
+                     oleh skrip di bawah; aturan wajibnya ditegakkan di server
+                     (`VerifikasiProfilRequest`) supaya tidak bisa dilewati. --}}
+                @if($stage === 'catpil')
+                <div class="form-group" id="grup-berdomisili"
+                  style="{{ $statusTerpilih === 'setuju' ? '' : 'display:none;' }}">
+                  <label for="berdomisili_sejak">
+                    Berdomisili sejak tanggal
+                    <span class="text-danger d-none" id="berdomisili-wajib">*</span>
+                  </label>
+                  <input type="text" class="form-control flatpickr @error('berdomisili_sejak') is-invalid @enderror"
+                    id="berdomisili_sejak" name="berdomisili_sejak"
+                    value="{{ old('berdomisili_sejak', $profile->berdomisili_sejak?->format('Y-m-d')) }}"
+                    placeholder="Pilih tanggal" autocomplete="off">
+                  @error('berdomisili_sejak')
+                  <div class="invalid-feedback d-block">{{ $message }}</div>
+                  @enderror
+                  <small class="text-muted">
+                    Sejak kapan mahasiswa berdomisili di wilayah kabupaten Balangan
+                  </small>
+                </div>
+                @endif
                 {{-- `type="button"` karena ada konfirmasi SweetAlert sebelum submit,
                      jadi handler AJAX di `custom.js` dipicu dari `trigger('submit')`
                      dan bukan dari tombolnya sendiri. Tanpa `data-loading-button`
@@ -313,6 +336,15 @@
           @push('script')
           <script>
             $(document).ready(function () {
+              // Tanggal "berdomisili sejak" (tahap Catpil) memakai flatpickr:
+              // input teks murni membuat petugas mengetik format bebas yang
+              // divalidasi ulang di server. Format mengikuti yang dipakai
+              // halaman profil (Y-m-d).
+              flatpickr("#berdomisili_sejak", {
+                dateFormat: "Y-m-d",
+                disableMobile: true
+              });
+
               // Hanya "Setujui" dan "Tolak" yang menutup kesempatan mahasiswa
               // untuk memperbaiki data, jadi hanya keduanya yang perlu konfirmasi.
               //
@@ -352,6 +384,22 @@
 
               toggleCatatanWajib();
               $('#status').on('change', toggleCatatanWajib);
+
+              // Tanggal berdomisili hanya tampil (dan hanya wajib) saat
+              // keputusannya "Setujui" di tahap Catpil. Penegakan sebenarnya
+              // ada di `VerifikasiProfilRequest`; di sini hanya tampilan.
+              function toggleBerdomisili() {
+                var setuju = $('#status').val() === 'setuju';
+
+                $('#grup-berdomisili').toggle(setuju);
+                $('#berdomisili_sejak').prop('required', setuju);
+                $('#berdomisili-wajib').toggleClass('d-none', !setuju);
+              }
+
+              if ($('#grup-berdomisili').length) {
+                toggleBerdomisili();
+                $('#status').on('change', toggleBerdomisili);
+              }
 
               $('#btn-verifikasi').on('click', function () {
                 var $form = $(this.form);

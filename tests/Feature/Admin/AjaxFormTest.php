@@ -41,7 +41,6 @@ function payloadBeasiswa(Kampus $kampus, Prodi $prodi, array $ubah = []): array
         'semester_minimal' => 3,
         'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
         'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
-        'status' => 'aktif',
     ], $ubah);
 }
 

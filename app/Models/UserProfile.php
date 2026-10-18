@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserProfile extends Model
 {
@@ -44,7 +45,7 @@ class UserProfile extends Model
         'desa_kelurahan',
         'foto_profil',
         'ikut_kk',
-        'kk_ikut_wali',
+        'kk_ikut_famili_lain',
         'nama_ayah',
         'pekerjaan_ayah',
         'nik_ayah',
@@ -56,6 +57,9 @@ class UserProfile extends Model
         'hubungan_wali',
         'nik_wali',
         'prodi_id',
+        'jenjang',
+        'tahun_masuk',
+        'kepala_keluarga',
         'ipk',
         'semester',
         'ukt',
@@ -68,6 +72,7 @@ class UserProfile extends Model
         'dokumen_transkrip',
         'dokumen_surat_aktif',
         'dokumen_surat_pernyataan',
+        'dokumen_pddikti',
         'dokumen_bukti_ukt',
         'ktp_ayah',
         'ktp_ibu',
@@ -79,14 +84,20 @@ class UserProfile extends Model
         'catatan_catpil',
         'catatan_kampus',
         'catatan_kesra',
+        'berdomisili_sejak',
     ];
 
     protected function casts(): array
     {
         return [
             'tanggal_lahir' => 'date',
-            'kk_ikut_wali' => 'boolean',
+            'kk_ikut_famili_lain' => 'boolean',
+            'kepala_keluarga' => 'boolean',
+            'tahun_masuk' => 'integer',
             'dokumen_prestasi' => 'array',
+            // Diisi petugas Catpil saat memutuskan `setuju`, bukan oleh
+            // mahasiswa. Dipakai menghitung lama berdomisili di antrean Kesra.
+            'berdomisili_sejak' => 'date',
             // Tanpa cast, `decimal(10,2)` dibaca sebagai string "1500000.00".
             // Input UKT dirender ke Cleave yang membuang titik tetapi
             // mempertahankan "00", jadi 1500000 -> 150000000 (x100) setiap
@@ -148,7 +159,8 @@ class UserProfile extends Model
     }
 
     /**
-     * Data orang tua/wali yang dipilih mahasiswa lewat field "Kartu Keluarga".
+     * Data orang tua/famili lain yang dipilih mahasiswa lewat field "Kartu
+     * Keluarga".
      *
      * Satu sumber untuk nama, NIK, dan pekerjaan sekaligus, supaya tidak
      * mungkin ada tampilan yang menampilkan nama ayah tapi NIK ibu.
@@ -163,8 +175,8 @@ class UserProfile extends Model
     public function orangTuaDipilih(): array
     {
         return match ($this->ikut_kk) {
-            'wali' => [
-                'label' => 'Wali',
+            'famili_lain' => [
+                'label' => 'Famili Lain',
                 'nama' => $this->nama_wali,
                 'nik' => $this->nik_wali,
                 'pekerjaan' => $this->pekerjaan_wali,
@@ -182,6 +194,75 @@ class UserProfile extends Model
                 'pekerjaan' => $this->pekerjaan_ayah,
             ],
         };
+    }
+
+    /**
+     * Dokumen KRS/KHS per semester milik mahasiswa ini.
+     *
+     * @return HasMany<DokumenAkademik>
+     */
+    public function dokumenAkademik(): HasMany
+    {
+        return $this->hasMany(DokumenAkademik::class, 'user_id', 'user_id')
+            ->orderBy('jenis')
+            ->orderBy('semester');
+    }
+
+    /**
+     * Lama berdomisili dalam bentuk "2 tahun 3 bulan", dihitung dari
+     * `berdomisili_sejak` sampai hari ini.
+     *
+     * SELALU dihitung ulang saat dipanggil, tidak pernah disimpan sebagai
+     * kolom: nilai statis akan salah begitu bulan berganti. `null` berarti
+     * tanggalnya belum diisi -- pemanggil menampilkan "Belum ditentukan".
+     *
+     * Perhitungannya kalender, bukan "selisih hari dibagi 30": bulan yang
+     * panjangnya beda-beda membuat cara itu meleset beberapa hari setiap bulan.
+     */
+    public function lamaBerdomisili(): ?string
+    {
+        if (! $this->berdomisili_sejak) {
+            return null;
+        }
+
+        // Selalu pakai awal hari supaya jam pada data tidak membuat
+        // perhitungannya bergeser satu hari.
+        $mulai = $this->berdomisili_sejak->copy()->startOfDay();
+        $kini = now()->startOfDay();
+
+        // Tanggal di masa depan tidak dihitung sebagai durasi negatif.
+        if ($mulai->greaterThan($kini)) {
+            return null;
+        }
+
+        $selisih = $mulai->diff($kini);
+
+        $bagian = [];
+
+        if ($selisih->y > 0) {
+            $bagian[] = $selisih->y.' tahun';
+        }
+
+        if ($selisih->m > 0) {
+            $bagian[] = $selisih->m.' bulan';
+        }
+
+        // Kurang dari sebulan tetap punya jawaban yang lebih berguna daripada
+        // kalimat kosong.
+        if ($bagian === []) {
+            return $selisih->d > 0 ? $selisih->d.' hari' : 'Baru saja';
+        }
+
+        return implode(' ', $bagian);
+    }
+
+    /**
+     * Lama berdomisili siap tampil, termasuk teks pengganti saat tanggalnya
+     * belum ada.
+     */
+    public function lamaBerdomisiliLabel(): string
+    {
+        return $this->lamaBerdomisili() ?? 'Belum ditentukan';
     }
 
     /**
@@ -289,19 +370,18 @@ class UserProfile extends Model
     /**
      * Apakah tahap ini masih boleh dikerjakan (ditulis) oleh admin tahap tersebut.
      *
-     * Tidak ada lagi urutan antar tahap: Catpil dan Kampus berjalan paralel
-     * sejak profil mahasiswa lengkap, jadi keduanya tidak menunggu siapa pun.
-     * Dua pengecualian yang tersisa:
+     * Dua pengecualian yang berlaku:
      *
      * - `kampus` butuh pendaftaran, karena memang tidak ada yang bisa diperiksa
      *   sebelum ada pendaftar. Barisnya juga DIKUNCI begitu Kesra memutuskan
      *   (`verif_kesra = 'setuju'`), supaya keputusan yang sudah ada tidak lagi
      *   bisa diubah lewat jalur profil. Baris yang terkunci tetap tampil di
      *   antrean (lihat `inVerifQueue()`) sebagai read-only, bukan disembunyikan.
-     * - `kesra` mensyaratkan verifikasi Kampus (permintaan pengguna: Kesra
-     *   tidak lagi menunggu Catpil; begitu Kampus setuju, Kesra boleh
-     *   memutuskan). Sama persis dengan audiens
-     *   `VerifikasiAntrean::pendaftarQuery()`.
+     * - `kesra` mensyaratkan verifikasi Catpil DAN Kampus sama-sama `setuju`
+     *   (permintaan pengguna). Sebelumnya hanya Kampus yang disyaratkan; aturan
+     *   itu diperketat supaya permohonan tidak bisa diputuskan Kesra sebelum
+     *   data kependudukan (Catpil) dan data akademik (Kampus) dua-duanya
+     *   terverifikasi.
      *
      * Keputusan tahap ini sendiri tidak dikunci oleh tahap lain: admin masih
      * bebas mengubah keputusan yang sudah dibuat selama aturan di atas terpenuhi.
@@ -312,9 +392,23 @@ class UserProfile extends Model
             'catpil' => true,
             'kampus' => $this->verif_kesra !== 'setuju'
                 && (bool) $this->user?->applicants()->exists(),
-            'kesra' => $this->verif_kampus === 'setuju',
+            // Catpil DAN Kampus harus `setuju`. `tolak` maupun `revisi` di salah
+            // satunya berarti belum memenuhi syarat masuk antrean Kesra.
+            'kesra' => $this->lolosGerbangKesra(),
             default => false,
         };
+    }
+
+    /**
+     * Syarat masuk antrean/putusan Kesra: Catpil dan Kampus sama-sama `setuju`.
+     *
+     * Satu sumber kebenaran untuk `canVerifStage()` dan
+     * `VerifikasiAntrean::pendaftarQuery()`, supaya halaman, angka dasbor, dan
+     * unduhan tidak pernah punya syarat yang berbeda.
+     */
+    public function lolosGerbangKesra(): bool
+    {
+        return $this->verif_catpil === 'setuju' && $this->verif_kampus === 'setuju';
     }
 
     /**

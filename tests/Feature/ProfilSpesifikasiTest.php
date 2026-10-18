@@ -51,6 +51,9 @@ function payloadProfilAjax(Prodi $prodi, array $ubah = []): array
         'nama_kampus' => 'Universitas Lambung Mangkurat',
         'fakultas' => 'Fakultas Teknik',
         'prodi_id' => $prodi->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'ipk' => 3.5,
         'semester' => 5,
         'ukt' => 1500000,
@@ -297,11 +300,13 @@ test('dropdown form create tidak menandai pilihan apa pun sampai pengguna memili
     );
 
     // Opsi kosong jadi pilihan pertama dan tidak ditandai selected, jadi
-    // pengguna wajib memilih sendiri nilai yang benar.
+    // pengguna wajib memilih sendiri nilai yang benar. Input `status` sudah
+    // dihapus dari form beasiswa (permintaan pengguna) -- tidak ada lagi
+    // dropdown "aktif" yang bisa terpilih diam-diam.
     expect($html)->toContain('<option value="">&mdash; Pilih &mdash;</option>')
         ->and($html)->not->toContain('<option value="" selected>')
         ->and($html)->not->toContain('<option value="S1" selected>')
-        ->and($html)->not->toContain('<option value="aktif" selected>');
+        ->and($html)->not->toContain('name="status"');
 });
 
 test('dropdown form edit otomatis mengikuti data tersimpan', function () {
@@ -309,7 +314,6 @@ test('dropdown form edit otomatis mengikuti data tersimpan', function () {
     $beasiswa = Scholarship::factory()->create([
         'kampus_id' => $this->kampus->id,
         'tingkat_gelar' => 'S2',
-        'status' => 'aktif',
     ]);
 
     $html = preg_replace(
@@ -319,11 +323,11 @@ test('dropdown form edit otomatis mengikuti data tersimpan', function () {
     );
 
     expect($html)->toContain('<option value="S2" selected>')
-        ->and($html)->toContain('<option value="aktif" selected>')
         ->and($html)->toContain('<option value="'.$beasiswa->kampus_id.'" selected>')
         // Placeholder tetap ada supaya daftar pilihannya tidak berubah, cuma
-        // memang bukan yang terpilih.
-        ->and($html)->toContain('&mdash; Pilih &mdash;');
+        // memang bukan yang terpilih. Input `status` tidak lagi ada di form.
+        ->and($html)->toContain('&mdash; Pilih &mdash;')
+        ->and($html)->not->toContain('name="status"');
 });
 
 test('dropdown keputusan verifikasi tidak pernah mengikuti keputusan yang tersimpan', function () {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Applicant;
+use App\Models\DokumenAkademik;
 use App\Models\Kampus;
 use App\Models\Scholarship;
 use App\Models\User;
@@ -22,6 +23,9 @@ function verifikasiProfilePayload(int $prodiId): array
         'nik' => '6302000000000001',
         'no_kk' => '6302000000000002',
         'nim' => '2010123456',
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -58,6 +62,9 @@ function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
 
     $profile = UserProfile::create(array_merge([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => "Ahmad Fauzi #{$user->id}",
         'nik' => '6302000000'.$suffix,
         'no_kk' => '6302000001'.$suffix,
@@ -169,6 +176,7 @@ test('disetujui Catpil tidak otomatis membuka antrean kampus sebelum mahasiswa m
     actingAs($this->catpilAdmin)
         ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
             'status' => 'setuju',
+            'berdomisili_sejak' => '2020-01-01',
             'catatan' => 'Data dasar benar',
         ])
         ->assertRedirect(route('admin.catpil.index'));
@@ -323,34 +331,74 @@ test('tombol reset filter selalu ada di ketiga antrean verifikasi', function () 
     }
 });
 
-test('the kesra queue lists and opens registrations approved by kampus only', function () {
-    // `verif_kampus` disetujui tanpa pernah ada `verif_catpil` yang disetujui --
-    // sejak permintaan pengguna, Kesra boleh memutuskan begitu Kampus setuju
-    // tanpa menunggu Catpil. Baris seperti ini (bisa datang dari seeder/impor,
-    // bukan cuma UI) wajib muncul di antrean DAN bisa dibuka.
-    $user = User::factory()->standardUser()->create();
+test('the kesra queue only lists registrations approved by BOTH catpil and kampus', function () {
+    // Permintaan pengguna: mahasiswa baru boleh masuk antrean Kesra setelah
+    // verifikasi Catpil DAN Kampus sama-sama disetujui. Tiga baris di bawah
+    // menguji batas itu, termasuk baris yang bisa datang dari seeder/impor
+    // (bukan cuma dari UI).
+    // NIK dan NIM punya indeks unik, jadi tiap mahasiswa fixture perlu
+    // nomornya sendiri walau payload dasarnya sama.
+    // Nama juga harus berbeda: kalau sama, `assertDontSee` untuk baris yang
+    // seharusnya tersaring akan lolos/gagal karena nama milik baris lain.
+    $buat = function (array $verif, string $nomor, string $nama): User {
+        $user = User::factory()->standardUser()->create();
 
-    UserProfile::create(array_merge(verifikasiProfilePayload($this->prodi->id), [
-        'user_id' => $user->id,
-        'verif_catpil' => 'revisi',
-        'verif_kampus' => 'setuju',
-        'verif_kesra' => 'menunggu',
-    ]));
+        UserProfile::create(array_merge(verifikasiProfilePayload($this->prodi->id), $verif, [
+            'user_id' => $user->id,
+            'nama_lengkap' => $nama,
+            'nik' => '630200000000'.$nomor,
+            'nim' => '2010000'.$nomor,
+        ]));
 
-    Applicant::factory()->create([
-        'user_id' => $user->id,
-        'beasiswa_id' => beasiswaVerifikasi()->id,
-    ]);
+        Applicant::factory()->create(['user_id' => $user->id, 'beasiswa_id' => beasiswaVerifikasi()->id]);
 
+        return $user;
+    };
+
+    $lengkap = $buat(['verif_catpil' => 'setuju', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'], '0101', 'Lengkap Dua Tahap');
+    $hanyaKampus = $buat(['verif_catpil' => 'revisi', 'verif_kampus' => 'setuju', 'verif_kesra' => 'menunggu'], '0202', 'Baru Lolos Kampus');
+    $hanyaCatpil = $buat(['verif_catpil' => 'setuju', 'verif_kampus' => 'menunggu', 'verif_kesra' => 'menunggu'], '0303', 'Baru Lolos Catpil');
+
+    // Yang dua-duanya setuju: muncul DAN bisa dibuka.
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.index'))
         ->assertOk()
-        ->assertSee($user->profile->nama_lengkap, false);
+        ->assertSee($lengkap->profile->nama_lengkap, false)
+        ->assertDontSee($hanyaKampus->profile->nama_lengkap, false)
+        ->assertDontSee($hanyaCatpil->profile->nama_lengkap, false);
 
     actingAs($this->kesraAdmin)
-        ->get(route('admin.kesra.lihat', $user->id))
+        ->get(route('admin.kesra.lihat', $lengkap->id))
         ->assertOk()
         ->assertSee('name="pendaftaran_status"', false);
+
+    // Yang baru lolos satu tahap: TIDAK bisa dibuka lewat URL langsung.
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.lihat', $hanyaKampus->id))
+        ->assertForbidden();
+
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.lihat', $hanyaCatpil->id))
+        ->assertForbidden();
+});
+
+test('keputusan Kesra ditolak selama Catpil belum menyetujui', function () {
+    // Bukan cuma disembunyikan dari daftar: request manual ke endpoint
+    // keputusan pun harus ditolak.
+    $user = User::factory()->standardUser()->create();
+    UserProfile::create(array_merge(verifikasiProfilePayload($this->prodi->id), [
+        'user_id' => $user->id,
+        'verif_catpil' => 'menunggu',
+        'verif_kampus' => 'setuju',
+        'verif_kesra' => 'menunggu',
+    ]));
+    $applicant = Applicant::factory()->create(['user_id' => $user->id, 'beasiswa_id' => beasiswaVerifikasi()->id]);
+
+    actingAs($this->kesraAdmin)
+        ->put(route('admin.kesra.pendaftaran.keputusan', [$user->id, $applicant->id]), [
+            'pendaftaran_status' => 'diterima',
+        ])
+        ->assertForbidden();
 });
 
 test('verification stage detail is forbidden when the stage is not reachable yet', function () {
@@ -367,6 +415,7 @@ test('catpil approving a profile persists the status', function () {
     actingAs($this->catpilAdmin)
         ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
             'status' => 'setuju',
+            'berdomisili_sejak' => '2020-01-01',
             'catatan' => 'Data sesuai',
         ])
         ->assertRedirect(route('admin.catpil.index'));
@@ -429,6 +478,7 @@ test('keputusan selain tolak tidak menutup pendaftaran yang masih menunggu', fun
     actingAs($this->catpilAdmin)
         ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
             'status' => 'setuju',
+            'berdomisili_sejak' => '2020-01-01',
             'catatan' => 'Data benar',
         ])
         ->assertRedirect(route('admin.catpil.index'));
@@ -488,11 +538,58 @@ test('catpil verification page only shows identity data per its purpose', functi
         ->assertSee('Data Diri')
         ->assertSee('Data Orang Tua &amp; Wali', false)
         ->assertSee('Dokumen Diri Sendiri')
-        ->assertSee('Dokumen Orang Tua / Wali')
+        ->assertSee('Dokumen Orang Tua / Famili Lain')
         // Bukan wewenang Catpil.
         ->assertDontSee('Data Kampus')
         ->assertDontSee('Dokumen untuk Kampus')
-        ->assertDontSee('Sertifikat Prestasi');
+        ->assertDontSee('Sertifikat Prestasi')
+        // Catpil tidak memeriksa desil, jadi unggahannya tidak ditampilkan
+        // (permintaan pengguna); angka desilnya tetap ada di Data Diri.
+        ->assertDontSee('Dokumen Desil');
+});
+
+test('kampus dan kesra melihat KRS & KHS per semester di kartu Data Kampus', function () {
+    $profile = createPendingVerifikasiProfile($this->applicantUser, 'kampus');
+
+    DokumenAkademik::create([
+        'user_id' => $this->applicantUser->id,
+        'jenis' => 'khs',
+        'semester' => 1,
+        'file' => "profil/{$this->applicantUser->id}/akademik/khs-1.pdf",
+        'nilai' => 3.5,
+    ]);
+    DokumenAkademik::create([
+        'user_id' => $this->applicantUser->id,
+        'jenis' => 'krs',
+        'semester' => 2,
+        'file' => "profil/{$this->applicantUser->id}/akademik/krs-2.pdf",
+        'nilai' => 3.75,
+    ]);
+
+    // Kampus: berkas dan nilainya tampil per semester.
+    actingAs($this->kampusAdmin)
+        ->get(route('admin.kampusverif.lihat', $this->applicantUser))
+        ->assertOk()
+        ->assertSee('KRS &amp; KHS per Semester', false)
+        ->assertSee('KRS Semester 2')
+        ->assertSee('KHS Semester 1')
+        ->assertSee('3.75');
+
+    // Kesra: sama, karena kartu Data Kampus ikut tampil di tahap akhir.
+    // Gerbang Kesra butuh Kampus setuju, jadi keputusan Kampus disimulasikan.
+    $profile->update(['verif_kampus' => 'setuju']);
+
+    actingAs($this->kesraAdmin)
+        ->get(route('admin.kesra.lihat', $this->applicantUser))
+        ->assertOk()
+        ->assertSee('KRS Semester 2')
+        ->assertSee('KHS Semester 1');
+
+    // Catpil tidak melihatnya: kartu Data Kampus bukan wewenangnya.
+    actingAs($this->catpilAdmin)
+        ->get(route('admin.catpil.lihat', $this->applicantUser))
+        ->assertOk()
+        ->assertDontSee('KRS Semester 2');
 });
 
 test('kampus verification page shows identity data alongside campus data', function () {
@@ -509,7 +606,7 @@ test('kampus verification page shows identity data alongside campus data', funct
         // Bukan wewenang Kampus.
         ->assertDontSee('Data Orang Tua &amp; Wali', false)
         ->assertDontSee('Dokumen Diri Sendiri')
-        ->assertDontSee('Dokumen Orang Tua / Wali')
+        ->assertDontSee('Dokumen Orang Tua / Famili Lain')
         ->assertDontSee('Sertifikat Prestasi');
 });
 
@@ -524,8 +621,10 @@ test('kesra verification page shows all sections for the final eligibility check
         ->assertSee('Data Orang Tua &amp; Wali', false)
         ->assertSee('Dokumen Diri Sendiri')
         ->assertSee('Dokumen untuk Kampus')
-        ->assertSee('Dokumen Orang Tua / Wali')
-        ->assertSee('Sertifikat Prestasi');
+        ->assertSee('Dokumen Orang Tua / Famili Lain')
+        ->assertSee('Sertifikat Prestasi')
+        // Desil tetap diperiksa Kesra (kesejahteraan), jadi unggahannya tampil.
+        ->assertSee('Dokumen Desil');
 });
 
 test('previous stage notes are visible to the next stage verifier', function () {
@@ -605,7 +704,7 @@ test('an already approved stage stays in the queue so the decision can be change
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 
     actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju'])
+        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju', 'berdomisili_sejak' => '2020-01-01'])
         ->assertRedirect(route('admin.catpil.index'));
 
     // Setuju, tapi masih ada di daftar Catpil dengan aksi ubah.
@@ -621,7 +720,7 @@ test('catpil can revise an approval into a rejection', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 
     actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju']);
+        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju', 'berdomisili_sejak' => '2020-01-01']);
 
     actingAs($this->catpilAdmin)
         ->put(route('admin.catpil.verifikasi', $this->applicantUser), [
@@ -679,7 +778,7 @@ test('a decision can be pulled back to the waiting list', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'kampus');
 
     actingAs($this->catpilAdmin)
-        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju']);
+        ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'setuju', 'berdomisili_sejak' => '2020-01-01']);
 
     actingAs($this->catpilAdmin)
         ->put(route('admin.catpil.verifikasi', $this->applicantUser), ['status' => 'menunggu'])
@@ -852,10 +951,16 @@ test('catatan stays optional for the other decisions', function () {
     createPendingVerifikasiProfile($this->applicantUser, 'catpil');
 
     foreach (['setuju', 'tolak'] as $keputusan) {
+        // Tanggal berdomisili wajib hanya saat "setuju" di tahap Catpil, jadi
+        // di sini justru diuji bahwa CATATAN tetap opsional pada keduanya.
+        $payload = ['status' => $keputusan];
+
+        if ($keputusan === 'setuju') {
+            $payload['berdomisili_sejak'] = '2020-01-01';
+        }
+
         actingAs($this->catpilAdmin)
-            ->putJson(route('admin.catpil.verifikasi', $this->applicantUser), [
-                'status' => $keputusan,
-            ])
+            ->putJson(route('admin.catpil.verifikasi', $this->applicantUser), $payload)
             ->assertOk();
 
         expect($this->applicantUser->refresh()->profile->verif_catpil)->toBe($keputusan);

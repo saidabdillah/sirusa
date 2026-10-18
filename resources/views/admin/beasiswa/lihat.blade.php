@@ -32,7 +32,7 @@
                 {{ $scholarship->kampus }}
               </div>
               <div class="col-md-6">
-                <strong>Tingkat Gelar:</strong><br>
+                <strong>Jenjang:</strong><br>
                 {{ $scholarship->tingkat_gelar }}
               </div>
             </div>

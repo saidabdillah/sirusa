@@ -16,8 +16,7 @@ function profilDokumenPaths(): array
         'dokumen_ktp' => 'profil/1/ktp.pdf',
         'dokumen_kk' => 'profil/1/kk.pdf',
         'dokumen_desil' => 'profil/1/desil.pdf',
-        'dokumen_sktm' => 'profil/1/sktm.pdf',
-        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_pddikti' => 'profil/1/pddikti.pdf',
         'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/surat_pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/bukti_ukt.pdf',
@@ -32,6 +31,9 @@ function createProfileWithAllDocuments(User $user): UserProfile
 {
     return UserProfile::create(array_merge([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Ahmad Detail',
         'nik' => '6302000000000001',
         'dokumen_prestasi' => ['profil/1/prestasi_1.pdf', 'profil/1/prestasi_2.pdf'],

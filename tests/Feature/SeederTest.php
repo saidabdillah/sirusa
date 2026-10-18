@@ -208,7 +208,7 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
     }
 
     // Role catpil: has "Administrasi" and "Verifikasi" (its own queue) plus the
-    // "Status Verifikasi" leaf (rekap untuk semua verifikator), but not
+    // leaf rekap "Pendaftar" (rekap untuk semua verifikator), but not
     // "Administrator".
     $catpil = $html('catpil');
     expect($catpil)
@@ -267,11 +267,11 @@ test('menuseeder idempoten: dua kali jalan menghasilkan pohon dan grant yang sam
 
     expect($kedua['menu'])->toEqual($pertama['menu'])
         ->and($kedua['grant'])->toEqual($pertama['grant'])
-        // 11 top-level + 10 anak = 21. "Kesra" punya DUA anak (Verifikasi +
-        // Keputusan); "Penerima Beasiswa" keluar dari anak Kesra menjadi leaf
-        // top-level di section "Manajemen", dan "Status Verifikasi" jadi leaf
-        // top-level di "Administrasi", sehingga total tetap 21.
-        ->and(count($pertama['menu']))->toBe(21);
+        // 10 top-level + 10 anak = 20. "Kesra" punya DUA anak (Verifikasi +
+        // Keputusan); "Penerima Beasiswa" leaf mandiri di "Manajemen";
+        // "Status Verifikasi" berganti label "Pendaftar" (rekap) di
+        // "Administrasi" dan menu daftar pendaftar lama DIHAPUS.
+        ->and(count($pertama['menu']))->toBe(20);
 });
 
 test('menuseeder tidak menggandakan grant di pivot role menu', function () {
@@ -319,9 +319,9 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
 
     expect($grantKesra)->toContain($kesra->id, ...$anak->pluck('id')->all());
 
-    // Status Verifikasi kini leaf top-level di section "Administrasi", scopenya
+    // Leaf rekap kini berlabel "Pendaftar" (permintaan pengguna), scope-nya
     // tetap `admin.kesra.status` untuk menjaga nama route.
-    $status = Menu::query()->whereNull('parent_id')->where('label', 'Status Verifikasi')->firstOrFail();
+    $status = Menu::query()->whereNull('parent_id')->where('label', 'Pendaftar')->firstOrFail();
 
     expect($status->section)->toBe('Administrasi')
         ->and($status->route)->toBe('admin.kesra.status')
@@ -383,20 +383,24 @@ test('run renamed menuseeder membuang scope lama supaya route tidak yatim', func
     seedAkses();
 
     // Simulasikan database yang sudah di-seed dengan nama lama.
-    $lama = Menu::where('scope', 'admin.menukelola')->first();
+    $lama = Menu::where('scope', 'admin.menukelola')->firstOrFail();
     $lama->update([
         'scope' => 'admin.menuKelola',
         'route' => 'admin.menuKelola.index',
     ]);
 
-    expect(Menu::where('scope', 'admin.menuKelola')->exists())->toBeTrue();
-
     (new MenuSeeder)->run();
 
-    // Baris lama harus hilang; kalau tidak, sidebar memanggil
-    // `route('admin.menuKelola.index')` yang sudah tidak ada -> 500.
-    expect(Menu::where('scope', 'admin.menuKelola')->exists())->toBeFalse()
-        ->and(Menu::where('scope', 'admin.menukelola')->exists())->toBeTrue()
+    // Baris dengan casing lama harus hilang; kalau tidak, sidebar memanggil
+    // `route('admin.menuKelola.index')` yang sudah tidak terdaftar -> 500.
+    // Perbandingan casing dilakukan di PHP (strict), BUKAN lewat WHERE:
+    // collation MySQL tidak peka huruf besar/kecil, jadi WHERE
+    // `admin.menuKelola` juga mencocokkan `admin.menukelola` dan asersi
+    // berbasis casing di query tidak mungkin benar di MySQL.
+    $route = Menu::where('label', 'Kelola Menu')->value('route');
+
+    expect(Menu::pluck('route')->contains(fn ($r) => $r === 'admin.menuKelola.index'))->toBeFalse()
+        ->and($route)->toBe('admin.menukelola.index')
         ->and(Menu::whereNotNull('parent_id')->whereNotIn('parent_id', Menu::pluck('id'))->exists())->toBeFalse();
 });
 

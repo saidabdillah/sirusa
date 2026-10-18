@@ -33,11 +33,14 @@ function payloadProfilLengkap(int $prodiId, array $ubah = []): array
         'nama_kampus' => 'Universitas Lambung Mangkurat',
         'fakultas' => 'Fakultas Teknik',
         'prodi_id' => $prodiId,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'ipk' => 3.5,
         'semester' => 4,
         'ukt' => 3500000,
         'desil' => 3,
-        'ikut_kk' => 'wali',
+        'ikut_kk' => 'famili_lain',
         'nama_ayah' => 'Ayah Budi',
         'nik_ayah' => '6302000000000002',
         'pekerjaan_ayah' => 'Petani',
@@ -58,16 +61,19 @@ function profilDenganBerkasLengkap(User $user): UserProfile
 {
     return UserProfile::create([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Budi Santoso',
         'nik' => '6302000000000001',
-        'ikut_kk' => 'wali',
-        'kk_ikut_wali' => true,
+        'ikut_kk' => 'famili_lain',
+        'kk_ikut_famili_lain' => true,
         'foto_profil' => 'profil/1/foto.jpg',
         'dokumen_ktp' => 'profil/1/ktp.pdf',
         'dokumen_kk' => 'profil/1/kk.pdf',
         'dokumen_desil' => 'profil/1/desil.pdf',
-        'dokumen_sktm' => 'profil/1/sktm.pdf',
-        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        // SKTM tidak lagi disyaratkan; PDDIKTI menggantikan Transkrip.
+        'dokumen_pddikti' => 'profil/1/pddikti.pdf',
         'dokumen_surat_aktif' => 'profil/1/surat-aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/bukti-ukt.pdf',
@@ -117,17 +123,35 @@ test('setiap field bertanda bintang di form profil wajib diisi', function (strin
     // Data Diri
     'nama_lengkap', 'email', 'nik', 'no_kk', 'telepon', 'desil', 'tempat_lahir', 'tanggal_lahir',
     'jenis_kelamin', 'agama', 'kecamatan', 'desa_kelurahan', 'alamat',
-    // Data Kampus
-    'nama_kampus', 'fakultas', 'prodi_id', 'ipk', 'semester', 'ukt',
-    // Data Orang Tua & Wali
+    // Data Kampus (termasuk data pendidikan baru)
+    'nama_kampus', 'fakultas', 'prodi_id', 'jenjang', 'tahun_masuk', 'ipk', 'semester', 'ukt',
+    // Catatan: `kepala_keluarga` TIDAK ada di daftar ini lagi -- kolomnya
+    // dihitung server dari opsi radio `ikut_kk`, bukan input mahasiswa, jadi
+    // "dihapus dari payload" tidak mungkin menghasilkan pesan validasi.
+    // Data Orang Tua & Famili Lain
     'ikut_kk', 'nama_ayah', 'nik_ayah', 'pekerjaan_ayah',
     'nama_ibu', 'nik_ibu', 'pekerjaan_ibu',
     'nama_wali', 'nik_wali', 'pekerjaan_wali', 'hubungan_wali',
-    // Dokumen
-    'foto_profil', 'dokumen_ktp', 'dokumen_kk', 'dokumen_desil', 'dokumen_sktm',
-    'dokumen_transkrip', 'dokumen_surat_aktif', 'dokumen_surat_pernyataan', 'dokumen_bukti_ukt',
+    // Dokumen (SKTM tidak lagi disyaratkan; PDDIKTI menggantikan Transkrip)
+    'foto_profil', 'dokumen_ktp', 'dokumen_kk', 'dokumen_desil',
+    'dokumen_pddikti', 'dokumen_surat_aktif', 'dokumen_surat_pernyataan', 'dokumen_bukti_ukt',
     'ktp_ayah', 'ktp_ibu', 'ktp_wali', 'kk_wali',
 ]);
+
+test('SKTM tidak lagi diwajibkan di form profil', function () {
+    // Permintaan pengguna: SKTM dihapus dari proses beasiswa ini. Formnya tidak
+    // boleh lagi meminta berkas itu, dan profil tanpa SKTM harus tetap lengkap.
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    expect($html)
+        ->not->toContain('dokumen_sktm')
+        ->not->toContain('SKTM');
+
+    // Payload lengkap TANPA SKTM harus lolos.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id))
+        ->assertSessionDoesntHaveErrors();
+});
 
 test('cascade kampus, fakultas, dan prodi harus konsisten satu sama lain', function () {
     $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Ranking Dua']);
@@ -189,10 +213,12 @@ test('berkas bertanda bintang wajib diunggah saat profil belum punya dokumen', f
     actingAs($this->user)
         ->put(route('profile.update'), $tanpaBerkas)
         ->assertSessionHasErrors([
-            'foto_profil', 'dokumen_ktp', 'dokumen_kk', 'dokumen_desil', 'dokumen_sktm',
-            'dokumen_transkrip', 'dokumen_surat_aktif', 'dokumen_surat_pernyataan', 'dokumen_bukti_ukt',
+            'foto_profil', 'dokumen_ktp', 'dokumen_kk', 'dokumen_desil',
+            'dokumen_pddikti', 'dokumen_surat_aktif', 'dokumen_surat_pernyataan', 'dokumen_bukti_ukt',
             'ktp_ayah', 'ktp_ibu', 'ktp_wali', 'kk_wali',
-        ]);
+        ])
+        // SKTM dan Transkrip sudah tidak ada di form, jadi tidak boleh muncul.
+        ->assertSessionDoesntHaveErrors(['dokumen_sktm', 'dokumen_transkrip']);
 });
 
 test('berkas yang sudah tersimpan tidak wajib diunggah ulang', function () {
@@ -239,7 +265,7 @@ test('field wali tidak divalidasi saat KK tidak mengikuti wali', function () {
 
     $profile = $this->user->refresh()->profile;
 
-    expect($profile->kk_ikut_wali)->toBeFalse()
+    expect($profile->kk_ikut_famili_lain)->toBeFalse()
         ->and($profile->nama_wali)->toBeNull()
         ->and($profile->nik_wali)->toBeNull();
 });
@@ -336,7 +362,7 @@ test('setiap field bermasalah menampilkan border merah dan pesan di bawah input'
 });
 
 test('upload berkas wali tetap terlihat setelah validasi gagal', function () {
-    $this->withSession(['_old_input' => ['ikut_kk' => 'wali']]);
+    $this->withSession(['_old_input' => ['ikut_kk' => 'famili_lain']]);
 
     $html = preg_replace('/\s+/', ' ', actingAs($this->user)->get(route('profile'))->getContent());
 
@@ -372,11 +398,14 @@ function mahasiswaLainDenganProfil(string $email, array $profil = []): User
 
     UserProfile::create(array_merge([
         'user_id' => $lain->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Mahasiswa Lain',
         'nik' => '6302000000007777',
         'nim' => '2010999999',
         'ikut_kk' => 'ayah',
-        'kk_ikut_wali' => false,
+        'kk_ikut_famili_lain' => false,
     ], $profil));
 
     return $lain;
@@ -508,7 +537,7 @@ test('NIK ayah yang sama dengan NIK ibu ditolak', function () {
 test('NIK wali yang sama dengan NIK ayah ditolak', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
-            'ikut_kk' => 'wali',
+            'ikut_kk' => 'famili_lain',
             'nik_ayah' => '6302000000000002',
             'nik_wali' => '6302000000000002',
         ]))
@@ -520,7 +549,7 @@ test('NIK wali yang sama dengan NIK ayah ditolak', function () {
 test('kelima nomor yang berbeda diterima', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadProfilLengkap($this->prodi->id, [
-            'ikut_kk' => 'wali',
+            'ikut_kk' => 'famili_lain',
             'nik' => '6302000000000001',
             'no_kk' => '6302000000000011',
             'nik_ayah' => '6302000000000021',
@@ -547,13 +576,12 @@ test('saat wali tidak dipakai, nik_wali kosong tidak memicu pesan bentrok', func
         ->assertSessionDoesntHaveErrors(['nik_wali']);
 });
 
-test('kolom NIK orang tua memakai teks bantuan yang menyebut aturan beda NIK', function () {
+test('kolom nomor identitas tanpa placeholder dan tanpa teks bantuan', function () {
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 
-    // NIK mahasiswa + No. KK + ketiga NIK orang tua = 5 kolom.
-    expect(substr_count($html, 'Hanya angka, tepat 16 digit, dan tidak boleh sama dengan NIK lain.'))
-        ->toBe(3)
-        // Teks lama (tanpa keterangan) tidak boleh tersisa di kolom NIK mana pun.
-        ->and(substr_count($html, 'Hanya angka, tepat 16 digit.</small>'))
-        ->toBe(2);
+    // Placeholder contoh dan teks bantuan NIK/No. KK DIHAPUS (permintaan
+    // pengguna) -- tidak ada keduanya di kolom mana pun.
+    expect($html)
+        ->not->toContain('placeholder="contoh 630')
+        ->not->toContain('Hanya angka, tepat 16 digit');
 });

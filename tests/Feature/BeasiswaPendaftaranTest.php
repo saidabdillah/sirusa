@@ -22,6 +22,9 @@ function mhsBeasiswa(?User $user = null, ?Prodi $prodi = null, array $verif = []
 
     UserProfile::create(array_merge([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Beasiswa '.($user->id + 1),
         'nik' => '63020000'.$suffix,
         'no_kk' => '63020001'.$suffix,
@@ -49,8 +52,7 @@ function mhsBeasiswa(?User $user = null, ?Prodi $prodi = null, array $verif = []
         'dokumen_ktp' => 'profil/1/ktp.pdf',
         'dokumen_kk' => 'profil/1/kk.pdf',
         'dokumen_desil' => 'profil/1/desil.pdf',
-        'dokumen_sktm' => 'profil/1/sktm.pdf',
-        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_pddikti' => 'profil/1/pddikti.pdf',
         'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',
@@ -436,7 +438,10 @@ test('mahasiswa tanpa prodi melihat peringatan untuk melengkapi profil', functio
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
         ->assertOk()
-        ->assertSee('Program Studi pada profil Anda terisi')
+        // Teks panjang peringatannya dihapus (permintaan pengguna); tersisa
+        // tautan "Lengkapi profil sekarang" saja.
+        ->assertSee('Lengkapi profil sekarang')
+        ->assertDontSee('Program Studi pada profil Anda terisi')
         ->assertDontSee('Beasiswa Tersembunyi');
 });
 
@@ -687,7 +692,8 @@ test('sidebar tetap memberi tahu satu alasan pemblokir yang spesifik', function 
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
         ->assertOk()
-        ->assertSee('IPK minimal untuk beasiswa ini adalah 3.5')
+        // Pesan IPK kini dibakukan dua desimal (lihat Scholarship::alasanPenolakan).
+        ->assertSee('IPK minimal untuk beasiswa ini adalah 3.50')
         ->assertDontSee('Ajukan Sekarang');
 });
 

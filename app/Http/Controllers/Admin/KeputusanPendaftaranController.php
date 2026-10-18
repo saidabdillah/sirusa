@@ -44,6 +44,12 @@ class KeputusanPendaftaranController extends Controller
     {
         abort_unless(auth()->user()->hasMenuAccess('admin.kesra.index'), 403);
 
+        // Gerbang Kesra: permohonan hanya boleh diputuskan setelah Catpil DAN
+        // Kampus sama-sama menyetujui. Antrean di layar sudah menyaring ini,
+        // tapi form/endpoint ini harus menolaknya sendiri juga -- kalau tidak,
+        // siapa pun yang menyusun request manual bisa melewati tahapan.
+        abort_unless($user->profile?->lolosGerbangKesra(), 403);
+
         if ($applicant->user_id !== $user->id) {
             abort(404);
         }

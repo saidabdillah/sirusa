@@ -13,10 +13,10 @@
 @section('content')
 <section class="section">
   <div class="section-header">
-    <h1>Status Verifikasi</h1>
+    <h1>Pendaftar</h1>
     <div class="section-header-breadcrumb">
       <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dasbor</a></div>
-      <div class="breadcrumb-item">Status Verifikasi</div>
+      <div class="breadcrumb-item">Pendaftar</div>
     </div>
   </div>
 
@@ -82,6 +82,7 @@
                   <tr>
                     <th>No</th>
                     <th>Nama</th>
+                    <th>NIK</th>
                     <th>NIM</th>
                     <th>Kampus</th>
                     <th>Fakultas</th>
@@ -105,6 +106,7 @@
                   <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $profile->nama_lengkap }}</td>
+                    <td>{{ $profile->nik ?? '-' }}</td>
                     <td>{{ $profile->nim ?? '-' }}</td>
                     {{-- `Kampus` punya kolom `nama_kampus`; menulis `kampus->nama`
                          selalu membalas null. --}}

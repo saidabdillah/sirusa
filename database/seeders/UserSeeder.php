@@ -110,12 +110,17 @@ class UserSeeder extends Seeder
                     'kecamatan' => $data['kecamatan'],
                     'desa_kelurahan' => $data['desa'],
                     'prodi_id' => $prodi?->id,
+                    // Data pendidikan baru. Data demo memakai S1 (8 semester)
+                    // supaya semua semester yang di-generate tetap sah.
+                    'jenjang' => 'S1',
+                    'tahun_masuk' => now()->year - (int) ceil(($data['semester'] ?? 1) / 2),
+                    'kepala_keluarga' => false,
                     'ipk' => $data['ipk'],
                     'semester' => $data['semester'],
                     'ukt' => $data['ukt'],
                     'desil' => $data['desil'],
                     'ikut_kk' => $data['ikut_kk'],
-                    'kk_ikut_wali' => $data['kk_ikut_wali'],
+                    'kk_ikut_famili_lain' => $data['kk_ikut_famili_lain'],
                     'nama_ayah' => $data['nama_ayah'],
                     'nik_ayah' => $data['nik_ayah'],
                     'pekerjaan_ayah' => $data['pekerjaan_ayah'],
@@ -130,15 +135,14 @@ class UserSeeder extends Seeder
                     'dokumen_ktp' => "profil/{$key}/dokumen_ktp.jpg",
                     'dokumen_kk' => "profil/{$key}/dokumen_kk.jpg",
                     'dokumen_desil' => "profil/{$key}/dokumen_desil.jpg",
-                    'dokumen_sktm' => "profil/{$key}/dokumen_sktm.jpg",
-                    'dokumen_transkrip' => "profil/{$key}/dokumen_transkrip.pdf",
+                    'dokumen_pddikti' => "profil/{$key}/dokumen_pddikti.pdf",
                     'dokumen_surat_aktif' => "profil/{$key}/dokumen_surat_aktif.pdf",
                     'dokumen_surat_pernyataan' => "profil/{$key}/dokumen_surat_pernyataan.pdf",
                     'dokumen_bukti_ukt' => "profil/{$key}/dokumen_bukti_ukt.pdf",
                     'ktp_ayah' => "profil/{$key}/ktp_ayah.jpg",
                     'ktp_ibu' => "profil/{$key}/ktp_ibu.jpg",
-                    'ktp_wali' => $data['kk_ikut_wali'] ? "profil/{$key}/ktp_wali.jpg" : null,
-                    'kk_wali' => $data['kk_ikut_wali'] ? "profil/{$key}/kk_wali.jpg" : null,
+                    'ktp_wali' => $data['kk_ikut_famili_lain'] ? "profil/{$key}/ktp_wali.jpg" : null,
+                    'kk_wali' => $data['kk_ikut_famili_lain'] ? "profil/{$key}/kk_wali.jpg" : null,
                     'verif_catpil' => $verif[0],
                     'verif_kampus' => $verif[1],
                     'verif_kesra' => $this->verifKesra($data['applicants']),
@@ -265,12 +269,17 @@ class UserSeeder extends Seeder
                     'kecamatan' => $location['kecamatan'],
                     'desa_kelurahan' => $location['desa'],
                     'prodi_id' => $prodi->id,
+                    // Data pendidikan baru. Semester yang di-generate maksimal 8,
+                    // jadi S1 selalu sah untuk data demo ini.
+                    'jenjang' => 'S1',
+                    'tahun_masuk' => now()->year - (int) ceil($semester / 2),
+                    'kepala_keluarga' => false,
                     'ipk' => $ipk,
                     'semester' => $semester,
                     'ukt' => 2500000,
                     'desil' => ($n % 10) + 1,
                     'ikut_kk' => 'ayah',
-                    'kk_ikut_wali' => false,
+                    'kk_ikut_famili_lain' => false,
                     'nama_ayah' => 'Ayah '.$fullName,
                     'nik_ayah' => '6303'.str_pad((string) (4000 + $n), 12, '0', STR_PAD_LEFT),
                     'pekerjaan_ayah' => $this->pekerjaan[$n % count($this->pekerjaan)],
@@ -281,8 +290,7 @@ class UserSeeder extends Seeder
                     'dokumen_ktp' => "profil/{$key}/dokumen_ktp.jpg",
                     'dokumen_kk' => "profil/{$key}/dokumen_kk.jpg",
                     'dokumen_desil' => "profil/{$key}/dokumen_desil.jpg",
-                    'dokumen_sktm' => "profil/{$key}/dokumen_sktm.jpg",
-                    'dokumen_transkrip' => "profil/{$key}/dokumen_transkrip.pdf",
+                    'dokumen_pddikti' => "profil/{$key}/dokumen_pddikti.pdf",
                     'dokumen_surat_aktif' => "profil/{$key}/dokumen_surat_aktif.pdf",
                     'dokumen_surat_pernyataan' => "profil/{$key}/dokumen_surat_pernyataan.pdf",
                     'dokumen_bukti_ukt' => "profil/{$key}/dokumen_bukti_ukt.pdf",
@@ -375,7 +383,7 @@ class UserSeeder extends Seeder
     {
         return array_merge([
             'ikut_kk' => 'ayah',
-            'kk_ikut_wali' => false,
+            'kk_ikut_famili_lain' => false,
         ], $this->ayahFields($data));
     }
 
@@ -383,7 +391,7 @@ class UserSeeder extends Seeder
     {
         return array_merge([
             'ikut_kk' => 'ibu',
-            'kk_ikut_wali' => false,
+            'kk_ikut_famili_lain' => false,
         ], $this->ayahFields($data));
     }
 
@@ -391,7 +399,7 @@ class UserSeeder extends Seeder
     {
         return array_merge([
             'ikut_kk' => 'ayah',
-            'kk_ikut_wali' => false,
+            'kk_ikut_famili_lain' => false,
         ], $this->ayahFields($data));
     }
 
@@ -399,7 +407,7 @@ class UserSeeder extends Seeder
     {
         return array_merge([
             'ikut_kk' => 'ibu',
-            'kk_ikut_wali' => false,
+            'kk_ikut_famili_lain' => false,
         ], $this->ayahFields($data));
     }
 
@@ -407,7 +415,7 @@ class UserSeeder extends Seeder
     {
         return array_merge([
             'ikut_kk' => 'ibu',
-            'kk_ikut_wali' => false,
+            'kk_ikut_famili_lain' => false,
         ], $this->ibuOnlyFields($data));
     }
 
@@ -415,15 +423,15 @@ class UserSeeder extends Seeder
     {
         return array_merge([
             'ikut_kk' => 'ayah',
-            'kk_ikut_wali' => false,
+            'kk_ikut_famili_lain' => false,
         ], $this->ayahOnlyFields($data));
     }
 
     private function kkWali(array $data): array
     {
         return array_merge([
-            'ikut_kk' => 'wali',
-            'kk_ikut_wali' => true,
+            'ikut_kk' => 'famili_lain',
+            'kk_ikut_famili_lain' => true,
         ], $this->waliOnlyFields($data));
     }
 

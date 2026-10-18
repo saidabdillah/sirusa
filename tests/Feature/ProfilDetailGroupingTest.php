@@ -21,6 +21,9 @@ beforeEach(function () {
 
     UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Ahmad Grouping',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000000002',
@@ -38,7 +41,7 @@ beforeEach(function () {
         'ukt' => 2500000,
         'desil' => 3,
         'ikut_kk' => 'ayah',
-        'kk_ikut_wali' => false,
+        'kk_ikut_famili_lain' => false,
         'nama_ayah' => 'Ayah Grouping',
         'nik_ayah' => '6302000000000003',
         'pekerjaan_ayah' => 'Petani',
@@ -69,11 +72,11 @@ test('detail page groups data sesuai halaman profil', function () {
         ->assertSee('Ikut KK', false)
         ->assertSee('KK Ayah', false)
         ->assertSee('KK Ibu', false)
-        ->assertSee('KK Wali', false)
+        ->assertSee('KK Famili Lain', false)
         ->assertSee('id="kk-ayah" disabled checked', false)
         ->assertDontSee('id="kk-ibu" disabled checked', false)
         ->assertDontSee('id="kk-wali" disabled checked', false);
 
     $response->assertDontSee('Data Pendidikan', false)
-        ->assertDontSee('Berdomisili dalam KK Wali', false);
+        ->assertDontSee('Berdomisili dalam KK Famili Lain', false);
 });

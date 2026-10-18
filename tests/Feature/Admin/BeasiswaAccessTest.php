@@ -73,7 +73,9 @@ test('admin can access scholarship create form and create one', function () {
         ->assertSee('data-kampus-id="'.$kampus->id.'"', false)
         ->assertDontSee('value="'.$kampus->id.'" selected', false)
         ->assertSee('placeholder="contoh 3.00"', false)
-        ->assertSee('placeholder="contoh 3"', false)
+        // Semester minimal kini dropdown (permintaan pengguna), jadi
+        // placeholdernya diganti opsi kosong berlabel.
+        ->assertSee('-- Pilih Semester --', false)
         ->assertSee('placeholder="contoh 10"', false);
 
     post(route('admin.beasiswa.simpan'), [
@@ -87,7 +89,6 @@ test('admin can access scholarship create form and create one', function () {
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'IPK >= 3.0',
-        'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
     ])->assertRedirect(route('admin.beasiswa.index'));
 
@@ -144,15 +145,17 @@ test('satu program studi yang sah sudah cukup untuk menyimpan beasiswa', functio
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodiPertama->id],
     ])->assertSessionDoesntHaveErrors();
 
     $beasiswa = Scholarship::where('nama', 'Beasiswa Satu Prodi')->firstOrFail();
     $tersimpan = $beasiswa->fakultas()->with('prodi')->get()
-        ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('id')->all());
+        ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('nama')->all());
 
-    $this->assertSame([$prodiPertama->id], $tersimpan->values()->all());
+    // Membandingkan NAMA, bukan id: baris snapshot di `beasiswa_prodi` punya
+    // auto-increment sendiri, jadi id-nya tidak pernah menjamin sama dengan id
+    // prodi aslinya -- kebetulan sama hanya di database yang baru dibuat.
+    $this->assertSame(['Informatika'], $tersimpan->values()->all());
 
     // Dua prodi dari kampus yang sama juga sah.
     post(route('admin.beasiswa.simpan'), [
@@ -166,7 +169,6 @@ test('satu program studi yang sah sudah cukup untuk menyimpan beasiswa', functio
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodiPertama->id, $prodiKedua->id],
     ])->assertSessionDoesntHaveErrors();
 });
@@ -191,7 +193,6 @@ test('prodi dari kampus lain tetap ditolak', function () {
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodiLain->id],
     ])->assertSessionHasErrors('prodi_ids');
 
@@ -238,7 +239,6 @@ test('tanggal mulai boleh sudah lewat, tapi urutan tanggal tetap dijaga', functi
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
     ])->assertSessionDoesntHaveErrors()
         ->assertRedirect(route('admin.beasiswa.index'));
@@ -257,7 +257,6 @@ test('tanggal mulai boleh sudah lewat, tapi urutan tanggal tetap dijaga', functi
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
     ])->assertSessionHasErrors('tanggal_selesai');
 });
@@ -277,7 +276,6 @@ test('scholarship store rejects zero kuota and zero ipk', function () {
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
     ])->assertSessionHasErrors(['kuota', 'ipk_minimal']);
 
@@ -300,7 +298,6 @@ test('scholarship update rejects zero kuota and zero ipk', function () {
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
     ])->assertSessionHasErrors(['kuota', 'ipk_minimal']);
 });
@@ -337,7 +334,6 @@ test('super admin can access scholarship create form and create one', function (
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'status' => 'aktif',
         'prodi_ids' => [$prodi->id],
     ])->assertRedirect(route('admin.beasiswa.index'));
 

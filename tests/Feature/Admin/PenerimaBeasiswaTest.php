@@ -33,7 +33,6 @@ function penerimaBaru(string $email, string $status = 'diterima', bool $aktif = 
 
     // NIK/NIM unik per baris: kedua kolom punya index unique di tabel profil.
     $urutan = str_pad((string) $urut, 6, '0', STR_PAD_LEFT);
-
     $mahasiswa = User::factory()->standardUser()->create(['email' => $email, 'status' => $aktif ? 'aktif' : 'non-aktif']);
     $beasiswa = Scholarship::factory()->create(['kampus_id' => test()->kampus->id]);
     penerimaProfil($mahasiswa, $urutan);
@@ -50,9 +49,12 @@ function penerimaProfil(User $mahasiswa, string $urutan): UserProfile
 {
     return UserProfile::create([
         'user_id' => $mahasiswa->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Ahmad Fauzi',
-        'nik' => '6302'.$urutan.'0000001',
-        'no_kk' => '6302'.$urutan.'0000002',
+        'nik' => '6302'.$urutan.'000001',
+        'no_kk' => '6302'.$urutan.'000002',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -67,6 +69,7 @@ function penerimaProfil(User $mahasiswa, string $urutan): UserProfile
         'ukt' => 2500000,
         'desil' => 3,
         'nim' => '21101152'.$urutan,
+        'ikut_kk' => 'ayah',
         'verif_catpil' => 'menunggu',
         'verif_kampus' => 'menunggu',
         'verif_kesra' => 'menunggu',

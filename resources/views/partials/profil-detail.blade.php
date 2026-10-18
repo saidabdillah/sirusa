@@ -16,7 +16,11 @@
   ];
 
   $stageDocSections = [
-      'catpil' => ['Dokumen Diri Sendiri', 'Dokumen Orang Tua / Wali'],
+      // 'Dokumen Desil' sengaja tidak masuk tahap catpil (permintaan
+      // pengguna): Catpil tidak memeriksa desil, jadi berkasnya tidak
+      // ditampilkan di sana. Desil tetap tampil untuk kampus (bukan bagian
+      // daftar ini) dan kesra/halaman null.
+      'catpil' => ['Dokumen Diri Sendiri', 'Dokumen Orang Tua / Famili Lain'],
       'kampus' => ['Dokumen untuk Kampus'],
   ];
 
@@ -26,19 +30,21 @@
       ['key' => 'dokumen_ktp', 'label' => 'Kartu Tanda Penduduk (KTP)'],
       ['key' => 'dokumen_kk', 'label' => 'Kartu Keluarga (KK)'],
       ['key' => 'dokumen_desil', 'label' => 'Dokumen Desil'],
-      ['key' => 'dokumen_sktm', 'label' => 'Surat Keterangan Tidak Mampu (SKTM)'],
+      // SKTM tidak lagi disyaratkan pada proses beasiswa ini.
     ],
     'Dokumen untuk Kampus' => [
-      ['key' => 'dokumen_transkrip', 'label' => 'Transkrip Nilai / KHS'],
+      // Transkrip digantikan PDDIKTI. Berkas KRS/KHS kini diunggah per semester
+      // di halaman profil, jadi tidak lagi satu kolom di sini.
+      ['key' => 'dokumen_pddikti', 'label' => 'Dokumen PDDIKTI'],
       ['key' => 'dokumen_surat_aktif', 'label' => 'Surat Aktif Kuliah / KTM'],
       ['key' => 'dokumen_surat_pernyataan', 'label' => 'Surat Pernyataan Tidak Menerima Beasiswa Lain'],
       ['key' => 'dokumen_bukti_ukt', 'label' => 'Bukti Pembayaran UKT/SPP'],
     ],
-    'Dokumen Orang Tua / Wali' => [
+    'Dokumen Orang Tua / Famili Lain' => [
       ['key' => 'ktp_ayah', 'label' => 'KTP Ayah'],
       ['key' => 'ktp_ibu', 'label' => 'KTP Ibu'],
-      ['key' => 'ktp_wali', 'label' => 'KTP Wali'],
-      ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Wali'],
+      ['key' => 'ktp_wali', 'label' => 'KTP Famili Lain'],
+      ['key' => 'kk_wali', 'label' => 'Kartu Keluarga Famili Lain'],
     ],
   ];
 
@@ -46,6 +52,15 @@
   $visibleDocSections = $stageDocSections[$stage] ?? array_keys($documentSections);
   $visibleSections = array_intersect_key($documentSections, array_flip($visibleDocSections));
   $showPrestasi = ! in_array($stage, ['catpil', 'kampus'], true);
+
+  // Dokumen yang disembunyikan PER TAHAP (permintaan pengguna): Catpil tidak
+  // memeriksa desil, jadi berkas desil tidak ditampilkan di antrean Catpil.
+  // Berkasnya tetap diunggah di profil dan tetap tampil untuk tahap lain
+  // (Kesra, dan halaman tanpa tahap seperti detail pendaftaran).
+  $hiddenDocs = [
+      'catpil' => ['dokumen_desil'],
+  ];
+  $docsTersembunyi = $hiddenDocs[$stage] ?? [];
 @endphp
 
 {{-- Card: Data Diri --}}
@@ -65,11 +80,19 @@
           ['label' => 'Jenis Kelamin', 'value' => $profile?->jenis_kelamin ?? '-'],
           ['label' => 'Tempat, Tanggal Lahir', 'value' => ($profile?->tempat_lahir ?? '-').', '.(! blank($profile?->tanggal_lahir) ? $profile->tanggal_lahir->translatedFormat('d F Y') : '-')],
           ['label' => 'Agama', 'value' => $profile?->agama ?? '-'],
-          ['label' => 'Telepon', 'value' => $profile?->telepon ?? '-'],
-          ['label' => 'Desil', 'value' => $profile?->desil ? 'Desil '.$profile->desil : '-'],
+          // Label "No. HP" (bukan "Telepon") supaya seragam dengan form profil.
+          ['label' => 'No. HP', 'value' => $profile?->telepon ?? '-'],
+          // Desil disembunyikan dari Catpil (permintaan pengguna): Catpil tidak
+          // memeriksa desil, jadi angkanya tidak perlu tampil di antreannya.
+          // Sisanya (Kampus via kartu, Kesra, dan halaman null) tetap melihat.
+          ...(! in_array($stage, ['catpil'], true) ? [['label' => 'Desil', 'value' => $profile?->desil ? 'Desil '.$profile->desil : '-']] : []),
           ['label' => 'Kabupaten', 'value' => $profile?->kabupaten_kota ?: 'Balangan'],
           ['label' => 'Kecamatan', 'value' => $profile?->kecamatan ?? '-'],
           ['label' => 'Desa/Kelurahan', 'value' => $profile?->desa_kelurahan ?? '-'],
+          // Ditampilkan supaya petugas bisa memeriksa SUMBER perhitungan lama
+          // berdomisili di antrean Kesra. Diisi petugas Catpil saat "Setujui".
+          ['label' => 'Berdomisili Sejak', 'value' => $profile?->berdomisili_sejak?->translatedFormat('d F Y') ?? 'Belum ditentukan'],
+          ['label' => 'Lama Berdomisili', 'value' => $profile?->lamaBerdomisiliLabel() ?? 'Belum ditentukan'],
         ];
       @endphp
       @foreach($dataDiri as $field)
@@ -142,6 +165,35 @@
         </div>
       </div>
     </div>
+
+    @php($dokumenAkademik = $profile?->dokumenAkademik ?? collect())
+    @if($dokumenAkademik->isNotEmpty())
+    <hr>
+    {{-- KRS & KHS per semester diunggah mahasiswa di profil (kelompok Data
+         Kampus). Kampus dan Kesra memeriksa berkas + nilainya di sini; Catpil
+         tidak melihat card Data Kampus sama sekali. --}}
+    <h6 class="mt-3 mb-3"><i class="fas fa-file-alt text-primary mr-1"></i>KRS &amp; KHS per Semester</h6>
+    <div class="row">
+      @foreach($dokumenAkademik as $dok)
+      <div class="col-lg-6 mb-2">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+          <span class="font-weight-bold mr-2">{{ $dok->jenisLabel() }} Semester {{ $dok->semester }}</span>
+          <span>
+            @if($dok->file)
+            <a href="{{ route('dokumen.show', $dok->file) }}" target="_blank" rel="noopener noreferrer"
+              class="btn btn-sm btn-primary">
+              <i class="fas fa-eye"></i> Lihat
+            </a>
+            @else
+            <span class="text-muted">Berkas tidak ada</span>
+            @endif
+            <span class="text-muted ml-2">Nilai: {{ $dok->nilai ?? '-' }}</span>
+          </span>
+        </div>
+      </div>
+      @endforeach
+    </div>
+    @endif
   </div>
 </div>
 @endif
@@ -156,7 +208,7 @@
     <div class="mb-3">
       <div class="text-muted small">Ikut KK</div>
       <div class="d-flex flex-wrap">
-        @foreach(['ayah' => 'KK Ayah', 'ibu' => 'KK Ibu', 'wali' => 'KK Wali'] as $value => $label)
+        @foreach(['ayah' => 'KK Ayah', 'ibu' => 'KK Ibu', 'famili_lain' => 'KK Famili Lain', 'kepala_keluarga' => 'Kepala Keluarga'] as $value => $label)
         <div class="custom-control custom-checkbox mr-4 mb-1">
           <input type="checkbox" class="custom-control-input" id="kk-{{ $value }}" disabled {{ ($profile?->ikut_kk ?? null) === $value ? 'checked' : '' }}>
           <label class="custom-control-label" for="kk-{{ $value }}">{{ $label }}</label>
@@ -199,7 +251,7 @@
         </div>
       </div>
     </div>
-    @if($profile?->kk_ikut_wali)
+    @if($profile?->kk_ikut_famili_lain)
     <hr>
     <div class="mb-0">
       <h6 class="text-muted mb-2"><i class="fas fa-user mr-1"></i>Wali</h6>
@@ -242,6 +294,7 @@
     <h6 class="mt-3 mb-3"><i class="fas fa-folder text-primary mr-1"></i>{{ $sectionName }}</h6>
     <div class="row">
       @foreach($docs as $doc)
+      @continue(in_array($doc['key'], $docsTersembunyi, true))
       <div class="col-lg-6 mb-2">
         <div class="d-flex justify-content-between align-items-center flex-wrap">
           <span class="font-weight-bold mr-2">{{ $doc['label'] }}</span>

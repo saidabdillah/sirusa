@@ -34,6 +34,9 @@ test('user can login using username', function () {
 test('user can login using nik', function () {
     UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nik' => '6302000000000001',
         'nama_lengkap' => 'Test User',
     ]);
@@ -53,6 +56,9 @@ test('login prefers nik match over identical username', function () {
     ]);
     UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nik' => '6302000000000001',
         'nama_lengkap' => 'Test User',
     ]);
@@ -125,6 +131,9 @@ test('mahasiswa bisa masuk dengan NIK maupun username', function () {
 
     UserProfile::create([
         'user_id' => $mahasiswa->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nik' => '6302000000000009',
         'nama_lengkap' => 'Ahmad Fauzi',
     ]);

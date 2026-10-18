@@ -35,6 +35,10 @@ class Scholarship extends Model
         return [
             'tanggal_mulai' => 'date',
             'tanggal_selesai' => 'date',
+            // D1-D4 ditambah di migrasi extend_tingkat_gelar; tanpa cast ini
+            // Eloquent menganggapnya string biasa dan perbandingannya dengan
+            // jenjang profil tidak konsisten.
+            'tingkat_gelar' => 'string',
         ];
     }
 
@@ -210,7 +214,10 @@ class Scholarship extends Model
         }
 
         if ((float) $profile->ipk < (float) $this->ipk_minimal) {
-            return "IPK minimal untuk beasiswa ini adalah {$this->ipk_minimal}.";
+            // Angka dari kolom decimal(3,2) berbeda antar driver: MySQL
+            // mengembalikan `3.50`, sqlite `3.5`. Format eksplisit supaya
+            // pesannya sama di mana pun aplikasi dijalankan.
+            return 'IPK minimal untuk beasiswa ini adalah '.number_format((float) $this->ipk_minimal, 2, '.', '').'.';
         }
 
         if ((int) $profile->semester < (int) $this->semester_minimal) {

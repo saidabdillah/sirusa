@@ -13,7 +13,6 @@
     @unless($kampusId)
       <div class="alert alert-warning" role="alert">
         <i class="fas fa-exclamation-triangle"></i>
-        Beasiswa hanya bisa dilihat setelah Program Studi pada profil Anda terisi, karena setiap beasiswa diperuntukkan untuk satu kampus.
         <a href="{{ route('profile') }}" class="alert-link">Lengkapi profil sekarang</a>.
       </div>
     @endunless

@@ -29,6 +29,19 @@ class User extends Authenticatable
         'user' => 'User',
     ];
 
+    /**
+     * Field profil yang bernilai BOOLEAN, jadi tidak boleh diperiksa dengan
+     * `empty()`.
+     *
+     * `empty(false)` bernilai `true`, sehingga jawaban "Tidak" pada
+     * `kepala_keluarga` akan selamanya dianggap "belum diisi" dan mahasiswa itu
+     * tidak pernah dianggap melengkapi profilnya. Untuk kolom di daftar ini,
+     * "kosong" berarti `null` (belum dijawab), bukan `false`.
+     *
+     * @var list<string>
+     */
+    private const BOOLEAN_PROFILE_FIELDS = ['kepala_keluarga'];
+
     protected $fillable = [
         'username',
         'email',
@@ -294,7 +307,7 @@ class User extends Authenticatable
         }
 
         foreach ($this->getRequiredProfileFields() as $field => $label) {
-            if (empty($profile->$field)) {
+            if ($this->fieldProfilKosong($profile, $field)) {
                 return false;
             }
         }
@@ -312,12 +325,30 @@ class User extends Authenticatable
         }
 
         foreach ($this->getRequiredProfileFields() as $field => $label) {
-            if (empty($profile->$field)) {
+            if ($this->fieldProfilKosong($profile, $field)) {
                 $missing[] = $label;
             }
         }
 
         return $missing;
+    }
+
+    /**
+     * Apakah satu field profil masih dianggap kosong.
+     *
+     * `empty()` saja TIDAK cukup untuk kolom boolean: jawaban "Tidak" pada
+     * `kepala_keluarga` bernilai `false`, dan `empty(false)` adalah `true` --
+     * akibatnya mahasiswa yang menjawab "Tidak" akan selamanya dianggap
+     * profilnya belum lengkap. Kolom boolean karena itu hanya dianggap kosong
+     * kalau nilainya benar-benar `null` (belum dijawab).
+     */
+    private function fieldProfilKosong(UserProfile $profile, string $field): bool
+    {
+        if (in_array($field, self::BOOLEAN_PROFILE_FIELDS, true)) {
+            return $profile->$field === null;
+        }
+
+        return empty($profile->$field);
     }
 
     private function getRequiredProfileFields(): array
@@ -330,12 +361,15 @@ class User extends Authenticatable
             'tanggal_lahir' => 'Tanggal Lahir',
             'jenis_kelamin' => 'Jenis Kelamin',
             'agama' => 'Agama',
-            'telepon' => 'Telepon',
+            'telepon' => 'No. HP',
             'alamat' => 'Alamat',
             'kecamatan' => 'Kecamatan',
             'desa_kelurahan' => 'Desa/Kelurahan',
             'prodi_id' => 'Program Studi',
-            'ipk' => 'IPK',
+            'jenjang' => 'Jenjang Pendidikan',
+            'tahun_masuk' => 'Tahun Masuk',
+            'kepala_keluarga' => 'Kepala Keluarga',
+            'ipk' => 'IPK (Indeks Prestasi Kumulatif)',
             'semester' => 'Semester',
             'ukt' => 'UKT',
             'desil' => 'Desil',
@@ -350,8 +384,8 @@ class User extends Authenticatable
             'dokumen_ktp' => 'KTP',
             'dokumen_kk' => 'Kartu Keluarga',
             'dokumen_desil' => 'Dokumen Desil',
-            'dokumen_sktm' => 'SKTM',
-            'dokumen_transkrip' => 'Transkrip',
+            // SKTM tidak lagi disyaratkan; Transkrip digantikan PDDIKTI.
+            'dokumen_pddikti' => 'Dokumen PDDIKTI',
             'dokumen_surat_aktif' => 'Surat Aktif Kuliah',
             'dokumen_surat_pernyataan' => 'Surat Pernyataan',
             'dokumen_bukti_ukt' => 'Bukti UKT',
@@ -359,7 +393,7 @@ class User extends Authenticatable
             'ktp_ibu' => 'KTP Ibu',
         ];
 
-        if ($this->profile?->kk_ikut_wali) {
+        if ($this->profile?->kk_ikut_famili_lain) {
             $fields += [
                 'nama_wali' => 'Nama Wali',
                 'nik_wali' => 'NIK Wali',

@@ -21,6 +21,9 @@ function profilStatus(User $user, string $nama, array $verif, ?int $prodiId = nu
 
     return UserProfile::create(array_merge([
         'user_id' => $user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => $nama,
         'nik' => '6302999999'.$suffix,
         'no_kk' => '6302888888'.$suffix,

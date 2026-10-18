@@ -218,7 +218,7 @@ return [
         'kk_wali' => 'KK Wali',
         'kampus_id' => 'Kampus',
         'kuota' => 'Kuota',
-        'tingkat_gelar' => 'Tingkat Gelar',
+        'tingkat_gelar' => 'Jenjang',
         'tanggal_mulai' => 'Tanggal Mulai',
         'tanggal_selesai' => 'Tanggal Selesai',
         'deskripsi' => 'Deskripsi',

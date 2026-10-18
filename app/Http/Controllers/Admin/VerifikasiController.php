@@ -115,6 +115,21 @@ class VerifikasiController extends Controller
         $profile->{$stages[$stage][0]} = $data['status'];
         $profile->{$stages[$stage][1]} = $data['catatan'] ?? null;
 
+        // Tanggal mulai berdomisili: hanya tahap Catpil. Disimpan saat
+        // "Setujui", dan DIKOSONGKAN begitu keputusannya bukan "Setujui" lagi --
+        // tanggal itu hanya bermakna bersama persetujuan, jadi membiarkannya
+        // tertinggal membuat seolah masih berlaku untuk keputusan yang sudah
+        // tidak berlaku.
+        //
+        // Aman dikosongkan di sini karena halaman ini satu-satunya jalur yang
+        // menulis keputusan Catpil; pengeditan field lain lewat `profile.update`
+        // tidak menyentuh kolom ini.
+        if ($stage === 'catpil') {
+            $profile->berdomisili_sejak = $data['status'] === 'setuju'
+                ? ($data['berdomisili_sejak'] ?? null)
+                : null;
+        }
+
         // Tahap-tahap lain sengaja tidak disentuh: Catpil dan Kampus berjalan
         // paralel, jadi keputusan revisi/tolak di satu tahap tidak boleh
         // menghapus pekerjaan tahap lain yang sedang berjalan.

@@ -66,7 +66,7 @@ test('setiap dropdown di form ubah beasiswa punya opsi kosong di posisi pertama'
 
     $html = actingAs($this->superAdmin)->get(route('admin.beasiswa.ubah', $beasiswa))->assertOk()->getContent();
 
-    foreach (['kampus_id', 'tingkat_gelar', 'status'] as $id) {
+    foreach (['kampus_id', 'tingkat_gelar', 'semester_minimal'] as $id) {
         $isi = isiSelect($html, $id);
 
         expect($isi)->not->toBe('', "Dropdown #{$id} tidak ditemukan di form ubah beasiswa");
@@ -77,7 +77,7 @@ test('setiap dropdown di form ubah beasiswa punya opsi kosong di posisi pertama'
 test('setiap dropdown di form tambah beasiswa punya opsi kosong di posisi pertama', function () {
     $html = actingAs($this->superAdmin)->get(route('admin.beasiswa.buat'))->assertOk()->getContent();
 
-    foreach (['kampus_id', 'tingkat_gelar', 'status'] as $id) {
+    foreach (['kampus_id', 'tingkat_gelar', 'semester_minimal'] as $id) {
         expect(isiSelect($html, $id))->toMatch('/^\s*<option value=""[^>]*>/', "Dropdown #{$id} tidak diawali opsi kosong");
     }
 });

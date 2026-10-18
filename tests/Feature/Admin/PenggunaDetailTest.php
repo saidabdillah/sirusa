@@ -31,6 +31,9 @@ beforeEach(function () {
 
     UserProfile::create([
         'user_id' => $this->mahasiswa->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Budi Santoso',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',

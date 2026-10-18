@@ -33,6 +33,9 @@ function payloadTeleponProfil(int $prodiId, array $override = []): array
         'nama_kampus' => 'Universitas Lambung Mangkurat',
         'fakultas' => 'Fakultas Teknik',
         'prodi_id' => $prodiId,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'ipk' => 3.5,
         'semester' => 4,
         'ukt' => 3500000,
@@ -112,8 +115,10 @@ test('setiap input berkas punya keterangan format dan ukuran', function () {
     // Semua dokumen PDF; pas foto satu-satunya yang berupa gambar. Keterangan
     // di layar harus mencerminkan aturan server, jadi jumlahnya diperiksa:
     // 13 dokumen PDF (12 di grup + dokumen prestasi) dan 1 pas foto.
+    // 11 dokumen PDF wajib; dokumen prestasi memakai teks "... per file"
+    // sehingga tidak ikut dihitung di sini. SKTM dan Transkrip sudah tidak ada.
     expect(substr_count($html, 'Format: PDF. Ukuran maksimal 2 MB.'))
-        ->toBe(12)
+        ->toBe(11)
         ->and($html)->toContain('Ukuran maksimal 2 MB per file.')
         ->and(substr_count($html, 'Format: JPG, JPEG, atau PNG. Ukuran maksimal 2 MB.'))
         ->toBe(1)
@@ -132,6 +137,13 @@ test('input dokumen memakai accept pdf, pas foto memakai accept gambar', functio
     $gambar = 0;
 
     foreach ($semua[0] as $tag) {
+        // Input KRS/KHS per semester DIKELUARKAN dari hitungan: tes ini
+        // mengunci dokumen wajib + pas foto, sedangkan jumlah baris akademik
+        // mengikuti jenjang yang dipilih.
+        if (str_contains($tag, 'dokumen_akademik[')) {
+            continue;
+        }
+
         if (str_contains($tag, 'accept="application/pdf"')) {
             $pdf++;
 
@@ -148,7 +160,8 @@ test('input dokumen memakai accept pdf, pas foto memakai accept gambar', functio
     }
 
     // 12 dokumen wajib + dokumen prestasi = 13 PDF, dan 1 pas foto.
-    expect($pdf)->toBe(13)
+    // 11 dokumen PDF wajib + dokumen prestasi = 12 input PDF, dan 1 pas foto.
+    expect($pdf)->toBe(12)
         ->and($gambar)->toBe(1);
 });
 
@@ -159,7 +172,10 @@ test('input NIK dan nomor HP memakai inputmode angka dan dibatasi panjangnya', f
         ->toMatch('/id="nik"[^>]*maxlength="16"/')
         ->toMatch('/id="no_kk"[^>]*maxlength="16"/')
         ->toMatch('/id="telepon"[^>]*maxlength="13"/')
-        ->toContain('Hanya angka, tepat 16 digit.')
+        // Placeholder NIK/No. KK dan seluruh teks bantuan dihapus atas
+        // permintaan pengguna.
+        ->not->toContain('placeholder="contoh 630')
+        ->not->toContain('Hanya angka, tepat 16 digit')
         // Teks bantuan nomor HP sengaja dihapus atas permintaan pengguna.
         ->not->toContain('Nomor HP Indonesia: diawali 08')
         // No. KK tidak lagi disyaratkan sama dengan NIK.
@@ -226,6 +242,9 @@ test('dasbor menampilkan alert lengkapi profil saat profil belum lengkap', funct
     // Profil ada tapi belum lengkap: hanya nama dan NIK.
     UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Budi',
         'nik' => '6302000000000001',
     ]);
@@ -239,6 +258,9 @@ test('dasbor menampilkan alert lengkapi profil saat profil belum lengkap', funct
 test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap', function () {
     $profile = UserProfile::create([
         'user_id' => $this->user->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => false,
         'nama_lengkap' => 'Budi',
         'nik' => '6302000000000001',
         'no_kk' => '6302000000009999',
@@ -260,6 +282,9 @@ test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap',
 
     $profile->update([
         'prodi_id' => $this->prodi->id,
+        'jenjang' => 'S1',
+        'tahun_masuk' => 2022,
+        'kepala_keluarga' => 0,
         'ipk' => 3.5,
         'semester' => 4,
         'ukt' => 3500000,
@@ -268,8 +293,7 @@ test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap',
         'dokumen_ktp' => 'profil/1/ktp.pdf',
         'dokumen_kk' => 'profil/1/kk.pdf',
         'dokumen_desil' => 'profil/1/desil.pdf',
-        'dokumen_sktm' => 'profil/1/sktm.pdf',
-        'dokumen_transkrip' => 'profil/1/transkrip.pdf',
+        'dokumen_pddikti' => 'profil/1/pddikti.pdf',
         'dokumen_surat_aktif' => 'profil/1/surat_aktif.pdf',
         'dokumen_surat_pernyataan' => 'profil/1/pernyataan.pdf',
         'dokumen_bukti_ukt' => 'profil/1/ukt.pdf',

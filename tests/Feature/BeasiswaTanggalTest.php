@@ -57,7 +57,6 @@ test('beasiswa dengan tanggal mulai yang sudah lewat tetap bisa dibuat', functio
             'semester_minimal' => 1,
             'tanggal_mulai' => now()->subMonth()->format('Y-m-d'),
             'tanggal_selesai' => now()->subWeek()->format('Y-m-d'),
-            'status' => 'aktif',
         ])
         ->assertSessionHasNoErrors();
 
@@ -78,7 +77,6 @@ test('tanggal selesai tetap harus tidak lebih awal dari tanggal mulai', function
             'semester_minimal' => 1,
             'tanggal_mulai' => now()->addMonth()->format('Y-m-d'),
             'tanggal_selesai' => now()->subDay()->format('Y-m-d'),
-            'status' => 'aktif',
         ])
         ->assertSessionHasErrors('tanggal_selesai');
 
@@ -89,7 +87,6 @@ test('perubahan tanggal masa lalu lewat form ubah tetap diterima', function () {
     $beasiswa = Scholarship::factory()->create([
         'kampus_id' => $this->kampus->id,
         'tingkat_gelar' => 'S1',
-        'status' => 'aktif',
         'tanggal_mulai' => now()->subYear()->startOfYear()->format('Y-m-d'),
         'tanggal_selesai' => now()->subYear()->startOfYear()->addMonth()->format('Y-m-d'),
     ]);
@@ -107,7 +104,6 @@ test('perubahan tanggal masa lalu lewat form ubah tetap diterima', function () {
             'semester_minimal' => 3,
             'tanggal_mulai' => now()->subYear()->startOfYear()->format('Y-m-d'),
             'tanggal_selesai' => now()->subYear()->startOfYear()->addDays(20)->format('Y-m-d'),
-            'status' => 'aktif',
         ])
         ->assertSessionHasNoErrors();
 
@@ -122,7 +118,6 @@ test('form ubah juga menolak tanggal selesai yang lebih awal dari tanggal mulai'
     $beasiswa = Scholarship::factory()->create([
         'kampus_id' => $this->kampus->id,
         'tingkat_gelar' => 'S1',
-        'status' => 'aktif',
         'tanggal_mulai' => '2026-01-15',
         'tanggal_selesai' => '2026-03-20',
     ]);
@@ -140,7 +135,6 @@ test('form ubah juga menolak tanggal selesai yang lebih awal dari tanggal mulai'
             'semester_minimal' => 3,
             'tanggal_mulai' => '2026-09-30',
             'tanggal_selesai' => '2026-09-20',
-            'status' => 'aktif',
         ])
         ->assertSessionHasErrors('tanggal_selesai')
         ->assertSessionDoesntHaveErrors('tanggal_mulai');
@@ -170,7 +164,6 @@ test('form ubah juga menolak tanggal mulai yang tidak valid', function () {
             'semester_minimal' => 3,
             'tanggal_mulai' => 'bukan tanggal',
             'tanggal_selesai' => '2026-03-20',
-            'status' => 'aktif',
         ])
         ->assertSessionHasErrors('tanggal_mulai');
 });
@@ -300,7 +293,6 @@ test('error tanggal dari server menandai input dan menaruh pesan di bawahnya', f
             'semester_minimal' => 1,
             'tanggal_mulai' => '2026-09-30',
             'tanggal_selesai' => '2026-09-20',
-            'status' => 'aktif',
         ])
         ->assertOk()
         ->getContent();
@@ -331,7 +323,6 @@ test('error tanggal masing-masing ditolak backend secara terpisah', function () 
         'kuota' => 10,
         'ipk_minimal' => 2.5,
         'semester_minimal' => 1,
-        'status' => 'aktif',
         ...$tanggal,
     ];
 

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Profile;
 use App\Http\Controllers\Concerns\RespondsToAjax;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profil\UpdateProfilRequest;
+use App\Models\DokumenAkademik;
 use App\Models\Kampus;
 use App\Models\UserProfile;
 use App\Services\WilayahService;
+use App\Support\JenjangPendidikan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
@@ -24,14 +26,22 @@ class ProfileController extends Controller
 
     private const KABUPATEN_CODE = '6311';
 
+    /**
+     * Dokumen yang SATU berkas per mahasiswa.
+     *
+     * SKTM dan Transkrip sudah tidak ada di daftar ini (permintaan pengguna):
+     * SKTM tidak lagi disyaratkan, sedangkan Transkrip digantikan PDDIKTI.
+     * Kolom `dokumen_sktm` dan `dokumen_transkrip` sengaja DIBIARKAN di tabel
+     * supaya berkas mahasiswa lama tidak hilang -- hanya tidak lagi diunggah
+     * atau diminta.
+     */
     private array $documentFields = [
         'dokumen_ktp',
         'dokumen_kk',
         'dokumen_desil',
-        'dokumen_sktm',
-        'dokumen_transkrip',
         'dokumen_surat_aktif',
         'dokumen_surat_pernyataan',
+        'dokumen_pddikti',
         'dokumen_bukti_ukt',
         'ktp_ayah',
         'ktp_ibu',
@@ -80,14 +90,25 @@ class ProfileController extends Controller
             ];
         });
 
+        // Dokumen KRS/KHS yang sudah tersimpan, dikelompokkan per jenis lalu
+        // per semester supaya view tinggal mencarinya. Baris yang ada tetap
+        // ditampilkan walau semester aktifnya sudah berubah.
+        $dokumenAkademik = $isMahasiswa && $profile
+            ? $profile->dokumenAkademik()->get()->groupBy('jenis')
+            : collect();
+
         return view('profil.index', compact(
             'profile',
             'profileComplete',
             'isMahasiswa',
             'districts',
             'kampusList',
-            'kampusJson'
-        ));
+            'kampusJson',
+            'dokumenAkademik',
+        ) + [
+            'jenjangList' => JenjangPendidikan::JENJANG,
+            'semesterMap' => JenjangPendidikan::JUMLAH_SEMESTER,
+        ]);
     }
 
     public function update(UpdateProfilRequest $request): RedirectResponse|JsonResponse
@@ -105,9 +126,9 @@ class ProfileController extends Controller
         $ikutKk = $request->input('ikut_kk', 'ayah');
 
         $data['ikut_kk'] = $ikutKk;
-        $data['kk_ikut_wali'] = $ikutKk === 'wali';
+        $data['kk_ikut_famili_lain'] = $ikutKk === 'famili_lain';
 
-        if (! $data['kk_ikut_wali']) {
+        if (! $data['kk_ikut_famili_lain']) {
             $data['nama_wali'] = null;
             $data['nik_wali'] = null;
             $data['pekerjaan_wali'] = null;
@@ -152,6 +173,13 @@ class ProfileController extends Controller
                 $data
             );
 
+            // KRS/KHS disimpan SETELAH profil, dan per semester: satu baris
+            // `dokumen_akademik` per (mahasiswa, jenis, semester). Semester
+            // yang tidak dikirim di request ini tidak disentuh sama sekali,
+            // jadi mengunggah KHS semester 4 tidak pernah menimpa KHS
+            // semester 3.
+            $this->simpanDokumenAkademik($request, $uploadDisk);
+
             $profile->resetVerification();
             $profile->save();
 
@@ -184,6 +212,69 @@ class ProfileController extends Controller
     {
         if ($path && $disk->exists($path)) {
             $disk->delete($path);
+        }
+    }
+
+    /**
+     * Simpan berkas + nilai KRS/KHS per semester.
+     *
+     * Satu baris per (mahasiswa, jenis, semester) -- lihat unique index di
+     * migrasinya. Yang penting di sini: baris yang TIDAK dikirim (tidak
+     * diunggah ulang dan nilainya kosong) sama sekali tidak disentuh, jadi
+     * dokumen semester sebelumnya tidak pernah tertimpa oleh unggahan semester
+     * lain. Berkas lama juga tidak dihapus kalau pengguna hanya memperbarui
+     * nilainya.
+     *
+     * @param  array<string, array<int|string, array<string, mixed>>>  $baris  `[jenis => [semester => [file, nilai]]]`
+     */
+    private function simpanDokumenAkademik(UpdateProfilRequest $request, $uploadDisk): void
+    {
+        $semua = (array) $request->input('dokumen_akademik', []);
+
+        foreach ($semua as $jenis => $perSemester) {
+            if (! array_key_exists($jenis, DokumenAkademik::JENIS_LABELS)) {
+                continue;
+            }
+
+            foreach ((array) $perSemester as $semester => $isi) {
+                $semester = (int) $semester;
+
+                if ($semester < 1) {
+                    continue;
+                }
+
+                $file = $request->file("dokumen_akademik.{$jenis}.{$semester}.file");
+                $nilai = $isi['nilai'] ?? null;
+
+                // Baris yang tidak diisi apa-apa dilewati, bukan dikosongkan:
+                // form mengirim semua baris semester, dan memperlakukan yang
+                // kosong sebagai "hapus" akan menghapus data yang sudah ada.
+                if ($file === null && ($nilai === null || $nilai === '')) {
+                    continue;
+                }
+
+                $dokumen = DokumenAkademik::firstOrNew([
+                    'user_id' => auth()->id(),
+                    'jenis' => $jenis,
+                    'semester' => $semester,
+                ]);
+
+                if ($file !== null) {
+                    $lama = $dokumen->file;
+                    $dokumen->file = $uploadDisk->putFile(
+                        'profil/'.auth()->id().'/akademik',
+                        $file,
+                        'public'
+                    );
+                    $this->deleteIfExists($uploadDisk, $lama);
+                }
+
+                if ($nilai !== null && $nilai !== '') {
+                    $dokumen->nilai = $nilai;
+                }
+
+                $dokumen->save();
+            }
         }
     }
 }
