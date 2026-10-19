@@ -9,10 +9,24 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    /**
+     * Jumlah percobaan masuk yang salah untuk satu akun sebelum ditahan,
+     * dan lama penahanannya (detik).
+     *
+     * Tanpa batas ini, kata sandi bisa ditebak terus-menerus oleh skrip.
+     * Dihitung per kombinasi akun + IP supaya pengguna lain di jaringan yang
+     * sama tidak ikut tertahan.
+     */
+    private const BATAS_PERCOBAAN = 5;
+
+    private const DETIK_TERTAHAN = 60;
+
     public function masuk(): View
     {
         return view('auth.masuk');
@@ -23,11 +37,23 @@ class AuthController extends Controller
         $login = $request->validated('login');
         $password = $request->validated('password');
 
+        $kunciBatas = 'masuk:'.Str::lower($login).'|'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($kunciBatas, self::BATAS_PERCOBAAN)) {
+            $detik = RateLimiter::availableIn($kunciBatas);
+
+            return back()->withInput($request->only('login'))->withErrors([
+                'login' => "Terlalu banyak percobaan masuk. Silakan coba lagi dalam {$detik} detik.",
+            ]);
+        }
+
         $user = User::whereHas('profile', fn ($query) => $query->where('nik', $login))->first()
             ?? User::where('username', $login)->first()
             ?? User::where('email', $login)->first();
 
         if ($user && Hash::check($password, $user->password)) {
+            RateLimiter::clear($kunciBatas);
+
             if ($user->status !== 'aktif') {
                 return back()->withInput($request->only('login'))->withErrors([
                     'login' => 'Akun Anda belum diaktifkan. Silakan hubungi admin.',
@@ -39,6 +65,10 @@ class AuthController extends Controller
 
             return redirect()->route('dashboard')->with('success', 'Selamat datang kembali!');
         }
+
+        // Percobaan gagal baru dihitung di sini: percobaan dengan kata sandi
+        // benar tidak pernah menghabiskan jatah.
+        RateLimiter::hit($kunciBatas, self::DETIK_TERTAHAN);
 
         return back()->withInput($request->only('login'))->withErrors([
             'login' => 'NIK, username, atau kata sandi salah',

@@ -13,3 +13,10 @@ There is no register flow, no OTP, and no public activation. `AuthController` ex
 ## Initial password is 12345678, changeable later
 
 Users seeded/created with peran `user` have password = `12345678`. Users change it themselves in `settings/index` (password update); admins can reset any account to `12345678` from the Pengguna list via `admin.pengguna.reset-password` (POST `/pengguna/{user}/reset-password`).
+
+## Login and registration are rate limited
+`AppServiceProvider::daftarkanPembatasPermintaan()` registers five named limiters: `web` (180/min per user id, or IP when guest), `tulis` (60/min, and `Limit::none()` for GET/HEAD/OPTIONS so reads are never counted), `register` (5/hour per IP), and `login-ip` (20/min per IP). `routes/web.php` applies `throttle:web` + `throttle:tulis` to the whole authenticated group, `throttle:login-ip` to `login.store`, and `throttle:register` to `register.store`.
+
+`AuthController::simpanMasuk()` adds a per-account limit of 5 failed attempts / 60 seconds keyed on `masuk:<lowercased login>|<ip>`: it checks `RateLimiter::tooManyAttempts()` BEFORE verifying the password, returns the error on the `login` key with the remaining seconds, calls `RateLimiter::clear()` on success, and only calls `RateLimiter::hit()` after a failed attempt — a successful login never consumes the quota. Never count failures before the password check or a legitimate user gets locked out by their own successful logins.
+
+Middleware `throttle:` stores keys as `md5(limiterName.key)`; tests that pre-fill a limiter by hand must use the same hash (see `tests/Feature/RateLimitTest.php`).

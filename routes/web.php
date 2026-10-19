@@ -23,17 +23,22 @@ Route::get('/', fn () => view('landing'))->name('landing');
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/masuk', [AuthController::class, 'masuk'])->name('login');
-    Route::post('/masuk', [AuthController::class, 'simpanMasuk'])->name('login.store');
+    // 20 percobaan masuk per menit per IP. Batas per akun (5 kali) ada di
+    // AuthController supaya pesannya muncul di form, bukan halaman 429.
+    Route::post('/masuk', [AuthController::class, 'simpanMasuk'])
+        ->middleware('throttle:login-ip')->name('login.store');
 
     // Registrasi mandiri mahasiswa. Petugas Kampus tidak lagi wajib membuatkan
     // akun mahasiswa; mahasiswa mendaftar sendiri dengan NIK + kata sandi +
     // kampus, lalu melengkapi sisanya di halaman Profil setelah akunnya
     // diaktifkan.
     Route::get('/daftar', [RegisterController::class, 'daftar'])->name('register');
-    Route::post('/daftar', [RegisterController::class, 'simpan'])->name('register.store');
+    // 5 akun per jam per IP: menahan pembuatan akun massal dari satu mesin.
+    Route::post('/daftar', [RegisterController::class, 'simpan'])
+        ->middleware('throttle:register')->name('register.store');
 });
 
-Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi'])->group(function () {
+Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi', 'throttle:web', 'throttle:tulis'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'keluar'])->name('logout');
     Route::get('/keluar/info', function () {
         return response()->json([
