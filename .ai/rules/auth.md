@@ -20,3 +20,10 @@ Users seeded/created with peran `user` have password = `12345678`. Users change 
 `AuthController::simpanMasuk()` adds a per-account limit of 5 failed attempts / 60 seconds keyed on `masuk:<lowercased login>|<ip>`: it checks `RateLimiter::tooManyAttempts()` BEFORE verifying the password, returns the error on the `login` key with the remaining seconds, calls `RateLimiter::clear()` on success, and only calls `RateLimiter::hit()` after a failed attempt — a successful login never consumes the quota. Never count failures before the password check or a legitimate user gets locked out by their own successful logins.
 
 Middleware `throttle:` stores keys as `md5(limiterName.key)`; tests that pre-fill a limiter by hand must use the same hash (see `tests/Feature/RateLimitTest.php`).
+
+## Login and registration are rate limited
+`AppServiceProvider::daftarkanPembatasPermintaan()` registers named limiters: `web` (180/min per user id, IP when guest), `tulis` (60/min, `Limit::none()` for GET/HEAD/OPTIONS so reads are never counted), `register` (5/hour per IP), `login-ip` (20/min per IP). `routes/web.php` applies `throttle:web` + `throttle:tulis` to the authenticated group, `throttle:web` to the guest group and landing page, `throttle:login-ip` to `login.store`, `throttle:register` to `register.store`.
+
+`AuthController::simpanMasuk()` adds a per-account limit of 5 failed attempts / 60s keyed `masuk:<lowercased login>|<ip>`: check `tooManyAttempts()` BEFORE verifying the password (so a locked account cannot be used to keep probing), `clear()` on success, and `hit()` ONLY after a failed attempt — never count before the check, or a legitimate user burns the quota with their own successful logins. The throttle error is returned on the `login` key with the remaining seconds so it renders inside the form; the IP-level limiter produces the 429 page instead (`errors/429.blade.php`).
+
+`throttle:` middleware stores keys as `md5(limiterName.key)`; tests that pre-fill a limiter by hand must use that same hash (see `tests/Feature/RateLimitTest.php`).

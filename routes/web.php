@@ -19,9 +19,11 @@ use App\Http\Controllers\User\BeasiswaController as UserBeasiswaController;
 use App\Http\Controllers\User\PendaftaranController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => view('landing'))->name('landing');
+// Halaman publik ikut dibatasi: tanpa ini, halaman beranda (yang menghitung
+// statistik dari database) bisa dihantam skrip sampai server kehabisan tenaga.
+Route::get('/', fn () => view('landing'))->middleware('throttle:web')->name('landing');
 
-Route::middleware(['guest'])->group(function () {
+Route::middleware(['guest', 'throttle:web'])->group(function () {
     Route::get('/masuk', [AuthController::class, 'masuk'])->name('login');
     // 20 percobaan masuk per menit per IP. Batas per akun (5 kali) ada di
     // AuthController supaya pesannya muncul di form, bukan halaman 429.
