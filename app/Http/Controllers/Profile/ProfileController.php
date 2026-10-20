@@ -216,7 +216,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Simpan berkas + nilai KRS/KHS per semester.
+     * Simpan berkas (+ nilai untuk KHS) per semester.
      *
      * Satu baris per (mahasiswa, jenis, semester) -- lihat unique index di
      * migrasinya. Yang penting di sini: baris yang TIDAK dikirim (tidak
@@ -224,6 +224,10 @@ class ProfileController extends Controller
      * dokumen semester sebelumnya tidak pernah tertimpa oleh unggahan semester
      * lain. Berkas lama juga tidak dihapus kalau pengguna hanya memperbarui
      * nilainya.
+     *
+     * KRS TIDAK punya nilai: rencana studi hanya berisi daftar mata kuliah,
+     * jadi `nilai` hanya dibaca untuk KHS. Angka nilai yang tetap dikirim
+     * pada baris KRS diabaikan, bukan disimpan.
      *
      * @param  array<string, array<int|string, array<string, mixed>>>  $baris  `[jenis => [semester => [file, nilai]]]`
      */
@@ -236,6 +240,9 @@ class ProfileController extends Controller
                 continue;
             }
 
+            // Nilai hanya milik KHS.
+            $punyaNilai = $jenis === DokumenAkademik::JENIS_KHS;
+
             foreach ((array) $perSemester as $semester => $isi) {
                 $semester = (int) $semester;
 
@@ -244,7 +251,7 @@ class ProfileController extends Controller
                 }
 
                 $file = $request->file("dokumen_akademik.{$jenis}.{$semester}.file");
-                $nilai = $isi['nilai'] ?? null;
+                $nilai = $punyaNilai ? ($isi['nilai'] ?? null) : null;
 
                 // Baris yang tidak diisi apa-apa dilewati, bukan dikosongkan:
                 // form mengirim semua baris semester, dan memperlakukan yang

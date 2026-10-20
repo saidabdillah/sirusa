@@ -187,7 +187,12 @@
             @else
             <span class="text-muted">Berkas tidak ada</span>
             @endif
+            {{-- Nilai hanya milik KHS. KRS adalah rencana studi, tidak
+                 memuat nilai, jadi baris KRS tidak menampilkan apa pun
+                 (permintaan pengguna). --}}
+            @if($dok->jenis === \App\Models\DokumenAkademik::JENIS_KHS)
             <span class="text-muted ml-2">Nilai: {{ $dok->nilai ?? '-' }}</span>
+            @endif
           </span>
         </div>
       </div>

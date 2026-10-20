@@ -1,10 +1,14 @@
 {{--
   Bagian KRS & KHS per semester.
 
-  Berkas dan nilainya DUA field terpisah, dan tiap semester punya barisnya
-  sendiri (`dokumen_akademik[<jenis>][<semester>][file|nilai]`). Karena
-  semesternya jadi kunci baris, unggahan untuk satu semester tidak pernah
-  menimpa semester lain.
+  KRS dan KHS DUA dokumen berbeda, dan tiap semester punya barisnya sendiri
+  (`dokumen_akademik[<jenis>][<semester>][file|nilai]`). Karena semesternya
+  jadi kunci baris, unggahan untuk satu semester tidak pernah menimpa semester
+  lain.
+
+  KRS hanya BERKAS: KRS adalah rencana studi, tidak memuat nilai, jadi baris
+  KRS tidak punya input nilai sama sekali (permintaan pengguna). Nilai hanya
+  dimiliki KHS (hasil studi yang sudah keluar).
 
   Barisnya dirender untuk semua semester sampai jenjang TERPANJANG (8), lalu
   disembunyikan + dinonaktifkan sesuai jenjang yang dipilih. Dua alasannya:
@@ -58,6 +62,9 @@ $jenisList = \App\Models\DokumenAkademik::JENIS_LABELS;
         </small>
       </div>
 
+      {{-- KRS tidak memuat nilai: rencana studi hanya berisi daftar mata
+           kuliah, jadi barisnya cukup satu kolom berkas. --}}
+      @if($jenis === \App\Models\DokumenAkademik::JENIS_KHS)
       <div class="form-group col-md-6">
         <label for="akademik-{{ $jenis }}-{{ $semester }}-nilai">
           Nilai {{ $labelJenis }} Semester {{ $semester }}
@@ -73,6 +80,7 @@ $jenisList = \App\Models\DokumenAkademik::JENIS_LABELS;
         @enderror
         <small class="text-muted">Skala 0 sampai 4, sama seperti IPK.</small>
       </div>
+      @endif
     </div>
   @endfor
 </div>

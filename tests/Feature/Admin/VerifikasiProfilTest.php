@@ -563,17 +563,18 @@ test('kampus dan kesra melihat KRS & KHS per semester di kartu Data Kampus', fun
         'jenis' => 'krs',
         'semester' => 2,
         'file' => "profil/{$this->applicantUser->id}/akademik/krs-2.pdf",
-        'nilai' => 3.75,
+        // KRS tidak punya nilai: rencana studi hanya daftar mata kuliah.
+        'nilai' => null,
     ]);
 
-    // Kampus: berkas dan nilainya tampil per semester.
+    // Kampus: berkas tampil per semester, nilai HANYA pada KHS.
     actingAs($this->kampusAdmin)
         ->get(route('admin.kampusverif.lihat', $this->applicantUser))
         ->assertOk()
         ->assertSee('KRS &amp; KHS per Semester', false)
         ->assertSee('KRS Semester 2')
         ->assertSee('KHS Semester 1')
-        ->assertSee('3.75');
+        ->assertSee('3.50');
 
     // Kesra: sama, karena kartu Data Kampus ikut tampil di tahap akhir.
     // Gerbang Kesra butuh Kampus setuju, jadi keputusan Kampus disimulasikan.

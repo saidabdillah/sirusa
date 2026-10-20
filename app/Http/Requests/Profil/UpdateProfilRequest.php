@@ -222,9 +222,13 @@ class UpdateProfilRequest extends FormRequest
                 'mimes:pdf',
                 'max:2048',
             ],
+            // Nilai hanya milik KHS. KRS adalah rencana studi (daftar mata
+            // kuliah) dan tidak memuat nilai, jadi baris KRS tidak punya
+            // input nilai sama sekali -- nilai yang tetap dikirim lewat
+            // request manual tidak divalidasi dan tidak pernah disimpan.
             // Skala nilai mengikuti yang sudah dipakai aplikasi (IPK 0-4),
             // bukan skala baru.
-            'dokumen_akademik.*.*.nilai' => ['nullable', 'numeric', 'between:0,4'],
+            'dokumen_akademik.khs.*.nilai' => ['nullable', 'numeric', 'between:0,4'],
         ];
     }
 
@@ -289,13 +293,17 @@ class UpdateProfilRequest extends FormRequest
                         continue;
                     }
 
-                    // Baris yang dikirim WAJIB berisi sesuatu: berkas ATAU
-                    // nilai (baris benar-benar kosong berarti data rusak dari
-                    // klien, bukan input yang sah). Berkasnya sendiri tidak
-                    // wajib per-baris: baris yang sudah tersimpan sah
-                    // diperbarui nilainya saja tanpa mengunggah ulang.
+                    // Baris yang dikirim WAJIB berisi sesuatu: berkas (KRS)
+                    // atau berkas/nilai (KHS). Baris benar-benar kosong
+                    // berarti data rusak dari klien, bukan input yang sah.
+                    // Berkasnya sendiri tidak wajib per-baris: baris yang
+                    // sudah tersimpan sah diperbarui tanpa mengunggah ulang.
+                    //
+                    // Nilai hanya dihitung untuk KHS: KRS tidak memuat nilai,
+                    // jadi baris KRS tanpa berkas tetap ditolak walau ada
+                    // angka nilai yang ikut terkirim.
                     $adaFile = $this->hasFile("dokumen_akademik.{$jenis}.{$kunci}.file");
-                    $adaNilai = filled($isi['nilai'] ?? null);
+                    $adaNilai = $jenis === DokumenAkademik::JENIS_KHS && filled($isi['nilai'] ?? null);
                     $sudahAda = $tersimpan?->has($jenis.'.'.$kunci) ?? false;
 
                     if (! $adaFile && ! $adaNilai && ! $sudahAda) {
@@ -303,7 +311,9 @@ class UpdateProfilRequest extends FormRequest
 
                         $validator->errors()->add(
                             "dokumen_akademik.{$jenis}.{$kunci}.file",
-                            "Berkas atau nilai {$label} semester {$kunci} wajib diisi.",
+                            $jenis === DokumenAkademik::JENIS_KRS
+                                ? "Berkas {$label} semester {$kunci} wajib diunggah."
+                                : "Berkas atau nilai {$label} semester {$kunci} wajib diisi.",
                         );
                     }
                 }
@@ -473,8 +483,8 @@ class UpdateProfilRequest extends FormRequest
             'kepala_keluarga.boolean' => 'Pilihan kepala keluarga tidak valid.',
             'dokumen_akademik.*.*.file.mimes' => 'Berkas KRS/KHS harus berupa file PDF.',
             'dokumen_akademik.*.*.file.max' => 'Ukuran berkas KRS/KHS maksimal 2MB.',
-            'dokumen_akademik.*.*.nilai.numeric' => 'Nilai KRS/KHS harus berupa angka.',
-            'dokumen_akademik.*.*.nilai.between' => 'Nilai KRS/KHS harus antara 0 dan 4.',
+            'dokumen_akademik.khs.*.nilai.numeric' => 'Nilai KHS harus berupa angka.',
+            'dokumen_akademik.khs.*.nilai.between' => 'Nilai KHS harus antara 0 dan 4.',
             'ipk.required' => 'IPK harus diisi.',
             'ipk.numeric' => 'IPK harus berupa angka.',
             'ipk.between' => 'IPK harus antara 0 dan 4.',

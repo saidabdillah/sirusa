@@ -58,6 +58,18 @@ test('baris KRS dan KHS mengikuti semester aktif yang dipilih', function () {
         ->assertSee('disabled', false);
 });
 
+test('baris KRS hanya berisi unggah berkas, nilai hanya ada di baris KHS', function () {
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    // KRS adalah rencana studi dan tidak memuat nilai, jadi form TIDAK boleh
+    // punya input nilai untuk KRS sama sekali (permintaan pengguna).
+    expect($html)
+        ->toContain('name="dokumen_akademik[krs][1][file]"')
+        ->not->toContain('name="dokumen_akademik[krs][1][nilai]"')
+        ->toContain('name="dokumen_akademik[khs][1][nilai]"')
+        ->not->toContain('Nilai KRS Semester');
+});
+
 test('status kepala keluarga adalah opsi keempat pada radio Ikut KK', function () {
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 
@@ -201,15 +213,15 @@ test('jawaban Tidak pada kepala keluarga tersimpan sebagai false', function () {
 
 /*
 |--------------------------------------------------------------------------
-| KRS & KHS per semester: berkas + nilai terpisah
+| KRS & KHS per semester: KRS hanya berkas, KHS berkas + nilai
 |--------------------------------------------------------------------------
 */
 
-test('KRS dan KHS tersimpan sebagai baris terpisah dengan berkas dan nilainya', function () {
+test('KRS dan KHS tersimpan sebagai baris terpisah, nilai hanya pada KHS', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
             'dokumen_akademik' => [
-                'krs' => [3 => ['file' => pdfAkademik('krs-3.pdf'), 'nilai' => 3.40]],
+                'krs' => [3 => ['file' => pdfAkademik('krs-3.pdf')]],
                 'khs' => [3 => ['file' => pdfAkademik('khs-3.pdf'), 'nilai' => 3.55]],
             ],
         ]))
@@ -218,17 +230,45 @@ test('KRS dan KHS tersimpan sebagai baris terpisah dengan berkas dan nilainya', 
     $krs = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'krs')->first();
     $khs = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'khs')->first();
 
-    // Dua baris berbeda: nilai KRS dan KHS tidak saling menimpa.
+    // Dua baris berbeda: nilai KHS tidak menempel ke baris KRS.
     expect($krs)->not->toBeNull()
         ->and($khs)->not->toBeNull()
         ->and($krs->id)->not->toBe($khs->id)
-        ->and((float) $krs->nilai)->toBe(3.40)
+        ->and($krs->nilai)->toBeNull()
         ->and((float) $khs->nilai)->toBe(3.55)
         ->and($krs->semester)->toBe(3)
         ->and($khs->semester)->toBe(3);
 
     Storage::disk('public')->assertExists($krs->file);
     Storage::disk('public')->assertExists($khs->file);
+});
+
+test('nilai yang dikirim pada baris KRS diabaikan, bukan disimpan', function () {
+    // KRS adalah rencana studi: tidak memuat nilai. Angka yang tetap dikirim
+    // lewat request manual tidak boleh tersimpan, supaya halaman verifikasi
+    // tidak menampilkan nilai palsu untuk KRS.
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
+            'dokumen_akademik' => [
+                'krs' => [2 => ['file' => pdfAkademik('krs-2.pdf'), 'nilai' => 3.90]],
+            ],
+        ]))
+        ->assertSessionDoesntHaveErrors();
+
+    $krs = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'krs')->first();
+
+    expect($krs)->not->toBeNull()
+        ->and($krs->nilai)->toBeNull();
+});
+
+test('baris KRS tanpa berkas ditolak walau ada nilai', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
+            'dokumen_akademik' => ['krs' => [2 => ['nilai' => 3.25]]],
+        ]))
+        ->assertSessionHasErrors('dokumen_akademik.krs.2.file');
+
+    expect(DokumenAkademik::where('user_id', $this->user->id)->exists())->toBeFalse();
 });
 
 test('unggahan semester baru tidak menimpa dokumen semester sebelumnya', function () {
@@ -267,21 +307,21 @@ test('unggahan ulang semester yang sama memperbarui baris itu, bukan menambah', 
     foreach ([3.10, 3.90] as $nilai) {
         actingAs($this->user)
             ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
-                'dokumen_akademik' => ['krs' => [3 => ['nilai' => $nilai]]],
+                'dokumen_akademik' => ['khs' => [3 => ['nilai' => $nilai]]],
             ]))
             ->assertSessionDoesntHaveErrors();
     }
 
-    $semua = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'krs')->get();
+    $semua = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'khs')->get();
 
     expect($semua)->toHaveCount(1)
         ->and((float) $semua->first()->nilai)->toBe(3.90);
 });
 
-test('nilai saja tanpa berkas tetap tersimpan', function () {
+test('nilai KHS saja tanpa berkas tetap tersimpan', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
-            'dokumen_akademik' => ['krs' => [2 => ['nilai' => 3.25]]],
+            'dokumen_akademik' => ['khs' => [2 => ['nilai' => 3.25]]],
         ]))
         ->assertSessionDoesntHaveErrors();
 
@@ -311,7 +351,7 @@ test('jenis dokumen akademik yang tidak dikenal ditolak', function () {
         ->assertSessionHasErrors('dokumen_akademik.ijazah');
 });
 
-test('nilai KRS/KHS di luar skala akademik ditolak', function () {
+test('nilai KHS di luar skala akademik ditolak', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
             'dokumen_akademik' => ['khs' => [1 => ['nilai' => 5]]],
