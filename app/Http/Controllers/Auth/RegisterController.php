@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\StoreRegisterRequest;
 use App\Models\Kampus;
+use App\Models\NikDiizinkan;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -31,8 +32,12 @@ class RegisterController extends Controller
     {
         $data = $request->validated();
 
+        // NIK yang sudah terdaftar di `nik_diizinkan` langsung aktif; sisanya
+        // tetap menunggu aktivasi admin seperti sebelumnya.
+        $langsungAktif = NikDiizinkan::mengizinkan($data['nik']);
+
         try {
-            DB::transaction(function () use ($data): void {
+            DB::transaction(function () use ($data, $langsungAktif): void {
                 // `username` NOT NULL dan unik, sedangkan NIK sudah unik dan
                 // tidak pernah berubah -- jadi NIK dipakai sebagai username.
                 // Kolom `nik` sendiri tetap ada di profil, tempat login
@@ -44,11 +49,11 @@ class RegisterController extends Controller
                     // mahasiswa ini mendaftar lewat kampus mana. Prodi tetap
                     // dipilih mahasiswa sendiri di halaman Profil.
                     'kampus_id' => $data['kampus_id'],
-                    // Mekanisme aktivasi akun yang sudah berlaku DIPERTAHANKAN:
-                    // akun baru belum bisa masuk sampai Superadmin/Kesra
-                    // mengaktifkannya. Tanpa ini, siapa pun bisa langsung
-                    // mengajukan beasiswa.
-                    'status' => 'non-aktif',
+                    // NIK yang sudah terdata di `nik_diizinkan` langsung
+                    // aktif. NIK lain tetap menunggu Superadmin/Kesra
+                    // mengaktifkan akunnya, supaya siapa pun tidak bisa
+                    // langsung mengajukan beasiswa.
+                    'status' => $langsungAktif ? 'aktif' : 'non-aktif',
                 ]);
 
                 // Peran ditentukan server, tidak pernah dari input pengguna.
@@ -72,7 +77,9 @@ class RegisterController extends Controller
 
         return redirect()->route('login')->with(
             'success',
-            'Pendaftaran berhasil. Akun Anda menunggu aktivasi admin sebelum bisa digunakan.'
+            $langsungAktif
+                ? 'Pendaftaran berhasil. Akun Anda sudah aktif, silakan masuk.'
+                : 'Pendaftaran berhasil. Akun Anda menunggu aktivasi admin sebelum bisa digunakan.'
         );
     }
 }

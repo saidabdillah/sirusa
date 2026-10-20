@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\StoreLoginRequest;
+use App\Models\NikDiizinkan;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,6 +54,14 @@ class AuthController extends Controller
 
         if ($user && Hash::check($password, $user->password)) {
             RateLimiter::clear($kunciBatas);
+
+            // Akun lama yang NIK-nya baru didaftarkan di `nik_diizinkan`
+            // setelah ia mendaftar: aktifkan saat ia berhasil masuk, supaya
+            // tidak perlu menunggu admin. NIK yang tidak terdaftar tetap
+            // ditolak seperti biasa.
+            if ($user->status !== 'aktif' && NikDiizinkan::mengizinkan($user->profile?->nik)) {
+                $user->update(['status' => 'aktif']);
+            }
 
             if ($user->status !== 'aktif') {
                 return back()->withInput($request->only('login'))->withErrors([

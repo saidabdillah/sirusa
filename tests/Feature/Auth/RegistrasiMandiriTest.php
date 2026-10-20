@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\Kampus;
+use App\Models\NikDiizinkan;
 use App\Models\User;
 use App\Models\UserProfile;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-
-use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class)->group('auth', 'registrasi');
 
@@ -162,4 +162,82 @@ test('halaman masuk menautkan ke halaman registrasi', function () {
     $this->get(route('login'))
         ->assertOk()
         ->assertSee(route('register'));
+});
+
+/*
+|--------------------------------------------------------------------------
+| NIK yang diizinkan langsung aktif
+|--------------------------------------------------------------------------
+*/
+
+test('NIK yang terdaftar di tabel izin langsung aktif saat mendaftar', function () {
+    NikDiizinkan::create(['nik' => '6302000000000001']);
+
+    $this->post(route('register.store'), payloadDaftar($this->kampus->id))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('success', 'Pendaftaran berhasil. Akun Anda sudah aktif, silakan masuk.');
+
+    $user = User::where('username', '6302000000000001')->first();
+
+    expect($user->status)->toBe('aktif')
+        ->and($user->getRoleNames()->all())->toBe(['user']);
+});
+
+test('mahasiswa dengan NIK terdaftar bisa langsung masuk tanpa aktivasi admin', function () {
+    NikDiizinkan::create(['nik' => '6302000000000001']);
+
+    $this->post(route('register.store'), payloadDaftar($this->kampus->id));
+
+    $this->post(route('login.store'), [
+        'login' => '6302000000000001',
+        'password' => 'rahasia123',
+    ])->assertRedirect(route('dashboard'));
+
+    expect(auth()->check())->toBeTrue()
+        ->and(auth()->user()->username)->toBe('6302000000000001');
+});
+
+test('NIK yang tidak terdaftar tetap menunggu aktivasi admin', function () {
+    NikDiizinkan::create(['nik' => '6302000000000099']);
+
+    $this->post(route('register.store'), payloadDaftar($this->kampus->id));
+
+    expect(User::where('username', '6302000000000001')->first()->status)->toBe('non-aktif');
+});
+
+test('akun non-aktif yang NIK-nya didaftarkan belakangan aktif saat berhasil masuk', function () {
+    // Mendaftar dulu, sebelum NIK-nya masuk daftar izin.
+    $this->post(route('register.store'), payloadDaftar($this->kampus->id));
+
+    expect(User::where('username', '6302000000000001')->first()->status)->toBe('non-aktif');
+
+    // Admin baru mendaftarkan NIK-nya setelah akun terlanjur dibuat.
+    NikDiizinkan::create(['nik' => '6302000000000001']);
+
+    $this->post(route('login.store'), [
+        'login' => '6302000000000001',
+        'password' => 'rahasia123',
+    ])->assertRedirect(route('dashboard'));
+
+    expect(User::where('username', '6302000000000001')->first()->status)->toBe('aktif');
+});
+
+test('kata sandi salah tidak mengaktifkan akun lewat daftar NIK', function () {
+    $this->post(route('register.store'), payloadDaftar($this->kampus->id));
+    NikDiizinkan::create(['nik' => '6302000000000001']);
+
+    $this->post(route('login.store'), [
+        'login' => '6302000000000001',
+        'password' => 'salah-terus',
+    ])->assertSessionHasErrors('login');
+
+    expect(auth()->check())->toBeFalse()
+        ->and(User::where('username', '6302000000000001')->first()->status)->toBe('non-aktif');
+});
+
+test('NIK di tabel izin tidak boleh ganda', function () {
+    NikDiizinkan::create(['nik' => '6302000000000001']);
+
+    expect(fn () => NikDiizinkan::create(['nik' => '6302000000000001']))
+        ->toThrow(UniqueConstraintViolationException::class);
 });
