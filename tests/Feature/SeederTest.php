@@ -537,8 +537,14 @@ test('akun demo user tidak menabrak akun admin yang sudah ada', function () {
     $this->seed(DatabaseSeeder::class);
     $this->seed(UserDemoSeeder::class);
 
-    $admin = User::where('username', 'kesra')->firstOrFail();
+    // Seeder tidak lagi membuat akun staf `kesra`: yang tersisa hanya
+    // superadmin (dari `DatabaseSeeder`) + akun demo `user`. Kalau akun demo
+    // sampai memakai username/role milik akun staf, akun itu akan tertimpa.
+    $admin = User::where('username', 'superadmin')->firstOrFail();
+    $demo = User::where('username', 'user')->firstOrFail();
 
-    expect($admin->hasRole('kesra'))->toBeTrue()
-        ->and($admin->hasRole('user'))->toBeFalse();
+    expect($admin->hasRole('super_admin'))->toBeTrue()
+        ->and($admin->hasRole('user'))->toBeFalse()
+        ->and(User::where('username', 'kesra')->exists())->toBeFalse()
+        ->and($demo->getRoleNames()->all())->toBe(['user']);
 });

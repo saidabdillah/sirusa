@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 use function Pest\Laravel\actingAs;
@@ -148,8 +149,73 @@ test('database seeder creates exactly the five canonical roles', function () {
     $this->assertDatabaseMissing('roles', ['name' => 'admin_catpil']);
     $this->assertDatabaseMissing('roles', ['name' => 'admin_kampus']);
     $this->assertDatabaseMissing('roles', ['name' => 'admin_kesra']);
+});
 
-    expect(User::where('username', 'kesra')->firstOrFail()->hasRole('kesra'))->toBeTrue();
-    expect(User::where('username', 'kampus')->firstOrFail()->hasRole('kampus'))->toBeTrue();
-    expect(User::where('username', 'catpil')->firstOrFail()->hasRole('catpil'))->toBeTrue();
+test('database seeder hanya membuat akun super admin', function () {
+    // beforeEach sudah membuat dua akun (super admin + admin) lewat factory,
+    // jadi hitungannya dibandingkan sebelum-sesudah, bukan angka mutlak.
+    $sebelum = User::count();
+
+    $this->seed();
+
+    // Seeder tidak lagi membuat akun staf kesra/kampus/catpil: akun staf
+    // dibuat super admin lewat menu Pengguna (akun kampus wajib ditautkan ke
+    // kampusnya), jadi seeder hanya menambah SATU akun.
+    expect(User::count())->toBe($sebelum + 1);
+
+    $superAdmin = User::where('username', 'superadmin')->firstOrFail();
+
+    expect($superAdmin->email)->toBe('superadmin@email.com')
+        ->and($superAdmin->hasRole('super_admin'))->toBeTrue();
+
+    $this->assertDatabaseMissing('users', ['username' => 'kesra']);
+    $this->assertDatabaseMissing('users', ['username' => 'kampus']);
+    $this->assertDatabaseMissing('users', ['username' => 'catpil']);
+});
+
+test('database seeder menghapus akun staf lama tanpa menyentuh akun buatan admin', function () {
+    // Database yang sudah di-seed versi lama: superadmin dengan email pribadi
+    // plus tiga akun staf bawaan.
+    $lama = User::create([
+        'username' => 'superadmin',
+        'email' => 'msaidabdillah18@gmail.com',
+        'password' => '12345678',
+        'status' => 'aktif',
+    ]);
+    $lama->assignRole(Role::firstOrCreate(['name' => 'super_admin']));
+
+    foreach (['kesra', 'kampus', 'catpil'] as $username) {
+        $user = User::create([
+            'username' => $username,
+            'email' => $username.'@sirusa.com',
+            'password' => '12345678',
+            'status' => 'aktif',
+        ]);
+        $user->assignRole(Role::firstOrCreate(['name' => $username]));
+    }
+
+    // Akun staf yang dibuat SENDIRI oleh admin (username lain) harus selamat.
+    $buatanAdmin = User::create([
+        'username' => 'kesra2',
+        'email' => 'kesra2@sirusa.com',
+        'password' => '12345678',
+        'status' => 'aktif',
+    ]);
+    $buatanAdmin->assignRole(Role::where('name', 'kesra')->firstOrFail());
+
+    $this->seed();
+
+    // Email superadmin ikut pindah, kata sandinya tidak direset.
+    $superAdmin = User::where('username', 'superadmin')->firstOrFail();
+
+    expect($superAdmin->email)->toBe('superadmin@email.com')
+        ->and(Hash::check('12345678', $superAdmin->password))->toBeTrue();
+
+    $this->assertDatabaseMissing('users', ['username' => 'kesra']);
+    $this->assertDatabaseMissing('users', ['username' => 'kampus']);
+    $this->assertDatabaseMissing('users', ['username' => 'catpil']);
+    $this->assertDatabaseHas('users', ['username' => 'kesra2']);
+
+    // Baris role milik akun yang dihapus tidak boleh tertinggal.
+    expect(DB::table('model_has_roles')->whereIn('model_id', [2, 3, 4])->exists())->toBeFalse();
 });
