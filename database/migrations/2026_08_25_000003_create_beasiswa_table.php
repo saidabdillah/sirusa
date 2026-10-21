@@ -14,7 +14,10 @@ return new class extends Migration
             $table->string('kampus');
             $table->foreignId('kampus_id')->nullable()->constrained('kampus')->nullOnDelete();
             $table->unsignedInteger('kuota')->default(0);
-            $table->enum('tingkat_gelar', ['S1', 'S2', 'S3']);
+            // D1-D4 ikut diterima supaya beasiswa untuk mahasiswa vokasi bisa
+            // dibuat, sejalan dengan `profil_pengguna.jenjang` yang juga
+            // memuat D1-S3.
+            $table->enum('tingkat_gelar', ['D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3']);
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->text('deskripsi');

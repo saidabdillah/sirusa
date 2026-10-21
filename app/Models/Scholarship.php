@@ -37,9 +37,9 @@ class Scholarship extends Model
             'tanggal_mulai' => 'date',
             'tanggal_selesai' => 'date',
             'result_announced_at' => 'datetime',
-            // D1-D4 ditambah di migrasi extend_tingkat_gelar; tanpa cast ini
-            // Eloquent menganggapnya string biasa dan perbandingannya dengan
-            // jenjang profil tidak konsisten.
+            // D1-D4 ikut diterima sejalan dengan `profil_pengguna.jenjang`;
+            // tanpa cast ini Eloquent menganggapnya string biasa dan
+            // perbandingannya dengan jenjang profil tidak konsisten.
             'tingkat_gelar' => 'string',
         ];
     }

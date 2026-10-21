@@ -26,12 +26,26 @@ return new class extends Migration
             $table->string('kecamatan')->nullable();
             $table->string('desa_kelurahan')->nullable();
             $table->foreignId('prodi_id')->nullable()->constrained('prodi')->nullOnDelete();
+
+            // Data pendidikan. Rentang semester yang sah bergantung pada
+            // `jenjang` (lihat App\Support\JenjangPendidikan); `tahun_masuk`
+            // tidak boleh di masa depan dan batas bawahnya dijaga validasi,
+            // bukan skema.
+            $table->enum('jenjang', ['D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'])->nullable();
+            $table->unsignedSmallInteger('tahun_masuk')->nullable();
+
+            // Apakah mahasiswa ini kepala keluarga. Radio Ya/Tidak di form,
+            // jadi boolean nullable: null = belum dijawab.
+            $table->boolean('kepala_keluarga')->nullable();
+
             $table->decimal('ipk', 3, 2)->nullable();
             $table->unsignedTinyInteger('semester')->nullable();
             $table->decimal('ukt', 10, 2)->nullable();
 
-            $table->enum('ikut_kk', ['ayah', 'ibu', 'wali'])->default('ayah');
-            $table->boolean('kk_ikut_wali')->default(false);
+            // Opsi "Wali" sudah ditinggalkan dan diganti "Famili Lain"; opsi
+            // keempat `kepala_keluarga` memakai kolom boolean di atas.
+            $table->enum('ikut_kk', ['ayah', 'ibu', 'famili_lain', 'kepala_keluarga'])->default('ayah');
+            $table->boolean('kk_ikut_famili_lain')->default(false);
 
             $table->string('nama_ayah')->nullable();
             $table->enum('pekerjaan_ayah', ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'])->nullable();
@@ -55,6 +69,8 @@ return new class extends Migration
             $table->string('dokumen_transkrip')->nullable();
             $table->string('dokumen_surat_aktif')->nullable();
             $table->string('dokumen_surat_pernyataan')->nullable();
+            // Bukti terdaftar di PDDIKTI (menggantikan dokumen transkrip).
+            $table->string('dokumen_pddikti')->nullable();
             $table->string('dokumen_bukti_ukt')->nullable();
             $table->string('ktp_ayah')->nullable();
             $table->string('ktp_ibu')->nullable();
@@ -67,6 +83,13 @@ return new class extends Migration
             $table->text('catatan_catpil')->nullable();
             $table->text('catatan_kampus')->nullable();
             $table->text('catatan_kesra')->nullable();
+
+            // Sejak kapan mahasiswa berdomisili di wilayah persyaratan
+            // beasiswa. Diisi petugas Catpil saat memutuskan `setuju`, bukan
+            // oleh mahasiswa, dan tidak boleh disamakan dengan tanggal KTP
+            // atau tanggal registrasi.
+            $table->date('berdomisili_sejak')->nullable();
+
             $table->timestamps();
         });
     }

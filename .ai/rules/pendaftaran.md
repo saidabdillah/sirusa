@@ -26,7 +26,7 @@ Batas waktu memakai `beasiswa.tanggal_selesai` dengan sengaja, karena itu batas 
 Modal pembatalan yang pernah ada sudah dihapus. Kalau modal serupa ditambahkan lagi, taruh di `@push('modal')`, bukan `@section('content')`: layout mencetak stack itu di level `<body>`, sedangkan modal di dalam `.main-content` punya stacking context sendiri sehingga `position: fixed`-nya membuat modal turun di belakang `.modal-backdrop` miliknya sendiri -- jendela tak terlihat dan tak bisa diklik.
 
 ## Dokumen & data di kartu detail selalu dari profil
-`user/pendaftaran/lihat` menampilkan data & berkas dari `$profile` (BUKAN dari tabel applicant): dokumen via `route('dokumen.show', path)` dengan heading "Dokumen Pendukung"/"Sertifikat Prestasi" (`Prestasi 1`, `Prestasi 2`). Kartu "Data Orang Tua & Wali": ayah & ibu SELALU tampil, wali hanya jika `$profile->kk_ikut_wali`.
+`user/pendaftaran/lihat` menampilkan data & berkas dari `$profile` (BUKAN dari tabel applicant): dokumen via `route('dokumen.show', path)` dengan heading "Dokumen Pendukung"/"Sertifikat Prestasi" (`Prestasi 1`, `Prestasi 2`). Kartu "Data Orang Tua & Wali": ayah & ibu SELALU tampil, wali hanya jika `$profile->kk_ikut_famili_lain`.
 
 ## Empat status pendaftar, tanpa `revisi`
 `pendaftar.status` adalah `verifikasi` / `diterima` / `ditolak` / `dibatalkan`. Tidak ada `revisi` di tabel ini — `revisi` itu status `verif_*` pada profil. Badge dan label selalu lewat `Applicant::statusBadge()` / `statusLabel()`; jangan tulis `@if` rantai per status di view, karena tiap tambahan enum akan ketinggal satu view.
