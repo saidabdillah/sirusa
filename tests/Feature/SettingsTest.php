@@ -174,9 +174,15 @@ test('settings page never claims the initial password is the NIM', function () {
         ->and($html)->not->toContain('Login menggunakan NIK Anda');
 });
 
-test('mahasiswa is told NIK or username, staff only username', function () {
-    actingAs($this->user)->get(route('settings'))->assertSee('NIK atau username');
+test('mahasiswa is told NIK, staff only username', function () {
+    // Halaman Pengaturan ikut diseragamkan dengan label halaman masuk: satu
+    // istilah saja ("NIK"), tidak lagi "NIK atau username".
+    actingAs($this->user)->get(route('settings'))
+        ->assertSee('Login menggunakan <strong>NIK</strong>', false)
+        ->assertDontSee('NIK atau username');
 
     $catpil = User::factory()->catpil()->create(['email' => 'catpil-setting@test.com']);
-    actingAs($catpil)->get(route('settings'))->assertSee('username')->assertDontSee('NIK atau username');
+    actingAs($catpil)->get(route('settings'))
+        ->assertSee('Login menggunakan <strong>username</strong>', false)
+        ->assertDontSee('NIK atau username');
 });

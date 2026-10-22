@@ -318,17 +318,22 @@ class User extends Authenticatable
     }
 
     /**
-     * Credential yang boleh dipakai untuk masuk, sesuai aturan SIRUSA.
+     * Credential yang dipakai untuk masuk, sesuai aturan SIRUSA.
      *
-     * Mahasiswa punya NIK *dan* username, jadi bebas memakai salah satu. Akun
-     * staf (super_admin/kesra/kampus/catpil) tidak punya baris profil, jadi
-     * NIK-nya kosong -- menampilkan "login dengan NIK" untuk mereka hanya
-     * membingungkan. Resolver backend sudah benar (NIK dari `profil_pengguna`
-     * -> `users.username` -> `users.email`); ini cuma teks untuk ditampilkan.
+     * Label di halaman masuk sekarang cukup "NIK" (permintaan pengguna
+     * Oct-2026: seluruh permukaan login harus menyebut satu istilah saja).
+     * Keterangan di halaman Pengaturan disamakan dengan itu untuk mahasiswa.
+     * Akun staf (super_admin/kesra/kampus/catpil) tidak punya baris profil,
+     * jadi NIK-nya kosong -- menampilkan "login dengan NIK" untuk mereka hanya
+     * membingungkan, karena itu mereka tetap "username".
+     *
+     * Ini hanya teks yang DITAMPILKAN. Resolver backend tidak berubah: NIK dari
+     * `profil_pengguna` -> `users.username` -> `users.email`, sehingga akun
+     * staf tetap bisa masuk walau labelnya menyebut NIK.
      */
     public function loginCredentialLabel(): string
     {
-        return $this->isMahasiswa() ? 'NIK atau username' : 'username';
+        return $this->isMahasiswa() ? 'NIK' : 'username';
     }
 
     public function isProfileComplete(): bool
