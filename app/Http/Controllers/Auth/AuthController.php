@@ -48,9 +48,11 @@ class AuthController extends Controller
             ]);
         }
 
+        // Mahasiswa masuk dengan NIK; username/email hanya untuk akun staf
+        // (yang tidak punya baris profil). Label di halaman masuk tetap "NIK".
         $user = User::whereHas('profile', fn ($query) => $query->where('nik', $login))->first()
-            ?? User::where('username', $login)->first()
-            ?? User::where('email', $login)->first();
+            ?? User::where('username', $login)->whereDoesntHave('roles', fn ($query) => $query->where('name', 'user'))->first()
+            ?? User::where('email', $login)->whereDoesntHave('roles', fn ($query) => $query->where('name', 'user'))->first();
 
         if ($user && Hash::check($password, $user->password)) {
             RateLimiter::clear($kunciBatas);

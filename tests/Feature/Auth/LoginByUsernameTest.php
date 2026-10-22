@@ -17,18 +17,20 @@ beforeEach(function () {
     ]);
 });
 
-test('user can login using email', function () {
-    $this->post(route('login.store'), [
-        'login' => 'test@example.com',
-        'password' => 'password123',
-    ])->assertRedirect(route('dashboard'));
-});
+test('akun staf bisa masuk menggunakan email', function () {
+    $staf = User::factory()->admin()->create([
+        'username' => 'staf-email',
+        'email' => 'staf@example.com',
+        'password' => bcrypt('password123'),
+        'status' => 'aktif',
+    ]);
 
-test('user can login using username', function () {
     $this->post(route('login.store'), [
-        'login' => 'testuser',
+        'login' => 'staf@example.com',
         'password' => 'password123',
     ])->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($staf);
 });
 
 test('user can login using nik', function () {
@@ -121,7 +123,7 @@ test('semua peran bisa masuk dengan username', function (string $factory) {
     $this->assertAuthenticatedAs($staff);
 })->with(['catpil', 'kampusAdmin', 'admin', 'superAdmin']);
 
-test('mahasiswa bisa masuk dengan NIK maupun username', function () {
+test('mahasiswa masuk dengan NIK, bukan username', function () {
     $mahasiswa = User::factory()->standardUser()->create([
         'username' => 'mhs001',
         'email' => 'mhs@example.com',
@@ -147,12 +149,18 @@ test('mahasiswa bisa masuk dengan NIK maupun username', function () {
 
     $this->post(route('logout'));
 
+    // Username dan email akun mahasiswa TIDAK dipakai untuk masuk.
     $this->post(route('login.store'), [
         'login' => 'mhs001',
         'password' => 'password123',
-    ])->assertRedirect(route('dashboard'));
+    ])->assertSessionHasErrors('login');
 
-    $this->assertAuthenticatedAs($mahasiswa);
+    $this->post(route('login.store'), [
+        'login' => 'mhs@example.com',
+        'password' => 'password123',
+    ])->assertSessionHasErrors('login');
+
+    expect(auth()->check())->toBeFalse();
 });
 
 test('login page labels the field NIK only and drops the hints and bootstrap alerts', function () {

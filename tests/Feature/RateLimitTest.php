@@ -18,7 +18,10 @@ beforeEach(function () {
 
     $this->kampus = Kampus::create(['nama_kampus' => 'Universitas Lambung Mangkurat']);
 
-    $this->user = User::factory()->standardUser()->create([
+    // Akun staf (bukan mahasiswa): mahasiswa sekarang masuk hanya dengan NIK,
+    // sedangkan akun staf masuk dengan username. Batas percobaan masuk tidak
+    // bergantung peran, jadi memakai akun staf membuat tes ini tetap sederhana.
+    $this->user = User::factory()->catpil()->create([
         'username' => 'testuser',
         'email' => 'test@example.com',
         'password' => bcrypt('password123'),
