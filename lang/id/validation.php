@@ -172,7 +172,7 @@ return [
         'email' => 'Email',
         'password' => 'Kata Sandi',
         'password_confirmation' => 'Konfirmasi Kata Sandi',
-        'login' => 'NIK atau Username',
+        'login' => 'NIK',
         'otp' => 'Kode OTP',
         'agree' => 'Syarat dan Ketentuan',
         'peran' => 'Role',

@@ -155,11 +155,13 @@ test('mahasiswa bisa masuk dengan NIK maupun username', function () {
     $this->assertAuthenticatedAs($mahasiswa);
 });
 
-test('login page keeps the combined label and drops the hints and bootstrap alerts', function () {
+test('login page labels the field NIK only and drops the hints and bootstrap alerts', function () {
     $this->get(route('login'))
         ->assertOk()
-        // Label tetap NIK/username karena dua-duanya cara masuk yang sah.
-        ->assertSee('NIK atau Username')
+        // Label kini hanya "NIK"; username tetap diterima backend, tapi
+        // labelnya tidak lagi menyebut dua kredensial.
+        ->assertSee('for="login">NIK', false)
+        ->assertDontSee('NIK atau Username')
         // Petunjuk per peran ("Mahasiswa dapat memakai NIK atau username. Akun
         // staf memakai username.") sudah dihapus: ia cuma menambah kalimat
         // tanpa mengubah apa pun yang bisa dilakukan pengguna di halaman ini.

@@ -20,7 +20,7 @@
             <form action="{{ route('login.store') }}" method="POST">
               @csrf
               <div class="form-group">
-                <label for="login">NIK atau Username <span class="text-danger">*</span></label>
+                <label for="login">NIK <span class="text-danger">*</span></label>
                 <input id="login" type="text" class="form-control @error('login') is-invalid @enderror" name="login" value="{{ old('login') }}" tabindex="1" autofocus>
                 @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
