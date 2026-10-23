@@ -161,7 +161,7 @@ test('kolom kampus tampil untuk akun berperan kampus', function () {
         ->assertSee('Universitas Kalimantan Selatan');
 });
 
-test('daftar pengguna memuat aksi Lihat untuk setiap baris termasuk super admin', function () {
+test('kesra tidak melihat baris super admin di daftar pengguna', function () {
     $otherSuper = User::factory()->superAdmin()->create(['email' => 'super2@test.com']);
 
     actingAs($this->admin)
@@ -169,5 +169,17 @@ test('daftar pengguna memuat aksi Lihat untuk setiap baris termasuk super admin'
         ->assertOk()
         ->assertSee(route('admin.pengguna.lihat', $this->mahasiswa), false)
         ->assertSee(route('admin.pengguna.lihat', $this->catpil), false)
+        ->assertDontSee('super2@test.com')
+        ->assertDontSee(route('admin.pengguna.lihat', $otherSuper), false)
+        ->assertDontSee(route('admin.pengguna.lihat', $this->superAdmin), false);
+});
+
+test('super admin tetap melihat baris super admin di daftar pengguna', function () {
+    $otherSuper = User::factory()->superAdmin()->create(['email' => 'super2@test.com']);
+
+    actingAs($this->superAdmin)
+        ->get(route('admin.pengguna.index'))
+        ->assertOk()
+        ->assertSee('super2@test.com')
         ->assertSee(route('admin.pengguna.lihat', $otherSuper), false);
 });

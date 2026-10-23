@@ -22,7 +22,13 @@ class PenggunaController extends Controller
 
     public function index(): View
     {
-        $users = User::with('roles')->latest()->get();
+        // Baris super_admin disembunyikan dari peran lain: halaman ini tidak
+        // memberi mereka aksi apa pun atas akun itu, jadi menampilkannya hanya
+        // membocorkan akun mana yang tertinggi.
+        $users = User::with('roles')->latest()
+            ->when(! auth()->user()->hasRole('super_admin'), fn ($query) => $query
+                ->whereDoesntHave('roles', fn ($role) => $role->where('name', 'super_admin')))
+            ->get();
 
         return view('admin.pengguna.index', [
             'users' => $users,
