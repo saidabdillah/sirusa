@@ -228,6 +228,11 @@ class UpdateProfilRequest extends FormRequest
             // request manual tidak divalidasi dan tidak pernah disimpan.
             // Skala nilai mengikuti yang sudah dipakai aplikasi (IPK 0-4),
             // bukan skala baru.
+            //
+            // WAJIB (permintaan pengguna): setiap baris KHS yang dikirim harus
+            // membawa nilai. Kekosongan tetap dihukum per-baris di
+            // `withValidator()` supaya pesannya menyebut semester, bukan
+            // sekadar nama kunci array.
             'dokumen_akademik.khs.*.nilai' => ['nullable', 'numeric', 'between:0,4'],
         ];
     }
@@ -294,7 +299,7 @@ class UpdateProfilRequest extends FormRequest
                     }
 
                     // Baris yang dikirim WAJIB berisi sesuatu: berkas (KRS)
-                    // atau berkas/nilai (KHS). Baris benar-benar kosong
+                    // atau berkas+nilai (KHS). Baris benar-benar kosong
                     // berarti data rusak dari klien, bukan input yang sah.
                     // Berkasnya sendiri tidak wajib per-baris: baris yang
                     // sudah tersimpan sah diperbarui tanpa mengunggah ulang.
@@ -305,10 +310,21 @@ class UpdateProfilRequest extends FormRequest
                     $adaFile = $this->hasFile("dokumen_akademik.{$jenis}.{$kunci}.file");
                     $adaNilai = $jenis === DokumenAkademik::JENIS_KHS && filled($isi['nilai'] ?? null);
                     $sudahAda = $tersimpan?->has($jenis.'.'.$kunci) ?? false;
+                    $label = DokumenAkademik::JENIS_LABELS[$jenis];
+
+                    // KHS: NILAI wajib untuk setiap baris yang dikirim
+                    // (permintaan pengguna), termasuk baris yang berkasnya
+                    // sudah tersimpan. Berkas tetap boleh menyusul.
+                    if ($jenis === DokumenAkademik::JENIS_KHS && ! $adaNilai) {
+                        $validator->errors()->add(
+                            "dokumen_akademik.{$jenis}.{$kunci}.nilai",
+                            "Nilai {$label} semester {$kunci} wajib diisi.",
+                        );
+
+                        continue;
+                    }
 
                     if (! $adaFile && ! $adaNilai && ! $sudahAda) {
-                        $label = DokumenAkademik::JENIS_LABELS[$jenis];
-
                         $validator->errors()->add(
                             "dokumen_akademik.{$jenis}.{$kunci}.file",
                             $jenis === DokumenAkademik::JENIS_KRS

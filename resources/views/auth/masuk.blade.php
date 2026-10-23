@@ -17,6 +17,21 @@
 
           <div class="card-body">
 
+            {{-- Pesan setelah registrasi berhasil. `RegisterController` sudah
+                 mengirimnya sebagai flash `success`, tetapi halaman masuk
+                 dulu tidak pernah merendernya sehingga pesannya tidak
+                 terlihat sama sekali. Alert Bootstrap (bukan SweetAlert)
+                 supaya terbaca sebelum form diisi. --}}
+            @if (session('success'))
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+              <i class="fas fa-check-circle mr-1"></i>
+              {{ session('success') }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Tutup">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            @endif
+
             <form action="{{ route('login.store') }}" method="POST">
               @csrf
               <div class="form-group">

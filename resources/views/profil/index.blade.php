@@ -194,15 +194,23 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label>Jenis Kelamin <span class="text-danger">*</span></label>
-                  <div class="d-flex align-items-center">
-                    @foreach(['Laki-laki' => 'laki_laki', 'Perempuan' => 'perempuan'] as $label => $key)
-                    <div class="custom-control custom-radio mr-4">
-                      <input type="radio" class="custom-control-input @error('jenis_kelamin') is-invalid @enderror"
-                        id="jenis_kelamin_{{ $key }}" name="jenis_kelamin" value="{{ $label }}" {{ old('jenis_kelamin',
-                        $profile->jenis_kelamin ?? '') === $label ? 'checked' : '' }}>
-                      <label class="custom-control-label" for="jenis_kelamin_{{ $key }}">{{ $label }}</label>
+                  {{-- Pesan galat radio WAJIB di luar baris flex-nya. Kalau
+                       `.invalid-feedback` ditulis di dalam sini, ia jadi anak
+                       dari `d-flex` dan tampil di SAMPING "Laki-laki", bukan
+                       di bawah kedua pilihan. Kelas pembungkusnya juga
+                       ditandai `is-invalid` supaya AJAX tetap menemukannya
+                       (lihat `paintFieldError` di `custom.js`). --}}
+                  <div class="pilihan-radio @error('jenis_kelamin') is-invalid @enderror">
+                    <div class="d-flex align-items-center flex-wrap">
+                      @foreach(['Laki-laki' => 'laki_laki', 'Perempuan' => 'perempuan'] as $label => $key)
+                      <div class="custom-control custom-radio mr-4">
+                        <input type="radio" class="custom-control-input @error('jenis_kelamin') is-invalid @enderror"
+                          id="jenis_kelamin_{{ $key }}" name="jenis_kelamin" value="{{ $label }}" {{ old('jenis_kelamin',
+                          $profile->jenis_kelamin ?? '') === $label ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="jenis_kelamin_{{ $key }}">{{ $label }}</label>
+                      </div>
+                      @endforeach
                     </div>
-                    @endforeach
                   </div>
                   @error('jenis_kelamin')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
@@ -368,15 +376,17 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-12">
                   <label>Ikut KK (Kartu Keluarga) <span class="text-danger">*</span></label>
-                  <div class="d-flex align-items-center flex-wrap">
-                    @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'famili_lain' => 'Famili Lain', 'kepala_keluarga' => 'Kepala Keluarga'] as $value => $label)
-                    <div class="custom-control custom-radio mr-4">
-                      <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror"
-                        id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}" {{ old('ikut_kk',
-                        $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
-                      <label class="custom-control-label" for="ikut_kk_{{ $value }}">{{ $label }}</label>
+                  <div class="pilihan-radio @error('ikut_kk') is-invalid @enderror">
+                    <div class="d-flex align-items-center flex-wrap">
+                      @foreach(['ayah' => 'Ayah', 'ibu' => 'Ibu', 'famili_lain' => 'Famili Lain', 'kepala_keluarga' => 'Kepala Keluarga'] as $value => $label)
+                      <div class="custom-control custom-radio mr-4">
+                        <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror"
+                          id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}" {{ old('ikut_kk',
+                          $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="ikut_kk_{{ $value }}">{{ $label }}</label>
+                      </div>
+                      @endforeach
                     </div>
-                    @endforeach
                   </div>
                   <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih, atau
                     milik sendiri bila Anda kepala keluarga. Data ayah dan ibu tetap wajib diisi.</small>
@@ -538,7 +548,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                    keduanya dokumen akademik yang diperiksa Kampus, bukan
                    isian data kampus. --}}
               @if($groupName === 'Berkas Kampus')
-              @include('profil.partials.dokumen-akademik')
+              @include('profil.partials.dokumen-akademik-tabel')
               @endif
               @endforeach
 
@@ -841,6 +851,19 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     }
   }
 
+  // Satu input diaktifkan/dinonaktifkan mengikuti apakah jenisnya masih
+  // diminta. Input yang nonaktif tidak ikut terkirim, jadi semester di luar
+  // batas tidak pernah sampai ke backend (yang tetap memvalidasi ulang).
+  // PENGECUALIAN: input yang sudah DIISI tetap dikirim walau jenisnya sedang
+  // tidak diminta -- kalau ikut dinonaktifkan, isian user hilang diam-diam
+  // saat ia mengubah semester sebelum menekan Simpan.
+  function aturInput($input, tampil) {
+    $input.each(function() {
+      var adaIsi = (this.files && this.files.length > 0) || String(this.value).trim() !== '';
+      $(this).prop('disabled', !tampil && !adaIsi);
+    });
+  }
+
   function tampilkanBarisAkademik() {
     var jenjang = $('#jenjang').val();
     var jumlah = semesterMap[jenjang] || 0;
@@ -853,34 +876,26 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
 
     $('.baris-akademik').each(function() {
       var semester = Number($(this).data('semester'));
-      var jenis = $(this).data('jenis');
+      // Tabel KRS/KHS: satu baris tabel memuat KRS DAN KHS sekaligus, jadi
+      // batasnya dihitung per jenis di dalam baris yang sama -- KRS sampai
+      // semester aktif, KHS sampai semester sebelumnya (KHS semester berjalan
+      // belum terbit). Barisnya tampil kalau salah satu jenisnya tampil.
+      var tampilKrs = jumlah > 0 && semesterAktif > 0 && semester <= semesterAktif;
+      var tampilKhs = jumlah > 0 && semesterAktif > 0 && semester <= semesterAktif - 1;
+      var $baris = $(this);
 
-      // KRS: sampai semester aktif. KHS: sampai semester AKTIF DIKURANGI
-      // SATU. Tanpa semester terpilih, semua baris disembunyikan -- baris
-      // untuk semester yang tidak diketahui tidak ada gunanya diminta.
-      var batas = jenis === 'khs' ? semesterAktif - 1 : semesterAktif;
-      var tampil = jumlah > 0 && semesterAktif > 0 && semester <= batas;
+      $baris.toggle(tampilKrs || tampilKhs);
 
-      $(this).toggle(tampil);
-      // Baris yang disembunyikan dinonaktifkan supaya semester di luar batas
-      // tidak ikut terkirim -- TAPI hanya kalau barisnya kosong. Baris yang
-      // sudah diisi (berkas dipilih atau nilai diketik) tetap dikirim walau
-      // semester aktifnya diturunkan, supaya isian user tidak hilang diam-diam
-      // saat ia mengubah semester sebelum menyimpan.
-      var adaIsi = $(this).find('input').filter(function () {
-        return (this.files && this.files.length > 0) || String(this.value).trim() !== '';
-      }).length > 0;
-
-      $(this).find('input').prop('disabled', !tampil && !adaIsi);
+      aturInput($baris.find('[name^="dokumen_akademik[krs]"]'), tampilKrs);
+      aturInput($baris.find('[name^="dokumen_akademik[khs]"]'), tampilKhs);
     });
 
     // Teks petunjuk di atas grup KRS/KHS mengikuti batas yang sama, supaya
     // mahasiswa paham KHS semester terakhir memang tidak diminta.
     var petunjuk = $('#petunjuk-akademik');
     if (petunjuk.length && jumlah > 0 && semesterAktif > 0) {
-      petunjuk.text('Semester Anda ' + semesterAktif + ': unggah KRS semester 1 sampai ' +
-        semesterAktif + ' dan KHS semester 1 sampai ' + (semesterAktif > 1 ? semesterAktif - 1 : 0) +
-        (semesterAktif > 1 ? '' : ' (KHS semester 1 baru terbit setelah semester 1 selesai)') + '.');
+      petunjuk.text('Semester Anda ' + semesterAktif + ': unggah KRS dan isi nilai KHS semester 1 sampai ' +
+        semesterAktif + '.');
     }
   }
 

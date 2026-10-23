@@ -151,19 +151,34 @@ test('ajax password change returns 422 with field errors', function () {
     expect(Hash::check('sandiLama123', $this->user->fresh()->password))->toBeTrue();
 });
 
-test('settings page shows account info and the three password fields', function () {
+test('settings page shows only the password form for mahasiswa', function () {
+    // Kartu Informasi Akun + keterangan "Login menggunakan ..." hanya untuk
+    // staf (permintaan pengguna). Mahasiswa cukup melihat form ganti sandi,
+    // memakai lebar penuh supaya halaman tidak setengah kosong.
     $response = actingAs($this->user)->get(route('settings'));
 
     $response->assertOk()
-        ->assertSee('NIK')
-        ->assertSee('NIM')
-        ->assertSee('<dt class="col-sm-4">Role</dt>', false)
-        ->assertDontSee('<dt class="col-sm-4">Peran</dt>', false)
+        ->assertDontSee('Informasi Akun')
+        ->assertDontSee('Login menggunakan')
         ->assertSee('Ganti Kata Sandi')
         ->assertSee('name="current_password"', false)
         ->assertSee('name="password"', false)
         ->assertSee('name="password_confirmation"', false)
         ->assertDontSee('name="email"', false);
+
+    expect($response->getContent())
+        ->toContain('<div class="col-12">')
+        ->not->toContain('col-lg-6');
+});
+
+test('settings page keeps account info for staff', function () {
+    $catpil = User::factory()->catpil()->create(['email' => 'catpil-setting@test.com']);
+
+    actingAs($catpil)->get(route('settings'))
+        ->assertOk()
+        ->assertSee('Informasi Akun')
+        ->assertSee($catpil->username)
+        ->assertSee('Ganti Kata Sandi');
 });
 
 test('settings page never claims the initial password is the NIM', function () {
@@ -172,17 +187,4 @@ test('settings page never claims the initial password is the NIM', function () {
     expect($html)->not->toContain('adalah NIM')
         ->and($html)->not->toContain('awal (NIM)')
         ->and($html)->not->toContain('Login menggunakan NIK Anda');
-});
-
-test('mahasiswa is told NIK, staff only username', function () {
-    // Halaman Pengaturan ikut diseragamkan dengan label halaman masuk: satu
-    // istilah saja ("NIK"), tidak lagi "NIK atau username".
-    actingAs($this->user)->get(route('settings'))
-        ->assertSee('Login menggunakan <strong>NIK</strong>', false)
-        ->assertDontSee('NIK atau username');
-
-    $catpil = User::factory()->catpil()->create(['email' => 'catpil-setting@test.com']);
-    actingAs($catpil)->get(route('settings'))
-        ->assertSee('Login menggunakan <strong>username</strong>', false)
-        ->assertDontSee('NIK atau username');
 });

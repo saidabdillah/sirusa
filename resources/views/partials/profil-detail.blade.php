@@ -86,6 +86,9 @@
           // memeriksa desil, jadi angkanya tidak perlu tampil di antreannya.
           // Sisanya (Kampus via kartu, Kesra, dan halaman null) tetap melihat.
           ...(! in_array($stage, ['catpil'], true) ? [['label' => 'Desil', 'value' => $profile?->desil ? 'Desil '.$profile->desil : '-']] : []),
+          // Provinsi ikut tampil: form profil menyimpannya (read-only "Kalimantan
+          // Selatan"), jadi halaman detail tidak boleh lebih miskin dari form.
+          ['label' => 'Provinsi', 'value' => $profile?->provinsi ?: '-'],
           ['label' => 'Kabupaten', 'value' => $profile?->kabupaten_kota ?: 'Balangan'],
           ['label' => 'Kecamatan', 'value' => $profile?->kecamatan ?? '-'],
           ['label' => 'Desa/Kelurahan', 'value' => $profile?->desa_kelurahan ?? '-'],
@@ -158,6 +161,20 @@
           <div class="font-weight-bold">{{ $profile?->nim ?? '-' }}</div>
         </div>
       </div>
+      {{-- Jenjang dan tahun masuk ikut tampil: keduanya diisi mahasiswa di
+           form profil, jadi halaman pendaftaran tidak boleh menghilangkannya. --}}
+      <div class="col-md-4">
+        <div class="mb-3">
+          <div class="text-muted small">Jenjang Pendidikan</div>
+          <div class="font-weight-bold">{{ $profile?->jenjang ?? '-' }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="mb-3">
+          <div class="text-muted small">Tahun Masuk</div>
+          <div class="font-weight-bold">{{ $profile?->tahun_masuk ?? '-' }}</div>
+        </div>
+      </div>
       <div class="col-12">
         <div class="mb-0">
           <div class="text-muted small">UKT</div>
@@ -166,37 +183,52 @@
       </div>
     </div>
 
-    @php($dokumenAkademik = $profile?->dokumenAkademik ?? collect())
+    @php($dokumenAkademik = $profile?->dokumenAkademik?->sortBy([['jenis', 'asc'], ['semester', 'asc']]) ?? collect())
     @if($dokumenAkademik->isNotEmpty())
     <hr>
     {{-- KRS & KHS per semester diunggah mahasiswa di profil (kelompok Data
          Kampus). Kampus dan Kesra memeriksa berkas + nilainya di sini; Catpil
          tidak melihat card Data Kampus sama sekali. --}}
     <h6 class="mt-3 mb-3"><i class="fas fa-file-alt text-primary mr-1"></i>KRS &amp; KHS per Semester</h6>
-    <div class="row">
-      @foreach($dokumenAkademik as $dok)
-      <div class="col-lg-6 mb-2">
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-          <span class="font-weight-bold mr-2">{{ $dok->jenisLabel() }} Semester {{ $dok->semester }}</span>
-          <span>
-            @if($dok->file)
-            <a href="{{ route('dokumen.show', $dok->file) }}" target="_blank" rel="noopener noreferrer"
-              class="btn btn-sm btn-primary">
-              <i class="fas fa-eye"></i> Lihat
-            </a>
-            @else
-            <span class="text-muted">Berkas tidak ada</span>
-            @endif
-            {{-- Nilai hanya milik KHS. KRS adalah rencana studi, tidak
-                 memuat nilai, jadi baris KRS tidak menampilkan apa pun
-                 (permintaan pengguna). --}}
-            @if($dok->jenis === \App\Models\DokumenAkademik::JENIS_KHS)
-            <span class="text-muted ml-2">Nilai: {{ $dok->nilai ?? '-' }}</span>
-            @endif
-          </span>
-        </div>
-      </div>
-      @endforeach
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>Dokumen</th>
+            <th>Semester</th>
+            <th>Berkas</th>
+            <th>Nilai</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach($dokumenAkademik as $dok)
+          <tr>
+            <td class="font-weight-bold">{{ $dok->jenisLabel() }}</td>
+            <td>{{ $dok->semester }}</td>
+            <td>
+              @if($dok->file)
+              <a href="{{ route('dokumen.show', $dok->file) }}" target="_blank" rel="noopener noreferrer"
+                class="btn btn-sm btn-primary">
+                <i class="fas fa-eye"></i> Lihat
+              </a>
+              <span class="small text-muted ml-1">{{ basename($dok->file) }}</span>
+              @else
+              <span class="text-muted">Berkas tidak ada</span>
+              @endif
+            </td>
+            <td>
+              {{-- Nilai hanya milik KHS. KRS adalah rencana studi, tidak
+                   memuat nilai, jadi selnya kosong untuk baris KRS. --}}
+              @if($dok->jenis === \App\Models\DokumenAkademik::JENIS_KHS)
+              {{ $dok->nilai ?? '-' }}
+              @else
+              <span class="text-muted">&mdash;</span>
+              @endif
+            </td>
+          </tr>
+          @endforeach
+        </tbody>
+      </table>
     </div>
     @endif
   </div>
@@ -315,6 +347,10 @@
               <i class="fas fa-download"></i> Download
             </a>
             @endif
+            {{-- Nama berkas aslinya ikut tampil: halaman pendaftaran harus
+                 menunjukkan berkas APA yang diunggah, bukan hanya tombol
+                 "Lihat" yang tidak bisa dibedakan antar dokumen. --}}
+            <div class="small text-muted text-right mt-1">{{ basename($profile->{$doc['key']}) }}</div>
             @else
             <span class="text-muted">Tidak ada</span>
             @endif

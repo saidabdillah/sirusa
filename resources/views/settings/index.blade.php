@@ -13,22 +13,19 @@
   <div class="section-body">
 
     <div class="row">
+      {{-- Kartu "Informasi Akun" hanya untuk akun STAF (permintaan pengguna):
+           mahasiswa tidak perlu melihat NIK/NIM/username/role di sini, dan
+           keterangan "Login menggunakan ..." ikut dihapus dari halaman ini.
+           Yang tersisa untuk mahasiswa hanyalah ganti kata sandi, memakai
+           lebar penuh supaya halaman tidak setengah kosong. --}}
+      @unless (auth()->user()->isMahasiswa())
       <div class="col-lg-6">
         <div class="card">
           <div class="card-header">
             <h4>Informasi Akun</h4>
           </div>
           <div class="card-body">
-            {{-- NIK/NIM hanya relevan untuk mahasiswa. Akun staf tidak punya baris
-                 `profil_pengguna`, jadi menampilkan keduanya hanya menghasilkan
-                 dua baris "-" yang membingungkan. --}}
             <dl class="row mb-0">
-              @if (auth()->user()->isMahasiswa())
-              <dt class="col-sm-4">NIK</dt>
-              <dd class="col-sm-8">{{ auth()->user()->profile?->nik ?? '-' }}</dd>
-              <dt class="col-sm-4">NIM</dt>
-              <dd class="col-sm-8">{{ auth()->user()->profile?->nim ?? '-' }}</dd>
-              @endif
               <dt class="col-sm-4">Username</dt>
               <dd class="col-sm-8">{{ auth()->user()->username }}</dd>
               <dt class="col-sm-4">Email</dt>
@@ -36,15 +33,12 @@
               <dt class="col-sm-4">Role</dt>
               <dd class="col-sm-8">{{ \App\Models\User::ROLE_LABELS[auth()->user()->getRoleNames()->first()] ?? 'User' }}</dd>
             </dl>
-            <div class="alert alert-info mt-3 mb-0">
-              <i class="fas fa-info-circle mr-1"></i>
-              Login menggunakan <strong>{{ auth()->user()->loginCredentialLabel() }}</strong> Anda. Jika lupa, hubungi admin untuk mereset kata sandi.
-            </div>
           </div>
         </div>
       </div>
+      @endunless
 
-      <div class="col-lg-6">
+      <div class="{{ auth()->user()->isMahasiswa() ? 'col-12' : 'col-lg-6' }}">
         <div class="card">
           <div class="card-header">
             <h4>Ganti Kata Sandi</h4>

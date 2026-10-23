@@ -60,15 +60,29 @@ test('baris KRS dan KHS mengikuti semester aktif yang dipilih', function () {
 
 test('baris tersembunyi yang sudah diisi tetap terkirim, yang kosong tetap nonaktif', function () {
     // Isian user tidak boleh hilang diam-diam saat semester diturunkan:
-    // baris di luar batas yang SUDAH berisi berkas atau nilai tidak ikut
-    // dinonaktifkan. Baris kosong tetap nonaktif supaya semester di luar
+    // input di luar batas yang SUDAH berisi berkas atau nilai tidak ikut
+    // dinonaktifkan. Input kosong tetap nonaktif supaya semester di luar
     // batas tidak pernah sampai ke backend.
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 
     expect($html)
-        ->toContain("var adaIsi = $(this).find('input').filter(function () {")
-        ->toContain('$(this).find(\'input\').prop(\'disabled\', !tampil && !adaIsi);')
-        ->and($html)->not->toContain("$(this).find('input').prop('disabled', !tampil);");
+        ->toContain('function aturInput($input, tampil) {')
+        ->toContain("var adaIsi = (this.files && this.files.length > 0) || String(this.value).trim() !== '';")
+        ->toContain("$(this).prop('disabled', !tampil && !adaIsi);");
+});
+
+test('KRS dan KHS dirender sebagai satu tabel per semester', function () {
+    // Satu baris tabel memuat KRS dan KHS sekaligus, jadi halaman tidak
+    // memanjang dua kali per semester (permintaan pengguna).
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('id="tabel-akademik"')
+        ->toContain('Berkas KRS</th>')
+        ->toContain('Berkas KHS</th>')
+        ->toContain('Nilai KHS</th>')
+        // Delapan baris semester, bukan enam belas blok.
+        ->and(substr_count($html, 'class="baris-akademik"'))->toBe(8);
 });
 
 test('baris KRS hanya berisi unggah berkas, nilai hanya ada di baris KHS', function () {

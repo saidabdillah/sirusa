@@ -572,8 +572,10 @@ test('kampus dan kesra melihat KRS & KHS per semester di kartu Data Kampus', fun
         ->get(route('admin.kampusverif.lihat', $this->applicantUser))
         ->assertOk()
         ->assertSee('KRS &amp; KHS per Semester', false)
-        ->assertSee('KRS Semester 2')
-        ->assertSee('KHS Semester 1')
+        ->assertSee('KRS', false)
+        ->assertSee('krs-2.pdf')
+        ->assertSee('KHS', false)
+        ->assertSee('khs-1.pdf')
         ->assertSee('3.50');
 
     // Kesra: sama, karena kartu Data Kampus ikut tampil di tahap akhir.
@@ -583,14 +585,14 @@ test('kampus dan kesra melihat KRS & KHS per semester di kartu Data Kampus', fun
     actingAs($this->kesraAdmin)
         ->get(route('admin.kesra.lihat', $this->applicantUser))
         ->assertOk()
-        ->assertSee('KRS Semester 2')
-        ->assertSee('KHS Semester 1');
+        ->assertSee('krs-2.pdf')
+        ->assertSee('khs-1.pdf');
 
     // Catpil tidak melihatnya: kartu Data Kampus bukan wewenangnya.
     actingAs($this->catpilAdmin)
         ->get(route('admin.catpil.lihat', $this->applicantUser))
         ->assertOk()
-        ->assertDontSee('KRS Semester 2');
+        ->assertDontSee('krs-2.pdf');
 });
 
 test('kampus verification page shows identity data alongside campus data', function () {

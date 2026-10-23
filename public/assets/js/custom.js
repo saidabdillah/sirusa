@@ -236,6 +236,19 @@ $(function () {
     var $group = $el.closest(".input-group");
     var $anchor = $group.length ? $group : $el;
 
+    // Radio/checkbox berkelompok: pesan harus jatuh DI BAWAH seluruh pilihan,
+    // bukan menempel di samping pilihan pertama. `$anchor` naik ke pembungkus
+    // `.pilihan-radio` (lihat `profil/index.blade.php`) supaya
+    // `$anchor.parent().children('.invalid-feedback')` menemukan pesan yang
+    // dirender Blade di luar baris flex-nya.
+    if (! $group.length && $el.is(":radio, :checkbox")) {
+      var $pembungkus = $el.closest(".pilihan-radio");
+
+      if ($pembungkus.length) {
+        $anchor = $pembungkus;
+      }
+    }
+
     // Select2 menyisipkan kotak yang terlihat TEPAT setelah <select> aslinya
     // ($container.insertAfter(this.$element)), jadi "setelah <select>" adalah
     // DI ATAS kotak select2. Untuk field select2, sisipkan pesan setelah

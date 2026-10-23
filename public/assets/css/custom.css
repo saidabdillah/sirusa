@@ -615,3 +615,62 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   white-space: nowrap;
   padding-right: 6.5rem;
 }
+
+/* Tabel KRS/KHS: input berkas per sel harus ringkas supaya satu semester
+   cukup satu baris. Ukuran `custom-file` Bootstrap terlalu tinggi untuk sel
+   tabel, jadi label dan tombolnya dikecilkan; nama berkas tetap dipotong
+   dengan ellipsis (lihat aturan di atas). */
+#tabel-akademik .custom-file,
+#tabel-akademik .custom-file-input,
+#tabel-akademik .custom-file-label {
+  height: calc(1.5em + 0.5rem + 2px);
+}
+
+#tabel-akademik .custom-file-label {
+  padding: 0.25rem 4.5rem 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+#tabel-akademik .custom-file-label::after {
+  height: calc(1.5em + 0.5rem + 2px);
+  padding: 0.25rem 0.5rem;
+  line-height: 1.5;
+  font-size: 0.875rem;
+}
+
+#tabel-akademik .custom-file-sm {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Kolom: Semester dan Nilai cukup sempit, dua kolom berkas berbagi sisanya.
+   Tanpa ini kolom berkas berdesakan dan tombol Lihat turun ke baris baru. */
+#tabel-akademik th:first-child,
+#tabel-akademik td:first-child {
+  width: 90px;
+  white-space: nowrap;
+}
+
+#tabel-akademik th:last-child,
+#tabel-akademik td:last-child {
+  width: 120px;
+}
+
+#tabel-akademik .nilai-akademik {
+  text-align: right;
+}
+
+/* Tombol Lihat tetap sebaris dengan input berkas: `flex-wrap: nowrap` +
+   `min-width: 0` pada input, supaya barisnya tidak bertambah tinggi. */
+#tabel-akademik .sel-berkas {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+#tabel-akademik .form-control-sm {
+  height: calc(1.5em + 0.5rem + 2px);
+}
