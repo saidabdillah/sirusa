@@ -8,6 +8,7 @@ use App\Http\Requests\Profil\UpdateProfilRequest;
 use App\Models\DokumenAkademik;
 use App\Models\Kampus;
 use App\Models\UserProfile;
+use App\Models\VerifikasiSemester;
 use App\Services\WilayahService;
 use App\Support\JenjangPendidikan;
 use Illuminate\Http\JsonResponse;
@@ -186,6 +187,12 @@ class ProfileController extends Controller
             if ($email !== null && $email !== auth()->user()->email) {
                 auth()->user()->forceFill(['email' => $email])->save();
             }
+
+            // Setelah berkas akademik disimpan, paket semester yang dokumennya
+            // kini LENGKAP otomatis masuk antrean Kampus. Pemicunya Simpan,
+            // bukan tombol tambahan, supaya tidak ada paket yang tertinggal
+            // hanya karena mahasiswa lupa menekan tombol kedua.
+            VerifikasiSemester::sinkron(auth()->user());
 
             return $this->ajaxOk($request, 'Profil berhasil diperbarui', route('profile'));
         } catch (\Throwable $e) {

@@ -36,6 +36,10 @@
             {{-- antrean `verifikasi`). Tombol "Setuju" tetap tidak ada: arsip --}}
             {{-- keputusan dibuka lewat dropdown sidebar Kesra (menu "Keputusan"). --}}
             <div class="card-header-action">
+              {{-- Antrean semester penerima: keputusan lanjutan tiap semester. --}}
+              <a href="{{ route($routePrefix.'.semester.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-calendar-alt mr-1"></i> Verifikasi per Semester
+              </a>
               @if(auth()->user()->hasMenuAccess($routePrefix.'.export'))
               <a href="{{ route($routePrefix.'.export', request()->only('filter')) }}" class="btn btn-outline-success">
                 <i class="fas fa-file-excel mr-1"></i> Unduh Excel

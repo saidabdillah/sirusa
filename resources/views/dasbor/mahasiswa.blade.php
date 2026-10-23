@@ -22,6 +22,28 @@
       </div>
     @endunless
 
+    {{-- Pengingat paket semester untuk PENERIMA beasiswa. Menetap selama masih
+         ada paket yang belum lengkap atau diminta perbaikan -- bukan tombol
+         untuk ingatan mahasiswa, tetapi syarat kelanjutan beasiswanya. --}}
+    @if(! empty($paketSemester))
+      @foreach($paketSemester as $paket)
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong><i class="fas fa-exclamation-triangle mr-1"></i>KRS &amp; KHS Semester {{ $paket['semester'] }} ({{ $paket['beasiswa'] }})</strong><br>
+        @if($paket['status'] === 'belum_lengkap')
+        {{ implode(', ', $paket['kurang']) }} belum diunggah.
+        @else
+        Paket semester ini diminta perbaikan oleh Kampus.
+        @endif
+        @if(! empty($paket['catatan']))
+        <br>Catatan: {{ $paket['catatan'] }}
+        @endif
+        <br>Lengkapi di halaman
+        <a href="{{ route('profile') }}" class="alert-link">Profil</a>.
+        <button type="button" class="close" data-dismiss="alert" aria-label="Tutup"><span>&times;</span></button>
+      </div>
+      @endforeach
+    @endif
+
     <div class="row">
       <div class="col-12">
         <div class="card">

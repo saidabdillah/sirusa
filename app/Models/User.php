@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\MenuAction;
+use App\Support\PaketSemester;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -85,6 +86,32 @@ class User extends Authenticatable
     public function canRegisterForScholarship(): bool
     {
         return $this->blockingApplicant() === null;
+    }
+
+    /**
+     * Paket semester yang perlu ditindaklanjuti mahasiswa, untuk pengingat di
+     * dasbor.
+     *
+     * Hanya berlaku bagi PENERIMA beasiswa (`diterima`): siklus verifikasi per
+     * semester tidak berjalan untuk pendaftar yang belum/tidak diterima.
+     * Daftar ini kosong untuk semua orang selain penerima, jadi view bisa
+     * menampilkannya tanpa syarat tambahan.
+     *
+     * @return array<int, array{beasiswa: string, pendaftar_id: int, semester: int, status: string, kurang: array<int, string>, catatan: ?string}>
+     */
+    public function paketSemesterUntukDasbor(): array
+    {
+        return $this->applicants()
+            ->where('status', 'diterima')
+            ->with('beasiswa')
+            ->get()
+            ->flatMap(fn (Applicant $applicant) => collect(PaketSemester::perluTindakan($applicant))
+                ->map(fn (array $paket) => $paket + [
+                    'beasiswa' => $applicant->beasiswa?->nama ?? '-',
+                    'pendaftar_id' => $applicant->id,
+                ]))
+            ->values()
+            ->all();
     }
 
     public function profile(): HasOne

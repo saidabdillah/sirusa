@@ -126,6 +126,48 @@
             </div>
           </div>
         </div>
+
+        {{-- Card: Verifikasi per semester. Hanya bermakna bagi pendaftaran yang
+             sudah diterima: inilah siklus lanjutannya semester demi semester. --}}
+        @if($applicant->status === 'diterima')
+        <div class="card">
+          <div class="card-header">
+            <h4>Verifikasi per Semester</h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Semester</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @forelse($paketSemester as $paket)
+                  <tr>
+                    <td class="font-weight-bold">{{ $paket['semester'] }}</td>
+                    <td>
+                      <span class="badge badge-{{ $paket['badge'] }}">{{ $paket['label'] }}</span>
+                      @if($paket['status'] === 'belum_lengkap')
+                      <div class="small text-muted mt-1">{{ implode(', ', $paket['kurang']) }} belum diunggah.</div>
+                      @endif
+                      @if($paket['status'] === \App\Models\VerifikasiSemester::KAMPUS_REVISI && $paket['keputusan']?->catatan_kampus)
+                      <div class="small text-muted mt-1">{{ $paket['keputusan']->catatan_kampus }}</div>
+                      @endif
+                    </td>
+                  </tr>
+                  @empty
+                  <tr>
+                    <td colspan="2" class="text-muted">Belum ada paket semester.</td>
+                  </tr>
+                  @endforelse
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        @endif
       </div>
     </div>
   </div>

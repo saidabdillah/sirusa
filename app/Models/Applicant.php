@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Applicant extends Model
 {
@@ -104,6 +105,15 @@ class Applicant extends Model
     public function beasiswa(): BelongsTo
     {
         return $this->belongsTo(Scholarship::class, 'beasiswa_id');
+    }
+
+    /**
+     * Paket verifikasi per semester. Hanya terisi untuk pendaftaran yang sudah
+     * `diterima`; pendaftaran lain tidak pernah masuk siklus semester.
+     */
+    public function verifikasiSemester(): HasMany
+    {
+        return $this->hasMany(VerifikasiSemester::class, 'pendaftar_id')->orderBy('semester');
     }
 
     public function diputuskanOleh(): BelongsTo

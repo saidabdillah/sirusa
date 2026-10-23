@@ -104,6 +104,11 @@ class DashboardController extends Controller
             // Tahap Kesra diturunkan dari baris `pendaftar` (bukan `verif_kesra`,
             // yang selalu `setuju` walau pendaftarannya ditolak).
             'kesraDecision' => $user->kesraDecisionVisible(),
+            // Paket semester untuk PENERIMA beasiswa: pengingat "KRS/KHS
+            // semester N belum lengkap" harus menetap di dasbor, karena
+            // mengandalkan kesadaran mahasiswa membuka profil terbukti tidak
+            // cukup (mahasiswa tidak tahu semesternya sudah berganti).
+            'paketSemester' => $user->paketSemesterUntukDasbor(),
             'applications' => $user->applicants()->with('beasiswa')->latest()->take(5)->get(),
             'totalApplications' => $user->applicants()->count(),
             'activeApplication' => $user->blockingApplicant(),

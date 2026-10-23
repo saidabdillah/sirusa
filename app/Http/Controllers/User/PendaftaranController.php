@@ -8,6 +8,7 @@ use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Support\PaketSemester;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -127,7 +128,13 @@ class PendaftaranController extends Controller
         $applicant->load('beasiswa');
         $profile = auth()->user()->profile;
 
-        return view('user.pendaftaran.lihat', compact('applicant', 'profile'));
+        return view('user.pendaftaran.lihat', [
+            'applicant' => $applicant,
+            'profile' => $profile,
+            // Paket semester milik pendaftaran ini: mahasiswa melihat status
+            // tiap paket tanpa harus menunggu petugas menghubunginya.
+            'paketSemester' => PaketSemester::untuk($applicant),
+        ]);
     }
 
     /**
