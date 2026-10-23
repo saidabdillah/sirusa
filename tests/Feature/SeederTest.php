@@ -267,11 +267,12 @@ test('menuseeder idempoten: dua kali jalan menghasilkan pohon dan grant yang sam
 
     expect($kedua['menu'])->toEqual($pertama['menu'])
         ->and($kedua['grant'])->toEqual($pertama['grant'])
-        // 10 top-level + 10 anak = 20. "Kesra" punya DUA anak (Verifikasi +
+        // 10 top-level + 11 anak = 21. "Kesra" punya DUA anak (Verifikasi +
         // Keputusan); "Penerima Beasiswa" leaf mandiri di "Manajemen";
         // "Status Verifikasi" berganti label "Pendaftar" (rekap) di
-        // "Administrasi" dan menu daftar pendaftar lama DIHAPUS.
-        ->and(count($pertama['menu']))->toBe(21);
+        // "Administrasi" dan menu daftar pendaftar lama DIHAPUS;
+        // "Verifikasi Semester" leaf mandiri di section "Verifikasi".
+        ->and(count($pertama['menu']))->toBe(22);
 });
 
 test('menuseeder tidak menggandakan grant di pivot role menu', function () {

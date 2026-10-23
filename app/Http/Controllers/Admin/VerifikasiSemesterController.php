@@ -23,17 +23,20 @@ use Illuminate\View\View;
  *
  * Catpil tidak muncul di sini sama sekali: data kependudukan tidak berubah
  * hanya karena mahasiswa naik semester.
+ *
+ * SATU menu sidebar untuk dua peran. Tahapnya ditentukan dari PERAN pengguna,
+ * bukan dari URL, supaya tidak ada dua entri menu yang isinya sama.
  */
 class VerifikasiSemesterController extends Controller
 {
     use RespondsToAjax;
 
     /**
-     * Daftar paket semester yang menjadi pekerjaan tahap ini.
+     * Daftar paket semester yang menjadi pekerjaan tahap pengguna ini.
      */
-    public function index(string $stage): View
+    public function index(Request $request): View
     {
-        $stage = $this->validStage($stage);
+        $stage = $this->tahap($request);
 
         $paket = $this->query($stage)
             ->with(['pendaftar.user.profile.prodi.fakultas.kampus', 'pendaftar.beasiswa'])
@@ -41,15 +44,20 @@ class VerifikasiSemesterController extends Controller
             ->latest('id')
             ->paginate(25);
 
-        return view('admin.verifikasi.semester.index', compact('stage', 'paket'));
+        return view('admin.verifikasi.semester.index', [
+            'stage' => $stage,
+            'paket' => $paket,
+            // Pemilih tahap hanya untuk super_admin, yang mengawasi keduanya.
+            'bisaPilihTahap' => auth()->user()?->hasRole('super_admin') ?? false,
+        ]);
     }
 
     /**
      * Detail satu paket semester: data mahasiswa + paket akademik semester itu.
      */
-    public function show(VerifikasiSemester $paket, string $stage): View
+    public function show(VerifikasiSemester $paket, Request $request): View
     {
-        $stage = $this->validStage($stage);
+        $stage = $this->tahap($request);
         $this->pastikanBoleh($paket, $stage);
 
         $paket->load(['pendaftar.user.profile.prodi.fakultas.kampus', 'pendaftar.beasiswa']);
@@ -59,7 +67,6 @@ class VerifikasiSemesterController extends Controller
             'paket' => $paket,
             'pendaftar' => $paket->pendaftar,
             'profile' => $paket->pendaftar->user?->profile,
-            'semester' => $paket->semester,
         ]);
     }
 
@@ -70,9 +77,9 @@ class VerifikasiSemesterController extends Controller
      * Pencabutan dicatat di paket tempat ia diputuskan, beserta alasannya,
      * supaya ada jejak siapa mencabut dan kapan.
      */
-    public function verifikasi(VerifikasiSemester $paket, string $stage, Request $request): RedirectResponse|JsonResponse
+    public function verifikasi(VerifikasiSemester $paket, Request $request): RedirectResponse|JsonResponse
     {
-        $stage = $this->validStage($stage);
+        $stage = $this->tahap($request);
         $this->pastikanBoleh($paket, $stage);
 
         $data = $request->validate([
@@ -98,10 +105,9 @@ class VerifikasiSemesterController extends Controller
                 $paket->diputuskan_kampus_at = now();
                 $paket->diputuskan_kampus_oleh = auth()->id();
 
-                // Kampus menyetujui -> paket masuk antrean Kesra. Kampus
-                // meminta perbaikan -> Kesra tidak boleh memutuskan paket yang
-                // dokumennya masih salah, jadi status Kesra dikembalikan ke
-                // menunggu dan catatan lama dibuang.
+                // Kampus meminta perbaikan -> Kesra tidak boleh memutuskan
+                // paket yang dokumennya masih salah, jadi keputusan Kesra
+                // dikembalikan ke menunggu dan catatan lamanya dibuang.
                 if ($data['status'] === VerifikasiSemester::KAMPUS_REVISI) {
                     $paket->status_kesra = VerifikasiSemester::KESRA_MENUNGGU;
                     $paket->catatan_kesra = null;
@@ -121,8 +127,34 @@ class VerifikasiSemesterController extends Controller
         return $this->ajaxOk(
             $request,
             "Verifikasi semester {$paket->semester} berhasil disimpan.",
-            route("admin.{$this->prefix($stage)}.semester.index"),
+            route('admin.semester.index', $request->only('tahap')),
         );
+    }
+
+    /**
+     * Tahap yang dikerjakan pengguna ini, ditentukan dari PERAN.
+     *
+     * Peran ganda (mis. user yang punya role kampus dan kesra) memakai kesra:
+     * itu tahap terakhir, dan mengunci orang pada tahap pertama akan membuat
+     * pekerjaan tahap keduanya tidak bisa diselesaikan oleh siapa pun.
+     */
+    private function tahap(Request $request): string
+    {
+        $user = auth()->user();
+
+        if ($user?->hasRole('kesra')) {
+            return 'kesra';
+        }
+
+        if ($user?->hasRole('kampus')) {
+            return 'kampus';
+        }
+
+        // super_admin tidak terikat satu tahap: pilih lewat `?tahap=`, bawaannya
+        // kampus karena itu tahap pertama dalam urutan.
+        $pilihan = $request->query('tahap');
+
+        return in_array($pilihan, ['kampus', 'kesra'], true) ? $pilihan : 'kampus';
     }
 
     /**
@@ -181,17 +213,5 @@ class VerifikasiSemesterController extends Controller
         return $stage === 'kampus'
             ? [VerifikasiSemester::KAMPUS_SETUJU, VerifikasiSemester::KAMPUS_REVISI]
             : [VerifikasiSemester::KESRA_SETUJU, VerifikasiSemester::KESRA_TAHAN, VerifikasiSemester::KESRA_DICABUT];
-    }
-
-    private function prefix(string $stage): string
-    {
-        return $stage === 'kampus' ? 'kampusverif' : 'kesra';
-    }
-
-    private function validStage(string $stage): string
-    {
-        abort_unless(in_array($stage, ['kampus', 'kesra'], true), 404);
-
-        return $stage;
     }
 }

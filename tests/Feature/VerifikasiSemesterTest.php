@@ -126,7 +126,7 @@ test('paket belum lengkap tidak masuk antrean kampus', function () {
     expect($paket)->toBeNull();
 
     $paket1 = VerifikasiSemester::where('pendaftar_id', $applicant->id)->where('semester', 1)->first();
-    actingAs($this->kampusAdmin)->get(route('admin.kampusverif.semester.index'))
+    actingAs($this->kampusAdmin)->get(route('admin.semester.index'))
         ->assertOk()
         ->assertSee('Budi Penerima');
 });
@@ -138,18 +138,18 @@ test('kampus memutuskan lalu paket masuk antrean kesra', function () {
     $paket = VerifikasiSemester::where('pendaftar_id', $applicant->id)->first();
 
     // Sebelum Kampus setuju, Kesra tidak boleh membuka maupun memutuskan.
-    actingAs($this->kesra)->put(route('admin.kesra.semester.verifikasi', $paket), [
+    actingAs($this->kesra)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'setuju',
     ])->assertForbidden();
 
-    actingAs($this->kampusAdmin)->put(route('admin.kampusverif.semester.verifikasi', $paket), [
+    actingAs($this->kampusAdmin)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'setuju',
     ])->assertSessionDoesntHaveErrors();
 
     expect($paket->fresh()->status_kampus)->toBe(VerifikasiSemester::KAMPUS_SETUJU);
 
     // Setelah Kampus setuju barulah Kesra bisa menutup semester itu.
-    actingAs($this->kesra)->put(route('admin.kesra.semester.verifikasi', $paket), [
+    actingAs($this->kesra)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'setuju',
     ])->assertSessionDoesntHaveErrors();
 
@@ -161,10 +161,10 @@ test('kampus minta perbaikan mengembalikan status kesra ke menunggu', function (
     VerifikasiSemester::sinkron($user);
     $paket = VerifikasiSemester::where('pendaftar_id', $applicant->id)->first();
 
-    actingAs($this->kampusAdmin)->put(route('admin.kampusverif.semester.verifikasi', $paket), ['status' => 'setuju']);
-    actingAs($this->kesra)->put(route('admin.kesra.semester.verifikasi', $paket), ['status' => 'setuju']);
+    actingAs($this->kampusAdmin)->put(route('admin.semester.verifikasi', $paket), ['status' => 'setuju']);
+    actingAs($this->kesra)->put(route('admin.semester.verifikasi', $paket), ['status' => 'setuju']);
 
-    actingAs($this->kampusAdmin)->put(route('admin.kampusverif.semester.verifikasi', $paket), [
+    actingAs($this->kampusAdmin)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'revisi',
         'catatan' => 'KHS tidak terbaca',
     ])->assertSessionDoesntHaveErrors();
@@ -183,7 +183,7 @@ test('keputusan yang butuh alasan ditolak tanpa catatan', function () {
 
     // Penolakan lewat `ajaxFail()`, jadi pesannya masuk flash `error`, bukan
     // error validasi Laravel.
-    actingAs($this->kampusAdmin)->put(route('admin.kampusverif.semester.verifikasi', $paket), [
+    actingAs($this->kampusAdmin)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'revisi',
     ])->assertSessionHas('error');
 
@@ -195,9 +195,9 @@ test('kesra bisa mencabut beasiswa dengan alasan, dan paket terkunci', function 
     VerifikasiSemester::sinkron($user);
     $paket = VerifikasiSemester::where('pendaftar_id', $applicant->id)->first();
 
-    actingAs($this->kampusAdmin)->put(route('admin.kampusverif.semester.verifikasi', $paket), ['status' => 'setuju']);
+    actingAs($this->kampusAdmin)->put(route('admin.semester.verifikasi', $paket), ['status' => 'setuju']);
 
-    actingAs($this->kesra)->put(route('admin.kesra.semester.verifikasi', $paket), [
+    actingAs($this->kesra)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'dicabut',
         'catatan' => 'Tidak memperbaiki dokumentasi selama dua semester',
     ])->assertSessionDoesntHaveErrors();
@@ -205,7 +205,7 @@ test('kesra bisa mencabut beasiswa dengan alasan, dan paket terkunci', function 
     expect($paket->fresh()->status_kesra)->toBe(VerifikasiSemester::KESRA_DICABUT);
 
     // Setelah dicabut, tidak ada tahap yang bisa mengubahnya lagi.
-    actingAs($this->kampusAdmin)->put(route('admin.kampusverif.semester.verifikasi', $paket), [
+    actingAs($this->kampusAdmin)->put(route('admin.semester.verifikasi', $paket), [
         'status' => 'setuju',
     ])->assertForbidden();
 });

@@ -1,10 +1,6 @@
 @extends('layouts.app')
 
 @php
-  // Prefix route tahap ini, dihitung sekali. Tidak ditulis inline di dalam
-  // string `route("...")`: interpolasi ternary di dalam tanda kutip ganda
-  // bukan PHP yang sah dan menghasilkan ParseError.
-  $prefix = $stage === 'kampus' ? 'kampusverif' : 'kesra';
   $stageLabel = $stage === 'kampus' ? 'Kampus' : 'Kesra';
 @endphp
 
@@ -14,8 +10,7 @@
     <h1>Verifikasi Semester — {{ $stageLabel }}</h1>
     <div class="section-header-breadcrumb">
       <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dasbor</a></div>
-      <div class="breadcrumb-item">{{ $stage === 'kampus' ? 'Verifikasi Kampus' : 'Verifikasi Kesra' }}</div>
-      <div class="breadcrumb-item">Per Semester</div>
+      <div class="breadcrumb-item">Verifikasi Semester</div>
     </div>
   </div>
 
@@ -25,6 +20,16 @@
         <div class="card">
           <div class="card-header">
             <h4>Paket Semester Penerima Beasiswa</h4>
+            @if($bisaPilihTahap)
+            <div class="card-header-action">
+              {{-- Hanya super_admin: peran lain tahapnya sudah ditentukan dari
+                   perannya sendiri, jadi pilihan ini tidak ada gunanya bagi mereka. --}}
+              <a href="{{ route('admin.semester.index', ['tahap' => 'kampus']) }}"
+                class="btn btn-sm {{ $stage === 'kampus' ? 'btn-primary' : 'btn-outline-primary' }}">Kampus</a>
+              <a href="{{ route('admin.semester.index', ['tahap' => 'kesra']) }}"
+                class="btn btn-sm {{ $stage === 'kesra' ? 'btn-primary' : 'btn-outline-primary' }}">Kesra</a>
+            </div>
+            @endif
           </div>
           <div class="card-body">
             <div class="alert alert-info">
@@ -64,7 +69,7 @@
                       <span class="badge badge-{{ $baris->badgeKesra() }}">{{ $baris->labelKesra() }}</span>
                     </td>
                     <td>
-                      <a href="{{ route('admin.'.$prefix.'.semester.lihat', $baris) }}"
+                      <a href="{{ route('admin.semester.lihat', $baris) }}"
                         class="btn btn-sm btn-primary">
                         <i class="fas fa-eye"></i> Lihat
                       </a>

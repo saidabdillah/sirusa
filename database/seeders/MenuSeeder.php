@@ -88,6 +88,20 @@ class MenuSeeder extends Seeder
                     ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
                 ],
             ],
+            // Verifikasi Semester: menu MANDIRI di section "Verifikasi"
+            // (permintaan pengguna). Isinya paket semester untuk PENERIMA
+            // beasiswa, bukan antrean seleksi, jadi tempatnya sejajar dengan
+            // Catpil/Kampus/Kesra, bukan tombol di dalam salah satunya.
+            // Satu menu untuk dua peran: tahapnya ditentukan dari peran
+            // pengguna di controller, bukan dari URL.
+            [
+                'label' => 'Verifikasi Semester',
+                'icon' => 'fas fa-calendar-alt',
+                'route' => 'admin.semester.index',
+                'scope' => 'admin.semester',
+                'section' => 'Verifikasi',
+                'urutan' => 29,
+            ],
             // "Pengumuman" adalah leaf MANDIRI, bukan anak dropdown Kesra
             // (permintaan pengguna): menerbitkan hasil seleksi adalah pekerjaan
             // tersendiri, bukan lanjutan dari antrean verifikasi. Scope-nya
@@ -248,6 +262,7 @@ class MenuSeeder extends Seeder
                 'admin.kesra.index',
                 'admin.kesra.pengumuman',
                 'admin.kesra.status',
+                'admin.semester',
                 'master-data',
                 'admin.kampus',
                 'kelola-akses',
@@ -271,6 +286,9 @@ class MenuSeeder extends Seeder
                 'admin.kesra.status',
                 // Lihat komentar grant `admin.penerima` pada role catpil.
                 'admin.penerima',
+                // Verifikasi paket semester penerima beasiswa: Kampus adalah
+                // tahap pertamanya.
+                'admin.semester',
             ],
             'kesra' => [
                 'dasbor',
@@ -286,6 +304,7 @@ class MenuSeeder extends Seeder
                 'admin.kesra.index',
                 'admin.kesra.pengumuman',
                 'admin.kesra.status',
+                'admin.semester',
                 'master-data',
                 'admin.kampus',
                 'kelola-akses',

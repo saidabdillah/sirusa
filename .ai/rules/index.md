@@ -34,5 +34,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/admin/verifikasi/**, resources/views/admin/verifikasi/lihat.blade.php | .ai/rules/verifikasi.md |
 | resources/views/admin/** | .ai/rules/views-admin.md |
 | resources/views/dasbor/verifikasi.blade.php | .ai/rules/views-dasbor.md |
+| app/Models/VerifikasiSemester.php, app/Support/PaketSemester.php, app/Http/Controllers/Admin/VerifikasiSemesterController.php, resources/views/admin/verifikasi/semester/** | .ai/rules/verifikasi-semester.md |
 | app/Models/User.php, app/Http/Controllers/Profile/ProfileController.php, app/Http/Requests/Profil/UpdateProfilRequest.php, resources/views/profil/** | .ai/rules/views-profil.md |
 | resources/views/**, resources/views/**/*.blade.php | .ai/rules/views.md |

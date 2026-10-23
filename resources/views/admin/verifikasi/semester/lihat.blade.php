@@ -1,9 +1,6 @@
 @extends('layouts.app')
 
 @php
-  // Prefix route tahap ini dihitung sekali; jangan menulis ternary di dalam
-  // string `route("...")` (bukan PHP yang sah).
-  $prefix = $stage === 'kampus' ? 'kampusverif' : 'kesra';
   $stageLabel = $stage === 'kampus' ? 'Kampus' : 'Kesra';
 @endphp
 
@@ -14,9 +11,7 @@
     <div class="section-header-breadcrumb">
       <div class="breadcrumb-item active"><a href="{{ route('dashboard') }}">Dasbor</a></div>
       <div class="breadcrumb-item active">
-        <a href="{{ route('admin.'.$prefix.'.semester.index') }}">
-          {{ $stage === 'kampus' ? 'Verifikasi Kampus' : 'Verifikasi Kesra' }}
-        </a>
+        <a href="{{ route('admin.semester.index') }}">Verifikasi Semester</a>
       </div>
       <div class="breadcrumb-item">Semester {{ $paket->semester }}</div>
     </div>
@@ -159,7 +154,7 @@
             </div>
             @endif
 
-            <form action="{{ route('admin.'.$prefix.'.semester.verifikasi', $paket) }}"
+            <form action="{{ route('admin.semester.verifikasi', $paket) }}"
               method="POST" data-ajax-form>
               @csrf
               @method('PUT')

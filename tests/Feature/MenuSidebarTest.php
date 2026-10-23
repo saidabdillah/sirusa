@@ -256,6 +256,9 @@ test('sidebar groups menu ke section yang sesuai', function () {
         ->toContain(route('admin.kampusverif.index'))
         ->toContain(route('admin.kesra.index'))
         ->toContain(route('admin.kesra.disetujui'))
+        // Menu mandiri untuk verifikasi paket semester penerima beasiswa.
+        ->toContain(route('admin.semester.index'))
+        ->toContain('<span>Verifikasi Semester</span>')
         ->toContain('<span>Catpil</span>')
         ->toContain('<span>Kampus</span>')
         ->toContain('<span>Kesra</span>')

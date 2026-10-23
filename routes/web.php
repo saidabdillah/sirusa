@@ -117,17 +117,14 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi', 'throttle
         // Verifikasi data profil
         // Rute `unduh` diletakkan sebelum `{user}` supaya tidak tertangkap
         // sebagai parameter pengguna.
-        // Verifikasi paket semester (PENERIMA beasiswa). Route-nya sengaja
-        // memakai prefix tahap yang sudah ada (`admin.kampusverif.*`,
-        // `admin.kesra.*`) supaya grant menu yang berlaku tidak berubah.
-        // Didaftarkan SEBELUM `/{user}` karena segmen `semester` akan
-        // tertangkap sebagai parameter user kalau urutannya terbalik.
-        Route::get('/verifikasi/kampus/semester', [VerifikasiSemesterController::class, 'index'])->defaults('stage', 'kampus')->name('kampusverif.semester.index');
-        Route::get('/verifikasi/kampus/semester/{paket}', [VerifikasiSemesterController::class, 'show'])->defaults('stage', 'kampus')->name('kampusverif.semester.lihat');
-        Route::put('/verifikasi/kampus/semester/{paket}', [VerifikasiSemesterController::class, 'verifikasi'])->defaults('stage', 'kampus')->name('kampusverif.semester.verifikasi');
-        Route::get('/verifikasi/kesra/semester', [VerifikasiSemesterController::class, 'index'])->defaults('stage', 'kesra')->name('kesra.semester.index');
-        Route::get('/verifikasi/kesra/semester/{paket}', [VerifikasiSemesterController::class, 'show'])->defaults('stage', 'kesra')->name('kesra.semester.lihat');
-        Route::put('/verifikasi/kesra/semester/{paket}', [VerifikasiSemesterController::class, 'verifikasi'])->defaults('stage', 'kesra')->name('kesra.semester.verifikasi');
+        // Verifikasi paket semester (PENERIMA beasiswa). SATU menu sidebar,
+        // bukan tombol di dalam antrean profil: pekerjaan ini berjalan tiap
+        // semester dan harus terlihat di sidebar seperti Kampus/Kesra.
+        // Tahapnya ditentukan dari peran pengguna, bukan dari URL, supaya satu
+        // menu bisa dipakai Kampus dan Kesra tanpa dua entri menu.
+        Route::get('/verifikasi/semester', [VerifikasiSemesterController::class, 'index'])->name('semester.index');
+        Route::get('/verifikasi/semester/{paket}', [VerifikasiSemesterController::class, 'show'])->name('semester.lihat');
+        Route::put('/verifikasi/semester/{paket}', [VerifikasiSemesterController::class, 'verifikasi'])->name('semester.verifikasi');
 
         Route::get('/verifikasi/catpil', [VerifikasiController::class, 'index'])->defaults('stage', 'catpil')->name('catpil.index');
         Route::get('/verifikasi/catpil/unduh', [VerifikasiController::class, 'export'])->defaults('stage', 'catpil')->name('catpil.export');

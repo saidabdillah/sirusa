@@ -53,15 +53,6 @@ $filterOptions = [
           <div class="card-header">
             <h4>Daftar Verifikasi Profil {{ $stageLabel }}</h4>
             <div class="card-header-action">
-              {{-- Selama masa transisi, antrean semester penerima duduk di halaman
-                   terpisah supaya antrean seleksi tidak berubah bentuk. Catpil
-                   tidak punya antrean semester: data kependudukan tidak
-                   berubah tiap semester. --}}
-              @if(in_array($stage, ['kampus', 'kesra'], true))
-              <a href="{{ route($routePrefix.'.semester.index') }}" class="btn btn-outline-primary">
-                <i class="fas fa-calendar-alt mr-1"></i> Verifikasi per Semester
-              </a>
-              @endif
               @if(auth()->user()->hasMenuAccess($routePrefix.'.export'))
               <a href="{{ route($routePrefix.'.export', request()->only('filter')) }}" class="btn btn-outline-success">
                 <i class="fas fa-file-excel mr-1"></i> Unduh Excel
