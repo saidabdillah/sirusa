@@ -271,7 +271,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label for="nama_kampus">Nama Kampus <span class="text-danger">*</span></label>
-                  <select class="form-control @error('nama_kampus') is-invalid @enderror" id="nama_kampus"
+                  <select class="form-control select2-cari @error('nama_kampus') is-invalid @enderror" id="nama_kampus"
                     name="nama_kampus">
                     <option value="">Pilih Kampus</option>
                     @foreach($kampusList as $kampus)
@@ -284,7 +284,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
                 <div class="form-group col-md-6">
                   <label for="fakultas">Fakultas <span class="text-danger">*</span></label>
-                  <select class="form-control @error('fakultas') is-invalid @enderror" id="fakultas" name="fakultas">
+                  <select class="form-control select2-cari @error('fakultas') is-invalid @enderror" id="fakultas" name="fakultas">
                     <option value="">Pilih Kampus terlebih dahulu</option>
                   </select>
                   @error('fakultas')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -293,7 +293,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label for="prodi">Program Studi <span class="text-danger">*</span></label>
-                  <select class="form-control @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id">
+                  <select class="form-control select2-cari @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id">
                     <option value="">Pilih Fakultas terlebih dahulu</option>
                   </select>
                   @error('prodi_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -732,6 +732,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     var $fak = $('#fakultas');
     $fak.html('<option value="">Pilih Fakultas</option>');
     $('#prodi').html('<option value="">Pilih Fakultas terlebih dahulu</option>');
+    $('#prodi').trigger('change.select2');
 
     var kampus = kampusData.find(function(k) { return k.nama === namaKampus; });
     if (!kampus) return;
@@ -740,6 +741,10 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       var selectedAttr = (selected && selected === f.nama) ? ' selected' : '';
       $fak.append('<option value="' + f.nama + '"' + selectedAttr + '>' + f.nama + '</option>');
     });
+
+    // Select2 membaca ulang <option> hanya saat diminta: tanpa trigger ini
+    // kotaknya tetap menampilkan teks lama walau opsinya sudah berganti.
+    $fak.trigger('change.select2');
 
     if (selected) {
       loadProdi(namaKampus, selected);
@@ -760,6 +765,8 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       var selectedAttr = (selectedProdiId && String(selectedProdiId) === String(p.id)) ? ' selected' : '';
       $prodi.append('<option value="' + p.id + '"' + selectedAttr + '>' + p.nama + '</option>');
     });
+
+    $prodi.trigger('change.select2');
   }
 
   $('#nama_kampus').change(function() {
@@ -773,6 +780,10 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
 
   if (selectedKampus) {
     loadFakultas(selectedKampus, selectedFakultas);
+  } else {
+    // Halaman baru (tidak ada preselect): kosongkan tampilan kotak select2
+    // supaya ikut teks placeholder dari <option value="">-nya.
+    $('#nama_kampus, #fakultas, #prodi').trigger('change.select2');
   }
 
   function updateWaliVisibility() {

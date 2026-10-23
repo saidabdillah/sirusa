@@ -61,7 +61,7 @@
               <div class="form-row align-items-end">
                 <div class="col-md-3 mb-2 mb-md-0">
                   <label for="filter-kampus">Kampus</label>
-                  <select class="form-control" name="kampus_id" id="filter-kampus">
+                  <select class="form-control select2-cari" name="kampus_id" id="filter-kampus">
                     <option value="" {{ $kampusId === null ? 'selected' : '' }}>-- Semua Kampus --</option>
                     @foreach($kampusOptions as $kampus)
                     <option value="{{ $kampus->id }}" {{ $kampusId === $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
@@ -70,7 +70,7 @@
                 </div>
                 <div class="col-md-3 mb-2 mb-md-0">
                   <label for="filter-fakultas">Fakultas</label>
-                  <select class="form-control" name="fakultas_id" id="filter-fakultas">
+                  <select class="form-control select2-cari" name="fakultas_id" id="filter-fakultas">
                     <option value="" {{ $fakultasId === null ? 'selected' : '' }}>-- Semua Fakultas --</option>
                     @foreach($fakultasOptions as $fakultas)
                     <option value="{{ $fakultas->id }}" {{ $fakultasId === $fakultas->id ? 'selected' : '' }}>{{ $fakultas->nama }}</option>
@@ -79,7 +79,7 @@
                 </div>
                 <div class="col-md-3 mb-2 mb-md-0">
                   <label for="filter-jurusan">Program Studi</label>
-                  <select class="form-control" name="jurusan_id" id="filter-jurusan">
+                  <select class="form-control select2-cari" name="jurusan_id" id="filter-jurusan">
                     <option value="" {{ $jurusanId === null ? 'selected' : '' }}>-- Semua Program Studi --</option>
                     @foreach($jurusanOptions as $jurusan)
                     <option value="{{ $jurusan->id }}" {{ $jurusanId === $jurusan->id ? 'selected' : '' }}>{{ $jurusan->nama }}</option>

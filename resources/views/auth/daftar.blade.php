@@ -29,7 +29,7 @@
 
               <div class="form-group">
                 <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
-                <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id"
+                <select class="form-control select2-cari @error('kampus_id') is-invalid @enderror" id="kampus_id"
                   name="kampus_id">
                   <option value="">-- Pilih Kampus --</option>
                   @foreach($kampusList as $kampus)

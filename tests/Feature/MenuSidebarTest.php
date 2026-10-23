@@ -32,6 +32,38 @@ test('super admin sidebar shows role and menu access but not template surat', fu
  * Kelola Menu. Menu dengan route terdaftar dirender sebagai `<a>` yang bisa
  * diklik ke halaman aslinya.
  */
+test('sapaan di sidebar memakai nama lengkap kalau profilnya ada', function () {
+    $mahasiswa = User::factory()->standardUser()->create(['email' => 'sapa-user@test.com']);
+    $mahasiswa->profile()->create(['nama_lengkap' => 'Ahmad Fauzi']);
+
+    actingAs($mahasiswa)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Hai, Ahmad Fauzi', false)
+        // Username yang tidak manusiawi (`usrxxxxxxxx`) tidak boleh dipakai
+        // selama nama lengkapnya ada.
+        ->assertDontSee('Hai, '.$mahasiswa->username, false);
+});
+
+test('sapaan di sidebar jatuh ke username untuk akun tanpa profil', function () {
+    // Akun staf tidak punya baris profil sama sekali.
+    $staf = User::factory()->admin()->create(['email' => 'sapa-staf@test.com', 'username' => 'kesra1']);
+
+    actingAs($staf)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Hai, kesra1', false);
+});
+
+test('sapaan di sidebar jatuh ke username saat nama lengkap masih kosong', function () {
+    $mahasiswa = User::factory()->standardUser()->create(['email' => 'sapa-kosong@test.com', 'username' => 'usrkosong']);
+    $mahasiswa->profile()->create(['nama_lengkap' => null]);
+
+    actingAs($mahasiswa)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Hai, usrkosong', false);
+});
 test('menu buatan super admin dengan route dirender sebagai link di sidebar', function () {
     $superAdmin = User::factory()->superAdmin()->create(['email' => 'sidebar-tautan-baru@test.com']);
 

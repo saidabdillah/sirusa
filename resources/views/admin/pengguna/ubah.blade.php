@@ -42,7 +42,7 @@
 
                 <div class="form-group d-none" id="akunKampus">
                   <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
-                  <select class="form-control @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
+                  <select class="form-control select2-cari @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
                     <option value="">&mdash; Pilih &mdash;</option>
                     @foreach ($kampusList as $kampusId => $kampusNama)
                       <option value="{{ $kampusId }}" {{ (string) old('kampus_id', $user->kampus_id) === (string) $kampusId ? 'selected' : '' }}>{{ $kampusNama }}</option>

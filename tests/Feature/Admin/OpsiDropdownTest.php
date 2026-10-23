@@ -102,6 +102,37 @@ test('setiap dropdown di form profil punya opsi kosong di posisi pertama', funct
 
 // ─── Radio & checkbox: tidak ada yang terpilih sendiri ────────────────────
 
+// ─── Dropdown panjang: bisa dicari lewat select2 ──────────────────────────
+//
+// Kampus/Fakultas/Program Studi punya ratusan opsi (55/158/329 di produksi),
+// jadi ketiganya memakai select2. Class `select2-cari` adalah satu-satunya
+// pemicunya dan inisialisasinya ada di `public/assets/js/custom.js`, supaya
+// view tidak perlu menulis skrip sendiri.
+
+test('dropdown kampus, fakultas, dan prodi memakai select2 pencarian', function () {
+    $profil = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    foreach (['nama_kampus', 'fakultas', 'prodi'] as $id) {
+        expect($profil)->toContain('select2-cari')
+            ->and(substr_count($profil, 'select2-cari'))->toBeGreaterThanOrEqual(3);
+    }
+
+    // Fakultas/Prodi diisi ulang JS: tanpa `change.select2` kotak select2 tetap
+    // menampilkan teks lama (placeholder) walau opsinya sudah berganti.
+    expect($profil)->toContain("\$fak.trigger('change.select2')")
+        ->toContain("\$prodi.trigger('change.select2')");
+});
+
+test('filter lokasi dan form kampus lain memakai select2 pencarian', function () {
+    $verifikasi = actingAs($this->superAdmin)->get(route('admin.kesra.status'))->assertOk()->getContent();
+    $penerima = actingAs($this->superAdmin)->get(route('admin.penerima.index'))->assertOk()->getContent();
+    $beasiswa = actingAs($this->superAdmin)->get(route('admin.beasiswa.buat'))->assertOk()->getContent();
+
+    expect(substr_count($verifikasi, 'select2-cari'))->toBe(3)
+        ->and(substr_count($penerima, 'select2-cari'))->toBe(3)
+        ->and($beasiswa)->toContain('select2-cari');
+});
+
 test('tidak ada radio jenis kelamin yang terpilih saat profil masih kosong', function () {
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 

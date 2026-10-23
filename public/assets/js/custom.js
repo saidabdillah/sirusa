@@ -711,6 +711,32 @@ $(function () {
   };
 
   // ---------------------------------------------------------------------
+  // Select2 pencarian untuk dropdown panjang (kampus/fakultas/prodi).
+  //
+  // Opt-in lewat class `select2-cari`, bukan daftar id: dropdown yang opsinya
+  // diisi ulang JS (Fakultas/Program Studi) tetap ikut, karena select2 membaca
+  // ulang `<option>` begitu `change.select2` dipicu setelah isinya diganti.
+  // ---------------------------------------------------------------------
+  $("select.select2-cari").each(function () {
+    // Sudah pernah di-init (mis. halaman dipulihkan dari bfcache).
+    if ($(this).hasClass("select2-hidden-accessible")) {
+      return;
+    }
+
+    $(this).select2({
+      width: "100%",
+      language: {
+        noResults: function () {
+          return "Data tidak ditemukan";
+        },
+        searching: function () {
+          return "Mencari...";
+        },
+      },
+    });
+  });
+
+  // ---------------------------------------------------------------------
   // Jaring pengaman terakhir: lepaskan semua spinner yang masih nyangkut.
   //
   // `pageshow` menyala juga saat halaman dipulihkan dari back/forward cache
