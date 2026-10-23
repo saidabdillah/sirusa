@@ -161,6 +161,22 @@ $(function () {
       $el = $form.find('[name^="' + name + '["]');
     }
 
+    if (!$el.length && name.indexOf(".") !== -1) {
+      // Nama bertitik dari validasi array bersarang (`dokumen_akademik.krs.4.file`)
+      // tidak pernah cocok dengan `name` di DOM, karena Blade merendernya
+      // sebagai `dokumen_akademik[krs][4][file]`. Tanpa terjemahan ini, error
+      // per-baris KRS/KHS jatuh ke SweetAlert umum dan user tidak tahu baris
+      // mana yang harus diperbaiki.
+      var bagian = name.split(".");
+      var kurung = bagian.shift();
+
+      $.each(bagian, function (i, b) {
+        kurung += "[" + b + "]";
+      });
+
+      $el = $form.find('[name="' + kurung + '"]');
+    }
+
     // Tahap keempat untuk validasi per-index. Aturan `nama_kampus.*` melapor
     // error sebagai `nama_kampus.0`, sedangkan Blade merender repeater-nya
     // sebagai `nama_kampus[]` -- tidak ada satu pun dari tiga pola di atas

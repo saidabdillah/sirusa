@@ -58,6 +58,19 @@ test('baris KRS dan KHS mengikuti semester aktif yang dipilih', function () {
         ->assertSee('disabled', false);
 });
 
+test('baris tersembunyi yang sudah diisi tetap terkirim, yang kosong tetap nonaktif', function () {
+    // Isian user tidak boleh hilang diam-diam saat semester diturunkan:
+    // baris di luar batas yang SUDAH berisi berkas atau nilai tidak ikut
+    // dinonaktifkan. Baris kosong tetap nonaktif supaya semester di luar
+    // batas tidak pernah sampai ke backend.
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    expect($html)
+        ->toContain("var adaIsi = $(this).find('input').filter(function () {")
+        ->toContain('$(this).find(\'input\').prop(\'disabled\', !tampil && !adaIsi);')
+        ->and($html)->not->toContain("$(this).find('input').prop('disabled', !tampil);");
+});
+
 test('baris KRS hanya berisi unggah berkas, nilai hanya ada di baris KHS', function () {
     $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
 

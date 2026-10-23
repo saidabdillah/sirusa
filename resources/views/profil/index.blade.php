@@ -105,9 +105,11 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     {{-- Kartu Tunggal untuk staf: `justify-content-start` (bukan `offset-lg-*`
          yang hanya berlaku di >=992px, dan bukan `justify-content-center` yang
          membuat kartu melayang di tengah halaman). --}}
+    {{-- Mahasiswa memakai lebar penuh: kartu Informasi Akun tidak lagi
+         ditampilkan untuk mereka (hanya akun staf yang punya kartu itu). --}}
     <div class="row {{ $isMahasiswa ? '' : 'justify-content-start' }}">
       @if ($isMahasiswa)
-      <div class="col-lg-8">
+      <div class="col-12">
         <div class="card">
           <div class="card-header">
             <h4>Edit Profil</h4>
@@ -570,7 +572,12 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       </div>
       @endif
 
-      <div class="col-12 col-lg-{{ $isMahasiswa ? '4' : '6' }}">
+      {{-- Kartu Informasi Akun hanya untuk akun STAF. Mahasiswa tidak butuh
+           kartu ini: username/email/role-nya bukan informasi yang bisa ia
+           gunakan di halaman profil (email sudah jadi field form, kata sandi
+           ada di Pengaturan). --}}
+      @unless ($isMahasiswa)
+      <div class="col-12 col-lg-6">
         <div class="card">
           <div class="card-header">
             <h4>Informasi Akun</h4>
@@ -593,18 +600,13 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               {{ auth()->user()->created_at->translatedFormat('d F Y') }}
             </div>
             <hr>
-            @if ($isMahasiswa)
-            <div class="text-muted small">
-              Lengkapi profil beserta dokumen pendukung untuk mempermudah proses verifikasi dan pendaftaran beasiswa.
-            </div>
-            @else
             <div class="text-muted small">
               Akun staf tidak punya data profil.
             </div>
-            @endif
           </div>
         </div>
       </div>
+      @endunless
     </div>
   </div>
 </section>
@@ -860,10 +862,16 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       var tampil = jumlah > 0 && semesterAktif > 0 && semester <= batas;
 
       $(this).toggle(tampil);
-      // Input yang disembunyikan WAJIB dinonaktifkan: input nonaktif tidak
-      // ikut terkirim, jadi semester di luar batas tidak pernah sampai ke
-      // backend (yang tetap memvalidasi ulang).
-      $(this).find('input').prop('disabled', !tampil);
+      // Baris yang disembunyikan dinonaktifkan supaya semester di luar batas
+      // tidak ikut terkirim -- TAPI hanya kalau barisnya kosong. Baris yang
+      // sudah diisi (berkas dipilih atau nilai diketik) tetap dikirim walau
+      // semester aktifnya diturunkan, supaya isian user tidak hilang diam-diam
+      // saat ia mengubah semester sebelum menyimpan.
+      var adaIsi = $(this).find('input').filter(function () {
+        return (this.files && this.files.length > 0) || String(this.value).trim() !== '';
+      }).length > 0;
+
+      $(this).find('input').prop('disabled', !tampil && !adaIsi);
     });
 
     // Teks petunjuk di atas grup KRS/KHS mengikuti batas yang sama, supaya

@@ -105,15 +105,17 @@ test('mahasiswa tetap melihat form profil lengkap dengan unggah berkas', functio
         ->assertOk()
         ->assertSee('Edit Profil')
         ->assertSee('Simpan Profil')
-        ->assertSee('Informasi Akun')
+        // Kartu Informasi Akun hanya untuk akun staf (permintaan pengguna):
+        // mahasiswa tidak perlu melihat username/role/tanggal terdaftar.
+        ->assertDontSee('Informasi Akun')
         ->assertSee('type="file"', false)
         ->assertSee('name="nama_lengkap"', false)
         ->assertSee('Berkas Data Diri')
         ->assertSee('Anda harus melengkapi data dan dokumen berikut sebelum bisa mendaftar beasiswa.')
         ->assertDontSee('justify-content-center', false);
 
-    // Grid 8/4 untuk mahasiswa, tanpa offset.
-    expect($html->getContent())->toContain('col-lg-8')->toContain('col-12 col-lg-4');
+    // Form memakai lebar penuh karena tidak ada kartu kedua di sebelahnya.
+    expect($html->getContent())->toContain('col-12')->not->toContain('col-lg-8');
 });
 
 /**
