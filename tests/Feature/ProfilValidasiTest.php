@@ -51,6 +51,7 @@ function payloadProfilLengkap(int $prodiId, array $ubah = []): array
         'nik_wali' => '6302000000000004',
         'pekerjaan_wali' => 'Wiraswasta',
         'hubungan_wali' => 'Paman',
+        'dokumen_akademik' => akademikProfilDummy(4),
     ], berkasProfilDummy(), [
         'ktp_wali' => $pdf('ktp-wali.pdf'),
         'kk_wali' => $pdf('kk-wali.pdf'),

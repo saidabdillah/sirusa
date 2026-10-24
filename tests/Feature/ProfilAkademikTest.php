@@ -254,8 +254,10 @@ test('KRS dan KHS tersimpan sebagai baris terpisah, nilai hanya pada KHS', funct
         ]))
         ->assertSessionDoesntHaveErrors();
 
-    $krs = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'krs')->first();
-    $khs = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'khs')->first();
+    $krs = DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'krs')->where('semester', 3)->first();
+    $khs = DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'khs')->where('semester', 3)->first();
 
     // Dua baris berbeda: nilai KHS tidak menempel ke baris KRS.
     expect($krs)->not->toBeNull()
@@ -291,7 +293,7 @@ test('nilai yang dikirim pada baris KRS diabaikan, bukan disimpan', function () 
 test('baris KRS tanpa berkas ditolak walau ada nilai', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
-            'dokumen_akademik' => ['krs' => [2 => ['nilai' => 3.25]]],
+            'dokumen_akademik' => ['krs' => [2 => ['file' => null, 'nilai' => 3.25]]],
         ]))
         ->assertSessionHasErrors('dokumen_akademik.krs.2.file');
 
@@ -299,7 +301,7 @@ test('baris KRS tanpa berkas ditolak walau ada nilai', function () {
 });
 
 test('unggahan semester baru tidak menimpa dokumen semester sebelumnya', function () {
-    // Semester 3 lebih dulu.
+    // Simpan seluruh kewajiban semester aktif beserta KHS semester 3.
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
             'dokumen_akademik' => ['khs' => [3 => ['file' => pdfAkademik('khs-3.pdf'), 'nilai' => 3.10]]],
@@ -309,21 +311,23 @@ test('unggahan semester baru tidak menimpa dokumen semester sebelumnya', functio
     $lama = DokumenAkademik::where('user_id', $this->user->id)
         ->where('jenis', 'khs')->where('semester', 3)->first();
 
-    // Lalu semester 4.
+    // Pada simpan berikutnya, kewajiban semester 1–2 dipenuhi oleh berkas yang
+    // sudah tersimpan. Request hanya mengirim KHS semester 4, sehingga KHS
+    // semester 3 tidak boleh ikut tertimpa.
+    $payload = payloadAkademik($this->prodi->id);
+    $payload['dokumen_akademik'] = [
+        'khs' => [4 => ['file' => pdfAkademik('khs-4.pdf'), 'nilai' => 3.80]],
+    ];
+
     actingAs($this->user)
-        ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
-            'dokumen_akademik' => ['khs' => [4 => ['file' => pdfAkademik('khs-4.pdf'), 'nilai' => 3.80]]],
-        ]))
+        ->put(route('profile.update'), $payload)
         ->assertSessionDoesntHaveErrors();
 
-    $semua = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'khs')->get();
+    $semester3 = DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'khs')->where('semester', 3)->first();
+    $semester4 = DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'khs')->where('semester', 4)->first();
 
-    expect($semua)->toHaveCount(2);
-
-    $semester3 = $semua->firstWhere('semester', 3);
-    $semester4 = $semua->firstWhere('semester', 4);
-
-    // Semester 3 utuh: berkas, nilai, dan path-nya tidak berubah.
     expect((float) $semester3->nilai)->toBe(3.10)
         ->and($semester3->file)->toBe($lama->file)
         ->and((float) $semester4->nilai)->toBe(3.80)
@@ -331,31 +335,39 @@ test('unggahan semester baru tidak menimpa dokumen semester sebelumnya', functio
 });
 
 test('unggahan ulang semester yang sama memperbarui baris itu, bukan menambah', function () {
-    foreach ([3.10, 3.90] as $nilai) {
-        actingAs($this->user)
-            ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
-                'dokumen_akademik' => ['khs' => [3 => ['nilai' => $nilai]]],
-            ]))
-            ->assertSessionDoesntHaveErrors();
-    }
-
-    $semua = DokumenAkademik::where('user_id', $this->user->id)->where('jenis', 'khs')->get();
-
-    expect($semua)->toHaveCount(1)
-        ->and((float) $semua->first()->nilai)->toBe(3.90);
-});
-
-test('nilai KHS saja tanpa berkas tetap tersimpan', function () {
+    // Unggahan pertama membuat berkas wajib. Unggahan kedua hanya mengubah
+    // nilai semester yang sama; berkas tersimpan tetap memenuhi required.
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
-            'dokumen_akademik' => ['khs' => [2 => ['nilai' => 3.25]]],
+            'dokumen_akademik' => ['khs' => [2 => ['nilai' => 3.10]]],
         ]))
         ->assertSessionDoesntHaveErrors();
 
-    $baris = DokumenAkademik::where('user_id', $this->user->id)->first();
+    $payload = payloadAkademik($this->prodi->id);
+    $payload['dokumen_akademik'] = ['khs' => [2 => ['nilai' => 3.90]]];
 
-    expect($baris->file)->toBeNull()
-        ->and((float) $baris->nilai)->toBe(3.25);
+    actingAs($this->user)
+        ->put(route('profile.update'), $payload)
+        ->assertSessionDoesntHaveErrors();
+
+    $baris = DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'khs')->where('semester', 2)->get();
+
+    expect($baris)->toHaveCount(1)
+        ->and((float) $baris->first()->nilai)->toBe(3.90);
+});
+
+test('nilai KHS tanpa berkas wajib ditolak', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
+            'semester' => 2,
+            'dokumen_akademik' => [
+                'khs' => [1 => ['file' => null, 'nilai' => 3.25]],
+            ],
+        ]))
+        ->assertSessionHasErrors('dokumen_akademik.khs.1.file');
+
+    expect(DokumenAkademik::where('user_id', $this->user->id)->exists())->toBeFalse();
 });
 
 test('semester di luar jenjang pada baris KRS/KHS ditolak', function () {
@@ -438,6 +450,18 @@ function pdfAkademik(string $nama): UploadedFile
  */
 function payloadAkademik(int $prodiId, array $ubah = []): array
 {
+    $semester = (int) ($ubah['semester'] ?? 3);
+    $akademik = akademikProfilDummy($semester);
+
+    // Tes yang menimpa satu semester tidak boleh menghapus berkas wajib
+    // semester lain. `array_replace_recursive` mengganti hanya kunci yang
+    // disebut tes, sehingga fixture tetap memenuhi kontrak KRS/KHS per
+    // semester aktif. Tes kekosongan membuat payload mentah sendiri.
+    if (isset($ubah['dokumen_akademik'])) {
+        $akademik = array_replace_recursive($akademik, $ubah['dokumen_akademik']);
+        unset($ubah['dokumen_akademik']);
+    }
+
     return array_merge([
         'nama_lengkap' => 'Budi Akademik',
         'email' => 'akademik@test.com',
@@ -468,5 +492,6 @@ function payloadAkademik(int $prodiId, array $ubah = []): array
         'nama_ibu' => 'Ibu Budi',
         'nik_ibu' => '6302000000000004',
         'pekerjaan_ibu' => 'Petani',
+        'dokumen_akademik' => $akademik,
     ], berkasProfilDummy(), $ubah);
 }

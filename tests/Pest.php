@@ -85,6 +85,30 @@ function berkasProfilDummy(): array
 }
 
 /**
+ * Berkas KRS/KHS yang sekarang WAJIB dihitung dari semester aktif:
+ * KRS semester 1..N, KHS semester 1..(N-1) beserta nilainya.
+ *
+ * Dipakai payload uji supaya tes profil tidak perlu tahu aturan itu satu per
+ * satu; tes yang memang menguji kewajibannya membangun payload sendiri.
+ */
+function akademikProfilDummy(int $semesterAktif): array
+{
+    $pdf = fn (string $nama) => UploadedFile::fake()->create($nama, 100, 'application/pdf');
+
+    $akademik = ['krs' => [], 'khs' => []];
+
+    for ($s = 1; $s <= max(1, $semesterAktif); $s++) {
+        $akademik['krs'][$s] = ['file' => $pdf("krs-{$s}.pdf")];
+    }
+
+    for ($s = 1; $s <= $semesterAktif - 1; $s++) {
+        $akademik['khs'][$s] = ['file' => $pdf("khs-{$s}.pdf"), 'nilai' => 3.5];
+    }
+
+    return $akademik;
+}
+
+/**
  * Field pendidikan yang sekarang WAJIB di form profil.
  *
  * Dipisah supaya payload uji yang dibuat bertahap (mis. `array_merge` di

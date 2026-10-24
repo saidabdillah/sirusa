@@ -6,6 +6,7 @@ use App\Models\DokumenAkademik;
 use App\Models\Prodi;
 use App\Support\JenjangPendidikan;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -263,11 +264,22 @@ class UpdateProfilRequest extends FormRequest
                 );
             }
 
-            // Jenis dan semester pada baris KRS/KHS juga diperiksa: array bisa
-            // dikirim dengan kunci apa pun, termasuk jenis yang tidak dikenal
-            // atau semester di luar jenjangnya. Setiap baris yang DIKIRIM juga
-            // wajib membawa berkas, kecuali baris itu sudah tersimpan (profil
-            // lama yang disimpan ulang tanpa mengunggah ulang tetap sah).
+            // JENIS dan SEMESTER AKADEMIK dihitung dari semester aktif, BUKAN
+            // dari baris yang kebetulan terkirim. Form memang hanya mengirim
+            // baris yang tampil, tapi baris hanya "tidak dikirim" bisa juga
+            // berarti browser melepasnya (input `disabled` tidak ikut
+            // terkirim) -- dan absen karena itu harus ditolak dengan pesan
+            // yang menyebut semester, bukan dianggap "tidak wajib".
+            //
+            // - KRS: satu berkas per semester 1..semester aktif.
+            // - KHS: berkas + nilai per semester 1..(semester aktif - 1).
+            //   (KHS semester berjalan belum terbit, jadi tidak diminta.)
+            //
+            // Baris tersimpan boleh kosong di form: menyimpan ulang profil
+            // tanpa mengunggah ulang tidak boleh ditolak. Tapi baris yang
+            // TIDAK PERNAH tersimpan DAN tidak dikirim tetap ditolak, dengan
+            // pesan yang sama persis seperti baris kosong yang dikirim.
+            //
             // `profile()` mengembalikan objek RELASI HasOne, bukan model --
             // `first()` dulu supaya `dokumenAkademik()` dipanggil di model
             // `UserProfile`. Query segar (bukan properti ter-cache) dipakai
@@ -278,7 +290,46 @@ class UpdateProfilRequest extends FormRequest
                 ->get()
                 ->keyBy(fn (DokumenAkademik $d) => $d->jenis.'.'.$d->semester);
 
-            foreach ((array) $this->input('dokumen_akademik', []) as $jenis => $perSemester) {
+            // Gabungkan field teks dan FileBag. Browser menempatkan unggahan
+            // pada bag terpisah; tanpa penggabungan, baris KRS file-only tidak
+            // terlihat saat jenis dan semesternya diperiksa.
+            $dikirim = array_replace_recursive(
+                (array) $this->input('dokumen_akademik', []),
+                (array) $this->file('dokumen_akademik', []),
+            );
+            $semesterAktif = (int) $semester;
+
+            if (JenjangPendidikan::semesterValid($jenjang, $semesterAktif)) {
+                for ($s = 1; $s <= $semesterAktif; $s++) {
+                    if (! $this->adaBerkasAkademik($tersimpan, DokumenAkademik::JENIS_KRS, $s)) {
+                        $validator->errors()->add(
+                            "dokumen_akademik.krs.{$s}.file",
+                            "Berkas KRS semester {$s} wajib diunggah.",
+                        );
+                    }
+                }
+
+                for ($s = 1; $s <= $semesterAktif - 1; $s++) {
+                    if (! $this->adaBerkasAkademik($tersimpan, DokumenAkademik::JENIS_KHS, $s)) {
+                        $validator->errors()->add(
+                            "dokumen_akademik.khs.{$s}.file",
+                            "Berkas KHS semester {$s} wajib diunggah.",
+                        );
+                    }
+
+                    if (! $this->adaNilaiAkademik($dikirim, $tersimpan, $s)) {
+                        $validator->errors()->add(
+                            "dokumen_akademik.khs.{$s}.nilai",
+                            "Nilai KHS semester {$s} wajib diisi.",
+                        );
+                    }
+                }
+            }
+
+            // Jenis dan semester pada baris yang DIKIRIM tetap diperiksa: array
+            // bisa datang dengan kunci apa pun, termasuk jenis tak dikenal atau
+            // semester di luar jenjangnya.
+            foreach ($dikirim as $jenis => $perSemester) {
                 if (! array_key_exists($jenis, DokumenAkademik::JENIS_LABELS)) {
                     $validator->errors()->add(
                         "dokumen_akademik.{$jenis}",
@@ -298,39 +349,16 @@ class UpdateProfilRequest extends FormRequest
                         continue;
                     }
 
-                    // Baris yang dikirim WAJIB berisi sesuatu: berkas (KRS)
-                    // atau berkas+nilai (KHS). Baris benar-benar kosong
-                    // berarti data rusak dari klien, bukan input yang sah.
-                    // Berkasnya sendiri tidak wajib per-baris: baris yang
-                    // sudah tersimpan sah diperbarui tanpa mengunggah ulang.
-                    //
-                    // Nilai hanya dihitung untuk KHS: KRS tidak memuat nilai,
-                    // jadi baris KRS tanpa berkas tetap ditolak walau ada
-                    // angka nilai yang ikut terkirim.
-                    $adaFile = $this->hasFile("dokumen_akademik.{$jenis}.{$kunci}.file");
-                    $adaNilai = $jenis === DokumenAkademik::JENIS_KHS && filled($isi['nilai'] ?? null);
-                    $sudahAda = $tersimpan?->has($jenis.'.'.$kunci) ?? false;
-                    $label = DokumenAkademik::JENIS_LABELS[$jenis];
+                    // Semester di atas semester aktif hanya diperiksa kalau
+                    // memang berisi: berkas lama tidak boleh ditolak hanya
+                    // karena semester aktif mahasiswa sudah berubah.
+                    if ((int) $kunci > $semesterAktif) {
+                        $adaFile = $this->hasFile("dokumen_akademik.{$jenis}.{$kunci}.file");
+                        $adaNilai = $jenis === DokumenAkademik::JENIS_KHS && filled($isi['nilai'] ?? null);
 
-                    // KHS: NILAI wajib untuk setiap baris yang dikirim
-                    // (permintaan pengguna), termasuk baris yang berkasnya
-                    // sudah tersimpan. Berkas tetap boleh menyusul.
-                    if ($jenis === DokumenAkademik::JENIS_KHS && ! $adaNilai) {
-                        $validator->errors()->add(
-                            "dokumen_akademik.{$jenis}.{$kunci}.nilai",
-                            "Nilai {$label} semester {$kunci} wajib diisi.",
-                        );
-
-                        continue;
-                    }
-
-                    if (! $adaFile && ! $adaNilai && ! $sudahAda) {
-                        $validator->errors()->add(
-                            "dokumen_akademik.{$jenis}.{$kunci}.file",
-                            $jenis === DokumenAkademik::JENIS_KRS
-                                ? "Berkas {$label} semester {$kunci} wajib diunggah."
-                                : "Berkas atau nilai {$label} semester {$kunci} wajib diisi.",
-                        );
+                        if (! $adaFile && ! $adaNilai) {
+                            continue;
+                        }
                     }
                 }
             }
@@ -556,5 +584,38 @@ class UpdateProfilRequest extends FormRequest
         $pesan['dokumen_prestasi.*.max'] = 'Ukuran dokumen prestasi maksimal 2MB per file.';
 
         return $pesan;
+    }
+
+    /**
+     * Apakah berkas KRS/KHS semester ini terpenuhi: diunggah di request ini,
+     * atau sudah tersimpan dari unggahan sebelumnya.
+     *
+     * @param  Collection<string, DokumenAkademik>|null  $tersimpan
+     */
+    private function adaBerkasAkademik($tersimpan, string $jenis, int $semester): bool
+    {
+        if ($this->hasFile("dokumen_akademik.{$jenis}.{$semester}.file")) {
+            return true;
+        }
+
+        return (bool) $tersimpan?->get($jenis.'.'.$semester)?->file;
+    }
+
+    /**
+     * Apakah NILAI KHS semester ini terpenuhi: dikirim di request ini, atau
+     * sudah tersimpan.
+     *
+     * @param  array<string, mixed>  $dikirim
+     * @param  Collection<string, DokumenAkademik>|null  $tersimpan
+     */
+    private function adaNilaiAkademik(array $dikirim, $tersimpan, int $semester): bool
+    {
+        $nilai = $dikirim[DokumenAkademik::JENIS_KHS][$semester]['nilai'] ?? null;
+
+        if (filled($nilai)) {
+            return true;
+        }
+
+        return filled($tersimpan?->get(DokumenAkademik::JENIS_KHS.'.'.$semester)?->nilai);
     }
 }

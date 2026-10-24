@@ -46,6 +46,7 @@ function payloadTeleponProfil(int $prodiId, array $override = []): array
         'nama_ibu' => 'Ibu Budi',
         'nik_ibu' => '6302000000000003',
         'pekerjaan_ibu' => 'Petani',
+        'dokumen_akademik' => akademikProfilDummy(4),
     ], $override);
 }
 

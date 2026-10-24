@@ -43,6 +43,7 @@ function completeProfilePayload($prodi): array
         'nama_ibu' => 'Ibu Budi',
         'nik_ibu' => '6302000000000003',
         'pekerjaan_ibu' => 'Petani',
+        'dokumen_akademik' => akademikProfilDummy(4),
     ], berkasProfilDummy());
 }
 
@@ -131,6 +132,7 @@ test('user can update profile with campus data and parent nik', function () {
         'nama_ibu' => 'Ibu Fauzi',
         'nik_ibu' => '6302000000000003',
         'pekerjaan_ibu' => 'Petani',
+        'dokumen_akademik' => akademikProfilDummy(5),
     ], berkasProfilDummy());
 
     actingAs($user)

@@ -240,7 +240,15 @@ class ProfileController extends Controller
      */
     private function simpanDokumenAkademik(UpdateProfilRequest $request, $uploadDisk): void
     {
-        $semua = (array) $request->input('dokumen_akademik', []);
+        // Pada multipart browser, input file berada di FileBag dan TIDAK ikut
+        // `$request->input()`. KRS hanya memiliki berkas (tanpa field teks),
+        // sehingga mengiterasi input saja membuat seluruh KRS hilang walaupun
+        // validasi `hasFile()` sudah lolos. Gabungkan parameter teks dan file
+        // agar baris file-only diproses persis seperti request browser nyata.
+        $semua = array_replace_recursive(
+            (array) $request->input('dokumen_akademik', []),
+            (array) $request->file('dokumen_akademik', []),
+        );
 
         foreach ($semua as $jenis => $perSemester) {
             if (! array_key_exists($jenis, DokumenAkademik::JENIS_LABELS)) {

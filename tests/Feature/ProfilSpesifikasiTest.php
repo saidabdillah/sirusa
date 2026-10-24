@@ -65,6 +65,7 @@ function payloadProfilAjax(Prodi $prodi, array $ubah = []): array
         'nama_ibu' => 'Ibu Ahmad',
         'nik_ibu' => '6302000000000004',
         'pekerjaan_ibu' => 'Petani',
+        'dokumen_akademik' => akademikProfilDummy(5),
     ], berkasProfilDummy(), $ubah);
 }
 
