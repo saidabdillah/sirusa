@@ -109,7 +109,6 @@ test('kolom kesra mengikuti keputusan pendaftaran, bukan verif_kesra', function 
     ], $this->prodi->id);
 
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'status' => 'aktif',
         'tanggal_mulai' => now()->subDay(),
         'tanggal_selesai' => now()->addMonth(),

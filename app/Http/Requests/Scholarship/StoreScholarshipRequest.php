@@ -2,10 +2,8 @@
 
 namespace App\Http\Requests\Scholarship;
 
-use App\Models\Prodi;
 use App\Support\JenjangPendidikan;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 
 class StoreScholarshipRequest extends FormRequest
 {
@@ -18,7 +16,6 @@ class StoreScholarshipRequest extends FormRequest
     {
         return [
             'nama' => 'required|string|max:255',
-            'kampus_id' => 'required|integer|exists:kampus,id',
             'kuota' => 'required|integer|min:1',
             // Rentang jenjang SATU SUMBER dengan form profil (D1-S3), bukan
             // daftar tulis tangan yang bisa meleset saat jenjang baru ditambah.
@@ -39,37 +36,10 @@ class StoreScholarshipRequest extends FormRequest
         ];
     }
 
-    public function after(): array
-    {
-        return [
-            function (Validator $validator) {
-                $kampusId = (int) $this->input('kampus_id');
-                $tersimpan = [];
-
-                foreach ($this->input('prodi_ids', []) as $prodiId) {
-                    $prodi = Prodi::query()->whereKey($prodiId)->first();
-
-                    if ($prodi && $prodi->fakultas?->kampus_id !== $kampusId) {
-                        $tersimpan[] = $prodi->nama;
-                    }
-                }
-
-                if ($tersimpan !== []) {
-                    $validator->errors()->add(
-                        'prodi_ids',
-                        'Program studi berikut tidak berada di kampus tujuan: '.implode(', ', $tersimpan).'.'
-                    );
-                }
-            },
-        ];
-    }
-
     public function messages(): array
     {
         return [
             'nama.required' => 'Nama beasiswa harus diisi',
-            'kampus_id.required' => 'Kampus tujuan harus dipilih',
-            'kampus_id.exists' => 'Kampus tujuan tidak valid',
             'kuota.required' => 'Kuota harus diisi',
             'kuota.integer' => 'Kuota harus berupa angka',
             'kuota.min' => 'Kuota minimal 1',

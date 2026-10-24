@@ -178,33 +178,30 @@ class ScholarshipSeeder extends Seeder
             return;
         }
 
-        $data['kampus_id'] = $kampus->id;
-
         $scholarship = Scholarship::firstOrCreate(
             ['nama' => $data['nama']],
             $data,
         );
 
-        $this->syncSnapshot($scholarship, $prodiNames);
+        $this->syncCakupan($scholarship, $kampus, $prodiNames);
     }
 
-    private function syncSnapshot(Scholarship $scholarship, array $prodiNames): void
+    /**
+     * Cakupan disimpan sebagai ID PRODI ASLI (permintaan pengguna: cakupan per
+     * prodi, bukan salinan nama). Idempoten: beasiswa yang sudah punya cakupan
+     * tidak disentuh, jadi `db:seed` berulang aman.
+     */
+    private function syncCakupan(Scholarship $scholarship, Kampus $kampus, array $prodiNames): void
     {
-        if ($scholarship->fakultas()->count() > 0) {
+        if ($scholarship->cakupan()->count() > 0) {
             return;
         }
 
-        $masterProdis = $this->getMasterProdis($scholarship->kampus_id, $prodiNames);
+        $masterProdis = $this->getMasterProdis($kampus->id, $prodiNames);
 
-        $grouped = $masterProdis->groupBy('fakultas_id');
-
-        foreach ($grouped as $items) {
-            $fakultas = $items->first()->fakultas;
-            $record = $scholarship->fakultas()->create(['nama' => $fakultas->nama]);
-            $record->prodi()->createMany(
-                $items->map(fn ($prodi) => ['nama' => $prodi->nama])->all()
-            );
-        }
+        $scholarship->cakupan()->createMany(
+            $masterProdis->map(fn ($prodi) => ['prodi_id' => $prodi->id])->all()
+        );
     }
 
     private function getMasterProdis(?int $kampusId, array $prodiNames): Collection

@@ -99,7 +99,6 @@ function beasiswaUntukEkspor(): Scholarship
 {
     return Scholarship::query()->first() ?: Scholarship::factory()->create([
         'nama' => 'Beasiswa Ekspor',
-        'kampus_id' => test()->kampus->id,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,
         'status' => 'aktif',

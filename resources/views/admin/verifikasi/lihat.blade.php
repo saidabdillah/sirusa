@@ -33,7 +33,7 @@
   // yang sudah tersimpan. Tanpa eager-load keduanya, satu query per
   // pendaftaran.
   $applications = $stage === 'kesra'
-      ? $user->applicants()->with(['beasiswa.kampus.fakultas.prodi', 'diputuskanOleh'])->latest()->get()
+      ? $user->applicants()->with(['beasiswa.cakupan.prodi.fakultas.kampus', 'diputuskanOleh'])->latest()->get()
       : collect();
 @endphp
 
@@ -89,29 +89,27 @@
                     // mengulang data pendaftar: data diri, kampus, dan dokumen
                     // sudah lengkap di kolom kiri (`partials.profil-detail`),
                     // jadi peninjauan di sini fokus ke ketentuan beasiswanya.
-                    // Cakupan fakultas/prodi dibaca dari relasi `fakultas`
-                    // (baris `beasiswa_fakultas`) beserta anak `prodi` (baris
-                    // `beasiswa_prodi`), dengan aturan falls-back yang sama
-                    // seperti `Scholarship::cakupanLabel()` dan `allowsProdi()`:
-                    // prodi terdaftar -> hanya prodi itu; fakultas tanpa prodi ->
-                    // semua prodi fakultas; tanpa cakupan -> semua prodi kampus.
-                    $cakupanFakultas = $beasiswa?->fakultas ?? collect();
-                    $namaFakultasCakupan = $cakupanFakultas->pluck('nama')->filter()->values();
-                    $namaProdiCakupan = $cakupanFakultas
-                        ->flatMap(fn ($fakultas) => $fakultas->prodi)
-                        ->pluck('nama')->filter()->values();
-                    $namaKampus = $beasiswa?->kampus?->nama_kampus ?? $beasiswa?->kampus ?? null;
+                    //
+                    // Cakupan dibaca dari relasi `cakupan` (id prodi asli), lalu
+                    // kampus dan fakultasnya diturunkan dari prodi tersebut.
+                    // Aturannya sama persis dengan `Scholarship::allowsProdi()`:
+                    // tanpa cakupan = terbuka untuk semua program studi.
+                    $cakupan = $beasiswa?->cakupan ?? collect();
+                    $prodiCakupan = $cakupan->map(fn ($c) => $c->prodi)->filter();
+                    $namaProdiCakupan = $prodiCakupan->pluck('nama')->filter()->values();
+                    $namaFakultasCakupan = $prodiCakupan->map(fn ($p) => $p->fakultas?->nama)->filter()->unique()->values();
+                    $namaKampusCakupan = $prodiCakupan->map(fn ($p) => $p->fakultas?->kampus?->nama_kampus)->filter()->unique()->values();
 
                     $detailBeasiswa = [
-                      ['label' => 'Kampus', 'value' => $namaKampus ?? '-'],
-                      ['label' => 'Fakultas', 'value' => ! $namaFakultasCakupan->isEmpty()
+                      ['label' => 'Kampus', 'value' => $namaKampusCakupan->isNotEmpty()
+                          ? $namaKampusCakupan->join(', ')
+                          : 'Semua Kampus'],
+                      ['label' => 'Fakultas', 'value' => $namaFakultasCakupan->isNotEmpty()
                           ? $namaFakultasCakupan->join(', ')
                           : 'Semua Fakultas'],
-                      ['label' => 'Program Studi', 'value' => ! $namaProdiCakupan->isEmpty()
+                      ['label' => 'Program Studi', 'value' => $namaProdiCakupan->isNotEmpty()
                           ? $namaProdiCakupan->join(', ')
-                          : ($cakupanFakultas->isEmpty()
-                              ? 'Semua Program Studi'.($namaKampus !== null ? ' di '.$namaKampus : '')
-                              : 'Semua Program Studi fakultas yang tercakup')],
+                          : 'Semua Program Studi'],
                       ['label' => 'Kuota', 'value' => $beasiswa?->kuota ?? '-'],
                       ['label' => 'IPK Minimal', 'value' => $beasiswa ? number_format((float) $beasiswa->ipk_minimal, 2) : '-'],
                       ['label' => 'Semester Minimal', 'value' => $beasiswa?->semester_minimal ?? '-'],

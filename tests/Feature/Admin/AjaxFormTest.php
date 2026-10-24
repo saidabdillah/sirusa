@@ -33,7 +33,6 @@ function payloadBeasiswa(Kampus $kampus, Prodi $prodi, array $ubah = []): array
         'nama' => 'Beasiswa Unggulan',
         'deskripsi' => 'Beasiswa untuk mahasiswa berprestasi.',
         'persyaratan' => 'IPK minimal 3.00 dan semester 3.',
-        'kampus_id' => $kampus->id,
         'prodi_ids' => [$prodi->id],
         'tingkat_gelar' => 'S1',
         'kuota' => 30,
@@ -114,7 +113,7 @@ test('validasi gagal lewat permintaan biasa kembali ke form dengan error', funct
 test('kegagalan bisnis lewat ajax dibalas success false dengan status 422', function () {
     $mahasiswa = User::factory()->standardUser()->create(['email' => 'mhs@test.com']);
 
-    $beasiswa = Scholarship::factory()->create(['kampus_id' => $this->kampus->id]);
+    $beasiswa = Scholarship::factory()->create();
 
     // Pendaftaran yang sudah diputuskan Kesra tidak bisa dibatalkan mahasiswa.
     $applicant = Applicant::create([
@@ -170,7 +169,7 @@ test('form admin memakai penanda ajax agar submit tanpa reload', function (strin
     // menutupi halaman kosong, tapi lonceng notifikasi sudah dihapus -- jadi
     // buat satu baris data agar penanda ajax tetap teruji di halaman ini.
     'daftar beasiswa' => [function () {
-        Scholarship::factory()->create(['kampus_id' => test()->kampus->id]);
+        Scholarship::factory()->create();
 
         return route('admin.beasiswa.index');
     }],

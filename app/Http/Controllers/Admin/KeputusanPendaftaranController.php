@@ -10,6 +10,7 @@ use App\Models\Applicant;
 use App\Models\Scholarship;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Models\VerifikasiSemester;
 use App\Support\ExcelDownload;
 use App\Support\VerifikasiAntrean;
 use Illuminate\Database\Eloquent\Collection;
@@ -104,6 +105,15 @@ class KeputusanPendaftaranController extends Controller
             }
 
             $applicant->update($attributes);
+
+            // Penerima beasiswa langsung masuk siklus verifikasi semester:
+            // paket untuk semester yang dokumennya sudah lengkap dibuat di sini,
+            // tanpa menunggu mahasiswa membuka dan menyimpan profilnya lagi.
+            // Tanpa ini, penerima yang sudah ada tidak akan pernah punya paket
+            // semester sama sekali.
+            if ($attributes['status'] === 'diterima' && $applicant->user !== null) {
+                VerifikasiSemester::sinkron($applicant->user);
+            }
 
             // `verif_kesra` TIDAK ditulis di sini. Tahap Kesra pada profil baru
             // dinyatakan selesai saat hasil seleksi DIUMUMKAN (`umumkan()`),

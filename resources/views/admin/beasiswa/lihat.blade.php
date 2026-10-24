@@ -68,28 +68,30 @@
               </span>
             </div>
 
-            {{-- Cakupan beasiswa (fakultas & program studi yang dipilih saat
-                 dibuat/diubah). Sumbernya relasi yang sudah di-eager-load
-                 `BeasiswaController::show()`, jadi tidak ada query tambahan. --}}
+            {{-- Cakupan beasiswa: daftar prodi (id asli), lalu dikelompokkan
+                 kampus -> fakultas supaya terbaca. Sumbernya relasi yang
+                 di-eager-load `BeasiswaController::show()`. --}}
             <div class="mb-3">
               <strong>Program Studi yang Bisa Mendaftar:</strong><br>
-              @if($scholarship->fakultas->isEmpty())
+              @php($cakupanBeasiswa = $scholarship->cakupan ?? collect())
+              @if($cakupanBeasiswa->isEmpty())
                 <span class="text-muted">
-                  Semua Program Studi di {{ $scholarship->kampus }}. Tidak ada pembatasan program studi untuk beasiswa ini.
+                  Semua Program Studi. Tidak ada pembatasan program studi untuk beasiswa ini.
                 </span>
               @else
-                @foreach($scholarship->fakultas as $fakultas)
-                  <div class="mt-2">
-                    <i class="fas fa-university text-muted"></i> <strong>{{ $fakultas->nama }}</strong>
-                    @if($fakultas->prodi->isEmpty())
-                      <div class="text-muted ml-4"><small>Seluruh program studi pada fakultas ini</small></div>
-                    @else
-                      <ul class="mb-0 pl-4">
-                        @foreach($fakultas->prodi as $prodi)
-                          <li>{{ $prodi->nama }}</li>
-                        @endforeach
-                      </ul>
-                    @endif
+                @foreach($cakupanBeasiswa->groupBy(fn ($c) => $c->prodi?->fakultas?->kampus?->nama_kampus ?? '-') as $namaKampus => $barisKampus)
+                  <div class="mt-3">
+                    <i class="fas fa-university text-muted"></i> <strong>{{ $namaKampus }}</strong>
+                    @foreach($barisKampus->groupBy(fn ($c) => $c->prodi?->fakultas?->nama ?? '-') as $namaFakultas => $barisFakultas)
+                      <div class="ml-4 mt-1">
+                        <i class="fas fa-building text-muted"></i> {{ $namaFakultas }}
+                        <ul class="mb-0 pl-4">
+                          @foreach($barisFakultas as $cakupan)
+                            <li>{{ $cakupan->prodi?->nama ?? '-' }}</li>
+                          @endforeach
+                        </ul>
+                      </div>
+                    @endforeach
                   </div>
                 @endforeach
               @endif

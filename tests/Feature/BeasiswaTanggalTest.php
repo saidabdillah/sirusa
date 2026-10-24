@@ -49,7 +49,6 @@ test('beasiswa dengan tanggal mulai yang sudah lewat tetap bisa dibuat', functio
             'nama' => 'Beasiswa Periode Lampau',
             'deskripsi' => 'Pendaftaran sudah ditutup.',
             'persyaratan' => 'Tidak ada.',
-            'kampus_id' => $this->kampus->id,
             'prodi_ids' => [$this->prodi->id],
             'tingkat_gelar' => 'S1',
             'kuota' => 10,
@@ -69,7 +68,6 @@ test('tanggal selesai tetap harus tidak lebih awal dari tanggal mulai', function
             'nama' => 'Beasiswa Terbalik',
             'deskripsi' => 'Tanggalnya terbalik.',
             'persyaratan' => 'Tidak ada.',
-            'kampus_id' => $this->kampus->id,
             'prodi_ids' => [$this->prodi->id],
             'tingkat_gelar' => 'S1',
             'kuota' => 10,
@@ -85,7 +83,6 @@ test('tanggal selesai tetap harus tidak lebih awal dari tanggal mulai', function
 
 test('perubahan tanggal masa lalu lewat form ubah tetap diterima', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->subYear()->startOfYear()->format('Y-m-d'),
         'tanggal_selesai' => now()->subYear()->startOfYear()->addMonth()->format('Y-m-d'),
@@ -96,7 +93,6 @@ test('perubahan tanggal masa lalu lewat form ubah tetap diterima', function () {
             'nama' => $beasiswa->nama,
             'deskripsi' => $beasiswa->deskripsi,
             'persyaratan' => $beasiswa->persyaratan,
-            'kampus_id' => $this->kampus->id,
             'prodi_ids' => [$this->prodi->id],
             'tingkat_gelar' => 'S1',
             'kuota' => $beasiswa->kuota,
@@ -116,7 +112,6 @@ test('form ubah juga menolak tanggal selesai yang lebih awal dari tanggal mulai'
     // urutan create saja tidak cukup: kalau salinan itu omit `after_or_equal`,
     // form Ubah akan menerima tanggal yang terbalik tanpa satu pun error.
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => '2026-01-15',
         'tanggal_selesai' => '2026-03-20',
@@ -127,7 +122,6 @@ test('form ubah juga menolak tanggal selesai yang lebih awal dari tanggal mulai'
             'nama' => $beasiswa->nama,
             'deskripsi' => $beasiswa->deskripsi,
             'persyaratan' => $beasiswa->persyaratan,
-            'kampus_id' => $this->kampus->id,
             'prodi_ids' => [$this->prodi->id],
             'tingkat_gelar' => 'S1',
             'kuota' => $beasiswa->kuota,
@@ -146,7 +140,6 @@ test('form ubah juga menolak tanggal selesai yang lebih awal dari tanggal mulai'
 
 test('form ubah juga menolak tanggal mulai yang tidak valid', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_mulai' => '2026-01-15',
         'tanggal_selesai' => '2026-03-20',
     ]);
@@ -156,7 +149,6 @@ test('form ubah juga menolak tanggal mulai yang tidak valid', function () {
             'nama' => $beasiswa->nama,
             'deskripsi' => $beasiswa->deskripsi,
             'persyaratan' => $beasiswa->persyaratan,
-            'kampus_id' => $this->kampus->id,
             'prodi_ids' => [$this->prodi->id],
             'tingkat_gelar' => 'S1',
             'kuota' => $beasiswa->kuota,
@@ -185,7 +177,6 @@ test('form buat memakai input teks flatpickr yang dikonfigurasi', function () {
 
 test('form ubah memakai input teks flatpickr yang dikonfigurasi sama', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_mulai' => '2026-01-15',
         'tanggal_selesai' => '2026-03-20',
     ]);
@@ -198,7 +189,6 @@ test('form ubah memakai input teks flatpickr yang dikonfigurasi sama', function 
 
 test('nilai tanggal tersimpan terisi kembali di form ubah', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_mulai' => '2026-01-15',
         'tanggal_selesai' => '2026-03-20',
     ]);
@@ -212,7 +202,6 @@ test('nilai tanggal tersimpan terisi kembali di form ubah', function () {
 
 test('form ubah tidak memaksa tanggal ke masa depan', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_mulai' => now()->subYear()->format('Y-m-d'),
         'tanggal_selesai' => now()->subMonth()->format('Y-m-d'),
     ]);
@@ -285,7 +274,6 @@ test('error tanggal dari server menandai input dan menaruh pesan di bawahnya', f
             'nama' => 'Beasiswa Terbalik',
             'deskripsi' => 'Tanggalnya terbalik.',
             'persyaratan' => 'Tidak ada.',
-            'kampus_id' => $this->kampus->id,
             'prodi_ids' => [$this->prodi->id],
             'tingkat_gelar' => 'S1',
             'kuota' => 10,
@@ -317,7 +305,6 @@ test('error tanggal masing-masing ditolak backend secara terpisah', function () 
         'nama' => 'Beasiswa Uji Tanggal',
         'deskripsi' => 'Uji validasi tanggal.',
         'persyaratan' => 'Tidak ada.',
-        'kampus_id' => $this->kampus->id,
         'prodi_ids' => [$this->prodi->id],
         'tingkat_gelar' => 'S1',
         'kuota' => 10,

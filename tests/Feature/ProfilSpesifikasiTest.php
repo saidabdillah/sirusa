@@ -285,8 +285,12 @@ test('form create memakai placeholder "Pilih" di setiap dropdown', function () {
     $admin = User::factory()->superAdmin()->create(['email' => 'admin@test.com']);
 
     // Placeholder ditulis sebagai entitas HTML supaya tidak bergantung pada
-    // encode UTF-8 dari HTTP response.
-    actingAs($admin)->get(route('admin.beasiswa.buat'))->assertOk()->assertSee('&mdash; Pilih &mdash;', false);
+    // encode UTF-8 dari HTTP response. Form beasiswa tidak lagi punya dropdown
+    // kampus (cakupan kini pohon centang), jadi yang diperiksa dropdown yang
+    // memang tersisa: jenjang dan semester minimal.
+    actingAs($admin)->get(route('admin.beasiswa.buat'))->assertOk()
+        ->assertSee('&mdash; Pilih Jenjang &mdash;', false)
+        ->assertSee('-- Pilih Semester --', false);
     actingAs($admin)->get(route('admin.pengguna.buat'))->assertOk()->assertSee('&mdash; Pilih &mdash;', false);
 });
 
@@ -303,16 +307,16 @@ test('dropdown form create tidak menandai pilihan apa pun sampai pengguna memili
     // pengguna wajib memilih sendiri nilai yang benar. Input `status` sudah
     // dihapus dari form beasiswa (permintaan pengguna) -- tidak ada lagi
     // dropdown "aktif" yang bisa terpilih diam-diam.
-    expect($html)->toContain('<option value="">&mdash; Pilih &mdash;</option>')
+    expect($html)->toContain('<option value="">&mdash; Pilih Jenjang &mdash;</option>')
         ->and($html)->not->toContain('<option value="" selected>')
         ->and($html)->not->toContain('<option value="S1" selected>')
-        ->and($html)->not->toContain('name="status"');
+        ->and($html)->not->toContain('name="status"')
+        ->and($html)->not->toContain('name="kampus_id"');
 });
 
 test('dropdown form edit otomatis mengikuti data tersimpan', function () {
     $admin = User::factory()->superAdmin()->create(['email' => 'admin@test.com']);
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tingkat_gelar' => 'S2',
     ]);
 
@@ -323,11 +327,13 @@ test('dropdown form edit otomatis mengikuti data tersimpan', function () {
     );
 
     expect($html)->toContain('<option value="S2" selected>')
-        ->and($html)->toContain('<option value="'.$beasiswa->kampus_id.'" selected>')
-        // Placeholder tetap ada supaya daftar pilihannya tidak berubah, cuma
-        // memang bukan yang terpilih. Input `status` tidak lagi ada di form.
-        ->and($html)->toContain('&mdash; Pilih &mdash;')
-        ->and($html)->not->toContain('name="status"');
+        // Placeholder yang dicek adalah yang masih ada: jenjang dan semester
+        // minimal. Dropdown kampus sudah tidak ada (cakupan jadi pohon centang).
+        ->and($html)->toContain('&mdash; Pilih Jenjang &mdash;')
+        ->and($html)->toContain('-- Pilih Semester --')
+        ->and($html)->not->toContain('name="status"')
+        ->and($html)->not->toContain('&mdash; Pilih &mdash;</option>')
+        ->and($html)->toContain('id="prodi-tree"');
 });
 
 test('dropdown keputusan verifikasi tidak pernah mengikuti keputusan yang tersimpan', function () {
@@ -348,7 +354,6 @@ test('dropdown keputusan verifikasi tidak pernah mengikuti keputusan yang tersim
     // jadi satu baris pendaftaran dibuat supaya halaman detailnya bisa dibuka.
     Applicant::factory()->create([
         'user_id' => $user->id,
-        'beasiswa_id' => Scholarship::factory()->create(['kampus_id' => $this->kampus->id])->id,
         'status' => 'verifikasi',
     ]);
 

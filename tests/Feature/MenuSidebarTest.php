@@ -143,7 +143,10 @@ test('kesra sidebar shows admin menus plus Pengguna but not role and menu manage
         // Header section "Manajemen" dirender sebagai `<li class="menu-header">`,
         // bukan `<span>` (yang dipakai label menu di dalam `<a>`).
         ->assertSee('<li class="menu-header">Manajemen</li>', false)
-        ->assertSee('<span>Verifikasi</span>', false)
+        // Anak dropdown Kesra: "Verifikasi Awal", "Keputusan", dan
+        // "Verifikasi Semester" (permintaan pengguna).
+        ->assertSee('<span>Verifikasi Awal</span>', false)
+        ->assertSee('<span>Verifikasi Semester</span>', false)
         ->assertSee('<span>Penerima Beasiswa</span>', false)
         ->assertSee('<span>Keputusan</span>', false)
         ->assertSee('<span>Pendaftar</span>', false)
@@ -174,6 +177,9 @@ test('kampus role sidebar does not show kampus master data menu', function () {
         // adalah href-nya: role kampus punya antrean verifikasi, tapi tidak
         // boleh punya master data kampus.
         ->assertSee(route('admin.kampusverif.index'), false)
+        // Kampus kini dropdown: anaknya verifikasi awal + verifikasi semester.
+        ->assertSee('<span>Verifikasi Awal</span>', false)
+        ->assertSee('<span>Verifikasi Semester</span>', false)
         ->assertDontSee(route('admin.kampus.index'), false)
         // Halaman "Status Verifikasi" dibuka untuk Catpil dan Kampus (rekap
         // read-only), jadi leaf-nya ikut muncul di sidebar mereka.
@@ -256,10 +262,11 @@ test('sidebar groups menu ke section yang sesuai', function () {
         ->toContain(route('admin.kampusverif.index'))
         ->toContain(route('admin.kesra.index'))
         ->toContain(route('admin.kesra.disetujui'))
-        // Menu mandiri untuk verifikasi paket semester penerima beasiswa.
-        ->toContain(route('admin.semester.index'))
-        ->toContain('<span>Verifikasi Semester</span>')
-        ->toContain('<span>Catpil</span>')
+        // Verifikasi Semester TIDAK lagi jadi menu mandiri: ia anak dari
+        // dropdown Kampus dan Kesra (permintaan pengguna). Yang tersisa di
+        // section ini hanya dua dropdown (Kampus & Kesra) + Catpil/Pengumuman.
+        ->toContain(route('admin.semester.kampus'))
+        ->toContain(route('admin.semester.kesra'))
         ->toContain('<span>Kampus</span>')
         ->toContain('<span>Kesra</span>')
         ->not->toContain(route('admin.penerima.index'))

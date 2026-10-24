@@ -147,8 +147,8 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         ->orderBy('urutan')
         ->get();
 
-    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan'])
-        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui'])
+    expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi Awal', 'Keputusan', 'Verifikasi Semester'])
+        ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.semester'])
         ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Verifikasi']);
 
     // "Penerima Beasiswa" bukan anak Kesra lagi: leaf mandiri di section
@@ -267,12 +267,11 @@ test('menuseeder idempoten: dua kali jalan menghasilkan pohon dan grant yang sam
 
     expect($kedua['menu'])->toEqual($pertama['menu'])
         ->and($kedua['grant'])->toEqual($pertama['grant'])
-        // 10 top-level + 11 anak = 21. "Kesra" punya DUA anak (Verifikasi +
-        // Keputusan); "Penerima Beasiswa" leaf mandiri di "Manajemen";
-        // "Status Verifikasi" berganti label "Pendaftar" (rekap) di
-        // "Administrasi" dan menu daftar pendaftar lama DIHAPUS;
-        // "Verifikasi Semester" leaf mandiri di section "Verifikasi".
-        ->and(count($pertama['menu']))->toBe(22);
+        // 9 top-level + 15 anak = 24. "Kampus" dan "Kesra" kini masing-masing
+        // dropdown yang memuat "Verifikasi Awal" dan "Verifikasi Semester";
+        // menu mandiri "Verifikasi Semester" DIHAPUS karena isinya sudah
+        // masuk ke dua dropdown itu.
+        ->and(count($pertama['menu']))->toBe(24);
 });
 
 test('menuseeder tidak menggandakan grant di pivot role menu', function () {
@@ -311,9 +310,12 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
         ->orderBy('urutan')
         ->get();
 
-    expect($anak->pluck('label')->all())->toBe(['Verifikasi', 'Keputusan'])
-        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui'])
-        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui']);
+    // "Verifikasi Awal" = antrean seleksi; "Keputusan" = arsip putusan;
+    // "Verifikasi Semester" = paket KRS/KHS tiap semester (permintaan
+    // pengguna: verifikasi semester ada di dropdown Kesra, bukan menu sendiri).
+    expect($anak->pluck('label')->all())->toBe(['Verifikasi Awal', 'Keputusan', 'Verifikasi Semester'])
+        ->and($anak->pluck('route')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.semester.kesra'])
+        ->and($anak->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.semester']);
 
     $kesraRoleId = Role::where('name', 'kesra')->firstOrFail()->id;
     $grantKesra = DB::table('role_menu')->where('role_id', $kesraRoleId)->pluck('menu_id');

@@ -32,7 +32,6 @@ beforeEach(function () {
     ]);
 
     $this->beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_mulai' => now()->subDay()->format('Y-m-d'),
         'tanggal_selesai' => now()->addMonth()->format('Y-m-d'),
     ]);

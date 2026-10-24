@@ -21,6 +21,15 @@ beforeEach(function () {
         ->prodi()->create(['nama' => 'Teknik Informatika']);
 
     $this->kesra = User::factory()->admin()->create(['email' => 'penerima-kesra@test.com']);
+
+    // Beasiswa bersama untuk seluruh tes di berkas ini. Sejak cakupan disimpan
+    // per prodi (bukan per kampus), beasiswanya cukup diberi cakupan prodi
+    // kampus uji supaya mahasiswa dengan prodi itu benar-benar bisa mendaftar.
+    $this->beasiswa = Scholarship::factory()->create([
+        'nama' => 'Beasiswa Penerima',
+        'kampus' => $this->kampus->nama_kampus,
+    ]);
+    $this->beasiswa->cakupan()->create(['prodi_id' => $this->prodi->id]);
 });
 
 /**
@@ -34,12 +43,11 @@ function penerimaBaru(string $email, string $status = 'diterima', bool $aktif = 
     // NIK/NIM unik per baris: kedua kolom punya index unique di tabel profil.
     $urutan = str_pad((string) $urut, 6, '0', STR_PAD_LEFT);
     $mahasiswa = User::factory()->standardUser()->create(['email' => $email, 'status' => $aktif ? 'aktif' : 'non-aktif']);
-    $beasiswa = Scholarship::factory()->create(['kampus_id' => test()->kampus->id]);
     penerimaProfil($mahasiswa, $urutan);
 
     return Applicant::create([
         'user_id' => $mahasiswa->id,
-        'beasiswa_id' => $beasiswa->id,
+        'beasiswa_id' => test()->beasiswa->id,
         'status' => $status,
         'catatan' => $status === 'diterima' ? 'Lolos seleksi' : null,
     ]);
@@ -193,6 +201,14 @@ test('filter fakultas, prodi, dan beasiswa mempersempit daftar penerima', functi
     $teknik = penerimaBaru('penerima-teknik@test.com');
     $ekonomi = penerimaBaru('penerima-ekonomi@test.com');
     $ekonomi->user->profile->update(['prodi_id' => $prodiLain->id]);
+
+    // Beasiswa terpisah: filter `beasiswa_id` hanya bermakna kalau kedua
+    // penerima memang mendaftar beasiswa yang berbeda.
+    $beasiswaEkonomi = Scholarship::factory()->create([
+        'nama' => 'Beasiswa Ekonomi',
+        'kampus' => $this->kampus->nama_kampus,
+    ]);
+    $ekonomi->update(['beasiswa_id' => $beasiswaEkonomi->id]);
 
     actingAs($this->kesra)
         ->get(route('admin.penerima.index', ['fakultas_id' => $this->prodi->fakultas->id]))

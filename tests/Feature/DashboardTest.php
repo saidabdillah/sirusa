@@ -58,7 +58,6 @@ function mahasiswaTahap(string $tahap, string $nama): User
         $beasiswa = Scholarship::query()->where('nama', 'Beasiswa Antrean')->first()
             ?: Scholarship::factory()->create([
                 'nama' => 'Beasiswa Antrean',
-                'kampus_id' => test()->kampus->id,
                 'kampus' => test()->kampus->nama_kampus,
                 'ipk_minimal' => 0,
                 'semester_minimal' => 0,
@@ -101,7 +100,6 @@ test('kampus admin sees the kampus queue dashboard', function () {
 test('kesra sees the kesra dashboard with the pending registration queue', function () {
     $user = mahasiswaTahap('kesra', 'Citra Kesra');
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_selesai' => now()->addMonth(),
     ]);
     Applicant::factory()->create(['user_id' => $user->id, 'beasiswa_id' => $beasiswa->id]);
@@ -117,7 +115,6 @@ test('kesra sees the kesra dashboard with the pending registration queue', funct
 test('kesra dashboard has one queue, not a duplicate list of the same people', function () {
     $user = mahasiswaTahap('kesra', 'Citra Kesra');
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_selesai' => now()->addMonth(),
     ]);
     Applicant::factory()->create(['user_id' => $user->id, 'beasiswa_id' => $beasiswa->id]);
@@ -135,7 +132,6 @@ test('kesra dashboard has one queue, not a duplicate list of the same people', f
 
 test('kesra stat cards count registrations, not profile verdicts', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_selesai' => now()->addMonth(),
     ]);
 
@@ -169,7 +165,6 @@ test('kesra stat cards count registrations, not profile verdicts', function () {
 
 test('kesra queue count matches the applicant list its menu opens', function () {
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_selesai' => now()->addMonth(),
     ]);
 
@@ -230,7 +225,6 @@ test('the campus column on a stage dashboard shows the real campus name', functi
     Applicant::factory()->create([
         'user_id' => $user->id,
         'beasiswa_id' => Scholarship::factory()->create([
-            'kampus_id' => $this->kampus->id,
             'tanggal_selesai' => now()->addMonth(),
         ])->id,
     ]);
@@ -368,13 +362,12 @@ test('student dashboard lays Beasiswa Tersedia out full width in a grid', functi
 
     $beasiswa = Scholarship::factory()->create([
         'nama' => 'Beasiswa Grid',
-        'kampus_id' => $this->kampus->id,
         'status' => 'aktif',
         'tanggal_mulai' => now()->subDay(),
         'tanggal_selesai' => now()->addMonth(),
     ]);
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik']);
-
+    // Beasiswa tanpa cakupan terbuka untuk semua prodi (kini bentuknya id
+    // prodi, bukan salinan nama) -- cukup tampil di dasbor.
     $html = actingAs($user)->get(route('dashboard'))->assertOk()->getContent();
 
     // Kartu "Beasiswa Tersedia" selebar layar (col-12), dan tiap beasiswa jadi
@@ -494,7 +487,6 @@ test('student dashboard shows Kesra as rejected when the application was rejecte
     // `verif_kesra` `setuju` (penanda "sudah diputuskan") tapi pendaftarannya
     // ditolak: kartu status tidak boleh melaporkan "Setuju".
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'status' => 'aktif',
         'tanggal_mulai' => now()->subDay(),
         'tanggal_selesai' => now()->addMonth(),
@@ -544,7 +536,6 @@ test('mahasiswa dashboard shows the blocking application', function () {
     ]);
 
     $beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'tanggal_selesai' => now()->addMonth(),
     ]);
     Applicant::factory()->create(['user_id' => $user->id, 'beasiswa_id' => $beasiswa->id]);
@@ -559,25 +550,25 @@ test('mahasiswa dashboard shows the blocking application', function () {
 test('mahasiswa dashboard lists only beasiswa that allows the student prodi', function () {
     $user = mahasiswaTahap('catpil', 'Rina Fakultas');
 
-    // Cakupan fakultas tanpa daftar prodi: tercakup untuk Teknik Informatika.
+    // Cakupan yang memuat prodi mahasiswa (Teknik Informatika) -> tampil.
     $terbukaFakultas = Scholarship::factory()->create([
         'nama' => 'Beasiswa Fakultas Teknik',
-        'kampus_id' => $this->kampus->id,
         'status' => 'aktif',
         'tanggal_mulai' => now()->subDay(),
         'tanggal_selesai' => now()->addMonth(),
     ]);
-    $terbukaFakultas->fakultas()->create(['nama' => 'Fakultas Teknik']);
+    $terbukaFakultas->cakupan()->create(['prodi_id' => test()->prodi->id]);
 
     // Cakupan prodi: hanya Teknik Elektro, bukan Teknik Informatika milik user.
+    $elektro = $this->kampus->fakultas()->create(['nama' => 'Elektro'])
+        ->prodi()->create(['nama' => 'Teknik Elektro']);
     $tertutupProdi = Scholarship::factory()->create([
         'nama' => 'Beasiswa Elektro',
-        'kampus_id' => $this->kampus->id,
         'status' => 'aktif',
         'tanggal_mulai' => now()->subDay(),
         'tanggal_selesai' => now()->addMonth(),
     ]);
-    $tertutupProdi->fakultas()->create(['nama' => 'Fakultas Teknik'])->prodi()->create(['nama' => 'Teknik Elektro']);
+    $tertutupProdi->cakupan()->create(['prodi_id' => $elektro->id]);
 
     actingAs($user)
         ->get(route('dashboard'))

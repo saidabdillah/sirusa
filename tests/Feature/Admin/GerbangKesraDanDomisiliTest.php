@@ -26,7 +26,6 @@ beforeEach(function () {
     $this->kesra = User::factory()->admin()->create(['email' => 'kesra@test.com']);
 
     $this->beasiswa = Scholarship::factory()->create([
-        'kampus_id' => $this->kampus->id,
         'kuota' => 10,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,

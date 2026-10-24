@@ -98,7 +98,6 @@ function createPendingVerifikasiProfile(User $user, string $stage): UserProfile
 function beasiswaVerifikasi(): Scholarship
 {
     return Scholarship::query()->first() ?: Scholarship::factory()->create([
-        'kampus_id' => Kampus::query()->firstOrFail()->id,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,
         'status' => 'aktif',

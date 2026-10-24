@@ -28,7 +28,6 @@ beforeEach(function () {
 
     $this->beasiswa = Scholarship::factory()->create([
         'nama' => 'Beasiswa Uji Semester',
-        'kampus_id' => $kampus->id,
         'kampus' => $kampus->nama_kampus,
     ]);
 });

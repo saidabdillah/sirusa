@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
@@ -18,7 +17,6 @@ class Scholarship extends Model
     protected $fillable = [
         'nama',
         'kampus',
-        'kampus_id',
         'kuota',
         'tingkat_gelar',
         'tanggal_mulai',
@@ -60,82 +58,59 @@ class Scholarship extends Model
 
     /**
      * Beasiswa yang boleh didaftar seorang mahasiswa, disaring mengikuti
-     * kampus, fakultas, DAN program studi pada profilnya:
+     * cakupan prodi: seorang mahasiswa boleh mendaftar bila prodinya IKUT
+     * TERCENTANG pada beasiswa itu.
      *
-     * - tanpa baris cakupan     -> seluruh prodi di kampus beasiswa tersebut;
-     * - cakupan prodi           -> hanya prodi yang terdaftar;
-     * - cakupan fakultas (saja) -> semua prodi fakultas-fakultas itu.
+     * Beasiswa TANPA cakupan berarti terbuka untuk semua prodi (permintaan
+     * pengguna: admin yang tidak mencentang apa pun tidak mengunci beasiswanya
+     * dari semua orang).
      *
-     * Filter ini harus tetap sejalan dengan `allowsProdi()` di halaman detail:
-     * daftar tidak boleh menawarkan beasiswa yang detailnya menolak profi.
-     *
-     * `$profile` null atau tanpa prodi berarti kampus mahasiswanya belum
+     * `$profile` null atau tanpa prodi berarti prodi mahasiswanya belum
      * diketahui, jadi hasil kosong, bukan semua.
      */
     public function scopeUntukMahasiswa(Builder $query, ?UserProfile $profile): Builder
     {
-        $kampusId = $profile?->prodi?->fakultas?->kampus_id;
+        $prodiId = $profile?->prodi_id;
 
-        if (! $kampusId) {
+        if (! $prodiId) {
             return $query->whereRaw('1 = 0');
         }
 
-        $fakultasNama = $profile->prodi?->fakultas?->nama;
-        $prodiNama = $profile->prodi?->nama;
-
-        return $query->where('kampus_id', $kampusId)
-            ->where(function (Builder $inner) use ($fakultasNama, $prodiNama) {
-                $inner->whereDoesntHave('fakultas');
-
-                if ($fakultasNama !== null) {
-                    $inner->orWhereHas('fakultas', fn (Builder $f) => $f
-                        ->where('nama', $fakultasNama)
-                        ->whereDoesntHave('prodi'));
-                }
-
-                if ($prodiNama !== null) {
-                    $inner->orWhereHas('fakultas.prodi', fn (Builder $p) => $p->where('nama', $prodiNama));
-                }
-            });
+        return $query->where(fn (Builder $inner) => $inner
+            ->whereDoesntHave('cakupan')
+            ->orWhereHas('cakupan', fn (Builder $c) => $c->where('prodi_id', $prodiId)));
     }
 
-    public function kampus(): BelongsTo
+    /**
+     * Cakupan prodi: satu baris per prodi yang boleh mendaftar.
+     */
+    public function cakupan(): HasMany
     {
-        return $this->belongsTo(Kampus::class, 'kampus_id');
+        return $this->hasMany(BeasiswaCakupan::class, 'beasiswa_id');
     }
 
-    public function fakultas(): HasMany
+    /**
+     * Kampus yang tercakup, diturunkan dari prodi terpilih.
+     *
+     * Dihitung di query, bukan disimpan, supaya tidak ada daftar kedua yang
+     * bisa berbeda dengan cakupan prodinya.
+     *
+     * @return Collection<int, Kampus>
+     */
+    public function kampusTercakup(): Collection
     {
-        return $this->hasMany(ScholarshipFakultas::class, 'beasiswa_id');
+        return Kampus::query()
+            ->whereIn('kampus.id', Prodi::query()
+                ->join('fakultas', 'fakultas.id', '=', 'prodi.fakultas_id')
+                ->whereIn('prodi.id', $this->cakupan()->pluck('prodi_id'))
+                ->pluck('fakultas.kampus_id'))
+            ->orderBy('nama_kampus')
+            ->get();
     }
 
     public function isExpired(): bool
     {
         return $this->tanggal_selesai?->isPast() ?? true;
-    }
-
-    /**
-     * Hitungan cakupan untuk daftar: `fakultas_count` dan `prodi_total`.
-     *
-     * `withCount` nested (`withCount('fakultas.prodi')`) TIDAK bisa dipakai --
-     * `withAggregate()` di framework ini memperlakukan satu string sebagai satu
-     * nama relasi dan memanggil `$model->{'fakultas.prodi'}()`, yang tidak ada.
-     * Jumlah prodi karena itu dihitung dengan subquery terkorelasi yang
-     * menggabungkan `beasiswa_fakultas` ke `beasiswa_prodi`; dua-duanya
-     * menjadi kolom SELECT di query yang sama, jadi daftar 9 kartu tetap satu
-     * query, bukan satu query per kartu.
-     */
-    public function scopeWithHitunganCakupan(Builder $query): Builder
-    {
-        return $query
-            ->withCount('fakultas')
-            ->selectSub(
-                ScholarshipFakultas::query()
-                    ->join('beasiswa_prodi', 'beasiswa_prodi.fakultas_id', '=', 'beasiswa_fakultas.id')
-                    ->selectRaw('count(*)')
-                    ->whereColumn('beasiswa_fakultas.beasiswa_id', 'beasiswa.id'),
-                'prodi_total'
-            );
     }
 
     /**
@@ -196,35 +171,26 @@ class Scholarship extends Model
             && $this->pendaftar()->whereIn('status', ['diterima', 'ditolak'])->exists();
     }
 
+    /**
+     * Apakah prodi mahasiswa ini termasuk cakupan beasiswa.
+     *
+     * Beasiswa TANPA cakupan terbuka untuk semua prodi (permintaan pengguna).
+     * Semantiknya harus sama persis dengan `scopeUntukMahasiswa()`, supaya
+     * daftar beasiswa tidak menawarkan sesuatu yang detailnya menolak.
+     */
     public function allowsProdi(UserProfile $profile): bool
     {
-        $prodi = $profile->prodi;
-
-        if (! $prodi) {
+        if (! $profile->prodi_id) {
             return false;
         }
 
-        $this->loadMissing('fakultas.prodi');
+        $this->loadMissing('cakupan');
 
-        // Cakupan tingkat prodi lebih spesifik daripada tingkat fakultas:
-        // kalau ada daftar prodi, hanya prodi-prodi itu yang boleh mendaftar.
-        $daftarProdi = $this->fakultas->flatMap(
-            fn (ScholarshipFakultas $fakultas) => $fakultas->prodi,
-        );
-
-        if ($daftarProdi->isNotEmpty()) {
-            return $daftarProdi->pluck('nama')->contains($prodi->nama);
-        }
-
-        // Cakupan tingkat fakultas tanpa daftar prodi: seluruh prodi di
-        // fakultas-fakultas yang tercakup boleh mendaftar.
-        if ($prodi->fakultas !== null && $this->fakultas->contains('nama', $prodi->fakultas->nama)) {
+        if ($this->cakupan->isEmpty()) {
             return true;
         }
 
-        // Tanpa cakupan sama sekali -> seluruh prodi di kampus beasiswa tersebut.
-        return $this->kampus_id !== null
-            && $prodi->fakultas?->kampus_id === $this->kampus_id;
+        return $this->cakupan->contains('prodi_id', $profile->prodi_id);
     }
 
     public function eligibilityIssueFor(?UserProfile $profile): ?string
@@ -266,38 +232,21 @@ class Scholarship extends Model
     /**
      * Ringkasan cakupan untuk daftar dan halaman pengajuan.
      *
-     * Tanpa daftar fakultas/prodi, `allowsProdi()` jatuh ke aturan "semua prodi
-     * di kampus ini" -- jadi itu yang ditulis, bukan "semua kampus".
-     * `kampus_id` null TIDAK berarti terbuka untuk semua kampus: `scopeUntukMahasiswa()`
-     * tidak akan mencocokkannya dengan siapa pun, sehingga beasiswa tersebut
-     * tidak tampil untuk mahasiswa mana pun.
+     * TANPA cakupan berarti terbuka untuk semua prodi (permintaan pengguna),
+     * bukan untuk satu kampus saja: tidak ada lagi kampus yang "memiliki"
+     * beasiswa ini.
      */
     public function cakupanLabel(): string
     {
-        $fakultas = $this->atributTerhitung('fakultas_count') ?? $this->fakultas()->count();
-        $prodi = $this->atributTerhitung('prodi_total') ?? $this->jumlahProdiSnapshot();
+        $jumlahProdi = $this->atributTerhitung('cakupan_count') ?? $this->cakupan()->count();
 
-        if ($fakultas === 0) {
-            return $this->kampus
-                ? 'Semua Program Studi di '.$this->kampus
-                : 'Semua Program Studi';
+        if ($jumlahProdi === 0) {
+            return 'Terbuka untuk semua program studi';
         }
 
-        return $fakultas.' Fakultas • '.$prodi.' Program Studi';
-    }
+        $jumlahKampus = $this->kampusTercakup()->count();
 
-    /**
-     * Jumlah baris `beasiswa_prodi` milik beasiswa ini.
-     *
-     * Dipakai sebagai fallback kalau `scopeWithHitunganCakupan()` tidak
-     * dipakai, dan oleh `jumlahProdiSnapshot()` yang dipanggil sekali saja --
-     * bukan per baris di dalam loop.
-     */
-    public function jumlahProdiSnapshot(): int
-    {
-        $this->loadMissing('fakultas.prodi');
-
-        return $this->fakultas->sum(fn (ScholarshipFakultas $f) => $f->prodi->count());
+        return $jumlahProdi.' Program Studi • '.$jumlahKampus.' Kampus';
     }
 
     /**

@@ -59,14 +59,13 @@ test('setiap dropdown di form tambah pengguna punya opsi kosong di posisi pertam
 });
 
 test('setiap dropdown di form ubah beasiswa punya opsi kosong di posisi pertama', function () {
-    $beasiswa = Scholarship::factory()->create([
-        'nama' => 'Beasiswa Opsi',
-        'kampus_id' => $this->kampus->id,
-    ]);
+    $beasiswa = Scholarship::factory()->create(['nama' => 'Beasiswa Opsi']);
 
     $html = actingAs($this->superAdmin)->get(route('admin.beasiswa.ubah', $beasiswa))->assertOk()->getContent();
 
-    foreach (['kampus_id', 'tingkat_gelar', 'semester_minimal'] as $id) {
+    // `kampus_id` sudah tidak ada di form beasiswa: cakupan ditentukan pohon
+    // centang kampus/fakultas/prodi, bukan satu dropdown kampus.
+    foreach (['tingkat_gelar', 'semester_minimal'] as $id) {
         $isi = isiSelect($html, $id);
 
         expect($isi)->not->toBe('', "Dropdown #{$id} tidak ditemukan di form ubah beasiswa");
@@ -77,9 +76,14 @@ test('setiap dropdown di form ubah beasiswa punya opsi kosong di posisi pertama'
 test('setiap dropdown di form tambah beasiswa punya opsi kosong di posisi pertama', function () {
     $html = actingAs($this->superAdmin)->get(route('admin.beasiswa.buat'))->assertOk()->getContent();
 
-    foreach (['kampus_id', 'tingkat_gelar', 'semester_minimal'] as $id) {
+    foreach (['tingkat_gelar', 'semester_minimal'] as $id) {
         expect(isiSelect($html, $id))->toMatch('/^\s*<option value=""[^>]*>/', "Dropdown #{$id} tidak diawali opsi kosong");
     }
+
+    // Pohon centang cakupan menggantikan dropdown kampus.
+    expect($html)->toContain('kampus-check')
+        ->toContain('fakultas-check')
+        ->toContain('prodi_ids[]');
 });
 
 test('setiap dropdown di form profil punya opsi kosong di posisi pertama', function () {
@@ -130,7 +134,9 @@ test('filter lokasi dan form kampus lain memakai select2 pencarian', function ()
 
     expect(substr_count($verifikasi, 'select2-cari'))->toBe(3)
         ->and(substr_count($penerima, 'select2-cari'))->toBe(3)
-        ->and($beasiswa)->toContain('select2-cari');
+        // Form beasiswa sudah tidak punya dropdown kampus, jadi select2-nya
+        // tidak lagi diharapkan di sana. Pohon centang cakupan yang menggantikan.
+        ->and($beasiswa)->toContain('id="prodi-tree"');
 });
 
 test('tidak ada radio jenis kelamin yang terpilih saat profil masih kosong', function () {

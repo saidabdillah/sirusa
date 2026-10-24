@@ -13,6 +13,7 @@ use App\Support\DataTablesProcessor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class BeasiswaController extends Controller
@@ -72,9 +73,12 @@ class BeasiswaController extends Controller
 
     public function create(): View
     {
-        $kampusList = Kampus::with('fakultas.prodi')->orderBy('nama_kampus')->get();
-
-        return view('admin.beasiswa.buat', compact('kampusList'));
+        return view('admin.beasiswa.buat', [
+            'kampusList' => $this->kampusTree(),
+            // Prodi yang dicentang, per kampus. Saat validasi gagal `old()`
+            // yang dipakai supaya centangnya tidak hilang.
+            'kampusTerpilih' => $this->kampusTerpilih(collect(old('prodi_ids', []))),
+        ]);
     }
 
     public function store(StoreScholarshipRequest $request): RedirectResponse|JsonResponse
@@ -83,18 +87,20 @@ class BeasiswaController extends Controller
         $prodiIds = $data['prodi_ids'];
         unset($data['prodi_ids']);
 
-        $data['kampus'] = Kampus::query()->findOrFail($data['kampus_id'])->nama_kampus;
+        $data['kampus'] = $this->ringkasanKampus($prodiIds);
 
         $scholarship = Scholarship::create($data);
 
-        $this->syncFakultas($scholarship, $prodiIds);
+        $this->simpanCakupan($scholarship, $prodiIds);
 
         return $this->ajaxOk($request, 'Beasiswa berhasil ditambahkan', route('admin.beasiswa.index'));
     }
 
     public function show(Scholarship $scholarship): View
     {
-        $scholarship->load('fakultas.prodi');
+        // Cakupan dibaca dari id prodi, lalu kampus/fakultasnya diturunkan dari
+        // prodi tersebut -- tidak ada nama salinan yang bisa melenceng.
+        $scholarship->load('cakupan.prodi.fakultas.kampus');
         $applicants = $scholarship->pendaftar()->with(['user.profile', 'beasiswa'])->latest()->paginate(10);
 
         return view('admin.beasiswa.lihat', compact('scholarship', 'applicants'));
@@ -102,23 +108,17 @@ class BeasiswaController extends Controller
 
     public function edit(Scholarship $scholarship): View
     {
-        $scholarship->load('fakultas.prodi');
-        $kampusList = Kampus::with('fakultas.prodi')->orderBy('nama_kampus')->get();
+        $scholarship->load('cakupan');
 
-        $selectedKampusId = $scholarship->kampus_id;
-        if ($selectedKampusId === null) {
-            $snapshotProdiNames = $scholarship->fakultas
-                ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('nama'))
-                ->all();
-            $selectedKampusId = $kampusList->first(
-                fn ($kampus) => $kampus->fakultas
-                    ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('nama'))
-                    ->intersect($snapshotProdiNames)
-                    ->isNotEmpty()
-            )?->id;
-        }
-
-        return view('admin.beasiswa.ubah', compact('scholarship', 'kampusList', 'selectedKampusId'));
+        return view('admin.beasiswa.ubah', [
+            'scholarship' => $scholarship,
+            'kampusList' => $this->kampusTree(),
+            // Centang dari database + centang dari `old()` digabung: saat
+            // validasi gagal, pilihan terakhir user yang harus tampil.
+            'kampusTerpilih' => $this->kampusTerpilih(
+                $scholarship->cakupan->pluck('prodi_id')->merge(old('prodi_ids', [])),
+            ),
+        ]);
     }
 
     public function update(UpdateScholarshipRequest $request, Scholarship $scholarship): RedirectResponse|JsonResponse
@@ -127,28 +127,99 @@ class BeasiswaController extends Controller
         $prodiIds = $data['prodi_ids'];
         unset($data['prodi_ids']);
 
-        $data['kampus'] = Kampus::query()->findOrFail($data['kampus_id'])->nama_kampus;
+        $data['kampus'] = $this->ringkasanKampus($prodiIds);
 
         $scholarship->update($data);
-        $this->syncFakultas($scholarship, $prodiIds);
+        $this->simpanCakupan($scholarship, $prodiIds);
 
         return $this->ajaxOk($request, 'Beasiswa berhasil diperbarui', route('admin.beasiswa.index'));
     }
 
-    private function syncFakultas(Scholarship $scholarship, array $prodiIds): void
+    /**
+     * Pohon kampus -> fakultas -> prodi untuk form centang.
+     *
+     * Kampus dan fakultas di sini hanya PENYARING tampilan (tombol "pilih
+     * semua" mencentang anaknya). Yang disimpan sebagai cakupan hanyalah prodi,
+     * sehingga tidak ada dua sumber kebenaran yang bisa bertentangan.
+     *
+     * @return Collection<int, Kampus>
+     */
+    private function kampusTree(): Collection
     {
-        $scholarship->fakultas()->delete();
+        return Kampus::with('fakultas.prodi')->orderBy('nama_kampus')->get();
+    }
 
-        $grouped = Prodi::with('fakultas')
-            ->whereIn('id', $prodiIds)
-            ->get()
-            ->groupBy('fakultas_id');
+    /**
+     * Kelompokkan id prodi per kampusnya, supaya view bisa menyalakan centang
+     * kampus dan fakultas yang punya prodi terpilih.
+     *
+     * @param  Collection<int, mixed>  $prodiIds
+     * @return array<int, array<int, int>>
+     */
+    private function kampusTerpilih(Collection $prodiIds): array
+    {
+        $ids = $prodiIds->map(fn ($id) => (int) $id)->unique();
 
-        foreach ($grouped as $items) {
-            $fakultas = $items->first()->fakultas;
-            $record = $scholarship->fakultas()->create(['nama' => $fakultas->nama]);
+        if ($ids->isEmpty()) {
+            return [];
+        }
 
-            $record->prodi()->createMany($items->map(fn (Prodi $prodi) => ['nama' => $prodi->nama])->all());
+        return Prodi::query()
+            ->join('fakultas', 'fakultas.id', '=', 'prodi.fakultas_id')
+            ->whereIn('prodi.id', $ids)
+            ->get(['prodi.id', 'fakultas.kampus_id'])
+            ->groupBy('kampus_id')
+            ->map(fn (Collection $baris) => $baris->pluck('id')->all())
+            ->all();
+    }
+
+    /**
+     * Ringkasan nama kampus untuk kolom teks `beasiswa.kampus`.
+     *
+     * Kolom itu dipertahankan karena daftar dan pencarian memakainya. Isinya
+     * diturunkan dari prodi terpilih, jadi tidak ada daftar kampus kedua yang
+     * bisa berbeda dengan cakupan sesungguhnya.
+     *
+     * @param  array<int, mixed>  $prodiIds
+     */
+    private function ringkasanKampus(array $prodiIds): string
+    {
+        $nama = Kampus::query()
+            ->whereIn('kampus.id', Prodi::query()
+                ->whereIn('prodi.id', $prodiIds)
+                ->join('fakultas', 'fakultas.id', '=', 'prodi.fakultas_id')
+                ->pluck('fakultas.kampus_id'))
+            ->orderBy('nama_kampus')
+            ->pluck('nama_kampus');
+
+        if ($nama->isEmpty()) {
+            return 'Semua Kampus';
+        }
+
+        // Kolom ini ringkasan untuk daftar dan pencarian; cakupan lengkapnya
+        // dibaca di halaman detail beasiswa. Daftar panjang dipotong supaya
+        // baris tabelnya tetap satu baris.
+        return $nama->take(3)->implode(', ')
+            .($nama->count() > 3 ? ' +'.($nama->count() - 3).' lainnya' : '');
+    }
+
+    /**
+     * Ganti seluruh cakupan beasiswa dengan daftar prodi yang dicentang.
+     *
+     * @param  array<int, mixed>  $prodiIds
+     */
+    private function simpanCakupan(Scholarship $scholarship, array $prodiIds): void
+    {
+        $scholarship->cakupan()->delete();
+
+        $baris = collect($prodiIds)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->map(fn (int $id) => ['prodi_id' => $id])
+            ->all();
+
+        if ($baris !== []) {
+            $scholarship->cakupan()->createMany($baris);
         }
     }
 

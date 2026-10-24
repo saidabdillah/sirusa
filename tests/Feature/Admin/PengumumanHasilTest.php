@@ -31,7 +31,6 @@ beforeEach(function () {
 
     $this->beasiswa = Scholarship::factory()->create([
         'nama' => 'Beasiswa Serentak',
-        'kampus_id' => $this->kampus->id,
         'kuota' => 10,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,

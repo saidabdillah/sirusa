@@ -16,17 +16,16 @@ class BeasiswaController extends Controller
 
         $kampusId = $profile?->prodi?->fakultas?->kampus_id;
 
-        // Mahasiswa hanya boleh melamar beasiswa kampusnya sendiri, jadi beasiswa
-        // kampus lain tidak perlu tampil sama sekali: menampilkan beasiswa yang
-        // tidak bisa didaftar hanya bikin mahasiswa bingung.
+        // Mahasiswa hanya melihat beasiswa yang CAKUPANnya memuat prodinya.
+        // Beasiswa tanpa cakupan dianggap terbuka untuk semua prodi.
         //
-        // `withHitunganCakupan()` menyatukan jumlah fakultas/prodi ke dalam SELECT
-        // yang sama, dan `diterima_count` membuat `sisaKuota()` tidak perlu
-        // COUNT per kartu. Tanpa dua-duanya, tiap kartu menembak query sendiri.
+        // `cakupan_count` masuk ke SELECT yang sama supaya `cakupanLabel()`
+        // tidak menembak COUNT per kartu, dan `diterima_count` membuat
+        // `sisaKuota()` tidak perlu COUNT per kartu juga.
         $scholarships = Scholarship::tersedia()
             ->untukMahasiswa($profile)
-            ->withHitunganCakupan()
             ->withCount([
+                'cakupan',
                 'pendaftar as penerima_diterima' => fn ($q) => $q->where('status', 'diterima'),
             ])
             ->latest()
@@ -42,9 +41,9 @@ class BeasiswaController extends Controller
         $application = $user->applicants()->where('beasiswa_id', $scholarship->id)->first();
         $profileComplete = $user->isProfileComplete();
 
-        // Muat relasi cakupan sekali di sini: daftar prodi di halaman detail dan
+        // Muat cakupan sekali di sini: daftar prodi di halaman detail dan
         // `allowsProdi()` di dalam eligibilityIssueFor() memakai data yang sama.
-        $scholarship->loadMissing('fakultas.prodi');
+        $scholarship->loadMissing('cakupan.prodi.fakultas.kampus');
 
         // View memanggil `sisaKuota()` dua kali (panel info dan pesan blokir di
         // `eligibilityIssueFor()`). Tanpa hitungan ini setiap pemanggilan

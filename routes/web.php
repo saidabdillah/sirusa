@@ -123,6 +123,15 @@ Route::middleware(['auth', 'status.aktif', 'akses.menu', 'akses.aksi', 'throttle
         // Tahapnya ditentukan dari peran pengguna, bukan dari URL, supaya satu
         // menu bisa dipakai Kampus dan Kesra tanpa dua entri menu.
         Route::get('/verifikasi/semester', [VerifikasiSemesterController::class, 'index'])->name('semester.index');
+        // Dua URL untuk SATU aksi, dipakai anak dropdown Kampus dan Kesra
+        // supaya super_admin (satu-satunya yang memegang keduanya) membuka
+        // tahap yang benar dari menunya, bukan selalu tahap bawaan. Harus
+        // didaftarkan SEBELUM `{paket}` agar tidak tertangkap sebagai id paket.
+        // Peran tunggal tetap ditentukan dari perannya di controller.
+        Route::get('/verifikasi/semester/kampus', [VerifikasiSemesterController::class, 'index'])
+            ->defaults('tahap', 'kampus')->name('semester.kampus');
+        Route::get('/verifikasi/semester/kesra', [VerifikasiSemesterController::class, 'index'])
+            ->defaults('tahap', 'kesra')->name('semester.kesra');
         Route::get('/verifikasi/semester/{paket}', [VerifikasiSemesterController::class, 'show'])->name('semester.lihat');
         Route::put('/verifikasi/semester/{paket}', [VerifikasiSemesterController::class, 'verifikasi'])->name('semester.verifikasi');
 

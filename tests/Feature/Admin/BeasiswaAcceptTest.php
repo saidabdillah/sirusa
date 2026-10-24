@@ -22,7 +22,6 @@ test('admin creating scholarship gets error feedback for invalid required fields
     actingAs($this->admin)
         ->post(route('admin.beasiswa.simpan'), [
             'nama' => 'Beasiswa Tanpa Kuota',
-            'kampus_id' => $kampus->id,
             'kuota' => '',
             'tingkat_gelar' => 'S1',
             'tanggal_mulai' => '',
@@ -53,7 +52,6 @@ test('admin creating scholarship with out-of-range semester gets red error feedb
     actingAs($this->admin)
         ->post(route('admin.beasiswa.simpan'), [
             'nama' => 'Beasiswa Semester 0',
-            'kampus_id' => $kampus->id,
             'kuota' => 10,
             'tingkat_gelar' => 'S1',
             'tanggal_mulai' => now()->addDay()->format('Y-m-d'),

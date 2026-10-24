@@ -69,7 +69,7 @@ class UserSeeder extends Seeder
 
     public function run(): void
     {
-        $scholarships = Scholarship::with(['fakultas.prodi', 'kampus'])->where('status', 'aktif')->get();
+        $scholarships = Scholarship::with('cakupan.prodi.fakultas.kampus')->where('status', 'aktif')->get();
         $users = $this->userData();
 
         foreach ($users as $i => $data) {

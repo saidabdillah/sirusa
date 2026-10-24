@@ -37,11 +37,18 @@ test('detail beasiswa admin menampilkan fakultas dan program studi yang dipilih'
     $scholarship = Scholarship::factory()->create();
 
     // Cakupan yang dipilih saat membuat/mengubah beasiswa harus terbaca di
-    // halaman detailnya, bukan hanya tersimpan di database.
-    $scholarship->fakultas()->create(['nama' => 'Fakultas Teknik'])
+    // halaman detailnya, bukan hanya tersimpan di database. Kini cakupan
+    // disimpan sebagai id prodi, jadi kampus/fakultasnya diturunkan dari prodi.
+    $kampus = Kampus::create(['nama_kampus' => 'Universitas Lambung Mangkurat']);
+    $prodiTeknik = $kampus->fakultas()->create(['nama' => 'Fakultas Teknik'])
         ->prodi()->create(['nama' => 'Teknik Informatika']);
-    $scholarship->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
+    $prodiEkonomi = $kampus->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
         ->prodi()->create(['nama' => 'Akuntansi']);
+
+    $scholarship->cakupan()->createMany([
+        ['prodi_id' => $prodiTeknik->id],
+        ['prodi_id' => $prodiEkonomi->id],
+    ]);
 
     actingAs($this->admin)->get(route('admin.beasiswa.lihat', $scholarship))
         ->assertOk()
@@ -66,12 +73,17 @@ test('admin can access scholarship create form and create one', function () {
     actingAs($this->admin)->get(route('admin.beasiswa.buat'))
         ->assertOk()
         ->assertDontSee(' required>', false)
-        ->assertSee('>Kampus <span class="text-danger">*</span></label>', false)
+        // Beasiswa tidak lagi memilih SATU kampus: cakupan ditentukan daftar
+        // prodi, dan kampus/fakultas jadi penyaring centangnya.
+        ->assertDontSee('name="kampus_id"', false)
+        ->assertSee('Fakultas &amp; Program Studi <span class="text-danger">*</span></h4>', false)
+        ->assertSee('id="prodi-tree"', false)
         ->assertSee('>Persyaratan <span class="text-danger">*</span></label>', false)
         // Group checkbox `prodi_ids` (required min:1) ditandai lewat heading card-nya.
-        ->assertSee('Program Studi <span class="text-danger">*</span></h4>', false)
+        ->assertSee('Fakultas &amp; Program Studi <span class="text-danger">*</span></h4>', false)
         ->assertSee('data-kampus-id="'.$kampus->id.'"', false)
-        ->assertDontSee('value="'.$kampus->id.'" selected', false)
+        ->assertSee('kampus-check', false)
+        ->assertSee('fakultas-check', false)
         ->assertSee('placeholder="contoh 3.00"', false)
         // Semester minimal kini dropdown (permintaan pengguna), jadi
         // placeholdernya diganti opsi kosong berlabel.
@@ -80,7 +92,6 @@ test('admin can access scholarship create form and create one', function () {
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Prestasi',
-        'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
@@ -102,7 +113,8 @@ test('admin can access scholarship edit form without html5 required attribute', 
     actingAs($this->admin)->get(route('admin.beasiswa.ubah', $scholarship))
         ->assertOk()
         ->assertDontSee(' required>', false)
-        ->assertSee('Program Studi <span class="text-danger">*</span></h4>', false);
+        ->assertSee('Fakultas &amp; Program Studi <span class="text-danger">*</span></h4>', false)
+        ->assertSee('id="prodi-tree"', false);
 });
 
 test('create scholarship form links to add kampus when none exists', function () {
@@ -136,7 +148,6 @@ test('satu program studi yang sah sudah cukup untuk menyimpan beasiswa', functio
     // dan yang tersimpan harus persis prodi yang dicentang admin.
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Satu Prodi',
-        'kampus_id' => $kampus->id,
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->format('Y-m-d'),
@@ -149,18 +160,12 @@ test('satu program studi yang sah sudah cukup untuk menyimpan beasiswa', functio
     ])->assertSessionDoesntHaveErrors();
 
     $beasiswa = Scholarship::where('nama', 'Beasiswa Satu Prodi')->firstOrFail();
-    $tersimpan = $beasiswa->fakultas()->with('prodi')->get()
-        ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('nama')->all());
-
-    // Membandingkan NAMA, bukan id: baris snapshot di `beasiswa_prodi` punya
-    // auto-increment sendiri, jadi id-nya tidak pernah menjamin sama dengan id
-    // prodi aslinya -- kebetulan sama hanya di database yang baru dibuat.
-    $this->assertSame(['Informatika'], $tersimpan->values()->all());
+    // Yang tersimpan sekarang ID PRODI ASLI, bukan salinan nama.
+    $this->assertSame([$prodiPertama->id], $beasiswa->cakupan()->pluck('prodi_id')->all());
 
     // Dua prodi dari kampus yang sama juga sah.
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Dua Prodi',
-        'kampus_id' => $kampus->id,
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->format('Y-m-d'),
@@ -173,9 +178,12 @@ test('satu program studi yang sah sudah cukup untuk menyimpan beasiswa', functio
     ])->assertSessionDoesntHaveErrors();
 });
 
-test('prodi dari kampus lain tetap ditolak', function () {
+test('satu beasiswa boleh mencakup prodi dari BANYAK kampus', function () {
+    // Permintaan pengguna: satu beasiswa boleh punya banyak kampus, banyak
+    // fakultas, dan banyak prodi. Aturan lama (semua prodi wajib sekampus)
+    // sudah tidak berlaku.
     $kampus = Kampus::create(['nama_kampus' => 'Universitas Indonesia']);
-    $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
+    $prodiSatu = $kampus->fakultas()->create(['nama' => 'Teknik'])->prodi()->create(['nama' => 'Informatika']);
 
     $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Ranking Dua']);
     $prodiLain = $kampusLain->fakultas()->create(['nama' => 'Ekonomi'])->prodi()->create(['nama' => 'Akuntansi']);
@@ -183,8 +191,7 @@ test('prodi dari kampus lain tetap ditolak', function () {
     $this->actingAs($this->admin);
 
     post(route('admin.beasiswa.simpan'), [
-        'nama' => 'Beasiswa Salah Kampus',
-        'kampus_id' => $kampus->id,
+        'nama' => 'Beasiswa Dua Kampus',
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->format('Y-m-d'),
@@ -193,31 +200,33 @@ test('prodi dari kampus lain tetap ditolak', function () {
         'semester_minimal' => 3,
         'deskripsi' => 'Deskripsi',
         'persyaratan' => 'Persyaratan',
-        'prodi_ids' => [$prodiLain->id],
-    ])->assertSessionHasErrors('prodi_ids');
+        'prodi_ids' => [$prodiSatu->id, $prodiLain->id],
+    ])->assertSessionDoesntHaveErrors();
 
-    // Pesan lama ("Semua program studi harus berada di kampus tujuan beasiswa")
-    // tidak bisa ditindaklanjuti: admin tidak pernah mencentang prodi itu,
-    // dan pesan itu tidak memberi tahu prodi mana yang salah. Yang muncul
-    // harus menyebut nama program studinya.
-    expect(session('errors')->first('prodi_ids'))
-        ->toContain('Akuntansi')
-        ->toContain('tidak berada di kampus tujuan');
+    $beasiswa = Scholarship::where('nama', 'Beasiswa Dua Kampus')->firstOrFail();
 
-    $this->assertDatabaseMissing('beasiswa', ['nama' => 'Beasiswa Salah Kampus']);
+    expect($beasiswa->cakupan()->pluck('prodi_id')->all())
+        ->toEqualCanonicalizing([$prodiSatu->id, $prodiLain->id]);
+
+    // Ringkasan kolom `kampus` menurunkan nama kampus dari cakupan prodinya.
+    expect($beasiswa->kampus)->toContain('Universitas Indonesia')
+        ->and($beasiswa->kampus)->toContain('Universitas Ranking Dua');
 });
 
-test('checkbox prodi di kampus tersembunyi dinonaktifkan agar tidak ikut terkirim', function () {
-    // Checkbox yang hanya disembunyikan (d-none) tetap terkirim bersama form,
-    // sehingga prodi dari kampus lain ikut masuk ke `prodi_ids[]` dan membuat
-    // admin ditolak dengan pesan yang tidak bisa ditindaklanjuti: ia tidak
-    // pernah mencentang prodi itu. `showKampusTree()` harus menonaktifkan
-    // checkbox di luar kampus terpilih, bukan hanya menyembunyikannya.
+test('kedua form beasiswa memakai pohon centang kampus-fakultas-prodi', function () {
+    // Kampus tidak lagi disembunyikan/dinonaktifkan per pilihan: SELURUH kampus
+    // tampil dan bisa dicentang bersamaan, karena satu beasiswa boleh mencakup
+    // banyak kampus. Centang kampus dan fakultas adalah turunan dari centang
+    // prodinya; yang dikirim ke server tetap hanya `prodi_ids[]`.
     foreach (['buat', 'ubah'] as $view) {
         $source = file_get_contents(resource_path("views/admin/beasiswa/{$view}.blade.php"));
 
         expect($source)
-            ->toContain(".prop('disabled', !isSelected)");
+            ->toContain('.kampus-check')
+            ->toContain('.fakultas-check')
+            ->toContain('btn-centang-semua')
+            ->toContain('btn-lepas-semua')
+            ->and($source)->not->toContain(".prop('disabled', !isSelected)");
     }
 });
 
@@ -230,7 +239,6 @@ test('tanggal mulai boleh sudah lewat, tapi urutan tanggal tetap dijaga', functi
     // diperbaiki di tengah masa pendaftarannya, bahkan setelahnya.
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Lampau',
-        'kampus_id' => $kampus->id,
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->subMonth()->format('Y-m-d'),
@@ -248,7 +256,6 @@ test('tanggal mulai boleh sudah lewat, tapi urutan tanggal tetap dijaga', functi
     // Yang tetap ditolak adalah tanggal selesai sebelum tanggal mulai.
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Terbalik',
-        'kampus_id' => $kampus->id,
         'kuota' => 5,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->addMonth()->format('Y-m-d'),
@@ -267,7 +274,6 @@ test('scholarship store rejects zero kuota and zero ipk', function () {
 
     actingAs($this->admin)->post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Buruk',
-        'kampus_id' => $kampus->id,
         'kuota' => 0,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
@@ -289,7 +295,6 @@ test('scholarship update rejects zero kuota and zero ipk', function () {
 
     actingAs($this->admin)->put(route('admin.beasiswa.perbarui', $scholarship), [
         'nama' => $scholarship->nama,
-        'kampus_id' => $kampus->id,
         'kuota' => 0,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->addDay()->format('Y-m-d'),
@@ -325,7 +330,6 @@ test('super admin can access scholarship create form and create one', function (
 
     post(route('admin.beasiswa.simpan'), [
         'nama' => 'Beasiswa Super Admin',
-        'kampus_id' => $kampus->id,
         'kuota' => 10,
         'tingkat_gelar' => 'S1',
         'tanggal_mulai' => now()->addDay()->format('Y-m-d'),

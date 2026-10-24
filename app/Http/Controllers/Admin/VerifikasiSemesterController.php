@@ -127,7 +127,8 @@ class VerifikasiSemesterController extends Controller
         return $this->ajaxOk(
             $request,
             "Verifikasi semester {$paket->semester} berhasil disimpan.",
-            route('admin.semester.index', $request->only('tahap')),
+            // Kembali ke tahap yang sedang dikerjakan, bukan selalu bawaan.
+            route($stage === 'kesra' ? 'admin.semester.kesra' : 'admin.semester.kampus'),
         );
     }
 
@@ -150,11 +151,16 @@ class VerifikasiSemesterController extends Controller
             return 'kampus';
         }
 
-        // super_admin tidak terikat satu tahap: pilih lewat `?tahap=`, bawaannya
-        // kampus karena itu tahap pertama dalam urutan.
-        $pilihan = $request->query('tahap');
+        // super_admin tidak terikat satu tahap. Urutan sumbernya: parameter
+        // `tahap` dari route (anak dropdown Kampus/Kesra), lalu `?tahap=`,
+        // lalu bawaan kampus karena itu tahap pertama dalam urutan.
+        foreach ([$request->route('tahap'), $request->query('tahap')] as $pilihan) {
+            if (in_array($pilihan, ['kampus', 'kesra'], true)) {
+                return $pilihan;
+            }
+        }
 
-        return in_array($pilihan, ['kampus', 'kesra'], true) ? $pilihan : 'kampus';
+        return 'kampus';
     }
 
     /**

@@ -63,10 +63,14 @@ function mhsBeasiswa(?User $user = null, ?Prodi $prodi = null, array $verif = []
     return $user;
 }
 
+/**
+ * Beasiswa yang cakupannya diberikan lewat prodi (bukan kampus lagi).
+ * Parameter `$kampusId` dipertahankan supaya pemanggil lama tidak berubah:
+ * nilainya hanya dipakai untuk mengisi kolom ringkasan `kampus`.
+ */
 function beasiswaTersedia(int $kampusId, array $extra = []): Scholarship
 {
     return Scholarship::factory()->create(array_merge([
-        'kampus_id' => $kampusId,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,
         'status' => 'aktif',
@@ -96,8 +100,12 @@ function beasiswaDenganCakupan(string $nama, ?int $kampusId = null): Scholarship
 {
     $beasiswa = beasiswaTersedia($kampusId ?? test()->kampus->id, ['nama' => $nama]);
 
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas '.$nama])
-        ->prodi()->create(['nama' => 'Prodi '.$nama]);
+    // Cakupan = id prodi asli. Fakultasnya cari-atau-buat supaya beberapa
+    // beasiswa dalam satu tes tidak menabrak unique (kampus, nama fakultas).
+    $fakultas = test()->kampus->fakultas()->firstOrCreate(['nama' => 'Fakultas '.$nama]);
+    $prodi = $fakultas->prodi()->firstOrCreate(['nama' => 'Prodi '.$nama]);
+
+    $beasiswa->cakupan()->create(['prodi_id' => $prodi->id]);
 
     return $beasiswa;
 }
@@ -420,10 +428,18 @@ test('halaman detail menyembunyikan pembatalan setelah masa pendaftaran ditutup'
 |--------------------------------------------------------------------------
 */
 
-test('daftar beasiswa mahasiswa hanya menampilkan kampusnya sendiri', function () {
+test('daftar beasiswa mahasiswa hanya menampilkan yang cakupannya memuat prodinya', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
+
+    // Cakupan memuat prodi mahasiswa ini -> tampil.
     $sendiri = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Kampus Sendiri']);
+    $sendiri->cakupan()->create(['prodi_id' => $this->prodi->id]);
+
+    // Cakupan hanya memuat prodi kampus LAIN -> tidak tampil.
+    $prodiLain = $this->kampusLain->fakultas()->firstOrCreate(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->firstOrCreate(['nama' => 'Akuntansi']);
     $orangLain = beasiswaTersedia($this->kampusLain->id, ['nama' => 'Beasiswa Kampus Lain']);
+    $orangLain->cakupan()->create(['prodi_id' => $prodiLain->id]);
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
         ->assertOk()
@@ -463,14 +479,14 @@ test('kartu daftar menampilkan deskripsi ringkas, cakupan, dan sisa kuota', func
         'deskripsi' => 'Beasiswa penuh biaya kuliah untuk mahasiswa berprestasi di Fakultas Teknik.',
         'kuota' => 10,
     ]);
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik'])
-        ->prodi()->create(['nama' => 'Teknik Informatika']);
+    $beasiswa->cakupan()->create(['prodi_id' => $this->prodi->id]);
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
         ->assertOk()
         ->assertSee('mahasiswa berprestasi di Fakultas Teknik')
-        ->assertSee('1 Fakultas')
+        // Ringkasan cakupan: jumlah prodi dan jumlah kampus (bukan fakultas).
         ->assertSee('1 Program Studi')
+        ->assertSee('1 Kampus')
         ->assertSee('10 / 10');
 });
 
@@ -491,7 +507,7 @@ test('kartu daftar memotong deskripsi panjang dan tidak menuliskannya penuh', fu
         ->not->toContain(str_repeat('Uang kuliah gratis setiap semester. ', 20));
 });
 
-test('daftar tanpa daftar prodi menulis semua program studi di kampus itu', function () {
+test('beasiswa tanpa cakupan terbuka untuk semua program studi', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     beasiswaTersedia($this->kampus->id, [
         'kampus' => 'Universitas Lambung Mangkurat',
@@ -500,21 +516,27 @@ test('daftar tanpa daftar prodi menulis semua program studi di kampus itu', func
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
         ->assertOk()
-        ->assertSee('Semua Program Studi di Universitas Lambung Mangkurat')
-        ->assertDontSee('0 Fakultas');
+        ->assertSee('Beasiswa Terbuka')
+        ->assertSee('Terbuka untuk semua program studi')
+        ->assertDontSee('0 Program Studi');
 });
 
-test('cakupan tingkat fakultas tanpa daftar prodi tetap menampilkan beasiswa untuk prodi fakultas itu', function () {
+test('cakupan yang memuat prodi mahasiswa menampilkan beasiswa walau fakultasnya beda', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
 
-    // Fakultas Teknik tercakup tanpa baris prodi: semua prodi di fakultas itu
-    // boleh mendaftar, termasuk Teknik Informatika milik mahasiswa ini.
-    $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Fakultas Teknik']);
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik']);
+    // Satu beasiswa boleh mencakup prodi dari banyak fakultas/kampus; yang
+    // menentukan hanya apakah prodi mahasiswa ada di daftar cakupan.
+    $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Lintas Fakultas']);
+    $prodiLain = $this->kampus->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->create(['nama' => 'Akuntansi']);
+    $beasiswa->cakupan()->createMany([
+        ['prodi_id' => $prodiLain->id],
+        ['prodi_id' => $this->prodi->id],
+    ]);
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
         ->assertOk()
-        ->assertSee('Beasiswa Fakultas Teknik');
+        ->assertSee('Beasiswa Lintas Fakultas');
 });
 
 test('cakupan prodi mengecualikan prodi lain di fakultas yang sama', function () {
@@ -522,8 +544,9 @@ test('cakupan prodi mengecualikan prodi lain di fakultas yang sama', function ()
 
     // Teknik Informatika milik mahasiswa ini TIDAK tercakup (daftar prodi
     // hanya memuat Teknik Elektro), jadi beasiswa ini tidak boleh tampil.
+    $prodiElektro = $this->prodi->fakultas->prodi()->firstOrCreate(['nama' => 'Teknik Elektro']);
     $beasiswa = beasiswaTersedia($this->kampus->id, ['nama' => 'Beasiswa Elektro']);
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik'])->prodi()->create(['nama' => 'Teknik Elektro']);
+    $beasiswa->cakupan()->create(['prodi_id' => $prodiElektro->id]);
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.index'))
         ->assertOk()
@@ -562,8 +585,7 @@ test('detail menaruh daftar program studi sebelum deskripsi', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);
 
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik'])
-        ->prodi()->create(['nama' => 'Teknik Informatika']);
+    $beasiswa->cakupan()->create(['prodi_id' => $this->prodi->id]);
 
     $html = actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
         ->assertOk()
@@ -583,10 +605,16 @@ test('detail menampilkan cakupan fakultas dan prodi', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id);
 
-    $fakultas = $beasiswa->fakultas()->create(['nama' => 'Fakultas Teknik']);
-    $fakultas->prodi()->create(['nama' => 'Teknik Informatika']);
-    $fakultas->prodi()->create(['nama' => 'Teknik Elektro']);
-    $beasiswa->fakultas()->create(['nama' => 'Fakultas Ekonomi'])->prodi()->create(['nama' => 'Akuntansi']);
+    // `$this->prodi` sudah Teknik Informatika di Fakultas Teknik milik kampus uji.
+    $this->prodi->fakultas->prodi()->create(['nama' => 'Teknik Elektro']);
+    $akuntansi = $this->kampus->fakultas()->firstOrCreate(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->create(['nama' => 'Akuntansi']);
+
+    $beasiswa->cakupan()->createMany([
+        ['prodi_id' => $this->prodi->id],
+        ['prodi_id' => $this->prodi->fakultas->prodi()->where('nama', 'Teknik Elektro')->value('id')],
+        ['prodi_id' => $akuntansi->id],
+    ]);
 
     actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
         ->assertOk()
@@ -601,17 +629,19 @@ test('detail menampilkan cakupan fakultas dan prodi', function () {
         ->assertDontSee('<ul class="ml-4 mb-0">', false);
 });
 
-test('detail tanpa daftar prodi menjelaskan bahwa semua prodi di kampusnya terbuka', function () {
+test('detail tanpa cakupan menjelaskan bahwa semua prodi terbuka', function () {
     mhsBeasiswa($this->mahasiswa, $this->prodi);
     $beasiswa = beasiswaTersedia($this->kampus->id, [
         'kampus' => 'Universitas Lambung Mangkurat',
         'nama' => 'Beasiswa Tanpa Pembatasan',
     ]);
 
+    // Beasiswa tanpa baris cakupan = terbuka untuk SEMUA program studi, bukan
+    // hanya kampusnya: satu beasiswa boleh mencakup banyak kampus, jadi
+    // "semua prodi di kampus X" tidak lagi punya arti.
     actingAs($this->mahasiswa)->get(route('user.beasiswa.lihat', $beasiswa))
         ->assertOk()
-        ->assertSee('Semua Program Studi di Universitas Lambung Mangkurat')
-        ->assertSee('Tidak ada pembatasan program studi');
+        ->assertSee('Semua Program Studi. Tidak ada pembatasan program studi');
 });
 
 test('detail merubah persyaratan bebas menjadi daftar checklist', function () {
@@ -759,9 +789,10 @@ test('jumlah query detail tidak tumbuh saat prodi cakupan bertambah', function (
 
     $banyak = beasiswaTersedia($kampusId);
     for ($f = 0; $f < 3; $f++) {
-        $fakultas = $banyak->fakultas()->create(['nama' => 'Fakultas '.$f]);
+        $fakultas = test()->kampus->fakultas()->firstOrCreate(['nama' => 'Fakultas '.$f]);
         for ($p = 0; $p < 4; $p++) {
-            $fakultas->prodi()->create(['nama' => 'Prodi '.$f.'-'.$p]);
+            $prodi = $fakultas->prodi()->firstOrCreate(['nama' => 'Prodi '.$f.'-'.$p]);
+            $banyak->cakupan()->create(['prodi_id' => $prodi->id]);
         }
     }
     $duaBelasProdi = $ukurDetail($banyak);

@@ -21,10 +21,15 @@ Di penegakan: `scopeAntreanKesra()` hanya mengambil `status_kampus = setuju`, da
 ## Catpil tidak pernah muncul di fase semester
 Data kependudukan tidak berubah hanya karena mahasiswa naik semester (permintaan pengguna: "catpil tetap 1 kali"). Jangan menambahkan tahap catpil ke tabel/antrean semester.
 
-## Satu menu sidebar, tahap ditentukan dari PERAN
-Menu "Verifikasi Semester" (`admin.semester.*`, scope `admin.semester`) adalah leaf MANDIRI di section "Verifikasi", sejajar dengan Catpil/Kampus/Kesra. **Bukan** tombol di dalam halaman antrean profil (percobaan pertama, ditolak pengguna).
+## Verifikasi Semester adalah ANAK DROPDOWN Kampus dan Kesra, bukan menu sendiri
+Menu "Verifikasi Semester" hidup sebagai anak dropdown di section "Verifikasi": satu di bawah induk "Kampus", satu di bawah induk "Kesra" (permintaan pengguna). **Bukan** leaf mandiri (percobaan kedua) dan **bukan** tombol di dalam halaman antrean profil (percobaan pertama, ditolak).
 
-Satu menu dipakai dua peran: `VerifikasiSemesterController::tahap()` menentukan tahap dari peran pengguna (kesra menang bila punya keduanya; selain itu kampus; `super_admin` memilih lewat `?tahap=`). Jangan kembali ke dua route terpisah ber-prefix `admin.kampusverif.semester.*` / `admin.kesra.semester.*` — itu memaksa dua entri menu yang isinya sama.
+Konsekuensinya: "Kampus" berubah dari leaf menjadi dropdown (anak: "Verifikasi Awal" + "Verifikasi Semester"), dan anak "Verifikasi" di dropdown Kesra berganti label "Verifikasi Awal" supaya tidak tertukar dengan "Verifikasi Semester".
+
+Tahap ditentukan dari PERAN: `VerifikasiSemesterController::tahap()` membaca `route('tahap')` dulu (anak dropdown mengarah ke `admin.semester.kampus` / `admin.semester.kesra`, dua URL untuk satu aksi), lalu `?tahap=`, lalu bawaan kampus. Peran tunggal (kampus/kesra) tetap dipatok dari perannya sendiri supaya tautan yang salah pun tidak membuka tahap orang lain.
+
+## Scope sama boleh dipakai dua menu — kunci grant harus eksplisit
+`MenuSeeder` memetakan `scope` menjadi kunci grant di `$keyToId`. Kalau dua menu memakai `scope` yang sama (`admin.semester` di dropdown Kampus DAN Kesra), kunci `scope` saling menimpa dan menu berikutnya menimpa grant menu sebelumnya. Karena itu entri menu boleh membawa `key` eksplisit yang ditulis TERAKHIR (menang atas `scope` dan `Str::kebab($label)`); dipakai untuk `semester-kampus`, `semester-kesra`, `kampus-dropdown`, `kampusverif-awal`, `kesra-dropdown`, `kesraverif-awal`. Alasannya sama untuk induk dropdown: `scope` induk "Kampus" dipakai juga oleh anak "Verifikasi Awal", jadi tanpa `key` terpisah kunci induknya hilang dan dropdown-nya tidak pernah muncul di sidebar.
 
 ## Status paket: belum_lengkap bukan keputusan petugas
 `status_kampus = belum_lengkap` berarti DOKUMENNYA belum lengkap (KRS, KHS, atau nilai KHS belum ada), bukan hasil pemeriksaan. Paket `belum_lengkap` TIDAK masuk antrean Kampus, supaya petugas tidak melihat pekerjaan setengah jadi.
@@ -50,6 +55,6 @@ Sistem tidak tahu kapan semester berganti: satu-satunya sumbernya kolom `semeste
 `user/pendaftaran/lihat` menampilkan kartu "Verifikasi per Semester" (hanya bila `diterima`) dengan label & badge dari `PaketSemester::labelRingkas()/badgeRingkas()`. Jangan menulis ulang `@switch` per status di view: itu tempat kedua label status pernah berbeda. Locked by `VerifikasiSemesterTest` 'halaman pendaftaran mahasiswa menampilkan status tiap semester'.
 
 ## Menambah satu menu baru = sentuh seeder + 5 berkas tes
-Sama seperti aturan menu lain, tetapi jumlah total menu kini **22** (10 top-level + 12 anak). Yang wajib ikut diperbarui: daftar grant `super_admin` DAN grant role terkait, jumlah total di `SeederTest` (idempotensi), array scope anak di `MenuManagementTest`, `toHaveCount(N)` di `DataTableLoadingTest` bila halaman barunya memakai DataTable, dan daftar isi section di `MenuSidebarTest`.
+Sama seperti aturan menu lain, tetapi jumlah total menu kini **24** (9 top-level + 15 anak). Yang wajib ikut diperbarui: daftar grant `super_admin` DAN grant role terkait, jumlah total di `SeederTest` (idempotensi), array scope anak di `MenuManagementTest`, `toHaveCount(N)` di `DataTableLoadingTest` bila halaman barunya memakai DataTable, dan daftar isi section di `MenuSidebarTest`.
 
 `MenuSeeder::buangMenuLama()` memangkas menu yang tidak lagi ada di daftar seed, jadi menambah entri di `$menus` + `$grants` sudah cukup; tidak perlu menghapus baris lama manual.

@@ -31,18 +31,9 @@
                   @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
+                {{-- Kampus tidak lagi dipilih PER BEASISWA (lihat form tambah):
+                     cakupan ditentukan daftar prodi yang dicentang di bawah. --}}
                 <div class="form-row">
-                  <div class="form-group col-md-8">
-                    <label for="kampus_id">Kampus <span class="text-danger">*</span></label>
-                    <select class="form-control select2-cari @error('kampus_id') is-invalid @enderror" id="kampus_id" name="kampus_id">
-                      <option value="">&mdash; Pilih &mdash;</option>
-                      @foreach($kampusList as $kampus)
-                        <option value="{{ $kampus->id }}" {{ old('kampus_id', $selectedKampusId) == $kampus->id ? 'selected' : '' }}>{{ $kampus->nama_kampus }}</option>
-                      @endforeach
-                    </select>
-                    @error('kampus_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <small class="text-muted">Saat kampus diubah, daftar program studi ikut menyesuaikan.</small>
-                  </div>
                   <div class="form-group col-md-4">
                     <label for="tingkat_gelar">Jenjang <span class="text-danger">*</span></label>
                     {{-- Pilihan dari sumber yang sama dengan profil
@@ -142,28 +133,57 @@
               </div>
               <div class="card-body">
                 <div class="alert alert-info mb-3">
-                  <i class="fas fa-info-circle mr-1"></i> Centang program studi yang berhak mengikuti beasiswa ini
-                  (minimal 1). Daftar mengikuti kampus yang dipilih.
+                  <i class="fas fa-info-circle mr-1"></i> Centang kampus, fakultas, atau program studi
+                  yang berhak mengikuti beasiswa ini (minimal 1 prodi tercentang). Centang kampus
+                  atau fakultas memilih semua prodi di dalamnya sekaligus.
                 </div>
 
-                @php
-                  $snapshotProdiNames = $scholarship->fakultas
-                      ->flatMap(fn ($fakultas) => $fakultas->prodi->pluck('nama'))
-                      ->all();
-                @endphp
+                <div class="mb-3">
+                  <button type="button" class="btn btn-sm btn-outline-secondary mr-1" id="btn-centang-semua">
+                    <i class="fas fa-check-double mr-1"></i> Centang Semua
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-lepas-semua">
+                    <i class="fas fa-times mr-1"></i> Lepas Semua
+                  </button>
+                </div>
 
                 <div id="prodi-tree">
                   @forelse($kampusList as $kampus)
-                    <div class="kampus-tree d-none" data-kampus-id="{{ $kampus->id }}">
+                    @php
+                      $prodiTerpilihKampus = $kampusTerpilih[$kampus->id] ?? [];
+                      $semuaTercentangKampus = $kampus->fakultas->flatMap->prodi->isNotEmpty()
+                        && $kampus->fakultas->flatMap->prodi->every(fn ($p) => in_array($p->id, $prodiTerpilihKampus, false));
+                    @endphp
+                    <div class="kampus-tree mb-3" data-kampus-id="{{ $kampus->id }}">
+                      <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input kampus-check"
+                          id="kampus-{{ $kampus->id }}" {{ $semuaTercentangKampus ? 'checked' : '' }}>
+                        <label class="custom-control-label font-weight-bold" for="kampus-{{ $kampus->id }}">
+                          <i class="fas fa-university mr-1"></i>{{ $kampus->nama_kampus }}
+                        </label>
+                      </div>
                       @foreach($kampus->fakultas as $fakultas)
-                        <div class="mb-3">
-                          <strong class="d-block mb-2"><i class="fas fa-university mr-1"></i>{{ $fakultas->nama }}</strong>
-                          <div class="row">
+                        @php
+                          $prodiTerpilihFakultas = array_intersect(
+                            $fakultas->prodi->pluck('id')->all(), $prodiTerpilihKampus,
+                          );
+                          $semuaTercentangFakultas = $fakultas->prodi->isNotEmpty()
+                            && count($prodiTerpilihFakultas) === $fakultas->prodi->count();
+                        @endphp
+                        <div class="ml-4 mb-2" data-fakultas-id="{{ $fakultas->id }}">
+                          <div class="custom-control custom-checkbox mb-1">
+                            <input type="checkbox" class="custom-control-input fakultas-check"
+                              id="fakultas-{{ $fakultas->id }}" {{ $semuaTercentangFakultas ? 'checked' : '' }}>
+                            <label class="custom-control-label font-weight-bold" for="fakultas-{{ $fakultas->id }}">
+                              {{ $fakultas->nama }}
+                            </label>
+                          </div>
+                          <div class="row ml-2">
                             @foreach($fakultas->prodi as $prodi)
                               <div class="col-md-4 mb-1">
                                 <div class="custom-control custom-checkbox">
                                   <input type="checkbox" class="custom-control-input prodi-check" id="prodi-{{ $prodi->id }}"
-                                    name="prodi_ids[]" value="{{ $prodi->id }}" @checked(old('prodi_ids') !== null ? in_array($prodi->id, old('prodi_ids')) : in_array($prodi->nama, $snapshotProdiNames))>
+                                    name="prodi_ids[]" value="{{ $prodi->id }}" @checked(in_array($prodi->id, $prodiTerpilihKampus, false))>
                                   <label class="custom-control-label" for="prodi-{{ $prodi->id }}">{{ $prodi->nama }}</label>
                                 </div>
                               </div>
@@ -210,33 +230,69 @@
 @push('script')
 <script>
 $(document).ready(function() {
-  function showKampusTree() {
-    var selected = $('#kampus_id').val();
-    $('#prodi-tree .kampus-tree').each(function() {
-      var isSelected = String($(this).attr('data-kampus-id')) === String(selected);
-      $(this).toggleClass('d-none', !isSelected);
-      // Checkbox di campus yang disembunyikan harus dinonaktifkan, bukan hanya
-      // ditutupi. Yang disembunyikan saja tetap terkirim bersama form, jadi
-      // prodi dari kampus lain ikut masuk ke `prodi_ids[]` dan `after()` di
-      // request_then menolak penyimpanan dengan pesan "Semua program studi
-      // harus berada di kampus tujuan beasiswa." -- padahal admin tidak pernah
-      // memilih prodi itu. `disabled` membuatnya tidak ikut disubmit; state
-      // `checked` sengaja dipertahankan supaya berpindah kampus tidak
-      // menghapus pilihan lama.
-      $(this).find('.prodi-check').prop('disabled', !isSelected);
-    });
-    updateProdiHint();
+  // Pohon centang tiga tingkat: kampus -> fakultas -> prodi (sama seperti
+  // `buat.blade.php`). Centang kampus/fakultas adalah TURUNAN dari centang
+  // prodinya; yang dikirim ke server hanya `prodi_ids[]`.
+  function refreshKampus($kampus) {
+    var semuaProdi = $kampus.find('.prodi-check');
+    var tercentang = semuaProdi.filter(':checked').length;
+    var semua = semuaProdi.length > 0 && tercentang === semuaProdi.length;
+    $kampus.find('.kampus-check').prop('checked', semua).prop('indeterminate', !semua && tercentang > 0);
   }
 
+  function refreshFakultas($fakultas) {
+    var semuaProdi = $fakultas.find('.prodi-check');
+    var tercentang = semuaProdi.filter(':checked').length;
+    var semua = semuaProdi.length > 0 && tercentang === semuaProdi.length;
+    $fakultas.find('.fakultas-check').prop('checked', semua).prop('indeterminate', !semua && tercentang > 0);
+    refreshKampus($fakultas.closest('.kampus-tree'));
+  }
+
+  $('#prodi-tree .kampus-tree').each(function() {
+    var $kampus = $(this);
+    $kampus.find('[data-fakultas-id]').each(function() {
+      refreshFakultas($(this));
+    });
+  });
+
+  $('#prodi-tree').on('change', '.prodi-check', function() {
+    refreshFakultas($(this).closest('[data-fakultas-id]'));
+    updateProdiHint();
+  });
+
+  $('#prodi-tree').on('change', '.fakultas-check', function() {
+    var cek = $(this).prop('checked');
+    var $fakultas = $(this).closest('[data-fakultas-id]');
+    $fakultas.find('.prodi-check').prop('checked', cek);
+    refreshKampus($fakultas.closest('.kampus-tree'));
+    updateProdiHint();
+  });
+
+  $('#prodi-tree').on('change', '.kampus-check', function() {
+    var cek = $(this).prop('checked');
+    var $kampus = $(this).closest('.kampus-tree');
+    $kampus.find('.prodi-check').prop('checked', cek);
+    $kampus.find('.fakultas-check').prop('checked', cek);
+    updateProdiHint();
+  });
+
+  $('#btn-centang-semua').on('click', function() {
+    $('.prodi-check').prop('checked', true);
+    $('.fakultas-check, .kampus-check').prop('checked', true).prop('indeterminate', false);
+    updateProdiHint();
+  });
+
+  $('#btn-lepas-semua').on('click', function() {
+    $('.prodi-check, .fakultas-check, .kampus-check').prop('checked', false).prop('indeterminate', false);
+    updateProdiHint();
+  });
+
   function updateProdiHint() {
-    var count = $('#prodi-tree .kampus-tree:not(.d-none) .prodi-check:checked').length;
+    var count = $('#prodi-tree .prodi-check:checked').length;
     $('#prodi-hint').text(count === 0 ? 'Belum ada program studi yang dipilih. Minimal pilih 1.' : count + ' program studi dipilih.');
   }
 
-  $('#kampus_id').on('change', showKampusTree);
-  $('#prodi-tree').on('change', '.prodi-check', updateProdiHint);
-
-  showKampusTree();
+  updateProdiHint();
 
   // Helper yang sama dipakai `buat.blade.php`, jadi tampilan dan perilaku
   // date picker identik di kedua form.

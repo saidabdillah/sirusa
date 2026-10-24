@@ -24,9 +24,9 @@
             <div class="card-header-action">
               {{-- Hanya super_admin: peran lain tahapnya sudah ditentukan dari
                    perannya sendiri, jadi pilihan ini tidak ada gunanya bagi mereka. --}}
-              <a href="{{ route('admin.semester.index', ['tahap' => 'kampus']) }}"
+              <a href="{{ route('admin.semester.kampus') }}"
                 class="btn btn-sm {{ $stage === 'kampus' ? 'btn-primary' : 'btn-outline-primary' }}">Kampus</a>
-              <a href="{{ route('admin.semester.index', ['tahap' => 'kesra']) }}"
+              <a href="{{ route('admin.semester.kesra') }}"
                 class="btn btn-sm {{ $stage === 'kesra' ? 'btn-primary' : 'btn-outline-primary' }}">Kesra</a>
             </div>
             @endif

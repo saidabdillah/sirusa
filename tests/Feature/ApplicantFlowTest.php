@@ -56,10 +56,15 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
     ]);
 }
 
+/**
+ * Beasiswa yang bisa didaftar. Cakupan TIDAK diisi di sini: beasiswa tanpa
+ * cakupan terbuka untuk semua program studi (perilaku yang memang diuji di
+ * berkas ini), dan tes yang ingin membatasi cukup menambah baris cakupan
+ * sendiri lewat `$beasiswa->cakupan()->create(...)`.
+ */
 function createEligibleScholarship(int $kampusId, array $overrides = []): Scholarship
 {
     return Scholarship::factory()->create(array_merge([
-        'kampus_id' => $kampusId,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,
     ], $overrides));
@@ -154,8 +159,13 @@ test('application rejected when beasiswa has expired', function () {
 
 test('application rejected when prodi not included in scholarship', function () {
     createCompleteProfile($this->user, $this->prodi, 3.5, 5);
+    // Beasiswa kini tertutup BUKAN karena beda kampus, tapi karena cakupannya
+    // hanya memuat prodi lain: satu beasiswa boleh mencakup banyak kampus.
     $kampusLain = Kampus::create(['nama_kampus' => 'Universitas Gadjah Mada']);
     $scholarship = createEligibleScholarship($kampusLain->id);
+    $prodiLain = $kampusLain->fakultas()->create(['nama' => 'Fakultas Ekonomi'])
+        ->prodi()->create(['nama' => 'Akuntansi']);
+    $scholarship->cakupan()->create(['prodi_id' => $prodiLain->id]);
 
     actingAs($this->user)
         ->post(route('user.pendaftaran.simpan'), applicationPayload($scholarship))

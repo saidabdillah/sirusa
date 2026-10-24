@@ -16,7 +16,6 @@ function beasiswaKesra(Kampus $kampus, string $nama, int $kuota = 5): Scholarshi
 {
     return Scholarship::factory()->create([
         'nama' => $nama,
-        'kampus_id' => $kampus->id,
         'kuota' => $kuota,
         'ipk_minimal' => 0,
         'semester_minimal' => 0,
