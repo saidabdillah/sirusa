@@ -213,6 +213,24 @@ test('satu beasiswa boleh mencakup prodi dari BANYAK kampus', function () {
         ->and($beasiswa->kampus)->toContain('Universitas Ranking Dua');
 });
 
+test('pohon centang beasiswa bisa dibuka-tutup per kampus dan fakultas', function () {
+    // Daftar kampus x fakultas x prodi terlalu panjang untuk digulir, jadi tiap
+    // kampus dan fakultas bisa dilipat (Bootstrap collapse). Input prodi tetap
+    // ada di DOM walau terlipat, supaya pilihan tidak hilang saat disimpan.
+    foreach (['buat', 'ubah'] as $view) {
+        $source = file_get_contents(resource_path("views/admin/beasiswa/{$view}.blade.php"));
+
+        expect($source)
+            ->toContain('kampus-toggle')
+            ->toContain('fakultas-toggle')
+            ->toContain('data-toggle="collapse"')
+            ->toContain('btn-buka-semua')
+            ->toContain('btn-tutup-semua')
+            // Terlipat != dinonaktifkan: `disabled` akan membuang pilihan user.
+            ->and($source)->not->toContain("prodi-check').prop('disabled'");
+    }
+});
+
 test('kedua form beasiswa memakai pohon centang kampus-fakultas-prodi', function () {
     // Kampus tidak lagi disembunyikan/dinonaktifkan per pilihan: SELURUH kampus
     // tampil dan bisa dicentang bersamaan, karena satu beasiswa boleh mencakup

@@ -674,3 +674,28 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
 #tabel-akademik .form-control-sm {
   height: calc(1.5em + 0.5rem + 2px);
 }
+
+/* Pohon centang cakupan beasiswa: dibatasi tingginya supaya form tambah/ubah
+   tidak memanjang ke bawah, dan tiap kampus/fakultas bisa dibuka-tutup.
+   `overscroll-behavior` menahan scroll rantai ke halaman saat daftar habis. */
+#prodi-tree {
+  max-height: 55vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+}
+
+#prodi-tree .kampus-toggle,
+#prodi-tree .fakultas-toggle {
+  color: #6c757d;
+}
+
+#prodi-tree .kampus-toggle i,
+#prodi-tree .fakultas-toggle i {
+  transition: transform 0.15s ease-in-out;
+}
+
+#prodi-tree .kampus-toggle[aria-expanded="true"] i,
+#prodi-tree .fakultas-toggle[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}

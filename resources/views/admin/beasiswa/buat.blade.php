@@ -162,6 +162,19 @@
                 </button>
               </div>
 
+              {{-- Pohon centang berbentuk accordion: kampus dan fakultas bisa
+                   dibuka/tutup supaya daftar prodi yang panjang tidak memaksa
+                   admin menggulir jauh. Kampus yang sudah punya prodi terpilih
+                   terbuka otomatis, jadi pilihan tersimpan tetap terlihat. --}}
+              <div class="mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary mr-1" id="btn-buka-semua">
+                  <i class="fas fa-chevron-down mr-1"></i> Buka Semua
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-tutup-semua">
+                  <i class="fas fa-chevron-up mr-1"></i> Tutup Semua
+                </button>
+              </div>
+
               <div id="prodi-tree">
                 @forelse($kampusList as $kampus)
                 @php
@@ -169,62 +182,93 @@
                   // gagal, dari database kalau halaman dibuka biasa
                   // (controller mengirim dua-duanya sebagai `$kampusTerpilih`).
                   $prodiTerpilihKampus = $kampusTerpilih[$kampus->id] ?? [];
-                  $semuaTercentangKampus = $kampus->fakultas->flatMap->prodi->isNotEmpty()
-                    && $kampus->fakultas->flatMap->prodi->every(fn ($p) => in_array($p->id, $prodiTerpilihKampus, false));
+                  $semuaProdiKampus = $kampus->fakultas->flatMap->prodi;
+                  $semuaTercentangKampus = $semuaProdiKampus->isNotEmpty()
+                    && $semuaProdiKampus->every(fn ($p) => in_array($p->id, $prodiTerpilihKampus, false));
+                  $adaTerpilihKampus = $semuaProdiKampus->pluck('id')->intersect($prodiTerpilihKampus)->isNotEmpty();
                 @endphp
                 {{-- Centang kampus diukur dari apakah SELURUH prodinya tercentang.
                      Ini bukan pilahan tersimpan: yang disimpan tetap daftar
                      prodinya, jadi tidak ada dua sumber kebenaran. --}}
-                <div class="kampus-tree mb-3" data-kampus-id="{{ $kampus->id }}">
-                  <div class="custom-control custom-checkbox mb-2">
-                    <input type="checkbox" class="custom-control-input kampus-check"
-                      id="kampus-{{ $kampus->id }}" {{ $semuaTercentangKampus ? 'checked' : '' }}>
-                    <label class="custom-control-label font-weight-bold" for="kampus-{{ $kampus->id }}">
-                      <i class="fas fa-university mr-1"></i>{{ $kampus->nama_kampus }}
-                    </label>
-                  </div>
-                  @foreach($kampus->fakultas as $fakultas)
-                  @php
-                    $prodiTerpilihFakultas = array_intersect(
-                      $fakultas->prodi->pluck('id')->all(), $prodiTerpilihKampus,
-                    );
-                    $semuaTercentangFakultas = $fakultas->prodi->isNotEmpty()
-                      && count($prodiTerpilihFakultas) === $fakultas->prodi->count();
-                  @endphp
-                  <div class="ml-4 mb-2" data-fakultas-id="{{ $fakultas->id }}">
-                    <div class="custom-control custom-checkbox mb-1">
-                      <input type="checkbox" class="custom-control-input fakultas-check"
-                        id="fakultas-{{ $fakultas->id }}" {{ $semuaTercentangFakultas ? 'checked' : '' }}>
-                      <label class="custom-control-label font-weight-bold" for="fakultas-{{ $fakultas->id }}">
-                        {{ $fakultas->nama }}
+                <div class="kampus-tree mb-2 border rounded" data-kampus-id="{{ $kampus->id }}">
+                  <div class="d-flex align-items-center px-3 py-2 bg-light rounded">
+                    <div class="custom-control custom-checkbox mb-0">
+                      <input type="checkbox" class="custom-control-input kampus-check"
+                        id="kampus-{{ $kampus->id }}" {{ $semuaTercentangKampus ? 'checked' : '' }}>
+                      <label class="custom-control-label font-weight-bold" for="kampus-{{ $kampus->id }}">
+                        <i class="fas fa-university mr-1"></i>{{ $kampus->nama_kampus }}
                       </label>
                     </div>
-                    <div class="row ml-2">
-                      @foreach($fakultas->prodi as $prodi)
-                      <div class="col-md-4 mb-1">
-                        <div class="custom-control custom-checkbox">
-                          <input type="checkbox" class="custom-control-input prodi-check" id="prodi-{{ $prodi->id }}"
-                            name="prodi_ids[]" value="{{ $prodi->id }}" @checked(in_array($prodi->id,
-                          $prodiTerpilihKampus, false))>
-                          <label class="custom-control-label" for="prodi-{{ $prodi->id }}">{{ $prodi->nama }}</label>
+                    <span class="badge badge-light ml-2">{{ $semuaProdiKampus->count() }} prodi</span>
+                    <button type="button" class="btn btn-sm btn-link ml-auto py-0 text-decoration-none kampus-toggle"
+                      data-toggle="collapse" data-target="#kampus-body-{{ $kampus->id }}"
+                      aria-expanded="{{ $adaTerpilihKampus ? 'true' : 'false' }}">
+                      <i class="fas fa-chevron-down"></i>
+                    </button>
+                  </div>
+
+                  <div class="collapse {{ $adaTerpilihKampus ? 'show' : '' }}" id="kampus-body-{{ $kampus->id }}">
+                    <div class="px-3 py-2">
+                      @foreach($kampus->fakultas as $fakultas)
+                      @php
+                        $prodiTerpilihFakultas = array_intersect(
+                          $fakultas->prodi->pluck('id')->all(), $prodiTerpilihKampus,
+                        );
+                        $semuaTercentangFakultas = $fakultas->prodi->isNotEmpty()
+                          && count($prodiTerpilihFakultas) === $fakultas->prodi->count();
+                      @endphp
+                      <div class="fakultas-tree mb-1" data-fakultas-id="{{ $fakultas->id }}">
+                        <div class="d-flex align-items-center">
+                          <div class="custom-control custom-checkbox mb-0">
+                            <input type="checkbox" class="custom-control-input fakultas-check"
+                              id="fakultas-{{ $fakultas->id }}" {{ $semuaTercentangFakultas ? 'checked' : '' }}>
+                            <label class="custom-control-label font-weight-bold" for="fakultas-{{ $fakultas->id }}">
+                              {{ $fakultas->nama }}
+                            </label>
+                          </div>
+                          @if($fakultas->prodi->isNotEmpty())
+                          <button type="button" class="btn btn-sm btn-link ml-auto py-0 text-decoration-none fakultas-toggle"
+                            data-toggle="collapse" data-target="#fakultas-body-{{ $fakultas->id }}"
+                            aria-expanded="{{ count($prodiTerpilihFakultas) > 0 ? 'true' : 'false' }}">
+                            <span class="text-muted small mr-1">{{ $fakultas->prodi->count() }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                          </button>
+                          @endif
                         </div>
+
+                        <div class="collapse {{ count($prodiTerpilihFakultas) > 0 ? 'show' : '' }}"
+                          id="fakultas-body-{{ $fakultas->id }}">
+                          <div class="row ml-2 mt-1">
+                            @foreach($fakultas->prodi as $prodi)
+                            <div class="col-md-4 mb-1">
+                              <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input prodi-check" id="prodi-{{ $prodi->id }}"
+                                  name="prodi_ids[]" value="{{ $prodi->id }}" @checked(in_array($prodi->id,
+                                $prodiTerpilihKampus, false))>
+                                <label class="custom-control-label" for="prodi-{{ $prodi->id }}">{{ $prodi->nama }}</label>
+                              </div>
+                            </div>
+                            @endforeach
+                          </div>
+                        </div>
+
+                        @if($fakultas->prodi->isEmpty())
+                        <div class="ml-4">
+                          <p class="text-muted mb-0">Belum ada program studi pada fakultas ini.
+                            <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}">Tambah Prodi</a>.
+                          </p>
+                        </div>
+                        @endif
                       </div>
                       @endforeach
-                      @if($fakultas->prodi->isEmpty())
-                      <div class="col-12">
-                        <p class="text-muted mb-0">Belum ada program studi pada fakultas ini.
-                          <a href="{{ route('admin.kampus.prodi.buat', [$kampus, $fakultas]) }}">Tambah Prodi</a>.
-                        </p>
-                      </div>
+
+                      @if($kampus->fakultas->isEmpty())
+                      <p class="text-muted mb-0">Belum ada fakultas pada kampus ini.
+                        <a href="{{ route('admin.kampus.fakultas.buat', $kampus) }}">Tambah Fakultas</a>.
+                      </p>
                       @endif
                     </div>
                   </div>
-                  @endforeach
-                  @if($kampus->fakultas->isEmpty())
-                  <p class="text-muted mb-0">Belum ada fakultas pada kampus ini.
-                    <a href="{{ route('admin.kampus.fakultas.buat', $kampus) }}">Tambah Fakultas</a>.
-                  </p>
-                  @endif
                 </div>
                 @empty
                 <p class="text-muted mb-0">Belum ada kampus terdaftar.
@@ -261,6 +305,16 @@
 @push('script')
 <script>
   $(document).ready(function() {
+    // Buka/tutup semua accordion sekaligus. `collapse` Bootstrap dipakai apa
+    // adanya (data-toggle di view), jadi tidak ada state sendiri di JS.
+    $('#btn-buka-semua').on('click', function () {
+      $('#prodi-tree .collapse').collapse('show');
+    });
+
+    $('#btn-tutup-semua').on('click', function () {
+      $('#prodi-tree .collapse').collapse('hide');
+    });
+
     // Pohon centang tiga tingkat: kampus -> fakultas -> prodi. Centang kampus
     // atau fakultas memilih/melepas SEMUA prodi di dalamnya. Centang kampus
     // dan fakultas adalah TURUNAN dari centang prodinya (checked = semua
