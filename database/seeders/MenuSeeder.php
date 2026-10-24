@@ -14,192 +14,161 @@ class MenuSeeder extends Seeder
 {
     use WithoutModelEvents;
 
+    /**
+     * Susunan menu sidebar.
+     *
+     * Dikelompokkan per PEKERJAAN, bukan per jenis data: bagian menyebut apa
+     * yang dikerjakan petugas, bukan tabel apa yang ada di belakangnya.
+     *
+     * `section` bukan enum database: `Menu::sections()` menggabungkan
+     * `DEFAULT_SECTIONS` dengan nilai yang benar-benar dipakai baris `menus`,
+     * jadi menambah bagian cukup di sini.
+     *
+     * Kunci grant (`key`) hanya dipakai saat `scope` atau `Str::kebab($label)`
+     * tidak unik: dua menu boleh berbagi scope yang sama (Verifikasi Semester
+     * di dropdown Kampus dan Kesra), dan induk dropdown yang scope-nya dipakai
+     * anaknya. Tanpa `key` eksplisit kunci itu saling menimpa di `$keyToId`
+     * dan grant menu yang kalah hilang tanpa error.
+     *
+     * @var list<array<string, mixed>>
+     */
+    private const MENUS = [
+        // Satu halaman kerja yang dibuka tiap hari.
+        [
+            'label' => 'Dasbor',
+            'icon' => 'fas fa-fire',
+            'route' => 'dashboard',
+            'scope' => 'dashboard',
+            'section' => 'Menu Utama',
+            'urutan' => 1,
+            'wajib' => true,
+        ],
+
+        // PENGELOLAAN BEASISWA: apa yang ditawarkan (program) dan data
+        // acuannya (perguruan tinggi -> fakultas -> prodi).
+        [
+            'label' => 'Program Beasiswa',
+            'icon' => 'fas fa-award',
+            'section' => 'Pengelolaan Beasiswa',
+            'urutan' => 10,
+            'children' => [
+                ['label' => 'Daftar Program', 'route' => 'admin.beasiswa.index', 'scope' => 'admin.beasiswa'],
+            ],
+        ],
+        [
+            'label' => 'Data Referensi',
+            'icon' => 'fas fa-university',
+            'section' => 'Pengelolaan Beasiswa',
+            'urutan' => 20,
+            'children' => [
+                ['label' => 'Perguruan Tinggi', 'route' => 'admin.kampus.index', 'scope' => 'admin.kampus'],
+            ],
+        ],
+
+        // PENDAFTARAN: rekap siapa saja yang mendaftar. Bukan antrean kerja
+        // (itu bagian Seleksi & Verifikasi), dan dibaca read-only oleh
+        // Catpil, Kampus, maupun Kesra.
+        [
+            'label' => 'Daftar Pendaftar',
+            'icon' => 'fas fa-clipboard-list',
+            'route' => 'admin.kesra.status',
+            'scope' => 'admin.kesra.status',
+            'section' => 'Pendaftaran',
+            'urutan' => 30,
+        ],
+
+        // SELEKSI & VERIFIKASI: urutan kerja verifikasi. Seleksi Berkas
+        // (Catpil) memeriksa kependudukan; Kampus memeriksa akademik; Kesra
+        // memutuskan; Pengumuman Hasil menerbitkan hasilnya.
+        [
+            'label' => 'Seleksi Berkas',
+            'icon' => 'fas fa-id-card',
+            'route' => 'admin.catpil.index',
+            'scope' => 'admin.catpil',
+            'section' => 'Seleksi & Verifikasi',
+            'urutan' => 40,
+        ],
+        [
+            'label' => 'Kampus',
+            'icon' => 'fas fa-graduation-cap',
+            'scope' => 'admin.kampusverif',
+            // Kunci induk dipisah dari `scope` karena anak pertamanya memakai
+            // scope yang sama: tanpa ini anak menimpa kunci induk dan
+            // dropdown-nya tidak pernah ter-grant.
+            'key' => 'kampus-dropdown',
+            'section' => 'Seleksi & Verifikasi',
+            'urutan' => 50,
+            'children' => [
+                ['label' => 'Verifikasi Awal', 'route' => 'admin.kampusverif.index', 'scope' => 'admin.kampusverif', 'key' => 'kampusverif-awal'],
+                ['label' => 'Verifikasi Semester', 'route' => 'admin.semester.kampus', 'scope' => 'admin.semester', 'key' => 'semester-kampus'],
+            ],
+        ],
+        [
+            'label' => 'Kesra',
+            'icon' => 'fas fa-clipboard-check',
+            'scope' => 'admin.kesra',
+            'key' => 'kesra-dropdown',
+            'section' => 'Seleksi & Verifikasi',
+            'urutan' => 60,
+            'children' => [
+                ['label' => 'Verifikasi Awal', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra.index', 'key' => 'kesraverif-awal'],
+                ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
+                ['label' => 'Verifikasi Semester', 'route' => 'admin.semester.kesra', 'scope' => 'admin.semester', 'key' => 'semester-kesra'],
+            ],
+        ],
+        [
+            'label' => 'Pengumuman Hasil',
+            'icon' => 'fas fa-bullhorn',
+            'route' => 'admin.kesra.pengumuman',
+            'scope' => 'admin.kesra.pengumuman',
+            'section' => 'Seleksi & Verifikasi',
+            'urutan' => 70,
+        ],
+
+        // MONITORING & LAPORAN: hasil, bukan antrean kerja. Tanpa kolom Aksi.
+        [
+            'label' => 'Penerima Beasiswa',
+            'icon' => 'fas fa-user-check',
+            'route' => 'admin.penerima.index',
+            'scope' => 'admin.penerima',
+            'section' => 'Monitoring & Laporan',
+            'urutan' => 80,
+        ],
+
+        // ADMINISTRASI SISTEM: alat pengelola aplikasi.
+        [
+            'label' => 'Manajemen Akses',
+            'icon' => 'fas fa-user-shield',
+            'section' => 'Administrasi Sistem',
+            'urutan' => 90,
+            'children' => [
+                ['label' => 'Pengguna', 'route' => 'admin.pengguna.index', 'scope' => 'admin.pengguna'],
+                ['label' => 'Peran', 'route' => 'admin.role.index', 'scope' => 'admin.role'],
+                ['label' => 'Hak Akses Menu', 'route' => 'admin.menu.index', 'scope' => 'admin.menu'],
+                ['label' => 'Kelola Menu', 'route' => 'admin.menukelola.index', 'scope' => 'admin.menukelola'],
+            ],
+        ],
+
+        // LAYANAN MAHASISWA: sisi akun mahasiswa.
+        [
+            'label' => 'Beasiswa Saya',
+            'icon' => 'fas fa-award',
+            'section' => 'Layanan Mahasiswa',
+            'urutan' => 100,
+            'children' => [
+                ['label' => 'Daftar Beasiswa', 'route' => 'user.beasiswa.index', 'scope' => 'user.beasiswa'],
+                ['label' => 'Pendaftaran Saya', 'route' => 'user.pendaftaran.index', 'scope' => 'user.pendaftaran'],
+            ],
+        ],
+    ];
+
     public function run(): void
     {
-        $menus = [
-            [
-                'label' => 'Dasbor',
-                'icon' => 'fas fa-fire',
-                'route' => 'dashboard',
-                'scope' => 'dashboard',
-                'section' => 'Menu Utama',
-                'urutan' => 1,
-                'wajib' => true,
-            ],
-            [
-                'label' => 'Beasiswa',
-                'icon' => 'fas fa-award',
-                'section' => 'Administrasi',
-                'urutan' => 10,
-                'children' => [
-                    ['label' => 'Daftar Beasiswa', 'route' => 'admin.beasiswa.index', 'scope' => 'admin.beasiswa'],
-                ],
-            ],
-            // Tiga menu verifikasi dipindah ke section sendiri dan labelnya
-            // dipangkas: section "Verifikasi" sudah menyebut prosesnya, jadi
-            // mengulanginya di tiap label cuma menambah ruang kosong di sidebar.
-            //
-            // "Kampus" sekarang jadi nama menu DAN nama child "Master Data".
-            // Keduanya tidak bentrok karena `updateOrCreate` dicocokkan dengan
-            // (section, label, parent_id) -- section dan parent-nya berbeda --
-            // tapi teks konfirmasi hapus di "Kelola Menu" jadi ambigu
-            // ("Hapus menu 'Kampus'?" untuk dua menu berbeda). Halaman
-            // "Akses Menu" tidak ambigu karena menampilkan `(section)` di
-            // samping label.
-            [
-                'label' => 'Catpil',
-                'icon' => 'fas fa-id-card',
-                'route' => 'admin.catpil.index',
-                'scope' => 'admin.catpil',
-                'section' => 'Verifikasi',
-                'urutan' => 25,
-            ],
-            // "Kampus" kini dropdown dua pekerjaan yang memang berbeda:
-            // verifikasi awal (sekali saat seleksi) dan verifikasi paket
-            // semester (tiap semester setelah jadi penerima). Parent tetap
-            // membawa scope `admin.kampusverif` supaya route antrean awal
-            // terjaga dan grant lama tidak berubah arti.
-            [
-                'label' => 'Kampus',
-                'icon' => 'fas fa-graduation-cap',
-                'scope' => 'admin.kampusverif',
-                // Kunci grant induk dipisah dari `scope` karena anaknya
-                // memakai scope yang sama: tanpa ini anak menimpa kunci induk
-                // di `$keyToId` dan dropdown-nya tidak pernah ter-grant.
-                'key' => 'kampus-dropdown',
-                'section' => 'Verifikasi',
-                'urutan' => 26,
-                'children' => [
-                    ['label' => 'Verifikasi Awal', 'route' => 'admin.kampusverif.index', 'scope' => 'admin.kampusverif', 'key' => 'kampusverif-awal'],
-                    // `key` dipakai saat menghitung grant: dua menu berbeda
-                    // memakai scope yang sama (`admin.semester`) supaya
-                    // keduanya menutup route yang sama, jadi kunci `scope`
-                    // akan saling menimpa.
-                    ['label' => 'Verifikasi Semester', 'route' => 'admin.semester.kampus', 'scope' => 'admin.semester', 'key' => 'semester-kampus'],
-                ],
-            ],
-            // Kesra adalah satu-satunya antrean verifikasi berbentuk dropdown:
-            // halaman kerjanya dua daftar yang terpisah (antrean putusan + arsip
-            // keputusan), jadi menunya jadi induk tanpa route -- sidebar merender
-            // induk beranak sebagai dropdown. `scope` induk TETAP `admin.kesra`
-            // karena dialah yang menutup `admin.kesra.*` untuk `hasMenuAccess()`
-            // dan `EnsureMenuAccess`; scope anak harus unik supaya `keyToId`
-            // tidak menimpa kunci grant induk (induk wajib tetap di-grant,
-            // `sidebarMenus()` hanya mengambil `parent_id` null).
-            [
-                // "Kesra" jadi dropdown dua anak: antrean verifikasi + arsip
-                // keputusan. "Penerima Beasiswa" keluar dari dropdown ini
-                // (permintaan pengguna) menjadi leaf mandiri di section
-                // "Manajemen" -- lihat entri di bawah. Parent tanpa route
-                // karena `scope` induk `admin.kesra` menutup seluruh
-                // `admin.kesra.*`; tiap anak tetap punya scope unik sendiri
-                // untuk sidebar.
-                'label' => 'Kesra',
-                'icon' => 'fas fa-clipboard-check',
-                'scope' => 'admin.kesra',
-                'key' => 'kesra-dropdown',
-                'section' => 'Verifikasi',
-                'urutan' => 27,
-                'children' => [
-                    // Label "Verifikasi Awal" menyebut apa yang diperiksa;
-                    // "Keputusan" adalah arsip putusan, bukan antrean kerja.
-                    ['label' => 'Verifikasi Awal', 'route' => 'admin.kesra.index', 'scope' => 'admin.kesra.index', 'key' => 'kesraverif-awal'],
-                    ['label' => 'Keputusan', 'route' => 'admin.kesra.disetujui', 'scope' => 'admin.kesra.disetujui'],
-                    ['label' => 'Verifikasi Semester', 'route' => 'admin.semester.kesra', 'scope' => 'admin.semester', 'key' => 'semester-kesra'],
-                ],
-            ],
-            // "Pengumuman" adalah leaf MANDIRI, bukan anak dropdown Kesra
-            // (permintaan pengguna): menerbitkan hasil seleksi adalah pekerjaan
-            // tersendiri, bukan lanjutan dari antrean verifikasi. Scope-nya
-            // tetap `admin.kesra.pengumuman` supaya route & middleware yang
-            // sudah ada tidak berubah.
-            [
-                'label' => 'Pengumuman',
-                'icon' => 'fas fa-bullhorn',
-                'route' => 'admin.kesra.pengumuman',
-                'scope' => 'admin.kesra.pengumuman',
-                'section' => 'Verifikasi',
-                'urutan' => 28,
-            ],
-            // "Penerima Beasiswa" (pendaftar berstatus `diterima`) menjadi LEAF
-            // mandiri, bukan anak dropdown Kesra (permintaan pengguna): daftar
-            // ini adalah hasil/rekap, bukan antrean kerja, dan bisa dibaca
-            // read-only semua role admin (Catpil, Kampus, Kesra). Menempatinya
-            // di section "Manajemen" (permintaan pengguna) membuatnya tampil
-            // sebagai menu sendiri yang tidak terkubur di dropdown Kesra dan
-            // tidak ikut section "Verifikasi" yang murni antrean kerja.
-            // Halaman ini tanpa kolom Aksi: tidak ada aksi tulis dari daftar.
-            [
-                'label' => 'Penerima Beasiswa',
-                'icon' => 'fas fa-user-check',
-                'route' => 'admin.penerima.index',
-                'scope' => 'admin.penerima',
-                'section' => 'Manajemen',
-                'urutan' => 60,
-            ],
-            // Status Verifikasi MENJADI leaf mandiri, bukan anak dropdown Kesra
-            // (permintaan pengguna): Catpil dan Kampus harus bisa melihat rekap
-            // status semua profil, jadi menempatkannya di dalam dropdown Kesra
-            // akan menyembunyikannya dari sidebar mereka -- `sidebarMenus()`
-            // hanya merender anak yang grant-nya sendiri dipegang role.
-            //
-            // Berada di section "Administrasi" (bukan "Verifikasi", permintaan
-            // pengguna): semua role sudah melihat section itu lewat menu
-            // Pendaftar, dan section "Verifikasi" jadi murni antrean kerja.
-            // Urutannya ditempatkan setelah "Master Data" (30).
-            [
-                // "Status Verifikasi" berganti nama "Pendaftar" (permintaan
-                // pengguna) SEKALIGUS menggantikan menu daftar pendaftar yang lama
-                // (route daftar pendaftar lama) yang dihapus: satu tempat untuk
-                // melihat seluruh pendaftar per tahap adalah rekap ini.
-                'label' => 'Pendaftar',
-                'icon' => 'fas fa-clipboard-list',
-                'route' => 'admin.kesra.status',
-                'scope' => 'admin.kesra.status',
-                'section' => 'Administrasi',
-                'urutan' => 31,
-            ],
-            [
-                'label' => 'Master Data',
-                'icon' => 'fas fa-university',
-                'section' => 'Administrasi',
-                'urutan' => 30,
-                'children' => [
-                    ['label' => 'Kampus', 'route' => 'admin.kampus.index', 'scope' => 'admin.kampus'],
-                ],
-            ],
-            [
-                'label' => 'Kelola Akses',
-                'icon' => 'fas fa-user-shield',
-                'section' => 'Administrator',
-                'urutan' => 50,
-                'children' => [
-                    ['label' => 'Role', 'route' => 'admin.role.index', 'scope' => 'admin.role'],
-                    ['label' => 'Pengguna', 'route' => 'admin.pengguna.index', 'scope' => 'admin.pengguna'],
-                    ['label' => 'Akses Menu', 'route' => 'admin.menu.index', 'scope' => 'admin.menu'],
-                    ['label' => 'Kelola Menu', 'route' => 'admin.menukelola.index', 'scope' => 'admin.menukelola'],
-                ],
-            ],
-            [
-                'label' => 'Beasiswa Saya',
-                'icon' => 'fas fa-award',
-                'section' => 'Layanan Mahasiswa',
-                'urutan' => 10,
-                'children' => [
-                    ['label' => 'Daftar Beasiswa', 'route' => 'user.beasiswa.index', 'scope' => 'user.beasiswa'],
-                    ['label' => 'Pendaftaran Saya', 'route' => 'user.pendaftaran.index', 'scope' => 'user.pendaftaran'],
-                ],
-            ],
-        ];
-
         $keyToId = [];
 
-        foreach ($menus as $item) {
-            // Idempoten lewat (section, label, parent_id). `create()` dipakai
-            // sebelumnya, jadi menjalankan seeder dua kali menghasilkan dua
-            // pohon menu -- dan `role_menu` ikut jadi rangkap. `label` saja
-            // tidak cukup sebagai kunci: "Daftar Beasiswa" ada di section
-            // "Administrasi" dan "Layanan Mahasiswa" sekaligus.
+        foreach (self::MENUS as $item) {
+            // Idempoten lewat (section, label, parent_id). `label` saja tidak
+            // cukup sebagai kunci: "Daftar Beasiswa" ada di dua bagian.
             $parent = Menu::updateOrCreate(
                 [
                     'section' => $item['section'],
@@ -252,37 +221,33 @@ class MenuSeeder extends Seeder
         }
 
         // Pangkas menu yang tidak lagi ada di daftar seed. Tanpa ini, mengganti
-        // nama scope/route (mis. `admin.menuKelola` -> `admin.menukelola`)
-        // meninggalkan baris lama yang `route`-nya sudah tidak terdaftar --
-        // sidebar memanggil `route($menu->route)` dan seluruh aplikasi akan 500
-        // dengan RouteNotFoundException sampai cache view dibersihkan.
+        // nama scope/route meninggalkan baris lama yang `route`-nya sudah tidak
+        // terdaftar -- sidebar memanggil `route($menu->route)` dan seluruh
+        // aplikasi akan 500 sampai cache view dibersihkan. Ini juga yang
+        // membuang menu lama saat label/bagiannya diganti ("Beasiswa" ->
+        // "Program Beasiswa", "Master Data" -> "Data Referensi", dst).
         $this->buangMenuLama(array_values($keyToId));
 
         $grants = [
             'super_admin' => [
                 'dasbor',
-                'beasiswa',
+                'program-beasiswa',
                 'admin.beasiswa',
+                'data-referensi',
+                'admin.kampus',
+                'admin.kesra.status',
                 'admin.catpil',
                 'kampus-dropdown',
                 'kampusverif-awal',
                 'semester-kampus',
-                // `kesra` = parent dropdown "Kesra" (kunci labelnya
-                // `Str::kebab($label)`), sedangkan `admin.kesra` = scope induk.
-                // Tanpa keduanya parent tidak ter-grant dan seluruh dropdown
-                // (Verifikasi + Keputusan) hilang dari sidebar --
-                // sidebarMenus() hanya mengambil menu parent_id null.
                 'kesra-dropdown',
                 'admin.kesra',
                 'admin.penerima',
                 'admin.kesra.disetujui',
                 'kesraverif-awal',
                 'admin.kesra.pengumuman',
-                'admin.kesra.status',
                 'semester-kesra',
-                'master-data',
-                'admin.kampus',
-                'kelola-akses',
+                'manajemen-akses',
                 'admin.role',
                 'admin.pengguna',
                 'admin.menu',
@@ -292,9 +257,9 @@ class MenuSeeder extends Seeder
                 'dasbor',
                 'admin.catpil',
                 'admin.kesra.status',
-                // `admin.penerima` (leaf mandiri di section "Manajemen") untuk melihat
-                // daftar penerima read-only; scope induk `admin.kesra` sengaja
-                // TIDAK di-grant supaya antrean/keputusan Kesra tetap tertutup.
+                // `admin.penerima` (Monitoring & Laporan) untuk melihat daftar
+                // penerima read-only. Scope induk `admin.kesra` sengaja TIDAK
+                // di-grant supaya antrean/keputusan Kesra tetap tertutup.
                 'admin.penerima',
             ],
             'kampus' => [
@@ -302,20 +267,19 @@ class MenuSeeder extends Seeder
                 'kampus-dropdown',
                 'kampusverif-awal',
                 'admin.kesra.status',
-                // Lihat komentar grant `admin.penerima` pada role catpil.
                 'admin.penerima',
-                // Verifikasi paket semester penerima beasiswa: Kampus adalah
-                // tahap pertamanya. Kuncinya `semester-kampus`, bukan scope,
-                // karena scope `admin.semester` juga dipakai menu Kesra.
+                // Verifikasi paket semester: Kampus tahap pertamanya. Kuncinya
+                // `semester-kampus`, bukan scope, karena scope `admin.semester`
+                // juga dipakai menu Kesra.
                 'semester-kampus',
             ],
             'kesra' => [
                 'dasbor',
-                'beasiswa',
+                'program-beasiswa',
                 'admin.beasiswa',
-                // `kesra` (parent dropdown) + `kelola-akses` (parent) ikut
-                // di-grant supaya dropdown itu sendiri muncul di sidebar —
-                // sidebarMenus() hanya query menu parent_id null.
+                // Induk dropdown + induk Manajemen Akses ikut di-grant supaya
+                // dropdown-nya muncul di sidebar (sidebar hanya mengambil menu
+                // `parent_id` null).
                 'kesra-dropdown',
                 'admin.kesra',
                 'admin.penerima',
@@ -324,9 +288,9 @@ class MenuSeeder extends Seeder
                 'admin.kesra.pengumuman',
                 'admin.kesra.status',
                 'semester-kesra',
-                'master-data',
+                'data-referensi',
                 'admin.kampus',
-                'kelola-akses',
+                'manajemen-akses',
                 'admin.pengguna',
             ],
             'user' => [
@@ -343,15 +307,14 @@ class MenuSeeder extends Seeder
     /**
      * Grant menu ke role.
      *
-     * Kunci sebuah entri grant adalah `scope` menunya, atau
-     * `Str::kebab($label)` untuk menu tanpa scope (mis. "Master Data" ->
-     * `master-data`).
+     * Kunci sebuah entri grant adalah `scope` menunya, `Str::kebab($label)`
+     * untuk menu tanpa scope (mis. "Program Beasiswa" -> `program-beasiswa`),
+     * atau `key` eksplisit saat scope harus dibagi dua menu.
      *
-     * Kunci label jauh lebih rapuh daripada `scope`: begitu labelnya diubah,
-     * kuncinya ikut berubah dan grant-nya hilang tanpa keterangan -- gejalanya cuma
-     * "menu tiba-tiba tidak muncul" di sidebar, yang jauh lebih sulit
-     * ditelusuri daripada error saat seeding. Karena itu kunci yang tidak
-     * ketemu sengaja dibiarkan gagal keras, bukan `continue` diam-diam.
+     * Kunci label lebih rapuh daripada `scope`: begitu labelnya diubah,
+     * kuncinya ikut berubah dan grant-nya hilang tanpa keterangan -- gejalanya
+     * cuma "menu tiba-tiba tidak muncul" di sidebar. Karena itu kunci yang
+     * tidak ketemu sengaja dibiarkan gagal keras, bukan `continue` diam-diam.
      *
      * @param  array<string, list<string>>  $grants
      * @param  array<string, int>  $keyToId
@@ -365,7 +328,8 @@ class MenuSeeder extends Seeder
                 if (! isset($keyToId[$key])) {
                     throw new RuntimeException(sprintf(
                         'MenuSeeder: grant "%s" untuk role "%s" tidak cocok dengan menu mana pun. '
-                        .'Kunci grant = `scope` menu, atau `Str::kebab($label)` untuk menu tanpa scope.',
+                        .'Kunci grant = `scope` menu, `Str::kebab($label)` untuk menu tanpa scope, '
+                        .'atau `key` eksplisit saat dua menu berbagi scope.',
                         $key,
                         $roleName
                     ));

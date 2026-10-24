@@ -32,7 +32,7 @@ function menuPayload(array $overrides = []): array
     return array_merge([
         'label' => 'Menu Baru',
         'icon' => 'fas fa-star',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 99,
         // Route sengaja memakai nama yang TIDAK terdaftar di `routes/` untuk
         // membuktikan store menerima teks bebas -- bukan hanya route yang ada.
@@ -62,7 +62,7 @@ test('super admin can create a menu and it is auto granted to super admin', func
         ->assertSessionHas('success');
 
     $menu = Menu::where('label', 'Menu Baru')->firstOrFail();
-    expect($menu->section)->toBe('Administrasi')
+    expect($menu->section)->toBe('Administrasi Sistem')
         // route/scope ikut tersimpan apa adanya (teks bebas, tidak harus terdaftar).
         ->and($menu->route)->toBe('admin.kelola.baru')
         ->and($menu->scope)->toBe('admin.kelola')
@@ -125,7 +125,7 @@ test('menu update menyimpan route dan scope yang dikirim', function () {
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 5,
         'aktif' => true,
         'wajib' => false,
@@ -142,7 +142,7 @@ test('menu update menyimpan route dan scope yang dikirim', function () {
     expect($menu->fresh()->route)->toBe('admin.catpil.index')
         ->and($menu->fresh()->scope)->toBe('admin.catpil')
         ->and($menu->fresh()->label)->toBe('Menu Baru')
-        ->and($menu->fresh()->section)->toBe('Administrasi');
+        ->and($menu->fresh()->section)->toBe('Administrasi Sistem');
 });
 
 /**
@@ -202,7 +202,7 @@ test('menu update mempertahankan aktif dan wajib yang tersimpan', function () {
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 5,
         'aktif' => false,
         'wajib' => true,
@@ -254,7 +254,7 @@ test('super admin can update a menu label and section', function () {
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 5,
         'aktif' => true,
     ]);
@@ -277,7 +277,7 @@ test('menu update cannot set itself as parent', function () {
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 5,
         'aktif' => true,
     ]);
@@ -302,7 +302,7 @@ test('super admin cannot delete a menu that still has children', function () {
     // `children` adalah nama RELASI, bukan kolom; kolom di tabelnya
     // `parent_id`. Query langsung ke kolom `children` melempar
     // "Unknown column" di database yang menegakkan skema.
-    $parent = Menu::where('label', 'Beasiswa')->whereHas('children')->firstOrFail();
+    $parent = Menu::where('label', 'Program Beasiswa')->whereHas('children')->firstOrFail();
 
     actingAs($this->superAdmin)
         ->delete(route('admin.menukelola.hapus', $parent))
@@ -318,7 +318,7 @@ test('super admin can delete a leaf menu', function () {
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 90,
         'aktif' => true,
     ]);
@@ -480,7 +480,7 @@ test('sidebarMenus returns only top level menus with children nested', function 
         // dropdown Kesra lagi, dan tidak punya anak sendiri.
         ->and($penerima = $topLevel->firstWhere('scope', 'admin.penerima'))->not->toBeNull()
         ->and($penerima->label)->toBe('Penerima Beasiswa')
-        ->and($penerima->section)->toBe('Manajemen')
+        ->and($penerima->section)->toBe('Monitoring & Laporan')
         ->and($penerima->children)->toBeEmpty();
 });
 
@@ -546,7 +546,7 @@ test('form tambah menu selalu kosong dan dropdownnya tidak preselect', function 
  * menu sehingga error dari satu modal tidak bocor ke modal lain.
  */
 test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function () {
-    $menu = Menu::query()->where('label', 'Catpil')->firstOrFail();
+    $menu = Menu::query()->where('label', 'Seleksi Berkas')->firstOrFail();
 
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
 
@@ -559,7 +559,7 @@ test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function
         ->toMatch('/id="route-'.$menu->id.'"[^>]*value="'.preg_quote((string) $menu->route, '/').'"/')
         ->toMatch('/id="scope-'.$menu->id.'"[^>]*value="'.preg_quote((string) $menu->scope, '/').'"/')
         // Dropdown Edit menyeleksi nilai tersimpan, bukan placeholder.
-        ->toMatch('/<option value="Verifikasi" selected>/')
+        ->toMatch('/<option value="Seleksi &amp; Verifikasi" selected>/')
         // Target modal Edit harus unik: kalau tidak, `old()` dari Edit satu
         // menu bisa muncul di modal Edit menu lain.
         ->toContain('<input type="hidden" name="modal_target" value="modal-ubah-menu-'.$menu->id.'">');
@@ -651,7 +651,7 @@ test('menu daun boleh mengosongkan route dan scope saat diupdate', function () {
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 50,
         'aktif' => true,
     ]);
@@ -765,7 +765,7 @@ test('parent_id berupa nama baru membuat menu induk top-level', function () {
         ->and($induk->route)->toBeNull()
         ->and($induk->scope)->toBeNull()
         ->and($induk->icon)->toBe('fas fa-folder')
-        ->and($induk->section)->toBe('Administrasi')
+        ->and($induk->section)->toBe('Administrasi Sistem')
         ->and($induk->urutan)->toBe(12)
         ->and($induk->aktif)->toBeTrue()
         ->and($induk->wajib)->toBeFalse();
@@ -783,14 +783,14 @@ test('parent_id berupa nama baru membuat menu induk top-level', function () {
  * memakai baris yang sama, bukan membuat induk kembar yang membelah sidebar.
  */
 test('parent_id nama induk yang sudah ada tidak digandakan', function () {
-    $beasiswa = Menu::whereNull('parent_id')->where('label', 'Beasiswa')->firstOrFail();
+    $beasiswa = Menu::whereNull('parent_id')->where('label', 'Program Beasiswa')->firstOrFail();
 
     actingAs($this->superAdmin)
-        ->post(route('admin.menukelola.simpan'), menuPayload(['parent_id' => 'bEaSiSwA']))
+        ->post(route('admin.menukelola.simpan'), menuPayload(['parent_id' => 'pRoGrAm bEaSiSwA']))
         ->assertRedirect(route('admin.menukelola.index'))
         ->assertSessionHas('success');
 
-    expect(Menu::whereNull('parent_id')->where('label', 'Beasiswa')->count())->toBe(1)
+    expect(Menu::whereNull('parent_id')->where('label', 'Program Beasiswa')->count())->toBe(1)
         ->and(Menu::where('label', 'Menu Baru')->firstOrFail()->parent_id)->toBe($beasiswa->id);
 });
 
@@ -846,7 +846,7 @@ test('form ubah bisa membuat menu induk baru lewat parent_id teks', function () 
         'icon' => 'fas fa-star',
         'route' => 'admin.beasiswa.index',
         'scope' => 'admin.beasiswa',
-        'section' => 'Administrasi',
+        'section' => 'Administrasi Sistem',
         'urutan' => 80,
         'aktif' => true,
     ]);
@@ -859,7 +859,7 @@ test('form ubah bisa membuat menu induk baru lewat parent_id teks', function () 
     $induk = Menu::whereNull('parent_id')->where('label', 'Grup Edit')->firstOrFail();
 
     expect($menu->fresh()->parent_id)->toBe($induk->id)
-        ->and($induk->section)->toBe('Administrasi')
+        ->and($induk->section)->toBe('Administrasi Sistem')
         ->and($induk->route)->toBeNull();
 });
 

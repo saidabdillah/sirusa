@@ -22,12 +22,12 @@ class Menu extends Model
      */
     private const DEFAULT_SECTIONS = [
         'Menu Utama',
-        'Administrasi',
-        'Verifikasi',
-        'Administrator',
+        'Pengelolaan Beasiswa',
+        'Pendaftaran',
+        'Seleksi & Verifikasi',
+        'Monitoring & Laporan',
+        'Administrasi Sistem',
         'Layanan Mahasiswa',
-        'Pengaturan',
-        'Manajemen',
     ];
 
     protected $fillable = [

@@ -88,9 +88,9 @@ test('setiap role melihat grup section yang memang untuknya', function () {
         ->assertOk()
         ->getContent();
 
-    // Grup "Administrasi" = back-office, "Layanan Mahasiswa" = menu milik user.
-    expect($section('catpil'))->toContain('Administrasi')->not->toContain('Layanan Mahasiswa')
-        ->and($section('standardUser'))->toContain('Layanan Mahasiswa')->not->toContain('Administrasi');
+    // "Seleksi & Verifikasi" = back-office, "Layanan Mahasiswa" = menu milik user.
+    expect($section('catpil'))->toContain('Seleksi &amp; Verifikasi')->not->toContain('Layanan Mahasiswa')
+        ->and($section('standardUser'))->toContain('Layanan Mahasiswa')->not->toContain('Seleksi &amp; Verifikasi');
 });
 
 /**
@@ -110,23 +110,22 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
     $pasangan = [
         // Menu Utama
         'Dasbor' => 'Menu Utama',
-        // SECTION 1 -- ADMINISTRASI
-        'Beasiswa' => 'Administrasi',
-        'Pendaftar' => 'Administrasi',
-        'Master Data' => 'Administrasi',
-        // SECTION 2 -- VERIFIKASI
-        'Catpil' => 'Verifikasi',
-        'Kampus' => 'Verifikasi',
-        // "Kesra" sekarang dropdown dua anak: antrean verifikasi + arsip
-        // keputusan. "Penerima Beasiswa" jadi leaf mandiri di section
-        // "Manajemen" (permintaan pengguna).
-        'Kesra' => 'Verifikasi',
-        // SECTION 3 -- ADMINISTRATOR
-        'Kelola Akses' => 'Administrator',
+        // PENGELOLAAN BEASISWA
+        'Program Beasiswa' => 'Pengelolaan Beasiswa',
+        'Data Referensi' => 'Pengelolaan Beasiswa',
+        // PENDAFTARAN
+        'Daftar Pendaftar' => 'Pendaftaran',
+        // SELEKSI & VERIFIKASI
+        'Seleksi Berkas' => 'Seleksi & Verifikasi',
+        'Kampus' => 'Seleksi & Verifikasi',
+        'Kesra' => 'Seleksi & Verifikasi',
+        'Pengumuman Hasil' => 'Seleksi & Verifikasi',
+        // MONITORING & LAPORAN
+        'Penerima Beasiswa' => 'Monitoring & Laporan',
+        // ADMINISTRASI SISTEM
+        'Manajemen Akses' => 'Administrasi Sistem',
         // Layanan Mahasiswa
         'Beasiswa Saya' => 'Layanan Mahasiswa',
-        // SECTION "MANAJEMEN" -- leaf mandiri Penerima Beasiswa
-        'Penerima Beasiswa' => 'Manajemen',
     ];
 
     foreach ($pasangan as $label => $section) {
@@ -149,13 +148,13 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
 
     expect($anakKesra->pluck('label')->all())->toBe(['Verifikasi Awal', 'Keputusan', 'Verifikasi Semester'])
         ->and($anakKesra->pluck('scope')->all())->toBe(['admin.kesra.index', 'admin.kesra.disetujui', 'admin.semester'])
-        ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Verifikasi']);
+        ->and($anakKesra->pluck('section')->unique()->all())->toBe(['Seleksi & Verifikasi']);
 
     // "Penerima Beasiswa" bukan anak Kesra lagi: leaf mandiri di section
     // "Manajemen" dengan scope/route tetap `admin.penerima`.
     $penerima = Menu::query()->whereNull('parent_id')->where('label', 'Penerima Beasiswa')->firstOrFail();
 
-    expect($penerima->section)->toBe('Manajemen')
+    expect($penerima->section)->toBe('Monitoring & Laporan')
         ->and($penerima->route)->toBe('admin.penerima.index')
         ->and($penerima->scope)->toBe('admin.penerima');
 
@@ -168,7 +167,7 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
     // Urutan section: operasional harian -> antrean verifikasi -> alat sistem.
     $urutanSection = Menu::query()
         ->whereNull('parent_id')
-        ->whereIn('section', ['Administrasi', 'Verifikasi', 'Administrator'])
+        ->whereIn('section', ['Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Monitoring & Laporan', 'Administrasi Sistem'])
         ->pluck('section')
         ->unique()
         ->values()
@@ -176,7 +175,7 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
 
     $sectionSesuaiUrutanSidebar = array_values(array_filter(
         Menu::sections(),
-        fn (string $s) => in_array($s, ['Administrasi', 'Verifikasi', 'Administrator'], true)
+        fn (string $s) => in_array($s, ['Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Monitoring & Laporan', 'Administrasi Sistem'], true)
     ));
 
     expect(array_values(array_intersect($urutanSection, $sectionSesuaiUrutanSidebar)))
@@ -199,7 +198,7 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
 
     // Role user: only "Layanan Mahasiswa". The new sections must not appear.
     $user = $html('standardUser');
-    foreach (['Menu Utama', 'Administrasi', 'Verifikasi', 'Administrator', 'Layanan Mahasiswa'] as $section) {
+    foreach (['Menu Utama', 'Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Monitoring & Laporan', 'Administrasi Sistem', 'Layanan Mahasiswa'] as $section) {
         if ($section === 'Layanan Mahasiswa' || $section === 'Menu Utama') {
             continue;
         }
@@ -212,17 +211,17 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
     // "Administrator".
     $catpil = $html('catpil');
     expect($catpil)
-        ->toContain('<li class="menu-header">Verifikasi</li>')
+        ->toContain('<li class="menu-header">Seleksi &amp; Verifikasi</li>')
         ->toContain(route('admin.catpil.index'))
         ->toContain(route('admin.kesra.status'))
-        ->not->toContain('<li class="menu-header">Administrator</li>')
+        ->not->toContain('<li class="menu-header">Administrasi Sistem</li>')
         ->not->toContain(route('admin.role.index'));
 
     // Role kesra: has "Administrator" (granted `admin.pengguna`) but not the
     // other two verification queues.
     $kesra = $html('admin');
     expect($kesra)
-        ->toContain('<li class="menu-header">Administrator</li>')
+        ->toContain('<li class="menu-header">Administrasi Sistem</li>')
         ->toContain(route('admin.pengguna.index'))
         ->toContain(route('admin.kesra.index'))
         ->toContain(route('admin.kesra.status'))
@@ -322,22 +321,22 @@ test('menuseeder membuat kesra sebagai induk dropdown keputusan dan verifikasi',
 
     expect($grantKesra)->toContain($kesra->id, ...$anak->pluck('id')->all());
 
-    // Leaf rekap kini berlabel "Pendaftar" (permintaan pengguna), scope-nya
-    // tetap `admin.kesra.status` untuk menjaga nama route.
-    $status = Menu::query()->whereNull('parent_id')->where('label', 'Pendaftar')->firstOrFail();
+    // Leaf rekap kini berlabel "Daftar Pendaftar" di bagian "Pendaftaran";
+    // scope-nya tetap `admin.kesra.status` untuk menjaga nama route.
+    $status = Menu::query()->whereNull('parent_id')->where('label', 'Daftar Pendaftar')->firstOrFail();
 
-    expect($status->section)->toBe('Administrasi')
+    expect($status->section)->toBe('Pendaftaran')
         ->and($status->route)->toBe('admin.kesra.status')
         ->and($status->scope)->toBe('admin.kesra.status')
         ->and($grantKesra)->toContain($status->id);
 
-    // Penerima Beasiswa kini leaf mandiri di section "Manajemen", route/scope
-    // tetap `admin.penerima.index`/`admin.penerima`. Tidak ada aksi tulis di
-    // halamannya, jadi cukup grant baca untuk semua role admin.
+    // Penerima Beasiswa kini leaf mandiri di section "Monitoring & Laporan",
+    // route/scope tetap `admin.penerima.index`/`admin.penerima`. Tidak ada aksi
+    // tulis di halamannya, jadi cukup grant baca untuk semua role admin.
     $penerima = Menu::query()->whereNull('parent_id')->where('label', 'Penerima Beasiswa')->firstOrFail();
 
     expect($penerima->parent_id)->toBeNull()
-        ->and($penerima->section)->toBe('Manajemen')
+        ->and($penerima->section)->toBe('Monitoring & Laporan')
         ->and($penerima->route)->toBe('admin.penerima.index')
         ->and($penerima->scope)->toBe('admin.penerima')
         ->and($grantKesra)->toContain($penerima->id);

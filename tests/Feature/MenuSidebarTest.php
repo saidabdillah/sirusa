@@ -21,9 +21,9 @@ test('super admin sidebar shows role and menu access but not template surat', fu
     actingAs($superAdmin)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('Kelola Akses', false)
-        ->assertSee('<span>Role</span>', false)
-        ->assertSee('<span>Akses Menu</span>', false)
+        ->assertSee('Manajemen Akses', false)
+        ->assertSee('<span>Peran</span>', false)
+        ->assertSee('<span>Hak Akses Menu</span>', false)
         ->assertDontSee('<span>Template Surat</span>', false);
 });
 
@@ -131,7 +131,7 @@ test('kesra sidebar shows admin menus plus Pengguna but not role and menu manage
     actingAs($admin)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('<span>Pendaftar</span>', false)
+        ->assertSee('<span>Daftar Pendaftar</span>', false)
         // "Kesra" sekarang dropdown dua anak: antrean verifikasi dan arsip
         // keputusan. "Penerima Beasiswa" keluar dari dropdown ini (permintaan
         // pengguna) dan jadi leaf mandiri di section "Manajemen".
@@ -140,17 +140,17 @@ test('kesra sidebar shows admin menus plus Pengguna but not role and menu manage
         ->assertSee(route('admin.penerima.index'), false)
         ->assertSee(route('admin.kesra.disetujui'), false)
         ->assertSee(route('admin.kesra.status'), false)
-        // Header section "Manajemen" dirender sebagai `<li class="menu-header">`,
-        // bukan `<span>` (yang dipakai label menu di dalam `<a>`).
-        ->assertSee('<li class="menu-header">Manajemen</li>', false)
+        // Header section dirender sebagai `<li class="menu-header">`, bukan
+        // `<span>` (yang dipakai label menu di dalam `<a>`).
+        ->assertSee('<li class="menu-header">Monitoring &amp; Laporan</li>', false)
         // Anak dropdown Kesra: "Verifikasi Awal", "Keputusan", dan
         // "Verifikasi Semester" (permintaan pengguna).
         ->assertSee('<span>Verifikasi Awal</span>', false)
         ->assertSee('<span>Verifikasi Semester</span>', false)
         ->assertSee('<span>Penerima Beasiswa</span>', false)
         ->assertSee('<span>Keputusan</span>', false)
-        ->assertSee('<span>Pendaftar</span>', false)
-        // Halaman Kampus (Master Data) dikelola role kesra. Diuji lewat href,
+        ->assertSee('<span>Daftar Pendaftar</span>', false)
+        // Halaman Kampus (Data Referensi) dikelola role kesra. Diuji lewat href,
         // bukan `<span>Kampus</span>`, karena sejak menu verifikasi dipersingkat
         // jadi "Kampus" ada dua menu dengan label yang sama di sidebar.
         ->assertSee(route('admin.kampus.index'), false)
@@ -159,10 +159,10 @@ test('kesra sidebar shows admin menus plus Pengguna but not role and menu manage
         ->assertDontSee(route('admin.kampusverif.index'), false)
         // Kesra diberi grant `admin.pengguna`; group "Kelola Akses" ikut tampil karena
         // sidebarMenus() hanya mengambil menu parent, tapi anak lain tetap tersaring.
-        ->assertSee('Kelola Akses', false)
+        ->assertSee('Manajemen Akses', false)
         ->assertSee('<span>Pengguna</span>', false)
-        ->assertDontSee('<span>Role</span>', false)
-        ->assertDontSee('<span>Akses Menu</span>', false)
+        ->assertDontSee('<span>Peran</span>', false)
+        ->assertDontSee('<span>Hak Akses Menu</span>', false)
         ->assertDontSee('<span>Kelola Menu</span>', false);
 });
 
@@ -237,59 +237,58 @@ test('sidebar groups menu ke section yang sesuai', function () {
             : substr($sidebar, $mulai, $selesai - $mulai);
     };
 
-    // SECTION 1 -- ADMINISTRASI: Beasiswa, Pendaftar, Master Data, dan Status
-    // Verifikasi. Master Data tetap di sini: kampus adalah back-office
-    // operasional, sama seperti dua menu lainnya, bukan alat sistem. "Status
-    // Verifikasi" ikut pindah ke sini (permintaan pengguna): semua role melihat
-    // section ini lewat menu Pendaftar, dan section "Verifikasi" jadi murni
-    // antrean kerja.
-    $administrasi = $bagian('Administrasi');
-    expect($administrasi)
+    // BAGIAN 1 -- PENGELOLAAN BEASISWA: program + data referensinya.
+    $pengelolaan = $bagian('Pengelolaan Beasiswa');
+    expect($pengelolaan)
         ->toContain(route('admin.beasiswa.index'))
         ->toContain(route('admin.kampus.index'))
-        ->toContain(route('admin.kesra.status'))
+        ->toContain('<span>Program Beasiswa</span>')
+        ->toContain('<span>Data Referensi</span>')
         ->not->toContain(route('admin.catpil.index'))
         ->not->toContain(route('admin.role.index'));
 
-    // SECTION 2 -- VERIFIKASI: dua antrean leaf (Catpil, Kampus) + dropdown
-    // Kesra yang kini berisi Verifikasi + Keputusan. "Status Verifikasi" dan
-    // "Penerima Beasiswa" sudah bukan bagian section ini: keduanya jadi leaf
-    // mandiri (Administrasi dan Manajemen). Tanpa prefiks "Verifikasi" pada
-    // label karena section-nya sudah menyebut prosesnya.
-    $verifikasi = $bagian('Verifikasi');
+    // BAGIAN 2 -- PENDAFTARAN: rekap pendaftar, dibaca semua role admin.
+    $pendaftaran = $bagian('Pendaftaran');
+    expect($pendaftaran)
+        ->toContain(route('admin.kesra.status'))
+        ->toContain('<span>Daftar Pendaftar</span>')
+        ->not->toContain(route('admin.catpil.index'))
+        ->not->toContain(route('admin.beasiswa.index'));
+
+    // BAGIAN 3 -- SELEKSI & VERIFIKASI: urutan kerja verifikasi. Seleksi
+    // Berkas (Catpil), dropdown Kampus & Kesra, lalu Pengumuman Hasil.
+    $verifikasi = $bagian('Seleksi &amp; Verifikasi');
     expect($verifikasi)
         ->toContain(route('admin.catpil.index'))
         ->toContain(route('admin.kampusverif.index'))
         ->toContain(route('admin.kesra.index'))
         ->toContain(route('admin.kesra.disetujui'))
-        // Verifikasi Semester TIDAK lagi jadi menu mandiri: ia anak dari
-        // dropdown Kampus dan Kesra (permintaan pengguna). Yang tersisa di
-        // section ini hanya dua dropdown (Kampus & Kesra) + Catpil/Pengumuman.
+        // Verifikasi Semester TIDAK jadi menu mandiri: ia anak dari dropdown
+        // Kampus dan Kesra (permintaan pengguna).
         ->toContain(route('admin.semester.kampus'))
         ->toContain(route('admin.semester.kesra'))
+        ->toContain('<span>Seleksi Berkas</span>')
         ->toContain('<span>Kampus</span>')
         ->toContain('<span>Kesra</span>')
+        ->toContain('<span>Pengumuman Hasil</span>')
         ->not->toContain(route('admin.penerima.index'))
         ->not->toContain(route('admin.kesra.status'))
         ->not->toContain(route('admin.beasiswa.index'));
 
-    // SECTION "MANAJEMEN" -- section mandiri untuk "Penerima Beasiswa"
-    // (permintaan pengguna): daftar hasil yang tidak boleh terkubur di
-    // dropdown Kesra dan tidak ikut antrean kerja di section "Verifikasi".
-    $manajemen = $bagian('Manajemen');
+    // BAGIAN 4 -- MONITORING & LAPORAN: hasil, bukan antrean kerja.
+    $manajemen = $bagian('Monitoring &amp; Laporan');
     expect($manajemen)
         ->toContain(route('admin.penerima.index'))
         ->toContain('<span>Penerima Beasiswa</span>')
         // Dicocokkan lewat label dropdown, bukan `route('admin.kesra.index')`:
-        // URL rute itu adalah prefix dari `.../penerima`, jadi `toContain`
-        // malah selalu cocok dengan tautan Penerima Beasiswa.
+        // URL rute itu adalah prefix dari `.../penerima`.
         ->not->toContain('<span>Kesra</span>')
         ->not->toContain(route('admin.kesra.status'));
 
-    // SECTION 3 -- ADMINISTRATOR: seluruh pengelolaan akses.
-    $administrator = $bagian('Administrator');
+    // BAGIAN 5 -- ADMINISTRASI SISTEM: seluruh pengelolaan akses.
+    $administrator = $bagian('Administrasi Sistem');
     expect($administrator)
-        ->toContain('<span>Kelola Akses</span>')
+        ->toContain('<span>Manajemen Akses</span>')
         ->toContain(route('admin.role.index'))
         ->toContain(route('admin.pengguna.index'))
         ->toContain(route('admin.menu.index'))
@@ -299,10 +298,8 @@ test('sidebar groups menu ke section yang sesuai', function () {
 
     // Urutan section mengikuti `Menu::sections()` dan tidak boleh diacak ulang.
     // Hanya section yang benar-benar dirender super admin yang ikut diuji:
-    // "Layanan Mahasiswa" memang tidak di-grant ke `super_admin`, jadi
-    // kehadirannya di sidebar bukan urusan section. "Manajemen" ikut tampil
-    // karena super admin memegang grant leaf "Penerima Beasiswa" di sana.
-    $sectionTampil = ['Menu Utama', 'Administrasi', 'Verifikasi', 'Administrator', 'Manajemen'];
+    // "Layanan Mahasiswa" memang tidak di-grant ke `super_admin`.
+    $sectionTampil = ['Menu Utama', 'Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi &amp; Verifikasi', 'Monitoring &amp; Laporan', 'Administrasi Sistem'];
 
     $urutan = array_map(
         fn (string $section) => strpos($htmlRapi, '<li class="menu-header">'.$section.'</li>'),
@@ -338,9 +335,11 @@ test('memindah section tidak mengubah menu yang terlihat per role', function () 
     $htmlUser = actingAs($user)->get(route('dashboard'))->getContent();
     expect($htmlUser)
         ->toContain('<li class="menu-header">Layanan Mahasiswa</li>')
-        ->not->toContain('<li class="menu-header">Verifikasi</li>')
-        ->not->toContain('<li class="menu-header">Administrator</li>')
-        ->not->toContain('<li class="menu-header">Administrasi</li>');
+        ->not->toContain('<li class="menu-header">Seleksi &amp; Verifikasi</li>')
+        ->not->toContain('<li class="menu-header">Administrasi Sistem</li>')
+        ->not->toContain('<li class="menu-header">Pengelolaan Beasiswa</li>')
+        ->not->toContain('<li class="menu-header">Pendaftaran</li>')
+        ->not->toContain('<li class="menu-header">Monitoring &amp; Laporan</li>');
 
     // Setiap section yang punya isinya harus punya tepat satu header, tidak
     // ada duplikat (efek khas seeder dijalankan dua kali tanpa idempotensi).
