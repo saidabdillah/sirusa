@@ -382,7 +382,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                       <div class="custom-control custom-radio mr-4">
                         <input type="radio" class="custom-control-input @error('ikut_kk') is-invalid @enderror"
                           id="ikut_kk_{{ $value }}" name="ikut_kk" value="{{ $value }}" {{ old('ikut_kk',
-                          $profile->ikut_kk ?? 'ayah') === $value ? 'checked' : '' }}>
+                          $profile?->ikut_kk) === $value ? 'checked' : '' }}>
                         <label class="custom-control-label" for="ikut_kk_{{ $value }}">{{ $label }}</label>
                       </div>
                       @endforeach

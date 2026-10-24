@@ -78,11 +78,26 @@ test('KRS dan KHS dirender sebagai satu tabel per semester', function () {
 
     expect($html)
         ->toContain('id="tabel-akademik"')
-        ->toContain('Berkas KRS</th>')
-        ->toContain('Berkas KHS</th>')
-        ->toContain('Nilai KHS</th>')
+        ->toContain('Berkas KRS <span class="text-danger"')
+        ->toContain('Berkas KHS <span class="text-danger"')
+        ->toContain('Nilai KHS <span class="text-danger"')
+        ->toContain('class="kontrol-akademik"')
+        ->toContain('class="table-responsive tabel-akademik-responsive"')
         // Delapan baris semester, bukan enam belas blok.
         ->and(substr_count($html, 'class="baris-akademik"'))->toBe(8);
+});
+
+test('pesan galat akademik ditempatkan di bawah kontrol dan tidak tertutup baris berikutnya', function () {
+    $js = file_get_contents(public_path('assets/js/custom.js'));
+    $css = file_get_contents(public_path('assets/css/custom.css'));
+
+    expect($js)
+        ->toContain('$el.closest(".sel-berkas")')
+        ->toContain('$anchor = $barisBerkas;')
+        ->and($css)
+        ->toContain('#tabel-akademik .invalid-feedback')
+        ->toContain('position: static;')
+        ->toContain('white-space: normal;');
 });
 
 test('baris KRS hanya berisi unggah berkas, nilai hanya ada di baris KHS', function () {
@@ -122,6 +137,15 @@ test('status kepala keluarga adalah opsi keempat pada radio Ikut KK', function (
     // dari id-nya supaya acuan `ikut_kk` di blok skrip bawah halaman tidak
     // ikut terhitung sebagai input.
     expect(substr_count($bagianOrtu, 'id="ikut_kk_'))->toBe(4);
+});
+
+test('radio Ikut KK tidak memiliki pilihan awal untuk profil baru', function () {
+    $html = actingAs($this->user)->get(route('profile'))->assertOk()->getContent();
+
+    preg_match_all('/<input[^>]+name="ikut_kk"[^>]*>/s', $html, $radio);
+
+    expect($radio[0])->toHaveCount(4)
+        ->and(implode('', $radio[0]))->not->toContain('checked');
 });
 
 test('memilih Kepala Keluarga pada Ikut KK menyimpan boolean kepala_keluarga', function () {

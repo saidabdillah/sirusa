@@ -616,63 +616,104 @@ select.form-control:not(.form-control-sm):not(.form-control-lg):not([size]):not(
   padding-right: 6.5rem;
 }
 
-/* Tabel KRS/KHS: input berkas per sel harus ringkas supaya satu semester
-   cukup satu baris. Ukuran `custom-file` Bootstrap terlalu tinggi untuk sel
-   tabel, jadi label dan tombolnya dikecilkan; nama berkas tetap dipotong
-   dengan ellipsis (lihat aturan di atas). */
-#tabel-akademik .custom-file,
-#tabel-akademik .custom-file-input,
-#tabel-akademik .custom-file-label {
-  height: calc(1.5em + 0.5rem + 2px);
+/* Tabel KRS/KHS tetap satu baris per semester, tetapi kontrol dan pesan galat
+   diberi ruang vertikal yang cukup. Tabel punya lebar minimum agar dua input
+   file tidak dipaksa terlalu sempit; `.table-responsive` menyediakan scroll
+   horizontal yang aman di layar HP. */
+.tabel-akademik-responsive {
+  -webkit-overflow-scrolling: touch;
 }
 
-#tabel-akademik .custom-file-label {
-  padding: 0.25rem 4.5rem 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
+#tabel-akademik {
+  min-width: 820px;
+  table-layout: fixed;
 }
 
-#tabel-akademik .custom-file-label::after {
-  height: calc(1.5em + 0.5rem + 2px);
-  padding: 0.25rem 0.5rem;
-  line-height: 1.5;
-  font-size: 0.875rem;
+#tabel-akademik th,
+#tabel-akademik td {
+  padding: 0.75rem;
+  vertical-align: top;
 }
 
-#tabel-akademik .custom-file-sm {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-/* Kolom: Semester dan Nilai cukup sempit, dua kolom berkas berbagi sisanya.
-   Tanpa ini kolom berkas berdesakan dan tombol Lihat turun ke baris baru. */
 #tabel-akademik th:first-child,
 #tabel-akademik td:first-child {
-  width: 90px;
+  width: 110px;
   white-space: nowrap;
 }
 
 #tabel-akademik th:last-child,
 #tabel-akademik td:last-child {
-  width: 120px;
+  width: 150px;
+}
+
+#tabel-akademik .kontrol-akademik,
+#tabel-akademik .custom-file-sm {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Gunakan tinggi kontrol standar 38px, bukan versi kecil. Selain lebih mudah
+   disentuh, ruang ini mencegah label file dan pesan validasi saling menimpa. */
+#tabel-akademik .custom-file,
+#tabel-akademik .custom-file-input,
+#tabel-akademik .custom-file-label {
+  height: calc(1.5em + 0.75rem + 2px);
+}
+
+#tabel-akademik .custom-file-label {
+  padding: 0.375rem 5rem 0.375rem 0.75rem;
+  line-height: 1.5;
+}
+
+#tabel-akademik .custom-file-label::after {
+  height: calc(1.5em + 0.75rem + 2px);
+  padding: 0.375rem 0.75rem;
+  line-height: 1.5;
 }
 
 #tabel-akademik .nilai-akademik {
   text-align: right;
 }
 
-/* Tombol Lihat tetap sebaris dengan input berkas: `flex-wrap: nowrap` +
-   `min-width: 0` pada input, supaya barisnya tidak bertambah tinggi. */
 #tabel-akademik .sel-berkas {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  align-items: flex-start;
+  gap: 0.5rem;
   flex-wrap: nowrap;
   min-width: 0;
 }
 
-#tabel-akademik .form-control-sm {
-  height: calc(1.5em + 0.5rem + 2px);
+#tabel-akademik .sel-berkas .custom-file {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#tabel-akademik .sel-berkas .btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0.375rem 0.65rem;
+}
+
+/* Feedback harus menjadi elemen alur normal di bawah kontrol. `position:static`
+   menutup kemungkinan style Bootstrap/vendor membuatnya melayang dan tertutup
+   oleh baris semester berikutnya. */
+#tabel-akademik .invalid-feedback {
+  position: static;
+  width: 100%;
+  margin-top: 0.4rem;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+@media (max-width: 767.98px) {
+  #tabel-akademik {
+    min-width: 760px;
+  }
+
+  #tabel-akademik th,
+  #tabel-akademik td {
+    padding: 0.65rem;
+  }
 }
 
 /* Pohon centang cakupan beasiswa: dibatasi tingginya supaya form tambah/ubah

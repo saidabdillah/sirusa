@@ -34,14 +34,14 @@ $tersimpanPer = $dokumenAkademik ?? collect();
   otomatis: KRS diunggah sampai semester aktif, KHS sampai semester sebelumnya.
 </p>
 
-<div class="table-responsive">
-  <table class="table table-sm table-bordered align-middle" id="tabel-akademik">
+<div class="table-responsive tabel-akademik-responsive">
+  <table class="table table-bordered align-middle mb-2" id="tabel-akademik">
     <thead class="thead-light">
       <tr>
-        <th style="width: 90px;">Semester</th>
-        <th>Berkas KRS</th>
-        <th>Berkas KHS</th>
-        <th style="width: 150px;">Nilai KHS</th>
+        <th>Semester</th>
+        <th>Berkas KRS <span class="text-danger" aria-hidden="true">*</span></th>
+        <th>Berkas KHS <span class="text-danger" aria-hidden="true">*</span></th>
+        <th>Nilai KHS <span class="text-danger" aria-hidden="true">*</span></th>
       </tr>
     </thead>
     <tbody>
@@ -51,47 +51,53 @@ $tersimpanPer = $dokumenAkademik ?? collect();
 
           @foreach($jenisList as $jenis => $labelJenis)
             @php($tersimpan = ($tersimpanPer[$jenis] ?? collect())->firstWhere('semester', $semester))
-            <td>
-              <div class="sel-berkas">
-                <div class="custom-file custom-file-sm">
-                  <input type="file"
-                    class="custom-file-input @error("dokumen_akademik.{$jenis}.{$semester}.file") is-invalid @enderror"
-                    id="akademik-{{ $jenis }}-{{ $semester }}-file"
-                    name="dokumen_akademik[{{ $jenis }}][{{ $semester }}][file]" accept="application/pdf">
-                  <label class="custom-file-label" for="akademik-{{ $jenis }}-{{ $semester }}-file">
-                    {{ $tersimpan?->file ? basename($tersimpan->file) : 'Pilih file' }}
-                  </label>
+            <td class="kolom-berkas-akademik">
+              <div class="kontrol-akademik">
+                <div class="sel-berkas">
+                  <div class="custom-file custom-file-sm">
+                    <input type="file"
+                      class="custom-file-input @error("dokumen_akademik.{$jenis}.{$semester}.file") is-invalid @enderror"
+                      id="akademik-{{ $jenis }}-{{ $semester }}-file"
+                      name="dokumen_akademik[{{ $jenis }}][{{ $semester }}][file]" accept="application/pdf">
+                    <label class="custom-file-label" for="akademik-{{ $jenis }}-{{ $semester }}-file">
+                      {{ $tersimpan?->file ? basename($tersimpan->file) : 'Pilih file' }}
+                    </label>
+                  </div>
+                  @if($tersimpan?->file)
+                  <a href="{{ route('dokumen.show', $tersimpan->file) }}" target="_blank" rel="noopener noreferrer"
+                    class="btn btn-outline-primary flex-shrink-0" title="Lihat berkas tersimpan">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  @endif
                 </div>
-                @if($tersimpan?->file)
-                <a href="{{ route('dokumen.show', $tersimpan->file) }}" target="_blank" rel="noopener noreferrer"
-                  class="btn btn-sm btn-outline-primary flex-shrink-0" title="Lihat berkas tersimpan">
-                  <i class="fas fa-eye"></i>
-                </a>
-                @endif
+                @error("dokumen_akademik.{$jenis}.{$semester}.file")
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
               </div>
-              @error("dokumen_akademik.{$jenis}.{$semester}.file")
-              <div class="invalid-feedback d-block">{{ $message }}</div>
-              @enderror
             </td>
           @endforeach
 
           {{-- Nilai hanya milik KHS. KRS adalah rencana studi dan tidak
                memuat nilai, jadi kolomnya kosong untuk baris KRS. --}}
-          <td>
-            @php($khsTersimpan = ($tersimpanPer[\App\Models\DokumenAkademik::JENIS_KHS] ?? collect())->firstWhere('semester', $semester))
-            <input type="number" step="0.01" min="0" max="4"
-              class="form-control form-control-sm nilai-akademik @error("dokumen_akademik.khs.{$semester}.nilai") is-invalid @enderror"
-              id="akademik-khs-{{ $semester }}-nilai"
-              name="dokumen_akademik[khs][{{ $semester }}][nilai]"
-              value="{{ old("dokumen_akademik.khs.{$semester}.nilai", $khsTersimpan?->nilai) }}"
-              placeholder="contoh 3.50">
-            @error("dokumen_akademik.khs.{$semester}.nilai")
-            <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+          <td class="kolom-nilai-akademik">
+            <div class="kontrol-akademik">
+              @php($khsTersimpan = ($tersimpanPer[\App\Models\DokumenAkademik::JENIS_KHS] ?? collect())->firstWhere('semester', $semester))
+              <input type="number" step="0.01" min="0" max="4"
+                class="form-control nilai-akademik @error("dokumen_akademik.khs.{$semester}.nilai") is-invalid @enderror"
+                id="akademik-khs-{{ $semester }}-nilai"
+                name="dokumen_akademik[khs][{{ $semester }}][nilai]"
+                value="{{ old("dokumen_akademik.khs.{$semester}.nilai", $khsTersimpan?->nilai) }}"
+                placeholder="contoh 3.50">
+              @error("dokumen_akademik.khs.{$semester}.nilai")
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
           </td>
         </tr>
       @endfor
     </tbody>
   </table>
 </div>
-<small class="text-muted">Format: PDF, maksimal 2 MB per berkas. Nilai berskala 0 sampai 4, sama seperti IPK.</small>
+<small class="text-muted d-block">
+  <span class="text-danger">*</span> Wajib sesuai semester aktif. Format berkas PDF, maksimal 2 MB per berkas. Nilai KHS berskala 0 sampai 4, sama seperti IPK.
+</small>

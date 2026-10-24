@@ -249,6 +249,19 @@ $(function () {
       }
     }
 
+    // Input file Bootstrap berada di dalam `.custom-file` yang tingginya sama
+    // dengan kontrol. Menyisipkan pesan tepat setelah <input> membuat pesan
+    // berada DI BALIK label file dan tertutup baris tabel berikutnya. Naikkan
+    // anchor ke `.sel-berkas`; feedback lalu disisipkan sebagai baris tersendiri
+    // di bawah kontrol file (di dalam `.kontrol-akademik`).
+    if (! $group.length && $el.is(":file")) {
+      var $barisBerkas = $el.closest(".sel-berkas");
+
+      if ($barisBerkas.length) {
+        $anchor = $barisBerkas;
+      }
+    }
+
     // Select2 menyisipkan kotak yang terlihat TEPAT setelah <select> aslinya
     // ($container.insertAfter(this.$element)), jadi "setelah <select>" adalah
     // DI ATAS kotak select2. Untuk field select2, sisipkan pesan setelah
