@@ -37,6 +37,7 @@ function completeProfilePayload($prodi): array
         'semester' => 4,
         'ukt' => 3500000,
         'desil' => 3,
+        'ikut_kk' => 'ayah',
         'nama_ayah' => 'Ayah Budi',
         'nik_ayah' => '6302000000000002',
         'pekerjaan_ayah' => 'Petani',
@@ -126,6 +127,7 @@ test('user can update profile with campus data and parent nik', function () {
         'semester' => 5,
         'ukt' => 3500000,
         'desil' => 3,
+        'ikut_kk' => 'ayah',
         'nama_ayah' => 'Ayah Fauzi',
         'nik_ayah' => '6302000000000002',
         'pekerjaan_ayah' => 'Petani',
@@ -361,6 +363,12 @@ test('profile is incomplete without campus data and complete with it', function 
         'ktp_ayah' => 'profil/1/ktp_ayah.pdf',
         'ktp_ibu' => 'profil/1/ktp_ibu.pdf',
     ]);
+
+    expect($user->refresh()->isProfileComplete())->toBeFalse()
+        ->and($user->getMissingProfileFields())
+        ->toContain('KRS Semester 1', 'KHS Semester 1', 'Nilai KHS Semester 1');
+
+    simpanAkademikProfilDummy($user, 4);
 
     expect($user->refresh()->isProfileComplete())->toBeTrue();
 });

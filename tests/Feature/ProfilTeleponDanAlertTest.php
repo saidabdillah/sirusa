@@ -36,6 +36,7 @@ function payloadTeleponProfil(int $prodiId, array $override = []): array
         'jenjang' => 'S1',
         'tahun_masuk' => 2022,
         'kepala_keluarga' => 0,
+        'ikut_kk' => 'ayah',
         'ipk' => 3.5,
         'semester' => 4,
         'ukt' => 3500000,
@@ -286,6 +287,7 @@ test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap',
         'jenjang' => 'S1',
         'tahun_masuk' => 2022,
         'kepala_keluarga' => 0,
+        'ikut_kk' => 'ayah',
         'ipk' => 3.5,
         'semester' => 4,
         'ukt' => 3500000,
@@ -301,6 +303,8 @@ test('dasbor tidak menampilkan alert lengkapi profil saat profil sudah lengkap',
         'ktp_ayah' => 'profil/1/ktp_ayah.pdf',
         'ktp_ibu' => 'profil/1/ktp_ibu.pdf',
     ]);
+
+    simpanAkademikProfilDummy($this->user, 4);
 
     expect($this->user->fresh()->isProfileComplete())->toBeTrue();
 

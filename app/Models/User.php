@@ -89,6 +89,29 @@ class User extends Authenticatable
     }
 
     /**
+     * Tahap profil yang boleh diedit saat ini.
+     *
+     * Tanpa pendaftaran aktif seluruh form terbuka. Setelah pendaftaran berstatus
+     * menunggu/diterima, hanya tahap yang berstatus revisi yang dibuka kembali.
+     * Pembaruan dokumen semester penerima ditangani terpisah dari daftar ini.
+     *
+     * @return list<string>
+     */
+    public function editableProfileStages(): array
+    {
+        if ($this->blockingApplicant() === null) {
+            return ['catpil', 'kampus'];
+        }
+
+        $profile = $this->profile;
+
+        return collect(['catpil', 'kampus'])
+            ->filter(fn (string $stage) => $profile?->{'verif_'.$stage} === 'revisi')
+            ->values()
+            ->all();
+    }
+
+    /**
      * Paket semester yang perlu ditindaklanjuti mahasiswa, untuk pengingat di
      * dasbor.
      *
@@ -365,19 +388,7 @@ class User extends Authenticatable
 
     public function isProfileComplete(): bool
     {
-        $profile = $this->profile;
-
-        if (! $profile) {
-            return false;
-        }
-
-        foreach ($this->getRequiredProfileFields() as $field => $label) {
-            if ($this->fieldProfilKosong($profile, $field)) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->getMissingProfileFields() === [];
     }
 
     public function getMissingProfileFields(): array
@@ -392,6 +403,34 @@ class User extends Authenticatable
         foreach ($this->getRequiredProfileFields() as $field => $label) {
             if ($this->fieldProfilKosong($profile, $field)) {
                 $missing[] = $label;
+            }
+        }
+
+        $semesterAktif = (int) $profile->semester;
+
+        if ($semesterAktif < 1) {
+            return $missing;
+        }
+
+        $akademik = $profile->dokumenAkademik()
+            ->get()
+            ->keyBy(fn (DokumenAkademik $dokumen) => $dokumen->jenis.'.'.$dokumen->semester);
+
+        for ($semester = 1; $semester <= $semesterAktif; $semester++) {
+            if (! $akademik->get(DokumenAkademik::JENIS_KRS.'.'.$semester)?->file) {
+                $missing[] = "KRS Semester {$semester}";
+            }
+        }
+
+        for ($semester = 1; $semester <= $semesterAktif - 1; $semester++) {
+            $khs = $akademik->get(DokumenAkademik::JENIS_KHS.'.'.$semester);
+
+            if (! $khs?->file) {
+                $missing[] = "KHS Semester {$semester}";
+            }
+
+            if ($khs === null || $khs->nilai === null || $khs->nilai === '') {
+                $missing[] = "Nilai KHS Semester {$semester}";
             }
         }
 

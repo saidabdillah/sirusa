@@ -24,6 +24,11 @@ $documentGroups = [
 ],
 ];
 $waliDocFields = ['ktp_wali', 'kk_wali'];
+$documentGroupStages = [
+'Berkas Data Diri' => 'catpil',
+'Berkas Kampus' => 'kampus',
+'Berkas Orang Tua/Famili Lain' => 'catpil',
+];
 $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'Tidak Bekerja', 'Lainnya'];
 @endphp
 
@@ -67,6 +72,19 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     @if($profileComplete)
     <div class="alert alert-success">
       <i class="fas fa-check-circle"></i> Profil Anda sudah lengkap. Anda bisa mendaftar beasiswa.
+    </div>
+    @endif
+
+    @if($pendaftaranAktif)
+    <div class="alert alert-info">
+      <i class="fas fa-lock mr-1"></i>
+      @if($canEditCatpil || $canEditKampus)
+        Hanya bagian yang diminta untuk diperbaiki oleh verifikator yang dapat diubah. Setelah disimpan, bagian tersebut akan dikunci kembali.
+      @elseif($canAdvanceSemester)
+        Profil utama dikunci karena Anda sudah menjadi penerima. Anda hanya dapat menaikkan semester satu tingkat dan melengkapi dokumen akademik semester baru.
+      @else
+        Profil dikunci selama pendaftaran beasiswa sedang diverifikasi. Verifikator akan membuka bagian terkait jika diperlukan perbaikan.
+      @endif
     </div>
     @endif
 
@@ -121,6 +139,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
             <div class="card-body">
 
               {{-- DATA DIRI --}}
+              <fieldset id="bagian-catpil-data-diri" @disabled(! $canEditCatpil)>
               <h5 class="mb-3">Data Diri</h5>
               <div class="form-row">
                 <div class="form-group col-md-6">
@@ -273,6 +292,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   rows="3">{{ old('alamat', $profile->alamat ?? '') }}</textarea>
                 @error('alamat')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              </fieldset>
 
               <hr>
 
@@ -282,7 +302,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <div class="form-group col-md-6">
                   <label for="nama_kampus">Nama Kampus <span class="text-danger">*</span></label>
                   <select class="form-control select2-cari @error('nama_kampus') is-invalid @enderror" id="nama_kampus"
-                    name="nama_kampus">
+                    name="nama_kampus" @disabled(! $canEditKampus)>
                     <option value="">Pilih Kampus</option>
                     @foreach($kampusList as $kampus)
                     <option value="{{ $kampus->nama_kampus }}" {{ old('nama_kampus', $profile->
@@ -294,7 +314,8 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
                 <div class="form-group col-md-6">
                   <label for="fakultas">Fakultas <span class="text-danger">*</span></label>
-                  <select class="form-control select2-cari @error('fakultas') is-invalid @enderror" id="fakultas" name="fakultas">
+                  <select class="form-control select2-cari @error('fakultas') is-invalid @enderror" id="fakultas" name="fakultas"
+                    @disabled(! $canEditKampus)>
                     <option value="">Pilih Kampus terlebih dahulu</option>
                   </select>
                   @error('fakultas')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -303,14 +324,16 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label for="prodi">Program Studi <span class="text-danger">*</span></label>
-                  <select class="form-control select2-cari @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id">
+                  <select class="form-control select2-cari @error('prodi_id') is-invalid @enderror" id="prodi" name="prodi_id"
+                    @disabled(! $canEditKampus)>
                     <option value="">Pilih Fakultas terlebih dahulu</option>
                   </select>
                   @error('prodi_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
                   <label for="jenjang">Jenjang Pendidikan <span class="text-danger">*</span></label>
-                  <select class="form-control @error('jenjang') is-invalid @enderror" id="jenjang" name="jenjang">
+                  <select class="form-control @error('jenjang') is-invalid @enderror" id="jenjang" name="jenjang"
+                    @disabled(! $canEditKampus)>
                     <option value="">-- Pilih Jenjang --</option>
                     @foreach($jenjangList as $jenjang)
                     <option value="{{ $jenjang }}" {{ old('jenjang', $profile->jenjang ?? '') === $jenjang ? 'selected' :
@@ -324,7 +347,8 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   <input type="number" min="{{ \App\Support\JenjangPendidikan::rentangTahunMasuk()[0] }}"
                     max="{{ \App\Support\JenjangPendidikan::rentangTahunMasuk()[1] }}" step="1"
                     class="form-control @error('tahun_masuk') is-invalid @enderror" id="tahun_masuk" name="tahun_masuk"
-                    value="{{ old('tahun_masuk', $profile->tahun_masuk ?? '') }}" placeholder="contoh 2023">
+                    value="{{ old('tahun_masuk', $profile->tahun_masuk ?? '') }}" placeholder="contoh 2023"
+                    @disabled(! $canEditKampus)>
                   @error('tahun_masuk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
@@ -334,7 +358,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   <label for="ipk">IPK (Indeks Prestasi Kumulatif) <span class="text-danger">*</span></label>
                   <input type="number" step="0.01" min="0" max="4"
                     class="form-control @error('ipk') is-invalid @enderror" id="ipk" name="ipk"
-                    value="{{ old('ipk', $profile->ipk ?? '') }}">
+                    value="{{ old('ipk', $profile->ipk ?? '') }}" @disabled(! $canEditKampus)>
                   @error('ipk')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group col-md-6">
@@ -344,7 +368,10 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                        sampai jenjang dipilih, dan diisi ulang oleh skrip di
                        bawah saat jenjang berubah. --}}
                   <label for="semester">Semester <span class="text-danger">*</span></label>
-                  <select class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester">
+                  <select class="form-control @error('semester') is-invalid @enderror" id="semester" name="semester"
+                    data-semester-maksimal="{{ $canAdvanceSemester ? min(($profile->semester ?? 0) + 1, \App\Support\JenjangPendidikan::jumlahSemester($profile->jenjang ?? '') ?? 0) : '' }}"
+                    data-profile-locked="{{ $canEditKampus || $canAdvanceSemester ? '0' : '1' }}"
+                    @disabled(! ($canEditKampus || $canAdvanceSemester))>
                     <option value="">-- Pilih Semester --</option>
                   </select>
                   @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -352,7 +379,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <div class="form-group col-md-6">
                   <label for="nim">NIM/NPM</label>
                   <input type="text" class="form-control @error('nim') is-invalid @enderror" id="nim" name="nim"
-                    value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30">
+                    value="{{ old('nim', $profile->nim ?? '') }}" maxlength="30" @disabled(! $canEditKampus)>
                   @error('nim')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
               </div>
@@ -365,13 +392,15 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                       <span class="input-group-text">Rp</span>
                     </div>
                     <input type="text" inputmode="numeric" class="form-control @error('ukt') is-invalid @enderror"
-                      id="ukt" name="ukt" value="{{ old('ukt', $profile->ukt ?? '') }}" placeholder="contoh 2.500.000">
+                      id="ukt" name="ukt" value="{{ old('ukt', $profile->ukt ?? '') }}" placeholder="contoh 2.500.000"
+                      @disabled(! $canEditKampus)>
                   </div>
                   @error('ukt')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
               </div>
 
               {{-- DATA ORANG TUA & WALI --}}
+              <fieldset id="bagian-catpil-orang-tua" @disabled(! $canEditCatpil)>
               <h5 class="mb-3">Data Orang Tua &amp; Famili Lain</h5>
               <div class="form-row">
                 <div class="form-group col-md-12">
@@ -499,6 +528,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                   </div>
                 </div>
               </div>
+              </fieldset>
 
               <hr>
 
@@ -507,6 +537,11 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               <small class="text-muted d-block mb-3">Unggah dokumen sekali di profil. Dokumen akan diverifikasi oleh
                 pihak terkait.</small>
               @foreach($documentGroups as $groupName => $documents)
+              @php
+                $groupStage = $documentGroupStages[$groupName];
+                $canEditGroup = $groupStage === 'catpil' ? $canEditCatpil : $canEditKampus;
+              @endphp
+              <fieldset id="bagian-dokumen-{{ $groupStage }}-{{ $loop->iteration }}" @disabled(! $canEditGroup)>
               <h6 class="mt-3 mb-2"><i class="fas fa-folder text-primary mr-1"></i>{{ $groupName }}</h6>
               @foreach($documents as $field => $label)
               @php
@@ -542,6 +577,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 <small class="text-muted d-block">{{ $bantuan }}</small>
               </div>
               @endforeach
+              </fieldset>
               {{-- KRS & KHS ikut kelompok dokumen, di bawah "Berkas Kampus":
                    keduanya dokumen akademik yang diperiksa Kampus, bukan
                    isian data kampus. --}}
@@ -550,6 +586,7 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
               @endif
               @endforeach
 
+              <fieldset id="bagian-dokumen-prestasi" @disabled(! $canEditKampus)>
               <div class="form-group">
                 <label for="dokumen_prestasi">Dokumen Prestasi (Pilihan, bisa lebih dari satu)</label>
                 <div class="custom-file">
@@ -568,12 +605,14 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                 </div>
                 @endif
               </div>
+              </fieldset>
 
             </div>
             <div class="card-footer text-right">
               <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mr-2"><i
                   class="fas fa-arrow-left mr-1"></i> Batal</a>
-              <button type="submit" class="btn btn-primary">Simpan Profil</button>
+              <button type="submit" class="btn btn-primary"
+                @disabled($pendaftaranAktif && ! $canEditCatpil && ! $canEditKampus && ! $canAdvanceSemester)>Simpan Profil</button>
             </div>
           </form>
         </div>
@@ -826,6 +865,8 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     var jenjang = $('#jenjang').val();
     var jumlah = semesterMap[jenjang] || 0;
     var $semester = $('#semester');
+    var semesterMaksimal = Number($semester.data('semester-maksimal')) || jumlah;
+    var semesterTerkunci = String($semester.data('profile-locked')) === '1';
 
     $semester.html('<option value="">-- Pilih Semester --</option>');
 
@@ -835,12 +876,12 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
       return;
     }
 
-    for (var i = 1; i <= jumlah; i++) {
+    for (var i = 1; i <= Math.min(jumlah, semesterMaksimal); i++) {
       var selected = (pertahankan && String(i) === String(semesterAwal)) ? ' selected' : '';
       $semester.append('<option value="' + i + '"' + selected + '>' + i + '</option>');
     }
 
-    $semester.prop('disabled', false);
+    $semester.prop('disabled', semesterTerkunci);
 
     // Semester yang sudah dipilih tidak sah lagi di jenjang baru (mis. 8 -> D1):
     // dikosongkan supaya pengguna memilih ulang, bukan diam-diam dikoreksi.
@@ -857,6 +898,11 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
   // saat ia mengubah semester sebelum menekan Simpan.
   function aturInput($input, tampil) {
     $input.each(function() {
+      if (String($(this).data('profile-locked')) === '1') {
+        $(this).prop('disabled', true);
+        return;
+      }
+
       var adaIsi = (this.files && this.files.length > 0) || String(this.value).trim() !== '';
       $(this).prop('disabled', !tampil && !adaIsi);
     });
@@ -892,8 +938,8 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
     // mahasiswa paham KHS semester terakhir memang tidak diminta.
     var petunjuk = $('#petunjuk-akademik');
     if (petunjuk.length && jumlah > 0 && semesterAktif > 0) {
-      petunjuk.text('Semester Anda ' + semesterAktif + ': unggah KRS dan isi nilai KHS semester 1 sampai ' +
-        semesterAktif + '.');
+      petunjuk.text('Semester Anda ' + semesterAktif + ': unggah KRS semester 1 sampai ' + semesterAktif +
+        ', serta KHS dan nilainya sampai semester ' + Math.max(semesterAktif - 1, 0) + '.');
     }
   }
 

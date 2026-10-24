@@ -13,7 +13,7 @@ uses(RefreshDatabase::class)->group('applicant', 'flow');
 
 function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $semester = 5, bool $verified = true): UserProfile
 {
-    return UserProfile::create([
+    $profile = UserProfile::create([
         'user_id' => $user->id,
         'jenjang' => 'S1',
         'tahun_masuk' => 2022,
@@ -54,6 +54,10 @@ function createCompleteProfile(User $user, Prodi $prodi, float $ipk = 3.5, int $
         'verif_kampus' => $verified ? 'setuju' : 'menunggu',
         'verif_kesra' => $verified ? 'setuju' : 'menunggu',
     ]);
+
+    simpanAkademikProfilDummy($user, $semester);
+
+    return $profile;
 }
 
 /**

@@ -65,6 +65,18 @@ class ProfileController extends Controller
         // ke API luar, dan itu sia-sia untuk halaman yang hanya menampilkan
         // informasi akun.
         $profileComplete = $isMahasiswa && $user->isProfileComplete();
+        $pendaftaranAktif = $isMahasiswa ? $user->blockingApplicant() : null;
+        $tahapDapatDiedit = $isMahasiswa ? $user->editableProfileStages() : [];
+        $canEditCatpil = in_array('catpil', $tahapDapatDiedit, true);
+        $canEditKampus = in_array('kampus', $tahapDapatDiedit, true);
+        $canAdvanceSemester = $pendaftaranAktif?->status === 'diterima';
+        $semesterRevisi = $canAdvanceSemester
+            ? $pendaftaranAktif->verifikasiSemester()
+                ->where('status_kampus', VerifikasiSemester::KAMPUS_REVISI)
+                ->pluck('semester')
+                ->map(fn ($semester) => (int) $semester)
+                ->all()
+            : [];
 
         $districts = $isMahasiswa
             ? $this->wilayah->getDistricts(self::KABUPATEN_CODE)
@@ -106,6 +118,11 @@ class ProfileController extends Controller
             'kampusList',
             'kampusJson',
             'dokumenAkademik',
+            'pendaftaranAktif',
+            'canEditCatpil',
+            'canEditKampus',
+            'canAdvanceSemester',
+            'semesterRevisi',
         ) + [
             'jenjangList' => JenjangPendidikan::JENJANG,
             'semesterMap' => JenjangPendidikan::JUMLAH_SEMESTER,
@@ -124,7 +141,7 @@ class ProfileController extends Controller
         $email = $data['email'] ?? null;
         unset($data['email']);
 
-        $ikutKk = $request->input('ikut_kk', 'ayah');
+        $ikutKk = $data['ikut_kk'];
 
         $data['ikut_kk'] = $ikutKk;
         $data['kk_ikut_famili_lain'] = $ikutKk === 'famili_lain';
@@ -140,9 +157,18 @@ class ProfileController extends Controller
 
         $profile = auth()->user()->profile;
         $uploadDisk = Storage::disk('public');
+        $pendaftaranAktif = auth()->user()->blockingApplicant();
+        $punyaPendaftaranAktif = $pendaftaranAktif !== null;
+        $tahapDapatDiedit = $request->editableStages();
 
         try {
             foreach (['foto_profil'] as $field) {
+                if (! $request->canEditStage('catpil')) {
+                    unset($data[$field]);
+
+                    continue;
+                }
+
                 if ($request->hasFile($field)) {
                     $file = $request->file($field);
                     $old = $profile?->{$field};
@@ -152,6 +178,14 @@ class ProfileController extends Controller
             }
 
             foreach ($this->documentFields as $field) {
+                $stage = UserProfile::editableFieldStage($field);
+
+                if (! $stage || ! $request->canEditStage($stage)) {
+                    unset($data[$field]);
+
+                    continue;
+                }
+
                 if ($request->hasFile($field)) {
                     $file = $request->file($field);
                     $old = $profile?->{$field};
@@ -160,7 +194,9 @@ class ProfileController extends Controller
                 }
             }
 
-            if ($request->hasFile('dokumen_prestasi')) {
+            if (! $request->canEditStage('kampus')) {
+                unset($data['dokumen_prestasi']);
+            } elseif ($request->hasFile('dokumen_prestasi')) {
                 $prestasi = $profile?->dokumen_prestasi ?? [];
                 foreach ($request->file('dokumen_prestasi') as $file) {
                     $path = $uploadDisk->putFile('profil/'.auth()->id(), $file, 'public');
@@ -179,13 +215,34 @@ class ProfileController extends Controller
             // yang tidak dikirim di request ini tidak disentuh sama sekali,
             // jadi mengunggah KHS semester 4 tidak pernah menimpa KHS
             // semester 3.
-            $this->simpanDokumenAkademik($request, $uploadDisk);
+            $semesterAkademikDisimpan = $this->simpanDokumenAkademik($request, $uploadDisk);
 
-            $profile->resetVerification();
+            if ($punyaPendaftaranAktif) {
+                foreach ($tahapDapatDiedit as $stage) {
+                    [$statusField, $catatanField] = UserProfile::verifStages()[$stage];
+                    $profile->{$statusField} = 'menunggu';
+                    $profile->{$catatanField} = null;
+                }
+            } else {
+                $profile->resetVerification();
+            }
+
             $profile->save();
 
             if ($email !== null && $email !== auth()->user()->email) {
                 auth()->user()->forceFill(['email' => $email])->save();
+            }
+
+            if ($pendaftaranAktif?->status === 'diterima' && $semesterAkademikDisimpan !== []) {
+                $pendaftaranAktif->verifikasiSemester()
+                    ->whereIn('semester', $semesterAkademikDisimpan)
+                    ->where('status_kampus', VerifikasiSemester::KAMPUS_REVISI)
+                    ->update([
+                        'status_kampus' => VerifikasiSemester::KAMPUS_MENUNGGU,
+                        'catatan_kampus' => null,
+                        'diputuskan_kampus_at' => null,
+                        'diputuskan_kampus_oleh' => null,
+                    ]);
             }
 
             // Setelah berkas akademik disimpan, paket semester yang dokumennya
@@ -236,10 +293,11 @@ class ProfileController extends Controller
      * jadi `nilai` hanya dibaca untuk KHS. Angka nilai yang tetap dikirim
      * pada baris KRS diabaikan, bukan disimpan.
      *
-     * @param  array<string, array<int|string, array<string, mixed>>>  $baris  `[jenis => [semester => [file, nilai]]]`
+     * @return list<int> Semester yang benar-benar menyimpan file atau nilai baru.
      */
-    private function simpanDokumenAkademik(UpdateProfilRequest $request, $uploadDisk): void
+    private function simpanDokumenAkademik(UpdateProfilRequest $request, $uploadDisk): array
     {
+        $semesterDisimpan = [];
         // Pada multipart browser, input file berada di FileBag dan TIDAK ikut
         // `$request->input()`. KRS hanya memiliki berkas (tanpa field teks),
         // sehingga mengiterasi input saja membuat seluruh KRS hilang walaupun
@@ -265,8 +323,12 @@ class ProfileController extends Controller
                     continue;
                 }
 
-                $file = $request->file("dokumen_akademik.{$jenis}.{$semester}.file");
-                $nilai = $punyaNilai ? ($isi['nilai'] ?? null) : null;
+                $file = $request->canEditAcademicField($jenis, $semester, 'file')
+                    ? $request->file("dokumen_akademik.{$jenis}.{$semester}.file")
+                    : null;
+                $nilai = $punyaNilai && $request->canEditAcademicField($jenis, $semester, 'nilai')
+                    ? ($isi['nilai'] ?? null)
+                    : null;
 
                 // Baris yang tidak diisi apa-apa dilewati, bukan dikosongkan:
                 // form mengirim semua baris semester, dan memperlakukan yang
@@ -280,6 +342,7 @@ class ProfileController extends Controller
                     'jenis' => $jenis,
                     'semester' => $semester,
                 ]);
+                $berubah = false;
 
                 if ($file !== null) {
                     $lama = $dokumen->file;
@@ -289,14 +352,30 @@ class ProfileController extends Controller
                         'public'
                     );
                     $this->deleteIfExists($uploadDisk, $lama);
+                    $berubah = true;
                 }
 
                 if ($nilai !== null && $nilai !== '') {
-                    $dokumen->nilai = $nilai;
+                    $nilaiBaru = number_format((float) $nilai, 2, '.', '');
+                    $nilaiLama = $dokumen->nilai === null
+                        ? null
+                        : number_format((float) $dokumen->nilai, 2, '.', '');
+
+                    if ($nilaiLama !== $nilaiBaru) {
+                        $dokumen->nilai = $nilaiBaru;
+                        $berubah = true;
+                    }
+                }
+
+                if (! $berubah) {
+                    continue;
                 }
 
                 $dokumen->save();
+                $semesterDisimpan[] = $semester;
             }
         }
+
+        return array_values(array_unique($semesterDisimpan));
     }
 }

@@ -26,6 +26,7 @@ function verifikasiProfilePayload(int $prodiId): array
         'jenjang' => 'S1',
         'tahun_masuk' => 2022,
         'kepala_keluarga' => 0,
+        'ikut_kk' => 'ayah',
         'tempat_lahir' => 'Balangan',
         'tanggal_lahir' => '2000-01-01',
         'jenis_kelamin' => 'Laki-laki',
@@ -681,9 +682,10 @@ test('regular user cannot access verification pages', function () {
         ->assertForbidden();
 });
 
-test('updating profile resets verification stages', function () {
+test('updating profile without an active application resets verification stages', function () {
     $user = $this->applicantUser;
-    createPendingVerifikasiProfile($user, 'kesra')->update([
+    createPendingVerifikasiProfile($user, 'catpil')->update([
+        'verif_catpil' => 'setuju',
         'verif_kampus' => 'setuju',
         'verif_kesra' => 'setuju',
     ]);

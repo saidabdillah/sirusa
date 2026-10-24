@@ -27,6 +27,34 @@ class UserProfile extends Model
         'verif_kesra' => 'menunggu',
     ];
 
+    /** Field profil yang boleh dibuka ketika tahap terkait meminta perbaikan. */
+    public const EDITABLE_SCALAR_FIELDS = [
+        'catpil' => [
+            'nama_lengkap', 'email', 'nik', 'no_kk', 'tempat_lahir',
+            'tanggal_lahir', 'jenis_kelamin', 'agama', 'telepon', 'desil',
+            'kecamatan', 'desa_kelurahan', 'alamat', 'ikut_kk',
+            'kepala_keluarga', 'nama_ayah', 'nik_ayah', 'pekerjaan_ayah',
+            'nama_ibu', 'nik_ibu', 'pekerjaan_ibu', 'nama_wali', 'nik_wali',
+            'pekerjaan_wali', 'hubungan_wali',
+        ],
+        'kampus' => [
+            'nama_kampus', 'fakultas', 'prodi_id', 'jenjang', 'tahun_masuk',
+            'ipk', 'semester', 'nim', 'ukt',
+        ],
+    ];
+
+    public const EDITABLE_FILE_FIELDS = [
+        'catpil' => [
+            'foto_profil', 'dokumen_ktp', 'dokumen_kk', 'dokumen_desil',
+            'ktp_ayah', 'ktp_ibu', 'ktp_wali', 'kk_wali',
+        ],
+        'kampus' => [
+            'dokumen_pddikti', 'dokumen_surat_aktif',
+            'dokumen_surat_pernyataan', 'dokumen_bukti_ukt',
+            'dokumen_prestasi',
+        ],
+    ];
+
     protected $fillable = [
         'user_id',
         'nama_lengkap',
@@ -133,6 +161,23 @@ class UserProfile extends Model
     public static function verifStageOrder(): array
     {
         return array_keys(self::verifStages());
+    }
+
+    public static function editableFieldStage(string $field): ?string
+    {
+        foreach (self::EDITABLE_SCALAR_FIELDS as $stage => $fields) {
+            if (in_array($field, $fields, true)) {
+                return $stage;
+            }
+        }
+
+        foreach (self::EDITABLE_FILE_FIELDS as $stage => $fields) {
+            if (in_array($field, $fields, true)) {
+                return $stage;
+            }
+        }
+
+        return null;
     }
 
     public function user(): BelongsTo

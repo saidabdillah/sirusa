@@ -335,11 +335,15 @@ test('unggahan semester baru tidak menimpa dokumen semester sebelumnya', functio
     $lama = DokumenAkademik::where('user_id', $this->user->id)
         ->where('jenis', 'khs')->where('semester', 3)->first();
 
-    // Pada simpan berikutnya, kewajiban semester 1–2 dipenuhi oleh berkas yang
-    // sudah tersimpan. Request hanya mengirim KHS semester 4, sehingga KHS
-    // semester 3 tidak boleh ikut tertimpa.
-    $payload = payloadAkademik($this->prodi->id);
+    // Pada simpan berikutnya semester dinaikkan ke 5. Kewajiban lama dipenuhi
+    // oleh berkas tersimpan; request hanya menambah KRS 4–5 dan KHS 4, sehingga
+    // KHS semester 3 tidak boleh ikut tertimpa.
+    $payload = payloadAkademik($this->prodi->id, ['semester' => 5]);
     $payload['dokumen_akademik'] = [
+        'krs' => [
+            4 => ['file' => pdfAkademik('krs-4.pdf')],
+            5 => ['file' => pdfAkademik('krs-5.pdf')],
+        ],
         'khs' => [4 => ['file' => pdfAkademik('khs-4.pdf'), 'nilai' => 3.80]],
     ];
 

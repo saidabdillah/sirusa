@@ -60,6 +60,8 @@ function mhsBeasiswa(?User $user = null, ?Prodi $prodi = null, array $verif = []
         'ktp_ibu' => 'profil/1/ktp_ibu.pdf',
     ], $verif));
 
+    simpanAkademikProfilDummy($user, 5);
+
     return $user;
 }
 

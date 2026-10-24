@@ -433,6 +433,8 @@ test('student dashboard drops the warning once the profile is complete', functio
         'ktp_ibu' => 'profil/1/ktp-ibu.pdf',
     ]);
 
+    simpanAkademikProfilDummy($user, 4);
+
     expect($user->getMissingProfileFields())->toBeEmpty();
 
     actingAs($user)

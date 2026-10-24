@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests\Profil;
 
+use App\Models\Applicant;
 use App\Models\DokumenAkademik;
 use App\Models\Prodi;
+use App\Models\UserProfile;
+use App\Models\VerifikasiSemester;
 use App\Support\JenjangPendidikan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
@@ -12,6 +15,19 @@ use Illuminate\Validation\Validator;
 
 class UpdateProfilRequest extends FormRequest
 {
+    private bool $aksesProfilDihitung = false;
+
+    private ?Applicant $pendaftaranAktif = null;
+
+    /** @var list<string>|null */
+    private ?array $tahapDapatDiedit = null;
+
+    /** @var Collection<string, DokumenAkademik>|null */
+    private ?Collection $dokumenAkademikTersimpan = null;
+
+    /** @var list<int>|null */
+    private ?array $semesterRevisi = null;
+
     /**
      * Kolom-kolom NIK/No. KK yang harus saling berbeda, dalam urutan form.
      *
@@ -38,29 +54,147 @@ class UpdateProfilRequest extends FormRequest
 
     public function authorize(): bool
     {
-        // Hanya mahasiswa yang punya profil isian + dokumen. Akun staf
-        // (super_admin/kesra/kampus/catpil) tidak punya baris profil, jadi form
-        // ini tidak boleh bisa disimpan untuk mereka meski formnya disembunyikan
-        // di halaman profil.
-        return $this->user()->isMahasiswa();
+        if (! $this->user()->isMahasiswa()) {
+            return false;
+        }
+
+        $pendaftaran = $this->pendaftaranAktif();
+
+        return $pendaftaran === null
+            || $this->editableStages() !== []
+            || $pendaftaran->status === 'diterima';
     }
 
     protected function prepareForValidation(): void
     {
-        // `ikut_kk` kini EMPAT opsi: ayah, ibu, famili_lain, kepala_keluarga.
-        // Status kepala keluarga bukan input mahasiswa lagi -- ia opsi keempat
-        // di grup radio ini -- jadi kolom boolean `kepala_keluarga` SELALU
-        // dihitung di server dari pilihan itu dan input klien untuk kolom ini
-        // DITIMPA. Tanpa penimpaan, request yang dirakit manual bisa memilih
-        // "Ayah" sambil mengirim `kepala_keluarga=1` dan profilnya tersimpan
-        // bertentangan dengan yang dipilih.
-        $ikutKk = $this->input('ikut_kk', 'ayah');
+        $profile = $this->user()?->profile()->with('prodi.fakultas.kampus')->first();
+        $pendaftaran = $this->pendaftaranAktif();
+
+        if ($profile && $pendaftaran) {
+            $terkunci = [];
+
+            foreach (UserProfile::EDITABLE_SCALAR_FIELDS as $stage => $fields) {
+                if ($this->canEditStage($stage)) {
+                    continue;
+                }
+
+                foreach ($fields as $field) {
+                    // Penerima boleh menaikkan semester satu tingkat agar baris
+                    // KRS/KHS semester baru bisa dibuka. Field kampus lain tetap
+                    // mengambil nilai tersimpan.
+                    if ($field === 'semester' && $pendaftaran->status === 'diterima') {
+                        if (! $this->exists('semester')) {
+                            $terkunci['semester'] = $profile->semester;
+                        }
+
+                        continue;
+                    }
+
+                    $terkunci[$field] = match ($field) {
+                        'email' => $this->user()->email,
+                        'nama_kampus' => $profile->prodi?->fakultas?->kampus?->nama_kampus,
+                        'fakultas' => $profile->prodi?->fakultas?->nama,
+                        default => $profile->{$field},
+                    };
+                }
+            }
+
+            // Nilai dari database sengaja menimpa payload klien. `disabled` di
+            // tampilan bukan batas keamanan; request manual juga tidak boleh
+            // mengubah bagian yang sedang dikunci.
+            $this->merge($terkunci);
+        }
+
+        $ikutKk = $this->input('ikut_kk');
 
         $this->merge([
             'ikut_kk' => $ikutKk,
             'kepala_keluarga' => $ikutKk === 'kepala_keluarga' ? 1 : 0,
             'ukt' => self::normalisasiRupiah($this->input('ukt')),
         ]);
+    }
+
+    public function editableStages(): array
+    {
+        $this->hitungAksesProfil();
+
+        return $this->tahapDapatDiedit ?? [];
+    }
+
+    public function canEditStage(string $stage): bool
+    {
+        return in_array($stage, $this->editableStages(), true);
+    }
+
+    public function canEditAcademicField(string $jenis, int $semester, string $field): bool
+    {
+        $semesterAktif = (int) $this->input('semester');
+        $semesterSedangDirevisi = in_array($semester, $this->semesterRevisi(), true);
+
+        if ($semester < 1 || ($semester > $semesterAktif && ! $semesterSedangDirevisi)) {
+            return false;
+        }
+
+        if ($this->canEditStage('kampus')) {
+            return true;
+        }
+
+        $pendaftaran = $this->pendaftaranAktif();
+
+        if ($pendaftaran?->status !== 'diterima') {
+            return false;
+        }
+
+        if ($semesterSedangDirevisi) {
+            return true;
+        }
+
+        $dokumen = $this->dokumenAkademikTersimpan()->get($jenis.'.'.$semester);
+
+        return $field === 'nilai' ? blank($dokumen?->nilai) : blank($dokumen?->file);
+    }
+
+    private function pendaftaranAktif(): ?Applicant
+    {
+        $this->hitungAksesProfil();
+
+        return $this->pendaftaranAktif;
+    }
+
+    private function hitungAksesProfil(): void
+    {
+        if ($this->aksesProfilDihitung) {
+            return;
+        }
+
+        $this->pendaftaranAktif = $this->user()?->blockingApplicant();
+        $this->tahapDapatDiedit = $this->user()?->editableProfileStages() ?? [];
+        $this->aksesProfilDihitung = true;
+    }
+
+    /** @return Collection<string, DokumenAkademik> */
+    private function dokumenAkademikTersimpan(): Collection
+    {
+        return $this->dokumenAkademikTersimpan ??= DokumenAkademik::query()
+            ->where('user_id', $this->user()->id)
+            ->get()
+            ->keyBy(fn (DokumenAkademik $dokumen) => $dokumen->jenis.'.'.$dokumen->semester);
+    }
+
+    /** @return list<int> */
+    private function semesterRevisi(): array
+    {
+        $pendaftaran = $this->pendaftaranAktif();
+
+        return $this->semesterRevisi ??= $pendaftaran
+            ? VerifikasiSemester::query()
+                ->where('pendaftar_id', $pendaftaran->id)
+                ->where('status_kampus', VerifikasiSemester::KAMPUS_REVISI)
+                ->pluck('semester')
+                ->map(fn ($semester) => (int) $semester)
+                ->values()
+                ->all()
+            : [];
     }
 
     /**
@@ -234,7 +368,7 @@ class UpdateProfilRequest extends FormRequest
             // membawa nilai. Kekosongan tetap dihukum per-baris di
             // `withValidator()` supaya pesannya menyebut semester, bukan
             // sekadar nama kunci array.
-            'dokumen_akademik.khs.*.nilai' => ['nullable', 'numeric', 'between:0,4'],
+            'dokumen_akademik.khs.*.nilai' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,4'],
         ];
     }
 
@@ -261,6 +395,19 @@ class UpdateProfilRequest extends FormRequest
                     $maks === null
                         ? 'Pilih jenjang pendidikan terlebih dahulu.'
                         : "Semester untuk jenjang {$jenjang} hanya tersedia 1 sampai {$maks}.",
+                );
+            }
+
+            $pendaftaran = $this->pendaftaranAktif();
+            $semesterTersimpan = (int) ($this->user()?->profile()->value('semester') ?? 0);
+            $semesterBaru = (int) $semester;
+
+            if ($pendaftaran?->status === 'diterima'
+                && ! $validator->errors()->has('semester')
+                && ($semesterBaru < $semesterTersimpan || $semesterBaru > $semesterTersimpan + 1)) {
+                $validator->errors()->add(
+                    'semester',
+                    'Penerima beasiswa hanya dapat menaikkan semester satu tingkat.',
                 );
             }
 
@@ -349,15 +496,19 @@ class UpdateProfilRequest extends FormRequest
                         continue;
                     }
 
-                    // Semester di atas semester aktif hanya diperiksa kalau
-                    // memang berisi: berkas lama tidak boleh ditolak hanya
-                    // karena semester aktif mahasiswa sudah berubah.
-                    if ((int) $kunci > $semesterAktif) {
+                    // Request manual tidak boleh menyisipkan dokumen semester
+                    // di atas semester efektif. Pengecualian hanya paket lama
+                    // yang memang sedang diminta revisi oleh Kampus.
+                    if ((int) $kunci > $semesterAktif
+                        && ! in_array((int) $kunci, $this->semesterRevisi(), true)) {
                         $adaFile = $this->hasFile("dokumen_akademik.{$jenis}.{$kunci}.file");
                         $adaNilai = $jenis === DokumenAkademik::JENIS_KHS && filled($isi['nilai'] ?? null);
 
-                        if (! $adaFile && ! $adaNilai) {
-                            continue;
+                        if ($adaFile || $adaNilai) {
+                            $validator->errors()->add(
+                                "dokumen_akademik.{$jenis}.{$kunci}",
+                                "Dokumen semester {$kunci} belum dapat diunggah.",
+                            );
                         }
                     }
                 }

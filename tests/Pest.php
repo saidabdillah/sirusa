@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\DokumenAkademik;
+use App\Models\User;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -106,6 +108,23 @@ function akademikProfilDummy(int $semesterAktif): array
     }
 
     return $akademik;
+}
+
+function simpanAkademikProfilDummy(User $user, int $semesterAktif): void
+{
+    for ($semester = 1; $semester <= $semesterAktif; $semester++) {
+        DokumenAkademik::updateOrCreate(
+            ['user_id' => $user->id, 'jenis' => 'krs', 'semester' => $semester],
+            ['file' => "profil/{$user->id}/akademik/krs-{$semester}.pdf"],
+        );
+    }
+
+    for ($semester = 1; $semester <= $semesterAktif - 1; $semester++) {
+        DokumenAkademik::updateOrCreate(
+            ['user_id' => $user->id, 'jenis' => 'khs', 'semester' => $semester],
+            ['file' => "profil/{$user->id}/akademik/khs-{$semester}.pdf", 'nilai' => 3.5],
+        );
+    }
 }
 
 /**
