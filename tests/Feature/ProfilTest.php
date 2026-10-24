@@ -466,12 +466,13 @@ test('profil spells out the ikut kk helper text and fixes its wording', function
 
     $html = actingAs($user)->get(route('profile'))->assertOk()->getContent();
 
-    // Teks helper di Blade ditulis beberapa baris, jadi whitespace hasil
-    // format sumber diratakan dulu sebelum dicari. Wording-nya mengikuti
-    // grup Ikut KK berkempat opsi (Kepala Keluarga = kartu milik sendiri).
+    // Teks helper di bawah radio Ikut KK DIHAPUS (permintaan pengguna): empat
+    // opsinya sudah menjelaskan dirinya sendiri. Dijaga di sini supaya tidak
+    // dikembalikan tanpa sengaja.
     $htmlRata = preg_replace('/\s+/', ' ', $html);
 
     expect($htmlRata)
-        ->toContain('Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih, atau milik sendiri bila Anda kepala keluarga. Data ayah dan ibu tetap wajib diisi.')
+        ->not->toContain('Kartu keluarga terdaftar mengikuti')
+        ->not->toContain('Data ayah dan ibu tetap wajib diisi.')
         ->not->toContain('yang diikuti');
 });

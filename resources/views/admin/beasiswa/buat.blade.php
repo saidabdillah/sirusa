@@ -166,15 +166,6 @@
                    dibuka/tutup supaya daftar prodi yang panjang tidak memaksa
                    admin menggulir jauh. Kampus yang sudah punya prodi terpilih
                    terbuka otomatis, jadi pilihan tersimpan tetap terlihat. --}}
-              <div class="mb-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary mr-1" id="btn-buka-semua">
-                  <i class="fas fa-chevron-down mr-1"></i> Buka Semua
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-tutup-semua">
-                  <i class="fas fa-chevron-up mr-1"></i> Tutup Semua
-                </button>
-              </div>
-
               <div id="prodi-tree">
                 @forelse($kampusList as $kampus)
                 @php
@@ -305,16 +296,6 @@
 @push('script')
 <script>
   $(document).ready(function() {
-    // Buka/tutup semua accordion sekaligus. `collapse` Bootstrap dipakai apa
-    // adanya (data-toggle di view), jadi tidak ada state sendiri di JS.
-    $('#btn-buka-semua').on('click', function () {
-      $('#prodi-tree .collapse').collapse('show');
-    });
-
-    $('#btn-tutup-semua').on('click', function () {
-      $('#prodi-tree .collapse').collapse('hide');
-    });
-
     // Pohon centang tiga tingkat: kampus -> fakultas -> prodi. Centang kampus
     // atau fakultas memilih/melepas SEMUA prodi di dalamnya. Centang kampus
     // dan fakultas adalah TURUNAN dari centang prodinya (checked = semua

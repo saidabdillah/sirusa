@@ -224,8 +224,10 @@ test('pohon centang beasiswa bisa dibuka-tutup per kampus dan fakultas', functio
             ->toContain('kampus-toggle')
             ->toContain('fakultas-toggle')
             ->toContain('data-toggle="collapse"')
-            ->toContain('btn-buka-semua')
-            ->toContain('btn-tutup-semua')
+            // Tombol Buka/Tutup Semua DIHAPUS (permintaan pengguna): tiap
+            // kampus dan fakultas sudah punya chevron sendiri.
+            ->and($source)->not->toContain('btn-buka-semua')
+            ->and($source)->not->toContain('btn-tutup-semua')
             // Terlipat != dinonaktifkan: `disabled` akan membuang pilihan user.
             ->and($source)->not->toContain("prodi-check').prop('disabled'");
     }

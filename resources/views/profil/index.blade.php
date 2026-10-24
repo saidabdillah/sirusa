@@ -388,8 +388,6 @@ $pekerjaanList = ['PNS/TNI/Polri', 'Swasta', 'Wiraswasta', 'Petani', 'Buruh', 'T
                       @endforeach
                     </div>
                   </div>
-                  <small class="text-muted d-block">Kartu keluarga terdaftar mengikuti orang tua/wali yang dipilih, atau
-                    milik sendiri bila Anda kepala keluarga. Data ayah dan ibu tetap wajib diisi.</small>
                   @error('ikut_kk')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                   {{-- Kolom boolean `kepala_keluarga` tetap ada di database dan
                        NILAINYA DIHITUNG SERVER dari opsi radio ini

@@ -147,15 +147,6 @@
                   </button>
                 </div>
 
-                <div class="mb-2">
-                  <button type="button" class="btn btn-sm btn-outline-secondary mr-1" id="btn-buka-semua">
-                    <i class="fas fa-chevron-down mr-1"></i> Buka Semua
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-tutup-semua">
-                    <i class="fas fa-chevron-up mr-1"></i> Tutup Semua
-                  </button>
-                </div>
-
                 {{-- Accordion kampus -> fakultas -> prodi: yang sudah tercentang
                      terbuka otomatis supaya pilihan tersimpan langsung terlihat. --}}
                 <div id="prodi-tree">
@@ -278,16 +269,6 @@
 @push('script')
 <script>
 $(document).ready(function() {
-  // Buka/tutup semua accordion sekaligus (Bootstrap collapse, tanpa state
-  // sendiri di JS).
-  $('#btn-buka-semua').on('click', function () {
-    $('#prodi-tree .collapse').collapse('show');
-  });
-
-  $('#btn-tutup-semua').on('click', function () {
-    $('#prodi-tree .collapse').collapse('hide');
-  });
-
   // Pohon centang tiga tingkat: kampus -> fakultas -> prodi (sama seperti
   // `buat.blade.php`). Centang kampus/fakultas adalah TURUNAN dari centang
   // prodinya; yang dikirim ke server hanya `prodi_ids[]`.
