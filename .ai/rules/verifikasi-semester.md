@@ -22,9 +22,9 @@ Di penegakan: `scopeAntreanKesra()` hanya mengambil `status_kampus = setuju`, da
 Data kependudukan tidak berubah hanya karena mahasiswa naik semester (permintaan pengguna: "catpil tetap 1 kali"). Jangan menambahkan tahap catpil ke tabel/antrean semester.
 
 ## Verifikasi Semester adalah ANAK DROPDOWN Kampus dan Kesra, bukan menu sendiri
-Menu "Verifikasi Semester" hidup sebagai anak dropdown di section "Verifikasi": satu di bawah induk "Kampus", satu di bawah induk "Kesra" (permintaan pengguna). **Bukan** leaf mandiri (percobaan kedua) dan **bukan** tombol di dalam halaman antrean profil (percobaan pertama, ditolak).
+Menu "Verifikasi Semester" hidup sebagai anak dropdown di bagian "Seleksi & Verifikasi": satu di bawah induk "Kampus", satu di bawah induk "Kesra" (permintaan pengguna). **Bukan** leaf mandiri (percobaan kedua) dan **bukan** tombol di dalam halaman antrean profil (percobaan pertama, ditolak).
 
-Konsekuensinya: "Kampus" berubah dari leaf menjadi dropdown (anak: "Verifikasi Awal" + "Verifikasi Semester"), dan anak "Verifikasi" di dropdown Kesra berganti label "Verifikasi Awal" supaya tidak tertukar dengan "Verifikasi Semester".
+Konsekuensinya: "Kampus" berubah dari leaf menjadi dropdown (anak: "Verifikasi Awal" + "Verifikasi Semester"), dan anak dropdown Kesra berlabel "Verifikasi Awal" (dulu "Verifikasi") supaya tidak tertukar dengan "Verifikasi Semester".
 
 Tahap ditentukan dari PERAN: `VerifikasiSemesterController::tahap()` membaca `route('tahap')` dulu (anak dropdown mengarah ke `admin.semester.kampus` / `admin.semester.kesra`, dua URL untuk satu aksi), lalu `?tahap=`, lalu bawaan kampus. Peran tunggal (kampus/kesra) tetap dipatok dari perannya sendiri supaya tautan yang salah pun tidak membuka tahap orang lain.
 

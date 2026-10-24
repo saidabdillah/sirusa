@@ -5,6 +5,21 @@ paths:
 
 # Menu
 
+## Bagian sidebar dikelompokkan per PEKERJAAN
+Urutan bagian: Menu Utama, Pengelolaan Beasiswa, Pendaftaran, Seleksi & Verifikasi, Monitoring & Laporan, Administrasi Sistem, Layanan Mahasiswa. Daftarnya ada di `Menu::DEFAULT_SECTIONS` dan label menunya di `MenuSeeder::MENUS`.
+
+Pemetaan label yang berlaku (jangan dikembalikan ke nama lama):
+- `admin.beasiswa` -> induk **Program Beasiswa**, anak **Daftar Program**
+- `admin.kampus` -> induk **Data Referensi**, anak **Perguruan Tinggi**
+- `admin.kesra.status` -> **Daftar Pendaftar** di bagian **Pendaftaran**
+- `admin.catpil` -> **Seleksi Berkas**
+- `admin.kesra.pengumuman` -> **Pengumuman Hasil**
+- `admin.role`/`admin.pengguna`/`admin.menu`/`admin.menukelola` -> induk **Manajemen Akses** dengan anak **Pengguna**, **Peran**, **Hak Akses Menu**, **Kelola Menu**
+- `admin.penerima` -> **Penerima Beasiswa** di bagian **Monitoring & Laporan**
+
+Mengganti label TIDAK boleh mengubah `scope`/`route`: middleware `EnsureMenuAccess`, permission Spatie, dan tautan lama bergantung padanya. Kunci grant untuk menu tanpa scope memakai `Str::kebab($label)`, jadi label yang berubah WAJIB diikuti kunci grant di `MenuSeeder` (gagal keras lewat `RuntimeException`, bukan hilang diam-diam).
+
+
 ## Akses Menu: centang aksi granular untuk modul CRUD
 Halaman Akses Menu menampilkan baris tambahan **"Aksi yang diizinkan"** di bawah tiap menu yang scope-nya ada di `MenuAction::MODULES` (`admin.pengguna`, `admin.role`, `admin.menukelola`) — dan modul-modul itu adalah baris ANAK (di bawah induk "Kelola Akses"), jadi baris aksi dirender di dalam loop `$menu->children`, BUKAN di loop menu induk. Checkbox-nya `name="aksi[<menu_id>][]"` dengan `value` = nama aksi, plus `data-aksi-menu="<menu_id>"` untuk JS. `MenuController::index()` mengirim `$rolePermissions` (nama permission role terpilih, di-`array_flip` supaya view cukup `isset()`), `$actionLabels` (`MenuAction::LABELS`), dan `$actionModules`. `perbarui()` memanggil `syncAksi()` di dalam transaksi yang sama dengan `role_menu`: aksi hanya diberikan bila menu modulnya ikut dicentang (role tanpa menu tidak boleh menyimpan sisa permission — kalau tidak, permission itu aktif lagi begitu menunya dicentang ulang), dan menu modul yang dicentang TANPA aksi apa pun otomatis dicatat `read` (tanpa itu menu tampil tapi diklik langsung 403). `super_admin` selalu penuh dan tidak bisa dicabut dari halaman ini (checkbox `disabled`, badge "semua aksi"); role di luar daftar grant seeder sengaja tidak di-`sync` supaya permission yang diatur admin tidak terhapus tiap kali seeder jalan. JS-nya dua arah: centang aksi mencentang menunya, centang menu mencentang `read`, cabut menu mencabut semua aksinya. `UpdateMenuAccessRequest` memvalidasi `aksi.*.*` dengan `Rule::in(MenuAction::ACTIONS)`.
 
