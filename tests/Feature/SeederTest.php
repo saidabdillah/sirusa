@@ -116,10 +116,10 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
         // PENDAFTARAN
         'Daftar Pendaftar' => 'Pendaftaran',
         // SELEKSI & VERIFIKASI
-        'Seleksi Berkas' => 'Seleksi & Verifikasi',
+        'Catpil' => 'Seleksi & Verifikasi',
         'Kampus' => 'Seleksi & Verifikasi',
         'Kesra' => 'Seleksi & Verifikasi',
-        'Pengumuman Hasil' => 'Seleksi & Verifikasi',
+        'Pengumuman Hasil' => 'Pengumuman',
         // MONITORING & LAPORAN
         'Penerima Beasiswa' => 'Monitoring & Laporan',
         // ADMINISTRASI SISTEM
@@ -167,7 +167,7 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
     // Urutan section: operasional harian -> antrean verifikasi -> alat sistem.
     $urutanSection = Menu::query()
         ->whereNull('parent_id')
-        ->whereIn('section', ['Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Monitoring & Laporan', 'Administrasi Sistem'])
+        ->whereIn('section', ['Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Pengumuman', 'Monitoring & Laporan', 'Administrasi Sistem'])
         ->pluck('section')
         ->unique()
         ->values()
@@ -175,7 +175,7 @@ test('setiap menu punya section yang sesuai di sidebar', function () {
 
     $sectionSesuaiUrutanSidebar = array_values(array_filter(
         Menu::sections(),
-        fn (string $s) => in_array($s, ['Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Monitoring & Laporan', 'Administrasi Sistem'], true)
+        fn (string $s) => in_array($s, ['Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Pengumuman', 'Monitoring & Laporan', 'Administrasi Sistem'], true)
     ));
 
     expect(array_values(array_intersect($urutanSection, $sectionSesuaiUrutanSidebar)))
@@ -198,7 +198,7 @@ test('section baru tidak bocor menu ke role yang tidak berhak', function () {
 
     // Role user: only "Layanan Mahasiswa". The new sections must not appear.
     $user = $html('standardUser');
-    foreach (['Menu Utama', 'Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Monitoring & Laporan', 'Administrasi Sistem', 'Layanan Mahasiswa'] as $section) {
+    foreach (['Menu Utama', 'Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi & Verifikasi', 'Pengumuman', 'Monitoring & Laporan', 'Administrasi Sistem', 'Layanan Mahasiswa'] as $section) {
         if ($section === 'Layanan Mahasiswa' || $section === 'Menu Utama') {
             continue;
         }

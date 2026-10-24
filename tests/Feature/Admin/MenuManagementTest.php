@@ -546,7 +546,7 @@ test('form tambah menu selalu kosong dan dropdownnya tidak preselect', function 
  * menu sehingga error dari satu modal tidak bocor ke modal lain.
  */
 test('form edit menu mempertahankan data tersimpan dan tidak tertukar', function () {
-    $menu = Menu::query()->where('label', 'Seleksi Berkas')->firstOrFail();
+    $menu = Menu::query()->where('label', 'Catpil')->firstOrFail();
 
     $html = actingAs($this->superAdmin)->get(route('admin.menukelola.index'))->getContent();
 

@@ -25,6 +25,7 @@ class Menu extends Model
         'Pengelolaan Beasiswa',
         'Pendaftaran',
         'Seleksi & Verifikasi',
+        'Pengumuman',
         'Monitoring & Laporan',
         'Administrasi Sistem',
         'Layanan Mahasiswa',

@@ -77,11 +77,10 @@ class MenuSeeder extends Seeder
             'urutan' => 30,
         ],
 
-        // SELEKSI & VERIFIKASI: urutan kerja verifikasi. Seleksi Berkas
-        // (Catpil) memeriksa kependudukan; Kampus memeriksa akademik; Kesra
-        // memutuskan; Pengumuman Hasil menerbitkan hasilnya.
+        // SELEKSI & VERIFIKASI: urutan kerja verifikasi. Catpil memeriksa
+        // kependudukan; Kampus memeriksa akademik; Kesra memutuskan.
         [
-            'label' => 'Seleksi Berkas',
+            'label' => 'Catpil',
             'icon' => 'fas fa-id-card',
             'route' => 'admin.catpil.index',
             'scope' => 'admin.catpil',
@@ -116,12 +115,15 @@ class MenuSeeder extends Seeder
                 ['label' => 'Verifikasi Semester', 'route' => 'admin.semester.kesra', 'scope' => 'admin.semester', 'key' => 'semester-kesra'],
             ],
         ],
+        // PENGUMUMAN: bagian sendiri (permintaan pengguna). Menerbitkan hasil
+        // seleksi adalah pekerjaan tersendiri yang terjadi SETELAH verifikasi
+        // selesai, bukan langkah berikutnya di antrean yang sama.
         [
             'label' => 'Pengumuman Hasil',
             'icon' => 'fas fa-bullhorn',
             'route' => 'admin.kesra.pengumuman',
             'scope' => 'admin.kesra.pengumuman',
-            'section' => 'Seleksi & Verifikasi',
+            'section' => 'Pengumuman',
             'urutan' => 70,
         ],
 

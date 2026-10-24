@@ -6,14 +6,14 @@ paths:
 # Menu
 
 ## Bagian sidebar dikelompokkan per PEKERJAAN
-Urutan bagian: Menu Utama, Pengelolaan Beasiswa, Pendaftaran, Seleksi & Verifikasi, Monitoring & Laporan, Administrasi Sistem, Layanan Mahasiswa. Daftarnya ada di `Menu::DEFAULT_SECTIONS` dan label menunya di `MenuSeeder::MENUS`.
+Urutan bagian: Menu Utama, Pengelolaan Beasiswa, Pendaftaran, Seleksi & Verifikasi, Pengumuman, Monitoring & Laporan, Administrasi Sistem, Layanan Mahasiswa. Daftarnya ada di `Menu::DEFAULT_SECTIONS` dan label menunya di `MenuSeeder::MENUS`.
 
 Pemetaan label yang berlaku (jangan dikembalikan ke nama lama):
 - `admin.beasiswa` -> induk **Program Beasiswa**, anak **Daftar Program**
 - `admin.kampus` -> induk **Data Referensi**, anak **Perguruan Tinggi**
 - `admin.kesra.status` -> **Daftar Pendaftar** di bagian **Pendaftaran**
-- `admin.catpil` -> **Seleksi Berkas**
-- `admin.kesra.pengumuman` -> **Pengumuman Hasil**
+- `admin.catpil` -> **Catpil**
+- `admin.kesra.pengumuman` -> **Pengumuman Hasil**, bagian **Pengumuman** (bagian sendiri, bukan anggota Seleksi & Verifikasi)
 - `admin.role`/`admin.pengguna`/`admin.menu`/`admin.menukelola` -> induk **Manajemen Akses** dengan anak **Pengguna**, **Peran**, **Hak Akses Menu**, **Kelola Menu**
 - `admin.penerima` -> **Penerima Beasiswa** di bagian **Monitoring & Laporan**
 

@@ -256,7 +256,7 @@ test('sidebar groups menu ke section yang sesuai', function () {
         ->not->toContain(route('admin.beasiswa.index'));
 
     // BAGIAN 3 -- SELEKSI & VERIFIKASI: urutan kerja verifikasi. Seleksi
-    // Berkas (Catpil), dropdown Kampus & Kesra, lalu Pengumuman Hasil.
+    // antrean Catpil, dropdown Kampus & Kesra, lalu Pengumuman Hasil.
     $verifikasi = $bagian('Seleksi &amp; Verifikasi');
     expect($verifikasi)
         ->toContain(route('admin.catpil.index'))
@@ -267,15 +267,23 @@ test('sidebar groups menu ke section yang sesuai', function () {
         // Kampus dan Kesra (permintaan pengguna).
         ->toContain(route('admin.semester.kampus'))
         ->toContain(route('admin.semester.kesra'))
-        ->toContain('<span>Seleksi Berkas</span>')
+        ->toContain('<span>Catpil</span>')
         ->toContain('<span>Kampus</span>')
         ->toContain('<span>Kesra</span>')
-        ->toContain('<span>Pengumuman Hasil</span>')
+        ->not->toContain('<span>Pengumuman Hasil</span>')
         ->not->toContain(route('admin.penerima.index'))
         ->not->toContain(route('admin.kesra.status'))
         ->not->toContain(route('admin.beasiswa.index'));
 
-    // BAGIAN 4 -- MONITORING & LAPORAN: hasil, bukan antrean kerja.
+    // BAGIAN 4 -- PENGUMUMAN: menerbitkan hasil seleksi, pekerjaan tersendiri
+    // setelah verifikasi selesai (permintaan pengguna).
+    $pengumuman = $bagian('Pengumuman');
+    expect($pengumuman)
+        ->toContain(route('admin.kesra.pengumuman'))
+        ->toContain('<span>Pengumuman Hasil</span>')
+        ->not->toContain(route('admin.catpil.index'));
+
+    // BAGIAN 5 -- MONITORING & LAPORAN: hasil, bukan antrean kerja.
     $manajemen = $bagian('Monitoring &amp; Laporan');
     expect($manajemen)
         ->toContain(route('admin.penerima.index'))
@@ -285,7 +293,7 @@ test('sidebar groups menu ke section yang sesuai', function () {
         ->not->toContain('<span>Kesra</span>')
         ->not->toContain(route('admin.kesra.status'));
 
-    // BAGIAN 5 -- ADMINISTRASI SISTEM: seluruh pengelolaan akses.
+    // BAGIAN 6 -- ADMINISTRASI SISTEM: seluruh pengelolaan akses.
     $administrator = $bagian('Administrasi Sistem');
     expect($administrator)
         ->toContain('<span>Manajemen Akses</span>')
@@ -299,7 +307,7 @@ test('sidebar groups menu ke section yang sesuai', function () {
     // Urutan section mengikuti `Menu::sections()` dan tidak boleh diacak ulang.
     // Hanya section yang benar-benar dirender super admin yang ikut diuji:
     // "Layanan Mahasiswa" memang tidak di-grant ke `super_admin`.
-    $sectionTampil = ['Menu Utama', 'Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi &amp; Verifikasi', 'Monitoring &amp; Laporan', 'Administrasi Sistem'];
+    $sectionTampil = ['Menu Utama', 'Pengelolaan Beasiswa', 'Pendaftaran', 'Seleksi &amp; Verifikasi', 'Pengumuman', 'Monitoring &amp; Laporan', 'Administrasi Sistem'];
 
     $urutan = array_map(
         fn (string $section) => strpos($htmlRapi, '<li class="menu-header">'.$section.'</li>'),
@@ -339,7 +347,8 @@ test('memindah section tidak mengubah menu yang terlihat per role', function () 
         ->not->toContain('<li class="menu-header">Administrasi Sistem</li>')
         ->not->toContain('<li class="menu-header">Pengelolaan Beasiswa</li>')
         ->not->toContain('<li class="menu-header">Pendaftaran</li>')
-        ->not->toContain('<li class="menu-header">Monitoring &amp; Laporan</li>');
+        ->not->toContain('<li class="menu-header">Monitoring &amp; Laporan</li>')
+        ->not->toContain('<li class="menu-header">Pengumuman</li>');
 
     // Setiap section yang punya isinya harus punya tepat satu header, tidak
     // ada duplikat (efek khas seeder dijalankan dua kali tanpa idempotensi).
