@@ -610,10 +610,15 @@ class UpdateProfilRequest extends FormRequest
      */
     private function adaNilaiAkademik(array $dikirim, $tersimpan, int $semester): bool
     {
-        $nilai = $dikirim[DokumenAkademik::JENIS_KHS][$semester]['nilai'] ?? null;
+        $baris = $dikirim[DokumenAkademik::JENIS_KHS][$semester] ?? null;
 
-        if (filled($nilai)) {
-            return true;
+        // Bedakan field yang benar-benar TIDAK DIKIRIM dengan field yang
+        // dikirim tetapi sengaja dikosongkan. Jika pengguna menghapus nilai
+        // dari input, ConvertEmptyStringsToNull mempertahankan key `nilai`
+        // dengan value null; kondisi itu harus ditolak, bukan diam-diam jatuh
+        // kembali ke nilai lama di database.
+        if (is_array($baris) && array_key_exists('nilai', $baris)) {
+            return filled($baris['nilai']);
         }
 
         return filled($tersimpan?->get(DokumenAkademik::JENIS_KHS.'.'.$semester)?->nilai);

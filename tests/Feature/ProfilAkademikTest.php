@@ -381,6 +381,28 @@ test('unggahan ulang semester yang sama memperbarui baris itu, bukan menambah', 
         ->and((float) $baris->first()->nilai)->toBe(3.90);
 });
 
+test('nilai KHS tersimpan yang dikosongkan tetap ditolak sebagai required', function () {
+    actingAs($this->user)
+        ->put(route('profile.update'), payloadAkademik($this->prodi->id))
+        ->assertSessionDoesntHaveErrors();
+
+    $nilaiLama = DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'khs')->where('semester', 1)->value('nilai');
+
+    $payload = payloadAkademik($this->prodi->id);
+    $payload['dokumen_akademik'] = [
+        'khs' => [1 => ['nilai' => '']],
+    ];
+
+    actingAs($this->user)
+        ->put(route('profile.update'), $payload)
+        ->assertSessionHasErrors('dokumen_akademik.khs.1.nilai');
+
+    expect(DokumenAkademik::where('user_id', $this->user->id)
+        ->where('jenis', 'khs')->where('semester', 1)->value('nilai'))
+        ->toBe($nilaiLama);
+});
+
 test('nilai KHS tanpa berkas wajib ditolak', function () {
     actingAs($this->user)
         ->put(route('profile.update'), payloadAkademik($this->prodi->id, [
